@@ -950,24 +950,4 @@ end
 
 
 
---[[function PANEL:SendInput(input, ...)
-
-	local ent = self.m_Entity
-	if !IsValid(ent) then self:OnEntityLost() return end
-
-	net.Start("PartCtrl_EditMenuInput_SendToSv")
-
-		net.WriteEntity(ent)
-		local args = {...}
-
-		if input == "setcpointmode" then
-			
-		end
-
-	net.SendToServer()
-end]]
-
-
-
-
 vgui.Register("PartCtrlEditor", PANEL, "Panel")

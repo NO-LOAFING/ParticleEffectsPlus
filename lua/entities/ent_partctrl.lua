@@ -101,7 +101,7 @@ function ENT:Think()
 
 		//If we don't have an info table, or need to update it, then request it from the server
 		if !self.ParticleInfo_Received then
-			net.Start("PartCtrl_InfoTable_GetFromSv")
+			net.Start("PartCtrl_InfoTable_GetFromSv", true)
 				net.WriteEntity(self)
 			net.SendToServer()
 
@@ -221,15 +221,17 @@ function ENT:Think()
 				v = self.ParticleInfo[self.ParticleInfo_FirstPos]
 			end
 			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
-				if IsValid(v.ent.AttachedEntity) then
-					pos = v.ent.AttachedEntity:GetAttachment(v.attach)
-				else
-					pos = v.ent:GetAttachment(v.attach)
-				end
-				if istable(pos) then
-					pos = pos.Pos
-				else
-					pos = v.ent:GetPos() + v.pos
+				if IsValid(v.ent) then
+					if IsValid(v.ent.AttachedEntity) then
+						pos = v.ent.AttachedEntity:GetAttachment(v.attach)
+					else
+						pos = v.ent:GetAttachment(v.attach)
+					end
+					if istable(pos) then
+						pos = pos.Pos
+					else
+						pos = v.ent:GetPos() + v.pos
+					end
 				end
 			end
 			if pos then
@@ -1135,7 +1137,7 @@ if SERVER then
 		end
 		//MsgN("go")
 
-		net.Start("PartCtrl_InfoTable_SendToCl")
+		net.Start("PartCtrl_InfoTable_SendToCl", true)
 
 			net.WriteEntity(ent)
 
@@ -1320,6 +1322,7 @@ if SERVER then
 		const:SetTable(ctable)
 	
 		return const
+		
 	end
 	duplicator.RegisterConstraint("PartCtrl_Ent", constraint.PartCtrl_Ent, "Ent1", "Ent2", "CPoint", "DoParent", "ply")
 

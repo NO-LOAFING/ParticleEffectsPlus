@@ -2989,57 +2989,63 @@ if CLIENT then
 
 end
 
+//Make these funcs global so advbonemerge tool dropdown can use them too
+
+PartCtrl_EditProperty_Filter = function(self, ent, ply)
+
+	if !IsValid(ent) then return false end
+	if !gamemode.Call("CanProperty", ply, "editpartctrl", ent) then return false end
+
+	if !istable(ent.PartCtrl_ParticleEnts) then return false end
+	local count = table.Count(ent.PartCtrl_ParticleEnts) 
+	if count < 1 then return false end
+	if count == 1 then
+		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
+			if !(IsValid(k) and k:GetClass() == "ent_partctrl" and k.GetPCF) then
+				return false
+			end
+		end
+	end
+
+	return true
+
+end
+
+PartCtrl_EditProperty_MenuOpen = function(self, option, ent)
+
+	//If the entity has one particle effect, then this property is an option to open a window for it; 
+	//if it has multiple particle effects, then this property is a dropdown containing options for each one
+
+	if table.Count(ent.PartCtrl_ParticleEnts) == 1 then
+
+		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
+			option:SetText("Edit Particle Effect (" .. k:GetParticleName() .. ")")
+			option.DoClick = function() OpenPartCtrlEditor(k) end
+		end
+
+	else
+		
+		local submenu = option:AddSubMenu()
+		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
+			if IsValid(k) and k:GetClass() == "ent_partctrl" and k.GetPCF then
+				local opt = submenu:AddOption(k:GetParticleName())
+				opt.DoClick = function() OpenPartCtrlEditor(k) end
+			end
+		end
+
+	end
+
+end
+
 properties.Add("editpartctrl", {
 	MenuLabel = "Edit Particle Effects..",
 	Order = 90000, //for reference, edit properties is 90001 and edit animprop is 90002
 	PrependSpacer = true,
 	MenuIcon = "icon16/fire.png", //TODO: better icon?
 	
-	Filter = function(self, ent, ply)
+	Filter = PartCtrl_EditProperty_Filter,
 
-		if !IsValid(ent) then return false end
-		if !gamemode.Call("CanProperty", ply, "editpartctrl", ent) then return false end
-
-		if !istable(ent.PartCtrl_ParticleEnts) then return false end
-		local count = table.Count(ent.PartCtrl_ParticleEnts) 
-		if count < 1 then return false end
-		if count == 1 then
-			for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
-				if !(IsValid(k) and k:GetClass() == "ent_partctrl" and k.GetPCF) then
-					return false
-				end
-			end
-		end
-
-		return true
-
-	end,
-
-	MenuOpen = function( self, option, ent, tr )
-
-		//If the entity has one particle effect, then this property is an option to open a window for it; 
-		//if it has multiple particle effects, then this property is a dropdown containing options for each one
-
-		if table.Count(ent.PartCtrl_ParticleEnts) == 1 then
-
-			for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
-				option:SetText("Edit Particle Effect (" .. k:GetParticleName() .. ")")
-				option.DoClick = function() OpenPartCtrlEditor(k) end
-			end
-
-		else
-			
-			local submenu = option:AddSubMenu()
-			for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
-				if IsValid(k) and k:GetClass() == "ent_partctrl" and k.GetPCF then
-					local opt = submenu:AddOption(k:GetParticleName())
-					opt.DoClick = function() OpenPartCtrlEditor(k) end
-				end
-			end
-
-		end
-
-	end,
+	MenuOpen = PartCtrl_EditProperty_MenuOpen,
 
 	Action = function(self, ent)
 	
