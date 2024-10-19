@@ -200,6 +200,7 @@ function ENT:Think()
 		end
 
 		//Do renderbounds
+		local extra = Vector(20,20,20) //add arrow length to bounds so it doesn't get cut off at weird angles
 		if IsValid(self.particle) and self.particle.GetRenderBounds then
 			//Cache which cpoint the renderbounds are relative to, so we don't have to keep retrieving this
 			if self.ParticleInfo_LastCPoint == nil then
@@ -236,14 +237,14 @@ function ENT:Think()
 			end
 			if pos then
 				local mins, maxs = self.particle:GetRenderBounds()
-				local extra = Vector(20,20,20) //add arrow length to bounds so it doesn't get cut off at weird angles
-				mins = mins + pos //- extra
-				maxs = maxs + pos //+ extra
+				mins = mins + pos
+				maxs = maxs + pos
 				self:SetRenderBoundsWS(mins, maxs, extra)
-				self._wsmins = mins
-				self._wsmaxs = maxs
+				//self._wsmins = mins
+				//self._wsmaxs = maxs
 			end
 		elseif self.utilfx then
+			//For utilfx, just make our renderbounds a box around all the cpoints, so that helpers render when any cpoint is on-screen
 			local mins, maxs
 			for k, v in pairs (self.ParticleInfo) do
 				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
@@ -270,8 +271,9 @@ function ENT:Think()
 				end
 			end
 			if mins then
-				local extra = Vector(20,20,20) //add arrow length to bounds so it doesn't get cut off at weird angles
 				self:SetRenderBoundsWS(mins, maxs, extra)
+				//self._wsmins = mins
+				//self._wsmaxs = maxs
 			end
 		end
 
