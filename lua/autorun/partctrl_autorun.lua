@@ -358,12 +358,26 @@ list.Set("PartCtrl_UtilFx", "AirboatGunImpact", impact_noflags_nosurfaceprop) //
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_antlion.cpp#L334
 list.Set("PartCtrl_UtilFx", "AntlionGib", {
 	title = "Garry's Mod",
-	default_time = 0.75, //max effect lifetime from code
+	//default_time = 0.75, //max effect lifetime from code
+	default_time = 3, //gib lifetime from code (2) + 1 sec fadeout time
 	cpoint_origin = 0,
 	cpoint_normal = 0,
 	scale = {min = 0, max = 10, default = 4, label = "Gib Velocity Scale"}, //max of 10 because these are really strong units and even 10 sends the gibs flying super far; default from the only code i could find that uses this effect (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_vortigaunt_episodic.cpp#L921)
 })
-//TODO: this effect only creates gibs if the client has precached the models, i.e. by spawning an antlion. the effect does not do so on its own. how can this addon precache them?
+//This effect only creates gibs if the client has precached the models (i.e. by spawning an antlion), it does not do so on its own, so precache them here instead.
+for _, model in pairs ({
+	"models/gibs/antlion_gib_large_1.mdl",
+	"models/gibs/antlion_gib_large_2.mdl",
+	"models/gibs/antlion_gib_large_3.mdl",
+	"models/gibs/antlion_gib_medium_1.mdl",
+	"models/gibs/antlion_gib_medium_2.mdl",
+	"models/gibs/antlion_gib_medium_3.mdl",
+	"models/gibs/antlion_gib_small_1.mdl",
+	"models/gibs/antlion_gib_small_2.mdl",
+	"models/gibs/antlion_gib_small_3.mdl"
+}) do
+	util.PrecacheModel(model)
+end
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/game/client/hl2/c_weapon_crossbow.cpp#L159
 list.Set("PartCtrl_UtilFx", "CrossbowLoad", {
