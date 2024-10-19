@@ -640,6 +640,9 @@ if CLIENT then
 					pattach = PATTACH_ABSORIGIN_FOLLOW
 				end
 				self.particle = CreateParticleSystem(ent, self:GetParticleName(), pattach, attach, self.ParticleInfo[k].pos)
+				//if self.particle and self.particle:IsValid() then
+				//	self.particle:SetIsViewModelEffect(false) //thought this would fix the position issues on viewmodel effects, but it doesn't change anything
+				//end
 				return true
 			end
 		end
