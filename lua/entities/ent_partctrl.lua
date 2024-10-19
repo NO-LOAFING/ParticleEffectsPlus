@@ -839,7 +839,7 @@ if CLIENT then
 			net.WriteUInt(EditMenuInputs[input], EditMenuInputs_bits)
 
 			if string.StartsWith(input, "cpoint_") then
-				net.WriteInt(args[1], partctrl_cpointbits) //cpoint id
+				net.WriteInt(args[1], partctrl_cpointbits) //cpoint id, can be -1
 			end
 
 			if input == "cpoint_mode" then
@@ -927,7 +927,7 @@ else
 
 		local k = nil
 		if string.StartsWith(input, "cpoint_") then
-			k = net.ReadInt(partctrl_cpointbits)
+			k = net.ReadInt(partctrl_cpointbits) //cpoint id, can be -1
 		end
 		local refreshtable = false
 
