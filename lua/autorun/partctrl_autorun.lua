@@ -102,7 +102,6 @@ list.Set("PartCtrl_UtilFx", "CommandPointer", {
 	cpoint_origin = 0,
 	//cpoint_angles = , //hl2 code that calls this effect sets angles and normal to zero, but these values aren't actually used in the effect code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/proto_sniper.cpp#L1875)
 	//cpoint_normal = ,
-	//color = {min = 0, max = 3, default = 0, decimals = 0, label = "Color"}, 
 	color = {default = 0, label = "Color", options = { //sets key from table "commandercolors" (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/effect_color_tables.h#L34)
 		[0] = "Red",
 		[1] = "Blue",
@@ -442,7 +441,7 @@ list.Set("PartCtrl_UtilFx", "cball_bounce", {
 list.Set("PartCtrl_UtilFx", "HL1ShellEject", {
 	title = "Half-Life: Source",
 	default_time = 1,
-	flags_dropdown = {default = 0, label = "Type", options = {
+	flags_dropdown = {default = 0, label = "Shell Type", options = {
 		[0] = "Shell",
 		[1] = "Shotgun shell",
 	}},
@@ -451,11 +450,32 @@ list.Set("PartCtrl_UtilFx", "HL1ShellEject", {
 	vector_start = {cpoint = 1, min = Vector(-512,-512,-512), max = Vector(512,512,512), default = Vector(0,0,0), label = "Velocity"}, //this is relative to the world, not an attachment, so the default will have to be 0
 })
 
-//TODO: the rest, HL1Gib onward; already did all the hl2 Tracer ones and ImpactGunship
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L306
+list.Set("PartCtrl_UtilFx", "HL1Gib", {
+	title = "Half-Life: Source",
+	default_time = 10,
+	cpoint_origin = 0,
+	cpoint_normal = 0,
+	//callback function supplies a Scale value, and the effect function itself has an arg for it, but the value isn't actually used anywhere
+	material = {default = 1, label = "Gib Type", options = {
+		[1] = "Human gibs",
+		[2] = "Alien gibs",
+	}},
+	hitbox = {default = 0, label = "Gib Velocity", options = { //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L190-L201
+		[0] = "70%",
+		[50] = "200%",
+		[200] = "400%",
+	}},
+	color = {default = 0, label = "Particle Color", options = { //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L25
+		[0] = "Red",
+		[1] = "\"Green\"",
+		[2] = "Yellow",
+	}},
+})
+util.PrecacheModel("models/gibs/hghl1.mdl")
+util.PrecacheModel("models/gibs/aghl1.mdl")
 
-
-
+//TODO: the rest, HL1GaussWallImpact1 onward; already did all the hl2 Tracer ones and ImpactGunship
 
 
 
@@ -2179,24 +2199,7 @@ function PartCtrl_ProcessUtilFx()
 				end
 			end
 
-			//Add axis control for color
-			--[[for i, c in pairs (utilfx_axisvalues2) do
-				local c2 = string.lower(c)
-				if istable(v[c2]) then
-					cpoint_addtoprocessed(t, 33, "util.Effect EffectData:Set" .. c .. "()", "axis", {
-						["axis"] = i,
-						["pattrib"] = v[c2].label,
-						["inMin"] = v[c2].min,
-						["inMax"] = v[c2].max,
-						["outMin"] = v[c2].min,
-						["outMax"] = v[c2].max,
-						["default"] = v[c2].default,
-						["decimals"] = v[c2].decimals,
-					})
-					t.defaults[33] = PARTCTRL_CPOINT_MODE_AXIS
-				end
-			end]]
-			//Actually this works better as a dropdown
+			//Add axis control (dropdown) for color
 			if v.color then
 				local min
 				local max
@@ -2223,7 +2226,7 @@ function PartCtrl_ProcessUtilFx()
 				t.defaults[33] = PARTCTRL_CPOINT_MODE_AXIS
 			end
 
-			//Add axis control for surfaceprop
+			//Add axis control (dropdown) for surfaceprop
 			if v.surfaceprop then
 				local options = {}
 				for i = 0, 127 do
@@ -2243,6 +2246,60 @@ function PartCtrl_ProcessUtilFx()
 				t.defaults[33] = PARTCTRL_CPOINT_MODE_AXIS
 			end
 
+			//Add axis control (dropdown) for material
+			if v.material then
+				local min
+				local max
+				for k, v in pairs (v.material.options) do
+					if min == nil then
+						min = k
+						max = k
+					else
+						min = math.min(k, min)
+						max = math.max(k, max)
+					end
+				end
+				cpoint_addtoprocessed(t, 33, "util.Effect EffectData:SetMaterial()", "axis", {
+					["axis"] = 2,
+					["pattrib"] = v.material.label,
+					["inMin"] = min,
+					["inMax"] = max,
+					["outMin"] = min,
+					["outMax"] = max,
+					["default"] = v.material.default,
+					["decimals"] = 0,
+					["dropdown"] = v.material.options,
+				})
+				t.defaults[33] = PARTCTRL_CPOINT_MODE_AXIS
+			end
+
+			//Add axis control (dropdown) for hitbox
+			if v.hitbox then
+				local min
+				local max
+				for k, v in pairs (v.hitbox.options) do
+					if min == nil then
+						min = k
+						max = k
+					else
+						min = math.min(k, min)
+						max = math.max(k, max)
+					end
+				end
+				cpoint_addtoprocessed(t, 34, "util.Effect EffectData:SetMaterial()", "axis", {
+					["axis"] = 0,
+					["pattrib"] = v.hitbox.label,
+					["inMin"] = min,
+					["inMax"] = max,
+					["outMin"] = min,
+					["outMax"] = max,
+					["default"] = v.hitbox.default,
+					["decimals"] = 0,
+					["dropdown"] = v.hitbox.options,
+				})
+				t.defaults[34] = PARTCTRL_CPOINT_MODE_AXIS
+			end
+
 			//Add axis controls for flags - internally these all use different axes of cpoint 34, and then when the ent creates the effect, it adds them all together
 			if v.flags_dropdown then
 				//Creates a dropdown control in the editor instead of a slider, but still uses axis internally for networking and dupes and stuff, so fill out all the necessary axis values
@@ -2258,7 +2315,7 @@ function PartCtrl_ProcessUtilFx()
 						max = math.max(k, max)
 					end
 				end
-				cpoint_addtoprocessed(t, 34, "util.Effect EffectData:SetFlags() dropdown", "axis", {
+				cpoint_addtoprocessed(t, 35, "util.Effect EffectData:SetFlags() dropdown", "axis", {
 					["axis"] = 0,
 					["pattrib"] = v.flags_dropdown.label,
 					["inMin"] = min,
@@ -2269,7 +2326,7 @@ function PartCtrl_ProcessUtilFx()
 					["decimals"] = 0,
 					["dropdown"] = v.flags_dropdown.options,
 				})
-				t.defaults[34] = PARTCTRL_CPOINT_MODE_AXIS
+				t.defaults[35] = PARTCTRL_CPOINT_MODE_AXIS
 			end
 			if v.flags_checkboxes then
 				//Similar to above, create a series of checkboxes in the editor instead of a slider, but works internally by setting an axis value to the sum of the checkbox values
@@ -2285,7 +2342,7 @@ function PartCtrl_ProcessUtilFx()
 					end
 					pattrib = pattrib .. v
 				end
-				cpoint_addtoprocessed(t, 34, "util.Effect EffectData:SetFlags() checkboxes", "axis", {
+				cpoint_addtoprocessed(t, 35, "util.Effect EffectData:SetFlags() checkboxes", "axis", {
 					["axis"] = 1,
 					["pattrib"] = pattrib,
 					["inMin"] = min,
@@ -2296,10 +2353,8 @@ function PartCtrl_ProcessUtilFx()
 					["decimals"] = 0,
 					["checkboxes"] = v.flags_checkboxes.options,
 				})
-				t.defaults[34] = PARTCTRL_CPOINT_MODE_AXIS
+				t.defaults[35] = PARTCTRL_CPOINT_MODE_AXIS
 			end
-
-			//TODO: flags and other stuff once we implement them
 
 			//Add to table of all utilfx by "title" value (what game or addon folder they're placed in)
 			local function addtotab(str)

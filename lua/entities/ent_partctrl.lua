@@ -600,7 +600,7 @@ if CLIENT then
 				end
 			end
 
-			//Get color, surfaceprop value from axis controls
+			//Get color, surfaceprop, material value from axis controls
 			if self.ParticleInfo[33] and self.ParticleInfo[33].val then
 				if tab.color then
 					ed:SetColor(self.ParticleInfo[33].val.x)
@@ -608,14 +608,22 @@ if CLIENT then
 				if tab.surfaceprop then
 					ed:SetSurfaceProp(self.ParticleInfo[33].val.y)
 				end
+				if tab.material then
+					ed:SetMaterialIndex(self.ParticleInfo[33].val.z)
+				end
+			end
+
+			//Get hitbox value from axis controls
+			if self.ParticleInfo[34] and self.ParticleInfo[34].val then
+				if tab.color then
+					ed:SetHitBox(self.ParticleInfo[34].val.x)
+				end
 			end
 
 			//Get flags value from axis controls - this uses multiple axes to store checkbox and dropdown values, which we just add together to get our final flag value
-			if self.ParticleInfo[34] and self.ParticleInfo[34].val then
-				ed:SetFlags(self.ParticleInfo[34].val.x + self.ParticleInfo[34].val.y + self.ParticleInfo[34].val.z)
+			if self.ParticleInfo[35] and self.ParticleInfo[35].val then
+				ed:SetFlags(self.ParticleInfo[35].val.x + self.ParticleInfo[35].val.y + self.ParticleInfo[35].val.z)
 			end
-
-			//TODO: other unconventional values?
 
 			util.Effect(self:GetParticleName(), ed, true)
 			return
