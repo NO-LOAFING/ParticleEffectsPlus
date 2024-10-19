@@ -215,7 +215,7 @@ function ENT:Think()
 				end
 			end
 			//Set our renderbounds to the particle renderbounds, so that we run our Draw func whenever any part of the particle is visible; these are relative to the last position cpoint
-			local pos = nil
+			local pos
 			local v = self.ParticleInfo[self.ParticleInfo_LastCPoint]
 			if v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
 				v = self.ParticleInfo[self.ParticleInfo_FirstPos]
@@ -242,6 +242,36 @@ function ENT:Think()
 				self:SetRenderBoundsWS(mins, maxs, extra)
 				self._wsmins = mins
 				self._wsmaxs = maxs
+			end
+		elseif self.utilfx then
+			local mins, maxs
+			for k, v in pairs (self.ParticleInfo) do
+				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+					if IsValid(v.ent) then
+						local pos
+						if IsValid(v.ent.AttachedEntity) then
+							pos = v.ent.AttachedEntity:GetAttachment(v.attach)
+						else
+							pos = v.ent:GetAttachment(v.attach)
+						end
+						if istable(pos) then
+							pos = pos.Pos
+						else
+							pos = v.ent:GetPos() + v.pos
+						end
+						if !mins then
+							mins = pos
+							maxs = pos
+						else
+							mins = Vector(math.min(mins.x,pos.x), math.min(mins.y,pos.y), math.min(mins.z,pos.z))
+							maxs = Vector(math.max(maxs.x,pos.x), math.max(maxs.y,pos.y), math.max(maxs.z,pos.z))
+						end
+					end
+				end
+			end
+			if mins then
+				local extra = Vector(20,20,20) //add arrow length to bounds so it doesn't get cut off at weird angles
+				self:SetRenderBoundsWS(mins, maxs, extra)
 			end
 		end
 
