@@ -353,7 +353,7 @@ function PANEL:DoPosCPoints(p)
 		//MsgN(i, " = ", pos)
 
 		if p == self.particle2 and self.particle2_playerposfix then
-			p:AddControlPoint(k, LocalPlayer(), PATTACH_ABSORIGIN_FOLLOW, 0, pos)
+			p:AddControlPoint(k, LocalPlayer(), PATTACH_ABSORIGIN_FOLLOW, nil, pos)
 		else
 			p:SetControlPoint(k, pos + origin)
 		end
@@ -361,7 +361,7 @@ function PANEL:DoPosCPoints(p)
 		if !done_position_combine then
 			for _, k2 in pairs (self.iPositionCombine) do
 				if p == self.particle2 and self.particle2_playerposfix then
-					p:AddControlPoint(k2, LocalPlayer(), PATTACH_ABSORIGIN_FOLLOW, 0, pos)
+					p:AddControlPoint(k2, LocalPlayer(), PATTACH_ABSORIGIN_FOLLOW, nil, pos)
 				else
 					p:SetControlPoint(k2, pos + origin)
 				end

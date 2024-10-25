@@ -679,15 +679,12 @@ if CLIENT then
 						local ent = tab.ent
 						if IsValid(ent) then
 							if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
-							//The wiki is wrong: unlike CreateParticleSystem, the attachment id arg for this function actually needs to be a string!
+							//unlike CreateParticleSystem, the attachment id arg for this function actually needs to be a string
 							local attachstr = ent:GetAttachments()
 							local pattach = PATTACH_POINT_FOLLOW
 							if attachstr[tab.attach] and attachstr[tab.attach].name then
 								attachstr = attachstr[tab.attach].name
 							else
-								//always dumps error in console "Model '(null)' doesn't have attachment '' to attach particle system '_' to."
-								//unless we give it a valid attachment name. changing to PATTACH_ABSORIGIN_FOLLOW doesn't fix this, even though 
-								//that pattach type doesn't even use attachments. this doesn't actually matter but it's messy, bleh.
 								attachstr = nil
 								pattach = PATTACH_ABSORIGIN_FOLLOW
 							end
