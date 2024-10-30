@@ -475,7 +475,92 @@ list.Set("PartCtrl_UtilFx", "HL1Gib", {
 util.PrecacheModel("models/gibs/hghl1.mdl")
 util.PrecacheModel("models/gibs/aghl1.mdl")
 
-//TODO: the rest, HL1GaussWallImpact1 onward; already did all the hl2 Tracer ones and ImpactGunship
+//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L215
+list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact1", {
+	title = "Half-Life: Source",
+	default_time = 7, //sprite lifetime from code, + 1 for fadeout
+	cpoint_origin = 0,
+	magnitude = {min = 0, max = 255, default = 200, decimals = 0, label = "Alpha"} //this is the "damage" value of the gauss beam, which is from 1-200, but it still functions up to 255 https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_weapon_gauss.cpp#L521
+})
+
+//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L225
+list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact2", {
+	title = "Half-Life: Source",
+	default_time = 5, //rough average lifetime, can't figure out how this is determined in code
+	cpoint_origin = 0,
+	cpoint_normal = 0,
+})
+
+//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L186
+list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchEnter", {
+	title = "Half-Life: Source",
+	default_time = 5, //rough average lifetime, can't figure out how this is determined in code
+	cpoint_origin = 0,
+	cpoint_normal = 0,
+})
+
+//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L199
+list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
+	title = "Half-Life: Source",
+	default_time = 7, //impact sprite lifetime from code, + 1 for fadeout
+	cpoint_origin = 0,
+	cpoint_normal = 0,
+	magnitude = {min = 0, max = 255/1.2, default = 200, decimals = 0, label = "Alpha, Spark Multiplier"} //again, this uses the gauss damage value, but the alpha for the impact sprite uses magnitude*1.2, so we have to cap this at 255/1.2 so the alpha won't overflow and glitch out
+})
+
+//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L170
+list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
+	title = "Half-Life: Source",
+	default_time = 11, //sprite lifetime at default magnitude (see comments) + 1 for fadeout
+	cpoint_origin = 0,
+	cpoint_normal = 0,
+	magnitude = {min = 0, max = 255, default = 200, decimals = 0, label = "Alpha, Lifetime Multiplier"} //still uses the damage value for alpha, but also controls the lifetime of the sprite (flMagnitude * 0.05) 
+})
+
+//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L117
+list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
+	title = "Half-Life: Source",
+	default_time = 0.1, //lifetime from code
+	cpoint_start = 0,
+	cpoint_origin = 1,
+	flags_dropdown = {default = 1, label = "Beam Type", options = {
+		[0] = "Secondary fire",
+		[1] = "Primary fire",
+	}},
+})
+
+//Hard-coded to only function if attached to a player, and automatically attaches to cpoint 1 of their weapon. Looks identical to HL1GaussBeamReflect except the start of the beam
+//follows the attachment. I think we'll do without this one.
+//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L35
+--[[list.Set("PartCtrl_UtilFx", "HL1GaussBeam", {
+	title = "Half-Life: Source",
+	default_time = 0.1, //lifetime from code
+	cpoint_start = 0,
+	cpoint_origin = 1,
+	cpoint_entity = 0,
+	//cpoint_attachment = 0,
+	flags_dropdown = {default = 1, label = "Beam Type", options = {
+		[0] = "Secondary fire",
+		[1] = "Primary fire",
+	}},
+})]]
+
+//No code for this one; the only gmod effect not listed on https://wiki.facepunch.com/gmod/Default_Effects, found it by checking the effects_list concommand
+//Appears identical to HL1GaussBeamReflect, doesn't even have the special follow-the-attachment-point functionality of the regular HL1GaussBeam.
+list.Set("PartCtrl_UtilFx", "HL1GaussBeam_GMOD", {
+	title = "Half-Life: Source",
+	default_time = 0.1, //lifetime from code
+	cpoint_start = 0,
+	cpoint_origin = 1,
+	//cpoint_entity = 0, //not documented, doesn't appear to do anything
+	//cpoint_attachment = 0, //^
+	flags_dropdown = {default = 1, label = "Beam Type", options = {
+		[0] = "Secondary fire",
+		[1] = "Primary fire",
+	}},
+})
+
+//TODO: the rest, EjectBrass_338Mag onward; already did all the hl2 Tracer ones and ImpactGunship https://wiki.facepunch.com/gmod/Default_Effects
 
 
 
