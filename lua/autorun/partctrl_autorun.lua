@@ -545,7 +545,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 	}},
 })]]
 
-//No code for this one; the only gmod effect not listed on https://wiki.facepunch.com/gmod/Default_Effects, found it by checking the effects_list concommand
+//No code for this one; the only utileffect not listed on https://wiki.facepunch.com/gmod/Default_Effects, found it by checking the effects_list concommand
 //Appears identical to HL1GaussBeamReflect, doesn't even have the special follow-the-attachment-point functionality of the regular HL1GaussBeam.
 list.Set("PartCtrl_UtilFx", "HL1GaussBeam_GMOD", {
 	title = "Half-Life: Source",
@@ -560,7 +560,49 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeam_GMOD", {
 	}},
 })
 
-//TODO: the rest, EjectBrass_338Mag onward; already did all the hl2 Tracer ones and ImpactGunship https://wiki.facepunch.com/gmod/Default_Effects
+//https://github.com/mastercomfig/tf2-patches/blob/master/src/game/client/cstrike/fx_cs_weaponfx.cpp#L16
+local cstrikeshells = {
+	title = "Counter-Strike: Source",
+	default_time = 1, //arbitrary; these take 10 whole seconds to fade out which is too much
+	cpoint_origin = 0,
+	cpoint_angles = 0,
+	flags_slider = {min = 0, max = 1000, default = 100, decimals = 0, label = "Velocity"} //past 1000 or so, they're moving too fast to be perceptible, so that's a good arbitrary stopping point
+}
+//this effect isn't called in code, but rather in model .qc files; if you search for an effect name + .qc on github, you'll see the velocity values they use are all over the place:
+///EjectBrass_338Mag 70 80
+//EjectBrass_762Nato 75 150 90 100 40 80
+//EjectBrass_556 150 130 125 90 105 85 75 80
+//EjectBrass_57 100
+//EjectBrass_12Gauge 70 95 90 
+//EjectBrass_9mm 100 65 75 90
+list.Set("PartCtrl_UtilFx", "EjectBrass_338Mag", cstrikeshells)
+list.Set("PartCtrl_UtilFx", "EjectBrass_762Nato", cstrikeshells)
+list.Set("PartCtrl_UtilFx", "EjectBrass_556", cstrikeshells)
+list.Set("PartCtrl_UtilFx", "EjectBrass_57", cstrikeshells)
+list.Set("PartCtrl_UtilFx", "EjectBrass_12Gauge", cstrikeshells)
+list.Set("PartCtrl_UtilFx", "EjectBrass_9mm", cstrikeshells)
+
+//https://github.com/GEEKiDoS/cstrike-asw/blob/master/src/game/client/cstrike/fx_cs_muzzleflash.cpp#L95C6-L95C29
+list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash_X", {
+	title = "Counter-Strike: Source",
+	default_time = 0.08, //lifetime value from code
+	cpoint_entity = 0,
+	cpoint_attachment = 0,
+	info = needs_attachment,
+	scale = {min = 0, max = 38, default = 1.5, label = "Scale"}, //starts to overflow and go back to being small once you get to 40 or so, not sure what's going on here in code; this effect is called by weapon scripts, and the scales they use are all over the place too (1.6, 1.5, 1.3, 1.2) (https://github.com/search?q=CS_MuzzleFlash_X+language%3AText&type=code&l=Text)
+})
+
+//https://github.com/GEEKiDoS/cstrike-asw/blob/master/src/game/client/cstrike/fx_cs_muzzleflash.cpp#L22
+list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash", {
+	title = "Counter-Strike: Source",
+	default_time = 0.08, //lifetime value from code
+	cpoint_entity = 0,
+	cpoint_attachment = 0,
+	info = needs_attachment,
+	scale = {min = 0, max = 85, default = 1, label = "Scale"}, //different max before it overflows, different default (1, 1.35, 1.3, 1.2, 1.1, 1.15) (https://github.com/search?q=CS_MuzzleFlash+language%3AText&type=code)
+})
+
+//TODO: the rest, MuzzleEffect onward; already did all the hl2 Tracer ones and ImpactGunship https://wiki.facepunch.com/gmod/Default_Effects
 
 
 
@@ -2437,6 +2479,19 @@ function PartCtrl_ProcessUtilFx()
 					["default"] = v.flags_checkboxes.default,
 					["decimals"] = 0,
 					["checkboxes"] = v.flags_checkboxes.options,
+				})
+				t.defaults[35] = PARTCTRL_CPOINT_MODE_AXIS
+			end
+			if v.flags_slider then
+				cpoint_addtoprocessed(t, 35, "util.Effect EffectData:SetFlags() slider", "axis", {
+					["axis"] = 2,
+					["pattrib"] = v.flags_slider.label,
+					["inMin"] = v.flags_slider.min,
+					["inMax"] = v.flags_slider.max,
+					["outMin"] = v.flags_slider.min,
+					["outMax"] = v.flags_slider.max,
+					["default"] = v.flags_slider.default,
+					["decimals"] = v.flags_slider.decimals,
 				})
 				t.defaults[35] = PARTCTRL_CPOINT_MODE_AXIS
 			end
