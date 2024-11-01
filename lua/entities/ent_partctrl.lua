@@ -483,149 +483,157 @@ if CLIENT then
 
 	end
 
+	//Convenience func for utilfx
+	function ENT:CPointPosAng(k)
+
+		if self.cpoint_posang[k] then return self.cpoint_posang[k] end
+
+		if !self.ParticleInfo[k] then return end
+		local ent = self.ParticleInfo[k].ent
+		if IsValid(ent) then
+			local pos = nil
+			local ang = nil
+			if IsValid(ent.AttachedEntity) then
+				pos = ent.AttachedEntity:GetAttachment(self.ParticleInfo[k].attach)
+			else
+				pos = ent:GetAttachment(self.ParticleInfo[k].attach)
+			end
+			if istable(pos) then
+				ang = pos.Ang
+				pos = pos.Pos
+			else
+				ang = ent:GetAngles()
+				pos = ent:GetPos() + self.ParticleInfo[k].pos
+			end
+			self.cpoint_posang[k] = {["ang"] = ang, ["pos"] = pos}
+			return self.cpoint_posang[k]
+		end
+
+	end
+
 	function ENT:StartParticle()
 
 		//If doing utilfx, then do that and stop here
 		if self.utilfx then
+			if false then
+				//Get values from position controls
+				if tab.cpoint_angles then
+					local k = tab.cpoint_angles
+					if !cpoint_posang[k] then DoCPointPosAng(k) end
+					if cpoint_posang[k] then
+						ed:SetAngles(cpoint_posang[k].ang)
+					end
+				end
+				if tab.cpoint_normal then
+					local k = tab.cpoint_normal
+					if !cpoint_posang[k] then DoCPointPosAng(k) end
+					if cpoint_posang[k] then
+						//Results in bad effects if pointed exactly up or down (see AR2Explosion), so tilt it just a bit in those cases
+						local norm = cpoint_posang[k].ang:Forward()
+						if math.Round(norm.x, 6) == 0 and math.Round(norm.y, 6) == 0 then norm.x = 0.00001 end
+						ed:SetNormal(norm)
+					end
+				end
+				if tab.cpoint_attachment then
+					ed:SetAttachment(self.ParticleInfo[tab.cpoint_attachment].attach)
+				end
+				if tab.cpoint_entity then
+					local ent = self.ParticleInfo[tab.cpoint_entity].ent
+					if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+					//special functionality for impact fx: set effect entity to world if unattached
+					if tab.impact_entity then
+						if ent:GetClass() == "ent_partctrl_grip" then
+							ent = game.GetWorld()
+						end
+						//TODO: implement damagetype? doesn't seem to do anything except handle one special decal type, so just set it to default here to prevent issues.
+						ed:SetDamageType(0)
+					end
+					ed:SetEntity(ent)
+				end
+				if tab.cpoint_origin then
+					local k = tab.cpoint_origin
+					if !cpoint_posang[k] then DoCPointPosAng(k) end
+					if cpoint_posang[k] then
+						ed:SetOrigin(cpoint_posang[k].pos)
+					end
+				end
+				if tab.cpoint_start then
+					local k = tab.cpoint_start
+					if !cpoint_posang[k] then DoCPointPosAng(k) end
+					if cpoint_posang[k] then
+						ed:SetStart(cpoint_posang[k].pos)
+					end
+				end
+				//Get values from vectors
+				if tab.vector_angles then
+					local k = tab.vector_angles.cpoint
+					if self.ParticleInfo[k].val then
+						ed:SetAngles(self.ParticleInfo[k].val)
+					end
+				end
+				if tab.vector_normal then
+					local k = tab.vector_normal.cpoint
+					if self.ParticleInfo[k].val then
+						ed:SetNormal(self.ParticleInfo[k].val)
+					end
+				end
+				if tab.vector_origin then
+					local k = tab.vector_origin.cpoint
+					if self.ParticleInfo[k].val then
+						ed:SetOrigin(self.ParticleInfo[k].val)
+					end
+				end
+				if tab.vector_start then
+					local k = tab.vector_start.cpoint
+					if self.ParticleInfo[k].val then
+						ed:SetStart(self.ParticleInfo[k].val)
+					end
+				end
+
+				//Get scale, magnitude, radius values from axis controls
+				if self.ParticleInfo[32] and self.ParticleInfo[32].val then
+					if tab.scale then
+						ed:SetScale(self.ParticleInfo[32].val.x)
+					end
+					if tab.magnitude then
+						ed:SetMagnitude(self.ParticleInfo[32].val.y)
+					end
+					if tab.radius then
+						ed:SetRadius(self.ParticleInfo[32].val.z)
+					end
+				end
+
+				//Get color, surfaceprop, material value from axis controls
+				if self.ParticleInfo[33] and self.ParticleInfo[33].val then
+					if tab.color then
+						ed:SetColor(self.ParticleInfo[33].val.x)
+					end
+					if tab.surfaceprop then
+						ed:SetSurfaceProp(self.ParticleInfo[33].val.y)
+					end
+					if tab.material then
+						ed:SetMaterialIndex(self.ParticleInfo[33].val.z)
+					end
+				end
+
+				//Get hitbox value from axis controls
+				if self.ParticleInfo[34] and self.ParticleInfo[34].val then
+					if tab.color then
+						ed:SetHitBox(self.ParticleInfo[34].val.x)
+					end
+				end
+
+				//Get flags value from axis controls - this uses multiple axes to store checkbox and dropdown values, which we just add together to get our final flag value
+				if self.ParticleInfo[35] and self.ParticleInfo[35].val then
+					ed:SetFlags(self.ParticleInfo[35].val.x + self.ParticleInfo[35].val.y + self.ParticleInfo[35].val.z)
+				end
+			end
+
+			self.cpoint_posang = {} //Reset this table every time
 			local ed = EffectData()
-			local tab = list.GetForEdit("PartCtrl_UtilFx", true)[self:GetParticleName()]
-
-			local cpoint_posang = {}
-			local function DoCPointPosAng(k)
-				if !self.ParticleInfo[k] then return end
-				local ent = self.ParticleInfo[k].ent
-				if IsValid(ent) then
-					local pos = nil
-					local ang = nil
-					if IsValid(ent.AttachedEntity) then
-						pos = ent.AttachedEntity:GetAttachment(self.ParticleInfo[k].attach)
-					else
-						pos = ent:GetAttachment(self.ParticleInfo[k].attach)
-					end
-					if istable(pos) then
-						ang = pos.Ang
-						pos = pos.Pos
-					else
-						ang = ent:GetAngles()
-						pos = ent:GetPos() + self.ParticleInfo[k].pos
-					end
-					cpoint_posang[k] = {["ang"] = ang, ["pos"] = pos}
-				end
+			if list.GetForEdit("PartCtrl_UtilFx", true)[self:GetParticleName()].DoEffect(self, ed) then
+				util.Effect(self:GetParticleName(), ed, true)
 			end
-
-			//Get values from position controls
-			if tab.cpoint_angles then
-				local k = tab.cpoint_angles
-				if !cpoint_posang[k] then DoCPointPosAng(k) end
-				if cpoint_posang[k] then
-					ed:SetAngles(cpoint_posang[k].ang)
-				end
-			end
-			if tab.cpoint_normal then
-				local k = tab.cpoint_normal
-				if !cpoint_posang[k] then DoCPointPosAng(k) end
-				if cpoint_posang[k] then
-					//Results in bad effects if pointed exactly up or down (see AR2Explosion), so tilt it just a bit in those cases
-					local norm = cpoint_posang[k].ang:Forward()
-					if math.Round(norm.x, 6) == 0 and math.Round(norm.y, 6) == 0 then norm.x = 0.00001 end
-					ed:SetNormal(norm)
-				end
-			end
-			if tab.cpoint_attachment then
-				ed:SetAttachment(self.ParticleInfo[tab.cpoint_attachment].attach)
-			end
-			if tab.cpoint_entity then
-				local ent = self.ParticleInfo[tab.cpoint_entity].ent
-				if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
-				//special functionality for impact fx: set effect entity to world if unattached
-				if tab.impact_entity then
-					if ent:GetClass() == "ent_partctrl_grip" then
-						ent = game.GetWorld()
-					end
-					//TODO: implement damagetype? doesn't seem to do anything except handle one special decal type, so just set it to default here to prevent issues.
-					ed:SetDamageType(0)
-				end
-				ed:SetEntity(ent)
-			end
-			if tab.cpoint_origin then
-				local k = tab.cpoint_origin
-				if !cpoint_posang[k] then DoCPointPosAng(k) end
-				if cpoint_posang[k] then
-					ed:SetOrigin(cpoint_posang[k].pos)
-				end
-			end
-			if tab.cpoint_start then
-				local k = tab.cpoint_start
-				if !cpoint_posang[k] then DoCPointPosAng(k) end
-				if cpoint_posang[k] then
-					ed:SetStart(cpoint_posang[k].pos)
-				end
-			end
-			//Get values from vectors
-			if tab.vector_angles then
-				local k = tab.vector_angles.cpoint
-				if self.ParticleInfo[k].val then
-					ed:SetAngles(self.ParticleInfo[k].val)
-				end
-			end
-			if tab.vector_normal then
-				local k = tab.vector_normal.cpoint
-				if self.ParticleInfo[k].val then
-					ed:SetNormal(self.ParticleInfo[k].val)
-				end
-			end
-			if tab.vector_origin then
-				local k = tab.vector_origin.cpoint
-				if self.ParticleInfo[k].val then
-					ed:SetOrigin(self.ParticleInfo[k].val)
-				end
-			end
-			if tab.vector_start then
-				local k = tab.vector_start.cpoint
-				if self.ParticleInfo[k].val then
-					ed:SetStart(self.ParticleInfo[k].val)
-				end
-			end
-
-			//Get scale, magnitude, radius values from axis controls
-			if self.ParticleInfo[32] and self.ParticleInfo[32].val then
-				if tab.scale then
-					ed:SetScale(self.ParticleInfo[32].val.x)
-				end
-				if tab.magnitude then
-					ed:SetMagnitude(self.ParticleInfo[32].val.y)
-				end
-				if tab.radius then
-					ed:SetRadius(self.ParticleInfo[32].val.z)
-				end
-			end
-
-			//Get color, surfaceprop, material value from axis controls
-			if self.ParticleInfo[33] and self.ParticleInfo[33].val then
-				if tab.color then
-					ed:SetColor(self.ParticleInfo[33].val.x)
-				end
-				if tab.surfaceprop then
-					ed:SetSurfaceProp(self.ParticleInfo[33].val.y)
-				end
-				if tab.material then
-					ed:SetMaterialIndex(self.ParticleInfo[33].val.z)
-				end
-			end
-
-			//Get hitbox value from axis controls
-			if self.ParticleInfo[34] and self.ParticleInfo[34].val then
-				if tab.color then
-					ed:SetHitBox(self.ParticleInfo[34].val.x)
-				end
-			end
-
-			//Get flags value from axis controls - this uses multiple axes to store checkbox and dropdown values, which we just add together to get our final flag value
-			if self.ParticleInfo[35] and self.ParticleInfo[35].val then
-				ed:SetFlags(self.ParticleInfo[35].val.x + self.ParticleInfo[35].val.y + self.ParticleInfo[35].val.z)
-			end
-
-			util.Effect(self:GetParticleName(), ed, true)
 			return
 		end
 
