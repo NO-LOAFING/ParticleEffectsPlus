@@ -78,10 +78,7 @@ list.Set("PartCtrl_UtilFx", "ManhackSparks", {
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:CPointPosAng(0).pos)
 		ed:SetAngles(self:CPointPosAng(0).ang) //func retrieves this value but doesn't actually use it for anything
-
-		local norm = self:CPointPosAng(0).ang:Forward()
-		if math.Round(norm.x, 6) == 0 and math.Round(norm.y, 6) == 0 then norm.x = 0.00001 end //Results in bad effects if pointed exactly up or down (see AR2Explosion), so tilt it just a bit in those cases
-		ed:SetNormal(norm)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
 		return true
 	end
 })
@@ -267,10 +264,7 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:CPointPosAng(0).pos)
-
-		local norm = self:CPointPosAng(0).ang:Forward()
-		if math.Round(norm.x, 6) == 0 and math.Round(norm.y, 6) == 0 then norm.x = 0.00001 end //Results in bad effects if pointed exactly up or down (see AR2Explosion), so tilt it just a bit in those cases
-		ed:SetNormal(norm)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
 		return true
 	end
 })]]
@@ -298,10 +292,7 @@ list.Set("PartCtrl_UtilFx", "GlassImpact", {
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:CPointPosAng(0).pos)
-
-		local norm = self:CPointPosAng(0).ang:Forward()
-		if math.Round(norm.x, 6) == 0 and math.Round(norm.y, 6) == 0 then norm.x = 0.00001 end //Results in bad effects if pointed exactly up or down (see AR2Explosion), so tilt it just a bit in those cases
-		ed:SetNormal(norm)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
 		return true
 	end
 })
@@ -315,10 +306,7 @@ list.Set("PartCtrl_UtilFx", "StunstickImpact", {
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:CPointPosAng(0).pos)
-
-		local norm = self:CPointPosAng(0).ang:Forward()
-		if math.Round(norm.x, 6) == 0 and math.Round(norm.y, 6) == 0 then norm.x = 0.00001 end //Results in bad effects if pointed exactly up or down (see AR2Explosion), so tilt it just a bit in those cases
-		ed:SetNormal(norm)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
 		return true
 	end
 })
@@ -434,10 +422,7 @@ list.Set("PartCtrl_UtilFx", "AR2Impact", {
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:CPointPosAng(0).pos)
-
-		local norm = self:CPointPosAng(0).ang:Forward()
-		if math.Round(norm.x, 6) == 0 and math.Round(norm.y, 6) == 0 then norm.x = 0.00001 end //Results in bad effects if pointed exactly up or down (see AR2Explosion), so tilt it just a bit in those cases
-		ed:SetNormal(norm)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
 		return true
 	end
 })
@@ -460,10 +445,7 @@ list.Set("PartCtrl_UtilFx", "AR2Explosion", {
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:CPointPosAng(0).pos)
-
-		local norm = self:CPointPosAng(0).ang:Forward()
-		if math.Round(norm.x, 6) == 0 and math.Round(norm.y, 6) == 0 then norm.x = 0.00001 end //Results in bad effects if pointed exactly up or down (see AR2Explosion), so tilt it just a bit in those cases
-		ed:SetNormal(norm)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
 		ed:SetRadius(self.ParticleInfo[1].val.x)
 		return true
 	end
@@ -540,7 +522,7 @@ list.Set("PartCtrl_UtilFx", "GunshipTracer", tracer1point5) //https://github.com
 //list.Set("PartCtrl_UtilFx", "TracerSound", tracer) //only the sound, not really this addon's purpose
 list.Set("PartCtrl_UtilFx", "Tracer", tracer5point5) //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_tracer.cpp#L112
 //this is an interesting one. it's basically just a convenience function to create a pcf effect in the same way as the utilfx tracers, whiz and attachment handling included. 
-//uses the effectData's "Hitbox" value to store the internal id number of the pcf effect. not useful in this addon, so don't include it. https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_tracer.cpp#L154
+//uses the effectData's "HitBox" value to store the internal id number of the pcf effect. not useful in this addon, so don't include it. https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_tracer.cpp#L154
 //list.Set("PartCtrl_UtilFx", "ParticleTracer", tracer)
 
 //the impact effects; these are complicated and all share the same code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_impacts.cpp#L240, https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_impact.cpp#L431)
@@ -631,9 +613,6 @@ list.Set("PartCtrl_UtilFx", "AirboatGunImpact", impact_nodecals_nosurfaceprop)
 --[[list.Set("PartCtrl_UtilFx", "AirboatGunImpact", {
 	title = "Garry's Mod",
 	default_time = 1,
-	cpoint_start = 0,
-	cpoint_origin = 0,
-	cpoint_entity = 0,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Origin, Entity")
 	end,
@@ -648,16 +627,29 @@ list.Set("PartCtrl_UtilFx", "AirboatGunImpact", impact_nodecals_nosurfaceprop)
 	end
 })]] //test; usable this way, but worse; not angled correctly because it uses the grip's hitbox i think
 
-//TODO: refactor the rest
-
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_antlion.cpp#L334
 list.Set("PartCtrl_UtilFx", "AntlionGib", {
 	title = "Garry's Mod",
 	//default_time = 0.75, //max effect lifetime from code
 	default_time = 3, //gib lifetime from code (2) + 1 sec fadeout time
-	cpoint_origin = 0,
-	cpoint_normal = 0,
-	scale = {min = 0, max = 10, default = 4, label = "Gib Velocity Scale"}, //max of 10 because these are really strong units and even 10 sends the gibs flying super far; default from the only code i could find that uses this effect (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_vortigaunt_episodic.cpp#L921)
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Gib Velocity Scale",
+			["inMin"] = 0,
+			["inMax"] = 10, //max of 10 because these are really strong units and even 10 sends the gibs flying super far
+			["outMin"] = 0,
+			["outMax"] = 10,
+			["default"] = 4, //default from the only code i could find that uses this effect (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_vortigaunt_episodic.cpp#L921)
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetScale(self.ParticleInfo[1].val.x)
+		return true
+	end
 })
 //This effect only creates gibs if the client has precached the models (i.e. by spawning an antlion), it does not do so on its own, so precache them here instead.
 for _, model in pairs ({
@@ -678,95 +670,213 @@ end
 list.Set("PartCtrl_UtilFx", "CrossbowLoad", {
 	title = "Garry's Mod",
 	default_time = 1,
-	cpoint_entity = 0,
-	cpoint_attachment = 0,
 	info = needs_attachment,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+	end,
+	DoEffect = function(self, ed)
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		ed:SetAttachment(self.ParticleInfo[0].attach)
+		return true
+	end
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/episodic/c_vort_charge_token.cpp#L481
 list.Set("PartCtrl_UtilFx", "VortDispel", {
 	title = "Garry's Mod",
 	default_time = 1.25, //lifetime from code
-	cpoint_origin = 0,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		return true
+	end
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_thumper_dust.cpp#L170
 list.Set("PartCtrl_UtilFx", "ThumperDust", {
 	title = "Garry's Mod",
 	default_time = 1.5, //lifetime from code
-	cpoint_origin = 0,
-	//cpoint_entity = 0, //bad, what this does is limit the effect's renderbounds to the entity's renderbounds
-	scale = {min = 1, max = 4096, default = 256, label = "Scale"} //arbitrary cap, could theoretically go up to 16384.999 but don't want it to be too hard to pick an actually reasonable value
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Scale",
+			["inMin"] = 1,
+			["inMax"] = 4096, //arbitrary cap, could theoretically go up to 16384.999 but don't want it to be too hard to pick an actually reasonable value
+			["outMin"] = 1,
+			["outMax"] = 4096,
+			["default"] = 256,
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		//effect also allows us to set an entity, but what that does is limit the effect's renderbounds to the entity's renderbounds; we don't want this
+		ed:SetScale(self.ParticleInfo[1].val.x)
+		return true
+	end
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_strider.cpp#L1047
 list.Set("PartCtrl_UtilFx", "StriderBlood", {
 	title = "Garry's Mod",
 	default_time = 1, //lifetime from code
-	cpoint_origin = 0,
-	cpoint_normal = 0,
-	scale = {min = 0, max = 16, default = 2, label = "Scale"} //arbitrary cap, again, this is uncapped, but even 16 is pushing it on being reasonable, it's bigger than the flatgrass building; default from magnusson, the only thing that uses this (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/episodic/weapon_striderbuster.cpp#L554)
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Scale",
+			["inMin"] = 0,
+			["inMax"] = 16, //arbitrary cap, again, this is uncapped, but even 16 is pushing it on being reasonable, it's bigger than the flatgrass building
+			["outMin"] = 0,
+			["outMax"] = 16,
+			["default"] = 2, //default from magnusson, the only thing that uses this (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/episodic/weapon_striderbuster.cpp#L554)
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetScale(self.ParticleInfo[1].val.x)
+		return true
+	end
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_strider.cpp#L949
 list.Set("PartCtrl_UtilFx", "StriderMuzzleFlash", {
 	title = "Garry's Mod",
 	default_time = 0.4, //max lifetime from code
-	cpoint_entity = 0,
-	cpoint_attachment = 0,
 	info = needs_attachment,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+	end,
+	DoEffect = function(self, ed)
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		ed:SetAttachment(self.ParticleInfo[0].attach)
+		return true
+	end
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_prop_combine_ball.cpp#L340
 list.Set("PartCtrl_UtilFx", "cball_explode", {
 	title = "Garry's Mod",
 	default_time = 1,
-	cpoint_origin = 0,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		return true
+	end
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_prop_combine_ball.cpp#L326
 list.Set("PartCtrl_UtilFx", "cball_bounce", {
 	title = "Garry's Mod",
 	default_time = 1,
-	cpoint_normal = 0,
-	cpoint_origin = 0,
-	radius = {min = 0, max = 256, default = 16, label = "Radius"} //arbitrary cap; default from the only code that uses this https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/prop_combine_ball.cpp#L1322
+	radius = {min = 0, max = 256, default = 16, label = "Radius"},
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Radius",
+			["inMin"] = 0,
+			["inMax"] = 256, //arbitrary cap
+			["outMin"] = 0,
+			["outMax"] = 256,
+			["default"] = 16, //default from the only code that uses this https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/prop_combine_ball.cpp#L1322
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetRadius(self.ParticleInfo[1].val.x)
+		return true
+	end
 })
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_shelleject.cpp#L21
 list.Set("PartCtrl_UtilFx", "HL1ShellEject", {
 	title = "Half-Life: Source",
 	default_time = 1,
-	flags_dropdown = {default = 0, label = "Shell Type", options = {
-		[0] = "Shell",
-		[1] = "Shotgun shell",
-	}},
-	cpoint_origin = 0,
-	cpoint_angles = 0,
-	vector_start = {cpoint = 1, min = Vector(-512,-512,-512), max = Vector(512,512,512), default = Vector(0,0,0), label = "Velocity"}, //this is relative to the world, not an attachment, so the default will have to be 0
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "vector", {
+			["pattrib"] = "Velocity",
+			["inMin"] = Vector(-512,-512,-512),
+			["inMax"] = Vector(512,512,512),
+			["outMin"] = Vector(-512,-512,-512),
+			["outMax"] = Vector(512,512,512),
+			["default"] = Vector(0,0,0), //this is relative to the world, not an attachment, so the default will have to be 0
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Shell Type",
+			["default"] = 0,
+			["dropdown"] = {
+				[0] = "Shell",
+				[1] = "Shotgun shell",
+			},
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetAngles(self:CPointPosAng(0).ang)
+		ed:SetStart(self.ParticleInfo[1].val)
+		ed:SetFlags(self.ParticleInfo[2].val.x)
+		return true
+	end
 })
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L306
 list.Set("PartCtrl_UtilFx", "HL1Gib", {
 	title = "Half-Life: Source",
 	default_time = 10,
-	cpoint_origin = 0,
-	cpoint_normal = 0,
-	//callback function supplies a Scale value, and the effect function itself has an arg for it, but the value isn't actually used anywhere
-	material = {default = 1, label = "Gib Type", options = {
-		[1] = "Human gibs",
-		[2] = "Alien gibs",
-	}},
-	hitbox = {default = 0, label = "Gib Velocity", options = { //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L190-L201
-		[0] = "70%",
-		[50] = "200%",
-		[200] = "400%",
-	}},
-	color = {default = 0, label = "Particle Color", options = { //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L25
-		[0] = "Red",
-		[1] = "\"Green\"",
-		[2] = "Yellow",
-	}},
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect MaterialIndex", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Gib Type",
+			["default"] = 1,
+			["dropdown"] = {
+				[1] = "Human gibs",
+				[2] = "Alien gibs",
+			},
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect HitBox", "axis", {
+			["axis"] = 1, //y
+			["pattrib"] = "Gib Velocity",
+			["default"] = 0,
+			["dropdown"] = { //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L190-L201
+				[0] = "70%",
+				[50] = "200%",
+				[200] = "400%",
+			},
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
+			["axis"] = 2, //z
+			["pattrib"] = "Particle Color",
+			["default"] = 0,
+			["dropdown"] = { //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L25
+				[0] = "Red",
+				[1] = "\"Green\"",
+				[2] = "Yellow",
+			},
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		//callback function supplies a Scale value, and the effect function itself has an arg for it, but the value isn't actually used anywhere
+		ed:SetMaterialIndex(self.ParticleInfo[1].val.x)
+		ed:SetHitBox(self.ParticleInfo[1].val.y)
+		ed:SetColor(self.ParticleInfo[1].val.z)
+		return true
+	end
 })
 util.PrecacheModel("models/gibs/hghl1.mdl")
 util.PrecacheModel("models/gibs/aghl1.mdl")
@@ -775,54 +885,127 @@ util.PrecacheModel("models/gibs/aghl1.mdl")
 list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact1", {
 	title = "Half-Life: Source",
 	default_time = 7, //sprite lifetime from code, + 1 for fadeout
-	cpoint_origin = 0,
-	magnitude = {min = 0, max = 255, default = 200, decimals = 0, label = "Alpha"} //this is the "damage" value of the gauss beam, which is from 1-200, but it still functions up to 255 https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_weapon_gauss.cpp#L521
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Alpha",
+			["inMin"] = 0,
+			["inMax"] = 255, //this uses the "damage" value of the gauss beam, which is from 1-200, but it still functions up to 255 https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_weapon_gauss.cpp#L521
+			["outMin"] = 0,
+			["outMax"] = 255,
+			["default"] = 200,
+			["decimals"] = 0,
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetMagnitude(self.ParticleInfo[1].val.x)
+		return true
+	end
 })
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L225
 list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact2", {
 	title = "Half-Life: Source",
 	default_time = 5, //rough average lifetime, can't figure out how this is determined in code
-	cpoint_origin = 0,
-	cpoint_normal = 0,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		return true
+	end
 })
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L186
 list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchEnter", {
 	title = "Half-Life: Source",
 	default_time = 5, //rough average lifetime, can't figure out how this is determined in code
-	cpoint_origin = 0,
-	cpoint_normal = 0,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		return true
+	end
 })
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L199
 list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
 	title = "Half-Life: Source",
 	default_time = 7, //impact sprite lifetime from code, + 1 for fadeout
-	cpoint_origin = 0,
-	cpoint_normal = 0,
-	magnitude = {min = 0, max = 255/1.2, default = 200, decimals = 0, label = "Alpha, Spark Multiplier"} //again, this uses the gauss damage value, but the alpha for the impact sprite uses magnitude*1.2, so we have to cap this at 255/1.2 so the alpha won't overflow and glitch out
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Alpha, Spark Multiplier",
+			["inMin"] = 0,
+			["inMax"] = 255/1.2, //again, this uses the gauss damage value, but the alpha for the impact sprite uses magnitude*1.2, so we have to cap this at 255/1.2 so the alpha won't overflow and glitch out
+			["outMin"] = 0,
+			["outMax"] = 255/1.2,
+			["default"] = 200,
+			["decimals"] = 0,
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetMagnitude(self.ParticleInfo[1].val.x)
+		return true
+	end
 })
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L170
 list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
 	title = "Half-Life: Source",
-	default_time = 11, //sprite lifetime at default magnitude (see comments) + 1 for fadeout
-	cpoint_origin = 0,
-	cpoint_normal = 0,
-	magnitude = {min = 0, max = 255, default = 200, decimals = 0, label = "Alpha, Lifetime Multiplier"} //still uses the damage value for alpha, but also controls the lifetime of the sprite (flMagnitude * 0.05) 
+	default_time = 6, //sprite lifetime at default magnitude (see comments) + 1 for fadeout
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Alpha, Lifetime Multiplier", //still uses the damage value for alpha, but also controls the lifetime of the sprite (flMagnitude * 0.05) 
+			["inMin"] = 0,
+			["inMax"] = 255,
+			["outMin"] = 0,
+			["outMax"] = 255,
+			["default"] = 100, //for this effect, gauss code scales the damage by the angle of the reflect, and the highest possible scalar for a reflect is 0.5 https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_weapon_gauss.cpp#L485-L506
+			["decimals"] = 0,
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetMagnitude(self.ParticleInfo[1].val.x)
+		return true
+	end
 })
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L117
 list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 	title = "Half-Life: Source",
-	default_time = 0.1, //lifetime from code
-	cpoint_start = 0,
-	cpoint_origin = 1,
-	flags_dropdown = {default = 1, label = "Beam Type", options = {
-		[0] = "Secondary fire",
-		[1] = "Primary fire",
-	}},
+	default_time = 0.11, //lifetime from code, plus an extra 100th of a second just to make it clear that this is a tracer and not a continuous beam
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Beam Type",
+			["default"] = 1,
+			["dropdown"] = {
+				[0] = "Secondary fire",
+				[1] = "Primary fire",
+			},
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetStart(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetFlags(self.ParticleInfo[2].val.x)
+		return true
+	end
 })
 
 //Hard-coded to only function if attached to a player, and automatically attaches to cpoint 1 of their weapon. Looks identical to HL1GaussBeamReflect except the start of the beam
@@ -830,39 +1013,86 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L35
 --[[list.Set("PartCtrl_UtilFx", "HL1GaussBeam", {
 	title = "Half-Life: Source",
-	default_time = 0.1, //lifetime from code
-	cpoint_start = 0,
-	cpoint_origin = 1,
-	cpoint_entity = 0,
-	//cpoint_attachment = 0,
-	flags_dropdown = {default = 1, label = "Beam Type", options = {
-		[0] = "Secondary fire",
-		[1] = "Primary fire",
-	}},
+	default_time = 0.11, //lifetime from code, plus an extra 100th of a second just to make it clear that this is a tracer and not a continuous beam
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Entity")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Beam Type",
+			["default"] = 1,
+			["dropdown"] = {
+				[0] = "Secondary fire",
+				[1] = "Primary fire",
+			},
+		})
+	end,
+	DoEffect = function(self, ed)
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		//ed:SetAttachment(self.ParticleInfo[0].attach)
+		ed:SetStart(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetFlags(self.ParticleInfo[2].val.x)
+		return true
+	end
 })]]
 
 //No code for this one; the only utileffect not listed on https://wiki.facepunch.com/gmod/Default_Effects, found it by checking the effects_list concommand
 //Appears identical to HL1GaussBeamReflect, doesn't even have the special follow-the-attachment-point functionality of the regular HL1GaussBeam.
 list.Set("PartCtrl_UtilFx", "HL1GaussBeam_GMOD", {
 	title = "Half-Life: Source",
-	default_time = 0.1, //lifetime from code
-	cpoint_start = 0,
-	cpoint_origin = 1,
-	//cpoint_entity = 0, //not documented, doesn't appear to do anything
-	//cpoint_attachment = 0, //^
-	flags_dropdown = {default = 1, label = "Beam Type", options = {
-		[0] = "Secondary fire",
-		[1] = "Primary fire",
-	}},
+	default_time = 0.11, //lifetime from code, plus an extra 100th of a second just to make it clear that this is a tracer and not a continuous beam
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Beam Type",
+			["default"] = 1,
+			["dropdown"] = {
+				[0] = "Secondary fire",
+				[1] = "Primary fire",
+			},
+		})
+	end,
+	DoEffect = function(self, ed)
+		//not documented, but setting entity or attachment doesn't appear to do anything
+		--[[local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		ed:SetAttachment(self.ParticleInfo[0].attach)]]
+		ed:SetStart(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetFlags(self.ParticleInfo[2].val.x)
+		return true
+	end
 })
 
 //https://github.com/mastercomfig/tf2-patches/blob/master/src/game/client/cstrike/fx_cs_weaponfx.cpp#L16
 local cstrikeshells = {
 	title = "Counter-Strike: Source",
 	default_time = 1, //arbitrary; these take 10 whole seconds to fade out which is too much
-	cpoint_origin = 0,
-	cpoint_angles = 0,
-	flags_slider = {min = 0, max = 1000, default = 100, decimals = 0, label = "Velocity"} //past 1000 or so, they're moving too fast to be perceptible, so that's a good arbitrary stopping point
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Velocity",
+			["inMin"] = 0,
+			["inMax"] = 1000, //past 1000 or so, they're moving too fast to be perceptible, so that's a good arbitrary stopping point
+			["outMin"] = 0,
+			["outMax"] = 1000,
+			["default"] = 100,
+			["decimals"] = 0,
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetAngles(self:CPointPosAng(0).ang)
+		ed:SetFlags(self.ParticleInfo[1].val.x)
+		return true
+	end
 }
 //this effect isn't called in code, but rather in model .qc files; if you search for an effect name + .qc on github, you'll see the velocity values they use are all over the place:
 ///EjectBrass_338Mag 70 80
@@ -882,20 +1112,54 @@ list.Set("PartCtrl_UtilFx", "EjectBrass_9mm", cstrikeshells)
 list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash_X", {
 	title = "Counter-Strike: Source",
 	default_time = 0.08, //lifetime value from code
-	cpoint_entity = 0,
-	cpoint_attachment = 0,
 	info = needs_attachment,
-	scale = {min = 0, max = 38, default = 1.5, label = "Scale"}, //starts to overflow and go back to being small once you get to 40 or so, not sure what's going on here in code; this effect is called by weapon scripts, and the scales they use are all over the place too (1.6, 1.5, 1.3, 1.2) (https://github.com/search?q=CS_MuzzleFlash_X+language%3AText&type=code&l=Text)
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Scale",
+			["inMin"] = 0,
+			["inMax"] = 38, //starts to overflow and go back to being small once you get to 40 or so, not sure what's going on here in code
+			["outMin"] = 0,
+			["outMax"] = 38,
+			["default"] = 1.5, //this effect is called by weapon scripts, and the scales they use are all over the place, so use a rough average for default (1.6, 1.5, 1.3, 1.2) (https://github.com/search?q=CS_MuzzleFlash_X+language%3AText&type=code&l=Text)
+		})
+	end,
+	DoEffect = function(self, ed)
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		ed:SetAttachment(self.ParticleInfo[0].attach)
+		ed:SetScale(self.ParticleInfo[1].val.x)
+		return true
+	end
 })
 
 //https://github.com/GEEKiDoS/cstrike-asw/blob/master/src/game/client/cstrike/fx_cs_muzzleflash.cpp#L22
 list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash", {
 	title = "Counter-Strike: Source",
 	default_time = 0.08, //lifetime value from code
-	cpoint_entity = 0,
-	cpoint_attachment = 0,
 	info = needs_attachment,
-	scale = {min = 0, max = 85, default = 1, label = "Scale"}, //different max before it overflows, different default (1, 1.35, 1.3, 1.2, 1.1, 1.15) (https://github.com/search?q=CS_MuzzleFlash+language%3AText&type=code)
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Scale",
+			["inMin"] = 0,
+			["inMax"] = 85, //different max before it overflows
+			["outMin"] = 0,
+			["outMax"] = 85,
+			["default"] = 1, //different values used by weapon scripts, so different default (1, 1.35, 1.3, 1.2, 1.1, 1.15) (https://github.com/search?q=CS_MuzzleFlash+language%3AText&type=code)
+		})
+	end,
+	DoEffect = function(self, ed)
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		ed:SetAttachment(self.ParticleInfo[0].attach)
+		ed:SetScale(self.ParticleInfo[1].val.x)
+		return true
+	end
 })
 
 //TODO: the rest, MuzzleEffect onward; already did all the hl2 Tracer ones and ImpactGunship https://wiki.facepunch.com/gmod/Default_Effects
@@ -2618,256 +2882,39 @@ function PartCtrl_ProcessUtilFx()
 				["on_model"] = v.on_model,
 				["min_length"] = v.min_length
 			}
-	
-			if false then
-				//Add position controls for cpoint values
-				for c, name in pairs (utilfx_cpointvalues) do
-					local c2 = "cpoint_" .. c
-					if v[c2] then
-						cpoint_addtoprocessed(t, v[c2], name)
-						t.defaults[v[c2]] = PARTCTRL_CPOINT_MODE_POSITION
-					end
-				end
-				//Add vector controls for cpoint values
-				for c, name in pairs (utilfx_cpointvalues) do
-					local c2 = "vector_" .. c
-					if v[c2] then
-						cpoint_addtoprocessed(t, v[c2].cpoint, name, "vector", {
-							["axis"] = v[c2],
-							["pattrib"] = v[c2].label,
-							["inMin"] = v[c2].min,
-							["inMax"] = v[c2].max,
-							["outMin"] = v[c2].min,
-							["outMax"] = v[c2].max,
-							["default"] = v[c2].default,
-						})
-						t.defaults[v[c2].cpoint] = PARTCTRL_CPOINT_MODE_VECTOR
-					end
-				end
 
-				//Add axis controls for scale, magnitude, radius
-				for i, c in pairs (utilfx_axisvalues) do
-					local c2 = string.lower(c)
-					if istable(v[c2]) then
-						cpoint_addtoprocessed(t, 32, "util.Effect EffectData:Set" .. c .. "()", "axis", {
-							["axis"] = i,
-							["pattrib"] = v[c2].label,
-							["inMin"] = v[c2].min,
-							["inMax"] = v[c2].max,
-							["outMin"] = v[c2].min,
-							["outMax"] = v[c2].max,
-							["default"] = v[c2].default,
-							["decimals"] = v[c2].decimals,
-						})
-						t.defaults[32] = PARTCTRL_CPOINT_MODE_AXIS
-					end
-				end
+			//Use the effect's DoProcess func to set up cpoints
+			v.DoProcess(t, v.DoProcessExtras)
 
-				//Add axis control (dropdown) for color
-				if v.color then
-					local min
-					local max
-					for k, v in pairs (v.color.options) do
-						if min == nil then
-							min = k
-							max = k
-						else
-							min = math.min(k, min)
-							max = math.max(k, max)
-						end
-					end
-					cpoint_addtoprocessed(t, 33, "util.Effect EffectData:SetColor()", "axis", {
-						["axis"] = 0,
-						["pattrib"] = v.color.label,
-						["inMin"] = min,
-						["inMax"] = max,
-						["outMin"] = min,
-						["outMax"] = max,
-						["default"] = v.color.default,
-						["decimals"] = 0,
-						["dropdown"] = v.color.options,
-					})
-					t.defaults[33] = PARTCTRL_CPOINT_MODE_AXIS
-				end
-
-				//Add axis control (dropdown) for surfaceprop
-				if v.surfaceprop then
-					local options = {}
-					for i = 0, 127 do
-						options[i] = util.GetSurfacePropName(i)
-					end
-					cpoint_addtoprocessed(t, 33, "util.Effect EffectData:SetSurfaceProp()", "axis", {
-						["axis"] = 1,
-						["pattrib"] = "Surface Properties",
-						["inMin"] = 0,
-						["inMax"] = 127,
-						["outMin"] = 0,
-						["outMax"] = 127,
-						["default"] = 0,
-						["decimals"] = 0,
-						["dropdown"] = options,
-					})
-					t.defaults[33] = PARTCTRL_CPOINT_MODE_AXIS
-				end
-
-				//Add axis control (dropdown) for material
-				if v.material then
-					local min
-					local max
-					for k, v in pairs (v.material.options) do
-						if min == nil then
-							min = k
-							max = k
-						else
-							min = math.min(k, min)
-							max = math.max(k, max)
-						end
-					end
-					cpoint_addtoprocessed(t, 33, "util.Effect EffectData:SetMaterial()", "axis", {
-						["axis"] = 2,
-						["pattrib"] = v.material.label,
-						["inMin"] = min,
-						["inMax"] = max,
-						["outMin"] = min,
-						["outMax"] = max,
-						["default"] = v.material.default,
-						["decimals"] = 0,
-						["dropdown"] = v.material.options,
-					})
-					t.defaults[33] = PARTCTRL_CPOINT_MODE_AXIS
-				end
-
-				//Add axis control (dropdown) for hitbox
-				if v.hitbox then
-					local min
-					local max
-					for k, v in pairs (v.hitbox.options) do
-						if min == nil then
-							min = k
-							max = k
-						else
-							min = math.min(k, min)
-							max = math.max(k, max)
-						end
-					end
-					cpoint_addtoprocessed(t, 34, "util.Effect EffectData:SetMaterial()", "axis", {
-						["axis"] = 0,
-						["pattrib"] = v.hitbox.label,
-						["inMin"] = min,
-						["inMax"] = max,
-						["outMin"] = min,
-						["outMax"] = max,
-						["default"] = v.hitbox.default,
-						["decimals"] = 0,
-						["dropdown"] = v.hitbox.options,
-					})
-					t.defaults[34] = PARTCTRL_CPOINT_MODE_AXIS
-				end
-
-				//Add axis controls for flags - internally these all use different axes of cpoint 34, and then when the ent creates the effect, it adds them all together
-				if v.flags_dropdown then
-					//Creates a dropdown control in the editor instead of a slider, but still uses axis internally for networking and dupes and stuff, so fill out all the necessary axis values
-					//Networking sanity check clamps values between a min and max, so make sure we set those properly
-					local min
-					local max
-					for k, v in pairs (v.flags_dropdown.options) do
-						if min == nil then
-							min = k
-							max = k
-						else
-							min = math.min(k, min)
-							max = math.max(k, max)
-						end
-					end
-					cpoint_addtoprocessed(t, 35, "util.Effect EffectData:SetFlags() dropdown", "axis", {
-						["axis"] = 0,
-						["pattrib"] = v.flags_dropdown.label,
-						["inMin"] = min,
-						["inMax"] = max,
-						["outMin"] = min,
-						["outMax"] = max,
-						["default"] = v.flags_dropdown.default,
-						["decimals"] = 0,
-						["dropdown"] = v.flags_dropdown.options,
-					})
-					t.defaults[35] = PARTCTRL_CPOINT_MODE_AXIS
-				end
-				if v.flags_checkboxes then
-					//Similar to above, create a series of checkboxes in the editor instead of a slider, but works internally by setting an axis value to the sum of the checkbox values
-					local min = 0
-					local max = 0
-					local pattrib //only used by the spawnicon tooltip's list of editable options, so just make this a list of checkbox names separated by newlines
-					for k, v in pairs (v.flags_checkboxes.options) do
-						max = max + k
-						if !pattrib then
-							pattrib = ""
-						else
-							pattrib = pattrib .. "\n"
-						end
-						pattrib = pattrib .. v
-					end
-					cpoint_addtoprocessed(t, 35, "util.Effect EffectData:SetFlags() checkboxes", "axis", {
-						["axis"] = 1,
-						["pattrib"] = pattrib,
-						["inMin"] = min,
-						["inMax"] = max,
-						["outMin"] = min,
-						["outMax"] = max,
-						["default"] = v.flags_checkboxes.default,
-						["decimals"] = 0,
-						["checkboxes"] = v.flags_checkboxes.options,
-					})
-					t.defaults[35] = PARTCTRL_CPOINT_MODE_AXIS
-				end
-				if v.flags_slider then
-					cpoint_addtoprocessed(t, 35, "util.Effect EffectData:SetFlags() slider", "axis", {
-						["axis"] = 2,
-						["pattrib"] = v.flags_slider.label,
-						["inMin"] = v.flags_slider.min,
-						["inMax"] = v.flags_slider.max,
-						["outMin"] = v.flags_slider.min,
-						["outMax"] = v.flags_slider.max,
-						["default"] = v.flags_slider.default,
-						["decimals"] = v.flags_slider.decimals,
-					})
-					t.defaults[35] = PARTCTRL_CPOINT_MODE_AXIS
+			//Set cpoint modes
+			for k, v in pairs (t.cpoints) do
+				if v["position"] then
+					t.defaults[k] = PARTCTRL_CPOINT_MODE_POSITION
+				elseif v["vector"] then
+					t.defaults[k] = PARTCTRL_CPOINT_MODE_VECTOR
+				elseif v["axis"] then
+					t.defaults[k] = PARTCTRL_CPOINT_MODE_AXIS
 				end
 			end
 
-			if v.DoProcess then //temp, get rid of this once we convert them all to DoProcess
-				//Use the effect's DoProcess func to set up cpoints
-				v.DoProcess(t, v.DoProcessExtras)
-
-				//Set cpoint modes
-				for k, v in pairs (t.cpoints) do
-					if v["position"] then
-						t.defaults[k] = PARTCTRL_CPOINT_MODE_POSITION
-					elseif v["vector"] then
-						t.defaults[k] = PARTCTRL_CPOINT_MODE_VECTOR
-					elseif v["axis"] then
-						t.defaults[k] = PARTCTRL_CPOINT_MODE_AXIS
-					end
-				end
-
-				//Add to table of all utilfx by "title" value (what game or addon folder they're placed in)
-				local function addtotab(str)
-					PartCtrl_UtilFxByTitle[str] = PartCtrl_UtilFxByTitle[str] or {}
-					PartCtrl_UtilFxByTitle[str][k] = true
-				end
-				if istable(v.title) then
-					for _, str in pairs (v.title) do
-						addtotab(str)
-					end
-				elseif isstring(v.title) then
-					addtotab(v.title)
-				end
-				//Also add it to the "All" subtable; dumb, but this is easier than cluttering up AddBrowseContentParticle to add a special case for All that loads all the subtables
-				PartCtrl_UtilFxByTitle.All = PartCtrl_UtilFxByTitle.All or {}
-				PartCtrl_UtilFxByTitle.All[k] = true
-
-				utilfx2 = utilfx2 or {}
-				utilfx2[k] = t
+			//Add to table of all utilfx by "title" value (what game or addon folder they're placed in)
+			local function addtotab(str)
+				PartCtrl_UtilFxByTitle[str] = PartCtrl_UtilFxByTitle[str] or {}
+				PartCtrl_UtilFxByTitle[str][k] = true
 			end
+			if istable(v.title) then
+				for _, str in pairs (v.title) do
+					addtotab(str)
+				end
+			elseif isstring(v.title) then
+				addtotab(v.title)
+			end
+			//Also add it to the "All" subtable; dumb, but this is easier than cluttering up AddBrowseContentParticle to add a special case for All that loads all the subtables
+			PartCtrl_UtilFxByTitle.All = PartCtrl_UtilFxByTitle.All or {}
+			PartCtrl_UtilFxByTitle.All[k] = true
+
+			utilfx2 = utilfx2 or {}
+			utilfx2[k] = t
 		end
 	end
 
