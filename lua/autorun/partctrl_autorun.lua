@@ -26,31 +26,101 @@ list.Add("ParticleController_BadPCFs", "vistasmokev1.pcf")  //has a smoke_blackb
 
 //Add util fx
 //Example:
---[[list.Add("PartCtrl_UtilFx", "EffectName", { //name of the effect that util.Effect() will call
-	title = "Garry's Mod",	//string; in the "Browse Particles" spawnlist, any game, addon, or legacy addon with this exact folder name will get a "Scripted Effects" subfolder containing this effect
-	title = {"MyCoolAddon", "My Cool Addon: Workshop Edition"} //can also be a table of strings, just in case you want to, say, support both a legacy addon folder name and a workshop addon name
+--[[list.Add("PartCtrl_UtilFx", "EffectName", { //Name of the effect that util.Effect() will call
+	title = "Garry's Mod",	//String; in the "Browse Particles" spawnlist, any game, addon, or legacy addon with this exact folder name will get a "Scripted Effects" subfolder containing this effect
+	title = {"MyCoolAddon", "My Cool Addon: Workshop Edition"}, //Can also be a table of strings instead, just in case you want to, say, support both a legacy addon folder name and a workshop addon name
+	
+	default_time = 1,	//Float, default setting of "seconds between repeats" on newly spawned fx, should roughly correspond to how long it takes for the effect to "finish", defaults to 1 if absent
+	info = "Text text text" //String, optional, adds extra info to the spawnicon and edit window
+	on_model = {[0] = true}, //Table, optional, adds extra info to the spawnicon about which cpoints make the effect cover the whole model if attached
+	min_length = 129,	//Float/int, optional, overrides how far apart the grip points will spawn; used by some tracer fx that don't render if the points are too close together
 
-	cpoint_angles = 0,	//cpoint id number; sets EffectData:SetAngles() to the angle of this cpoint
-	cpoint_normal = 0,	//cpoint id number; sets EffectData:SetNormal() to the angle of this cpoint converted to a normalized vector
-	cpoint_attachment = 0,	//cpoint id number; sets EffectData:SetAttachment() to the attachment id this cpoint is attached to
-	cpoint_entity = 0,	//cpoint id number; sets EffectData:SetEntity() to the entity this cpoint is attached to
-	cpoint_origin = 0,	//cpoint id number; sets EffectData:SetOrigin() to the position of this cpoint
-	cpoint_start = 0,	//cpoint id number; sets EffectData:SetStart() to the position of this cpoint
-	
-	scale = {min = 0, max = 1023, default = 1, decimals = 2, label = "Scale"},		//table, adds a slider with these settings, sets EffectData:SetScake() to the value of the slider
-	magnitude = {min = 0, max = 1023, default = 1, decimals = 2, label = "Magnitude"},	//table, adds a slider with these settings, sets EffectData:SetMagnitude() to the value of the slider
-	radius = {min = 0, max = 1023, default = 1, decimals = 2, label = "Radius"},		//table, adds a slider with these settings, sets EffectData:SetRadius() to the value of the slider
-	color = {min = 0, max = 255, default = 0, decimals = 0, label = "Color"},		//table, adds a slider with these settings, sets EffectData:SetColor() to the value of the slider
-	
-	default_time = 1	//float, default setting of "seconds between repeats" on newly spawned fx, should roughly correspond to how long it takes for the effect to "finish", defaults to 1 if absent
-	on_model = {[0] = true} //table, adds extra info to the spawnicon about which cpoints make the effect cover the whole model if attached
-	
-	//TODO: EffectData:SetFlags() has *many* different implementations, check all the relevant fx and add multiple ways to set this
-	
-	//TODO: EffectData:SetDamageType(), check all the relevant fx and see how/if we want to implement this
-	//TODO: EffectData:SetHitBox() ???
-	//TODO: EffectData:SetMaterialIndex() ???
-	//TODO: EffectData:SetSurfaceProp() ???
+	DoProcess = function(tab, extras)
+		//Function, used to set up the controls for the util effect by defining CONTROL POINTS, just like we do with PCF effects.
+		//A control point can be:
+		// A: a POSITION control, which spawns a grip point and uses its position value, and can also be attached to an entity to use its position or the position of one of its attachments
+		// B: a VECTOR control, which has 3 sliders to set the X, Y, and Z value of the vector
+		// C: an AXIS control, which can seperately define controls for any combination of its X, Y, or Z values; each axis can use a slider, dropdown, or checkboxes to set its value.
+		
+		//Adds a position control for cpoint 0
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Normal, Entity, Attachment") //by default, this adds a position control
+
+		//Adds a vector control for cpoint 1
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "vector", { 
+			["pattrib"] = "Start",	     //label shown in the editor. //TODO: this is a relic, should just be called "label"
+			["min"] = Vector(-512,-512,-512),
+			["max"] = Vector(512,512,512),
+			["default"] = Vector(0,0,0),
+		})
+		
+		//Adds an axis control for cpoint 2's x axis; by default, this is a slider
+		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Scale", "axis", { 
+			["axis"] = 0, //x
+			["pattrib"] = "Scale",
+			["min"] = 1,
+			["max"] = 10,
+			["default"] = 1,
+			["decimals"] = 0, //optional
+		})
+		//Adds an axis control for cpoint 2's y axis, with a dropdown
+		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Color", "axis", {
+			["axis"] = 1, //y
+			["pattrib"] = "Color",
+			["default"] = 0,
+			["dropdown"] = { //for each option, the number is the what the axis gets set to, and the string is the text displayed in the dropdown for that value
+				[0] = "Red",
+				[1] = "Green",
+				[-1] = "Beige",
+				[2] = "Chartreuse",
+				[3000] = "Vantablack",
+			},
+		})
+		//Adds an axis control for cpoint 2's z axis, with checkboxes
+		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+			["axis"] = 2, //z
+			["default"] = 0,
+			["checkboxes"] = { //adds a checkbox for each option; the axis gets set to the SUM of all the boxes that are checked
+				[16] = "Some Flag",
+				[32] = "Some Other Flag"
+				[64] = "You Get The Idea"
+			},
+		})
+
+		//See the effects below for more examples.
+	end,
+	DoProcessExtras = {"scale_max" = 50} //Table, optional; this sets the "extras" arg for the DoProcess func, so that multiple fx with different values can use the same function.
+
+	DoEffect = function(self, ed)
+		//Function, used when we're playing the effect to set its EffectData values, usually by grabbing information from the control points we set up earlier.
+		//"self" arg is the particle entity which has all the cpoint info, "ed" is the CEffectData object. https://wiki.facepunch.com/gmod/CEffectData
+
+		//Sets the Origin, Angles and Normal from cpoint 0 - the particle entity has a self:CPointPosAng() func that returns the position and angle of a cpoint
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetAngles(self:CPointPosAng(0).ang)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+
+		//Sets the Entity from cpoint 0's entity - this will be the grip point entity if it's unattached, or the entity it's attached to if it is attached
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+
+		//Sets the Attachment from cpoint 0's attachment setting - this will always be 0 if it's not attached to an entity
+		ed:SetAttachment(self.ParticleInfo[0].attach)
+
+		//Sets the Start to the value from cpoint 1's vector control
+		ed:SetStart(self.ParticleInfo[1].val)
+
+		//Sets the Scale, Color and Flags to the values from cpoint 2's axis controls
+		ed:SetScale(self.ParticleInfo[2].val.x)
+		ed:SetColor(self.ParticleInfo[2].val.y)
+		ed:SetFlags(self.ParticleInfo[2].val.z + 128) //let's say there's a flag you always want to be set, instead of making a checkbox for it. sure, you can do that.
+
+		ed:SetMagnitude(10) //of course, you can set values manually if you don't want to add controls for them
+
+		return true //If you don't return true, then it won't play the effect, so you can add conditions where the effect shouldn't play (i.e. fx that only play if they have a valid attachment)
+
+		//See the effects below for more examples.
+	end,
 })]]
 
 local needs_attachment = "Must be attached to a model, on a non-0 attachment"
@@ -58,7 +128,7 @@ local needs_attachment_1 = "Must be attached to a model with at least 1 attachme
 
 --[[list.Set("PartCtrl_UtilFx", "Spawnlist_Populator_Test", {
 	//test: populate a game, workshop addon, and legacy addon, with and without existing particles
-	title = {"Garry's Mod", "Half-Life: Source", "Hat Painter & Crit Glow Tools", "Animated Props", "ParticleControlOverhaul", "ukmodels"},
+	title = {"Garry's Mod", "Half-Life: Source", "Hat Painter & Crit Glow Tools", "Animated Props", "ParticleControlOverhaul", "ukmodels", "NotARealGameOrAddon"},
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
@@ -95,10 +165,8 @@ list.Set("PartCtrl_UtilFx", "ManhackSparks", {
 		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Beam Width",
-			["inMin"] = 0,
-			["inMax"] = 32,
-			["outMin"] = 0,
-			["outMax"] = 32,
+			["min"] = 0,
+			["max"] = 32,
 			["default"] = 1,
 		})
 	end,
@@ -124,10 +192,8 @@ list.Set("PartCtrl_UtilFx", "TeslaHitboxes", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Beam Count",
-			["inMin"] = 1,
-			["inMax"] = 10, //don't go too crazy with this because it's uncapped, players can just add more copies if they want more beams anyway
-			["outMin"] = 1,
-			["outMax"] = 10,
+			["min"] = 1,
+			["max"] = 10, //don't go too crazy with this because it's uncapped, players can just add more copies if they want more beams anyway
 			["default"] = 4,
 			["decimals"] = 0,
 		})
@@ -436,10 +502,8 @@ list.Set("PartCtrl_UtilFx", "AR2Explosion", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Radius",
-			["inMin"] = 1,
-			["inMax"] = 1023, //has an actual maximum of 16384.999 before it overflows but let's be reasonable here
-			["outMin"] = 1,
-			["outMax"] = 1023,
+			["min"] = 1,
+			["max"] = 1023, //has an actual maximum of 16384.999 before it overflows but let's be reasonable here
 			["default"] = 175, //default is what the func_tank code uses for the HL2 suppressor (MORTAR_BLAST_RADIUS * 0.5)
 		})
 	end,
@@ -461,10 +525,8 @@ local tracer = {
 		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Velocity",
-			["inMin"] = 1000,
-			["inMax"] = 16384.999, //biggest value used by anything is 16000 by dropship turret so this max is actually sensible
-			["outMin"] = 1000,
-			["outMax"] = 16384.999,
+			["min"] = 1000,
+			["max"] = 16384.999, //biggest value used by anything is 16000 by dropship turret so this max is actually sensible
 			["default"] = extras.scale_default,
 		})
 		if extras.checkboxes then
@@ -637,10 +699,8 @@ list.Set("PartCtrl_UtilFx", "AntlionGib", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Gib Velocity Scale",
-			["inMin"] = 0,
-			["inMax"] = 10, //max of 10 because these are really strong units and even 10 sends the gibs flying super far
-			["outMin"] = 0,
-			["outMax"] = 10,
+			["min"] = 0,
+			["max"] = 10, //max of 10 because these are really strong units and even 10 sends the gibs flying super far
 			["default"] = 4, //default from the only code i could find that uses this effect (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_vortigaunt_episodic.cpp#L921)
 		})
 	end,
@@ -705,10 +765,8 @@ list.Set("PartCtrl_UtilFx", "ThumperDust", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Scale",
-			["inMin"] = 1,
-			["inMax"] = 4096, //arbitrary cap, could theoretically go up to 16384.999 but don't want it to be too hard to pick an actually reasonable value
-			["outMin"] = 1,
-			["outMax"] = 4096,
+			["min"] = 1,
+			["max"] = 4096, //arbitrary cap, could theoretically go up to 16384.999 but don't want it to be too hard to pick an actually reasonable value
 			["default"] = 256,
 		})
 	end,
@@ -729,10 +787,8 @@ list.Set("PartCtrl_UtilFx", "StriderBlood", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Scale",
-			["inMin"] = 0,
-			["inMax"] = 16, //arbitrary cap, again, this is uncapped, but even 16 is pushing it on being reasonable, it's bigger than the flatgrass building
-			["outMin"] = 0,
-			["outMax"] = 16,
+			["min"] = 0,
+			["max"] = 16, //arbitrary cap, again, this is uncapped, but even 16 is pushing it on being reasonable, it's bigger than the flatgrass building
 			["default"] = 2, //default from magnusson, the only thing that uses this (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/episodic/weapon_striderbuster.cpp#L554)
 		})
 	end,
@@ -778,16 +834,13 @@ list.Set("PartCtrl_UtilFx", "cball_explode", {
 list.Set("PartCtrl_UtilFx", "cball_bounce", {
 	title = "Garry's Mod",
 	default_time = 1,
-	radius = {min = 0, max = 256, default = 16, label = "Radius"},
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Radius",
-			["inMin"] = 0,
-			["inMax"] = 256, //arbitrary cap
-			["outMin"] = 0,
-			["outMax"] = 256,
+			["min"] = 0,
+			["max"] = 256, //arbitrary cap
 			["default"] = 16, //default from the only code that uses this https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/prop_combine_ball.cpp#L1322
 		})
 	end,
@@ -807,10 +860,8 @@ list.Set("PartCtrl_UtilFx", "HL1ShellEject", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "vector", {
 			["pattrib"] = "Velocity",
-			["inMin"] = Vector(-512,-512,-512),
-			["inMax"] = Vector(512,512,512),
-			["outMin"] = Vector(-512,-512,-512),
-			["outMax"] = Vector(512,512,512),
+			["min"] = Vector(-512,-512,-512),
+			["max"] = Vector(512,512,512),
 			["default"] = Vector(0,0,0), //this is relative to the world, not an attachment, so the default will have to be 0
 		})
 		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
@@ -890,10 +941,8 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact1", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Alpha",
-			["inMin"] = 0,
-			["inMax"] = 255, //this uses the "damage" value of the gauss beam, which is from 1-200, but it still functions up to 255 https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_weapon_gauss.cpp#L521
-			["outMin"] = 0,
-			["outMax"] = 255,
+			["min"] = 0,
+			["max"] = 255, //this uses the "damage" value of the gauss beam, which is from 1-200, but it still functions up to 255 https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_weapon_gauss.cpp#L521
 			["default"] = 200,
 			["decimals"] = 0,
 		})
@@ -942,10 +991,8 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Alpha, Spark Multiplier",
-			["inMin"] = 0,
-			["inMax"] = 255/1.2, //again, this uses the gauss damage value, but the alpha for the impact sprite uses magnitude*1.2, so we have to cap this at 255/1.2 so the alpha won't overflow and glitch out
-			["outMin"] = 0,
-			["outMax"] = 255/1.2,
+			["min"] = 0,
+			["max"] = 255/1.2, //again, this uses the gauss damage value, but the alpha for the impact sprite uses magnitude*1.2, so we have to cap this at 255/1.2 so the alpha won't overflow and glitch out
 			["default"] = 200,
 			["decimals"] = 0,
 		})
@@ -967,10 +1014,8 @@ list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Alpha, Lifetime Multiplier", //still uses the damage value for alpha, but also controls the lifetime of the sprite (flMagnitude * 0.05) 
-			["inMin"] = 0,
-			["inMax"] = 255,
-			["outMin"] = 0,
-			["outMax"] = 255,
+			["min"] = 0,
+			["max"] = 255,
 			["default"] = 100, //for this effect, gauss code scales the damage by the angle of the reflect, and the highest possible scalar for a reflect is 0.5 https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_weapon_gauss.cpp#L485-L506
 			["decimals"] = 0,
 		})
@@ -1079,10 +1124,8 @@ local cstrikeshells = {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Velocity",
-			["inMin"] = 0,
-			["inMax"] = 1000, //past 1000 or so, they're moving too fast to be perceptible, so that's a good arbitrary stopping point
-			["outMin"] = 0,
-			["outMax"] = 1000,
+			["min"] = 0,
+			["max"] = 1000, //past 1000 or so, they're moving too fast to be perceptible, so that's a good arbitrary stopping point
 			["default"] = 100,
 			["decimals"] = 0,
 		})
@@ -1118,10 +1161,8 @@ list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash_X", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Scale",
-			["inMin"] = 0,
-			["inMax"] = 38, //starts to overflow and go back to being small once you get to 40 or so, not sure what's going on here in code
-			["outMin"] = 0,
-			["outMax"] = 38,
+			["min"] = 0,
+			["max"] = 38, //starts to overflow and go back to being small once you get to 40 or so, not sure what's going on here in code
 			["default"] = 1.5, //this effect is called by weapon scripts, and the scales they use are all over the place, so use a rough average for default (1.6, 1.5, 1.3, 1.2) (https://github.com/search?q=CS_MuzzleFlash_X+language%3AText&type=code&l=Text)
 		})
 	end,
@@ -1145,10 +1186,8 @@ list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
 			["pattrib"] = "Scale",
-			["inMin"] = 0,
-			["inMax"] = 85, //different max before it overflows
-			["outMin"] = 0,
-			["outMax"] = 85,
+			["min"] = 0,
+			["max"] = 85, //different max before it overflows
 			["default"] = 1, //different values used by weapon scripts, so different default (1, 1.35, 1.3, 1.2, 1.1, 1.15) (https://github.com/search?q=CS_MuzzleFlash+language%3AText&type=code)
 		})
 	end,
@@ -1859,47 +1898,59 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 	end
 	if processedv == nil then
 		processedv = {}
-	elseif processedv.dropdown then
-		//Convenience handling for axis dropdown controls:
-		//Creates a dropdown control in the editor instead of a slider, but still uses axis internally for networking and dupes and stuff, so fill out all the necessary axis values
-		//Networking sanity check clamps values between a min and max, so make sure we set those properly
-		local min
-		local max
-		for k, v in pairs (processedv.dropdown) do
-			if min == nil then
-				min = k
-				max = k
-			else
-				min = math.min(k, min)
-				max = math.max(k, max)
-			end
+	else
+		//Convenience handling to convert min/max to inMin/outMin + inMax/outMax, for utilfx that don't need to define these separately
+		if processedv.min then
+			processedv.inMin = processedv.min
+			processedv.outMin = processedv.min
+			processedv.min = nil
 		end
-		processedv.inMin = min
-		processedv.inMax = max
-		processedv.outMin = min
-		processedv.outMax = max
-		processedv.decimals = 0
-	elseif processedv.checkboxes then
-		//Convenience handling for axis checkbox controls:
-		//Similar to above, create a series of checkboxes in the editor instead of a slider, but works internally by setting an axis value to the sum of the checkbox values
-		local min = 0
-		local max = 0
-		local pattrib //in this case, only used by the spawnicon tooltip's list of editable options, so just make this a list of checkbox names separated by newlines
-		for k, v in pairs (processedv.checkboxes) do
-			max = max + k
-			if !pattrib then
-				pattrib = ""
-			else
-				pattrib = pattrib .. "\n"
-			end
-			pattrib = pattrib .. v
+		if processedv.max then
+			processedv.inMax = processedv.max
+			processedv.outMax = processedv.max
+			processedv.max = nil
 		end
-		processedv.pattrib = pattrib
-		processedv.inMin = min
-		processedv.inMax = max
-		processedv.outMin = min
-		processedv.outMax = max
-		processedv.decimals = 0
+		//Convenience handling for axis dropdown and checkbox controls:
+		if processedv.dropdown then
+			//Creates a dropdown control in the editor instead of a slider, but still uses axis internally for networking and dupes and stuff, so fill out all the necessary axis values
+			//Networking sanity check clamps values between a min and max, so make sure we set those properly
+			local min
+			local max
+			for k, v in pairs (processedv.dropdown) do
+				if min == nil then
+					min = k
+					max = k
+				else
+					min = math.min(k, min)
+					max = math.max(k, max)
+				end
+			end
+			processedv.inMin = min
+			processedv.inMax = max
+			processedv.outMin = min
+			processedv.outMax = max
+			processedv.decimals = 0
+		elseif processedv.checkboxes then
+			//Similar to above, create a series of checkboxes in the editor instead of a slider, but works internally by setting an axis value to the sum of the checkbox values
+			local min = 0
+			local max = 0
+			local pattrib //in this case, only used by the spawnicon tooltip's list of editable options, so just make this a list of checkbox names separated by newlines
+			for k, v in pairs (processedv.checkboxes) do
+				max = max + k
+				if !pattrib then
+					pattrib = ""
+				else
+					pattrib = pattrib .. "\n"
+				end
+				pattrib = pattrib .. v
+			end
+			processedv.pattrib = pattrib
+			processedv.inMin = min
+			processedv.inMax = max
+			processedv.outMin = min
+			processedv.outMax = max
+			processedv.decimals = 0
+		end
 	end
 	processedv["name"] = name
 	processed.cpoints[k] = processed.cpoints[k] or {}
