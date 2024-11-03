@@ -469,43 +469,69 @@ list.Set("PartCtrl_UtilFx", "AR2Explosion", {
 	end
 })
 
-//TODO: refactor the rest
-
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/hl2/fx_hl2_tracers.cpp#L299
 local tracer = {
 	title = "Garry's Mod",
 	default_time = 0.1,
-	cpoint_origin = 1, 
-	//GetTracerOrigin https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_tracer.cpp#L63
-	cpoint_start = 0,
-	cpoint_attachment = 0,
-	cpoint_entity = 0,
-	scale = {min = 1000, max = 16384.999, default = 8000, label = "Velocity"}, //8000 is default from code; biggest value used by anything is 16000 by dropship turret so this max is actually sensible
-	flags_checkboxes = {default = 0, options = {
-		[1] = "Whiz",
-		//[2] = "Use Attachment" //doesn't make any difference to this addon, because we already pass the attachment's location as the start
-	}},
+	DoProcess = function(tab, extras)
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Attachment, Entity")
+		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["pattrib"] = "Velocity",
+			["inMin"] = 1000,
+			["inMax"] = 16384.999, //biggest value used by anything is 16000 by dropship turret so this max is actually sensible
+			["outMin"] = 1000,
+			["outMax"] = 16384.999,
+			["default"] = extras.scale_default,
+		})
+		if extras.checkboxes then
+			PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+				["axis"] = 1, //y
+				["default"] = 0,
+				["checkboxes"] = {
+					[1] = "Whiz",
+					//[2] = "Use Attachment" //doesn't make any difference to this addon, because we already pass the attachment's location as the start
+				},
+			})
+		end
+	end,
+	DoProcessExtras = {["scale_default"] = 8000, ["checkboxes"] = true}, //8000 is default from code
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(1).pos)
+		//GetTracerOrigin https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_tracer.cpp#L63
+		ed:SetStart(self:CPointPosAng(0).pos)
+		ed:SetAttachment(self.ParticleInfo[0].attach)
+
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+
+		ed:SetScale(self.ParticleInfo[2].val.x)
+		ed:SetFlags(self.ParticleInfo[2].val.y) //variants without checkboxes still do this, whatever
+		return true
+	end
 }
 //this is a mess but still better than writing out a dozen mostly-identical tables
 local tracer1 = table.Copy(tracer)
-tracer1.min_length = 128
+tracer1.min_length = 129
 list.Set("PartCtrl_UtilFx", "AR2Tracer", tracer1)
 local tracer1point5 = table.Copy(tracer)
 tracer1point5.min_length = 257
 list.Set("PartCtrl_UtilFx", "HelicopterTracer", tracer1point5)
 local tracer2 = table.Copy(tracer)
-tracer2.scale.default = 10000
-tracer2.flags_checkboxes = nil
+tracer2.DoProcessExtras.scale_default = 10000
+tracer2.DoProcessExtras.checkboxes = false
 list.Set("PartCtrl_UtilFx", "AirboatGunTracer", tracer2)
 local tracer3 = table.Copy(tracer)
-tracer3.flags_checkboxes = nil
+tracer3.DoProcessExtras.checkboxes = false
 list.Set("PartCtrl_UtilFx", "AirboatGunHeavyTracer", tracer3)
 local tracer4 = table.Copy(tracer1point5)
-tracer4.flags_checkboxes = nil
-tracer4.scale_default = 6500 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/vehicle_jeep.cpp#L856
+tracer4.DoProcessExtras.checkboxes = false
+tracer4.DoProcessExtras.scale_default = 6500 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/vehicle_jeep.cpp#L856
 list.Set("PartCtrl_UtilFx", "GaussTracer", tracer4)
 local tracer5 = table.Copy(tracer)
-tracer5.scale.default = 5000 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/episodic/npc_hunter.cpp#L5242, https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/npc_strider.cpp#L2748
+tracer5.DoProcessExtras.scale_default = 5000 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/episodic/npc_hunter.cpp#L5242, https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/npc_strider.cpp#L2748
 list.Set("PartCtrl_UtilFx", "HunterTracer", tracer5)
 local tracer5point5 = table.Copy(tracer5)
 tracer5point5.min_length = 257
@@ -520,27 +546,72 @@ list.Set("PartCtrl_UtilFx", "Tracer", tracer5point5) //https://github.com/ValveS
 //the impact effects; these are complicated and all share the same code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_impacts.cpp#L240, https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_impact.cpp#L431)
 //Note that ImpactGauss and ImpactJeep have EXACTLY the same code, and the only difference they have from Impact is a scale value of 2 instead of 1; ImpactGunship is like those but scale 3 and doesn't 
 //play impact sounds if object is destroyed.
-//AirboatGunImpact and HelicopterImpact don't make decals or hit ragdolls, and play their own extra fx; only difference between them, aside from Xbox stuff, is that Airboat doesn't do material-based 
-//impact particles, while HelicopterImpact does on metal/computer only, and Airboat doesn't play impact sounds unless it destroyed something
+//AirboatGunImpact and HelicopterImpact don't make decals or hit ragdolls (note: this doesn't seem to actually be true), and play their own extra fx; only difference between them, aside from Xbox stuff, is that Airboat doesn't do material-based 
+//impact particles, while HelicopterImpact does on metal/computer only, and Airboat doesn't play impact sounds unless it destroyed something, which isn't applicable here
 local impact = {
 	title = "Garry's Mod",
 	default_time = 1,
-	cpoint_start = 0,
-	cpoint_origin = 1,
-	cpoint_entity = 1,
-	impact_entity = true, //special functionality for impact fx: set effect entity to world if unattached
-	surfaceprop = true,
-	//TODO: implement damagetype? doesn't seem to do anything except handle one special decal type (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/baseentity_shared.cpp#L708)
-	//hitbox value doesn't seem to be necessary
-	info = "Control point 1 sets the model to play an impact on; uses the world if unattached.\nControl point 0 draws a line to 1, and plays an impact where the line hits the model.",
-	flags_checkboxes = {default = 0, options = {
-		[1] = "No decals",
-		//[2] = "Report ragdoll impacts" //doesn't seem to do anything, at least in the context we're using it; might be referring to clientside ragdolls?
-	}},
+	info = "Control point 1 sets the model to play the impact effect on; uses the world if unattached.\nControl point 0 draws a line to 1, and plays an impact effect where the line hits the model.",
+	DoProcess = function(tab, extras)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin, Entity")
+
+		if extras.surfaceprop then
+			local options = {}
+			for i = 0, 127 do
+				options[i] = util.GetSurfacePropName(i)
+			end
+			PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect SurfaceProp", "axis", {
+				["axis"] = 0, //x
+				["pattrib"] = "Surface Properties",
+				["default"] = 0,
+				["dropdown"] = options,
+			})
+		end
+		if extras.toggleable_decals then
+			PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+				["axis"] = 1, //y
+				["default"] = 0,
+				["checkboxes"] = {
+					[1] = "No decals",
+					//[2] = "Report ragdoll impacts" //doesn't seem to do anything, at least in the context we're using it; refers to clientside ragdolls, but the impact still hits them whether the flag is set or not
+				},
+			})
+		end
+		local options = {
+			[DMG_BLAST] = "DMG_BLAST (more knockback to client ragdolls)" //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_baseanimating.cpp#L395
+		}
+		if extras.has_decals then options[DMG_SLASH] = "DMG_SLASH (use unique decal)" end //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/baseentity_shared.cpp#L708
+		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect DamageType", "axis", {
+			["axis"] = 2, //z
+			["default"] = 0,
+			["checkboxes"] = options,
+		})
+	end,
+	DoProcessExtras = {["toggleable_decals"] = true, ["has_decals"] = true, ["surfaceprop"] = true},
+	DoEffect = function(self, ed)
+		ed:SetStart(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:CPointPosAng(1).pos)
+
+		local ent = self.ParticleInfo[1].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		//special functionality for impact fx: set effect entity to world if unattached
+		if ent:GetClass() == "ent_partctrl_grip" then
+			ent = game.GetWorld()
+		end
+		ed:SetEntity(ent)
+
+		ed:SetSurfaceProp(self.ParticleInfo[2].val.x)
+		ed:SetFlags(self.ParticleInfo[2].val.y)
+		ed:SetDamageType(self.ParticleInfo[2].val.z)
+		ed:SetHitBox(0) //not necessary for us to add a selector for, but reset it to prevent bugs (this is the func that uses it: https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_impact.cpp#L101)
+		return true
+	end
 }
 local impact_noflags = table.Copy(impact)
-impact_noflags.flags_checkboxes = nil
+impact_noflags.DoProcessExtras.toggleable_decals = false
 list.Set("PartCtrl_UtilFx", "Impact", impact_noflags)
+impact.info = impact.info .. "\nIdentical to Impact, except decals can be disabled."
 list.Set("PartCtrl_UtilFx", "Impact_GMOD", impact)
 local impact_noflags2 = table.Copy(impact_noflags)
 impact_noflags2.info = impact_noflags2.info .. "\nIdentical to Impact, except the particle effects have 2x scale."
@@ -549,17 +620,35 @@ list.Set("PartCtrl_UtilFx", "ImpactJeep", impact_noflags2)
 local impact_noflags3 = table.Copy(impact_noflags)
 impact_noflags3.info = impact_noflags3.info .. "\nIdentical to Impact, except the particle effects have 3x scale."
 list.Set("PartCtrl_UtilFx", "ImpactGunship", impact_noflags3)
-list.Set("PartCtrl_UtilFx", "HelicopterImpact", impact_noflags) //never creates decals
-local impact_noflags_nosurfaceprop = table.Copy(impact_noflags)
-impact_noflags_nosurfaceprop.surfaceprop = nil
-list.Set("PartCtrl_UtilFx", "AirboatGunImpact", impact_noflags_nosurfaceprop) //never creates decals, surfaceprop has no effect
+local impact_nodecals = table.Copy(impact_noflags)
+impact_nodecals.DoProcessExtras.has_decals = false
+impact_nodecals.info = impact_noflags3.info .. "\nNo decals; doesn't do material-specific particle effects except on metal or computer."
+list.Set("PartCtrl_UtilFx", "HelicopterImpact", impact_nodecals)
+local impact_nodecals_nosurfaceprop = table.Copy(impact_nodecals)
+impact_nodecals_nosurfaceprop.DoProcessExtras.surfaceprop = false
+impact_nodecals_nosurfaceprop.info = impact_noflags.info .. "\nNo decals, no material-specific particle effects, no sounds."
+list.Set("PartCtrl_UtilFx", "AirboatGunImpact", impact_nodecals_nosurfaceprop)
 --[[list.Set("PartCtrl_UtilFx", "AirboatGunImpact", {
 	title = "Garry's Mod",
 	default_time = 1,
 	cpoint_start = 0,
 	cpoint_origin = 0,
 	cpoint_entity = 0,
-})]] //test; usable this way, but worse; doesn't draw the combine-styled quad, just sparks
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Origin, Entity")
+	end,
+	DoEffect = function (self, ed)
+		ed:SetStart(self:CPointPosAng(0).pos + (self:CPointPosAng(0).ang:Forward() * 10))
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		return true
+	end
+})]] //test; usable this way, but worse; not angled correctly because it uses the grip's hitbox i think
+
+//TODO: refactor the rest
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_antlion.cpp#L334
 list.Set("PartCtrl_UtilFx", "AntlionGib", {
@@ -2747,7 +2836,7 @@ function PartCtrl_ProcessUtilFx()
 
 			if v.DoProcess then //temp, get rid of this once we convert them all to DoProcess
 				//Use the effect's DoProcess func to set up cpoints
-				v.DoProcess(t)
+				v.DoProcess(t, v.DoProcessExtras)
 
 				//Set cpoint modes
 				for k, v in pairs (t.cpoints) do
