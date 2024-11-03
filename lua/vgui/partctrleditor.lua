@@ -702,7 +702,7 @@ function PANEL:RebuildControls()
 					//Color sets the color of the particle, with the output measured in 0 0 0 = black and 1 1 1 = white. Output values under 0 or over 1 don't seem to do anything different, so
 					//no additive color or negative color wackiness here.
 
-					if tab.pattrib == "Color" then
+					if tab.label == "Color" then
 						local col = vgui.Create("DColorMixer", pnl)
 						col:SetAlphaBar(false)
 						col:Dock(TOP)
@@ -730,7 +730,7 @@ function PANEL:RebuildControls()
 					else
 						for i = 1, 3 do
 							local slider = vgui.Create("DNumSlider", pnl)
-							if tab.pattrib == "Roll" then
+							if tab.label == "Roll" then
 								if i == 1 then
 									slider:SetText("Pitch")
 								elseif i == 2 then
@@ -740,23 +740,21 @@ function PANEL:RebuildControls()
 								end
 								slider:SetMinMax(-180, 180)
 							else
-								if tab.pattrib == "Velocity Direction Normal" then
-									//is this the best way for this to read? the text reads forward/back, but because 1 is forward and -1 is back, 
-									//the slider itself is actually back/forward, not forward/back. would that be better?
+								if tab.label == "Velocity Direction Normal" then
 									if i == 1 then
-										slider:SetText("Velocity Forward/Back")
+										slider:SetText("Velocity Back/Forward")
 									elseif i == 2 then
-										slider:SetText("Velocity Left/Right")
+										slider:SetText("Velocity Right/Left")
 									else
-										slider:SetText("Velocity Up/Down")
+										slider:SetText("Velocity Down/Up")
 									end
 								else
 									if i == 1 then
-										slider:SetText(tab.pattrib .. " X")
+										slider:SetText(tab.label .. " X")
 									elseif i == 2 then
-										slider:SetText(tab.pattrib .. " Y")
+										slider:SetText(tab.label .. " Y")
 									else
-										slider:SetText(tab.pattrib .. " Z")
+										slider:SetText(tab.label .. " Z")
 									end
 								end
 								slider:SetMinMax(tab.outMin[i], tab.outMax[i])
@@ -779,13 +777,13 @@ function PANEL:RebuildControls()
 							slider.ValueChanged = SliderValueChangedUnclamped
 							slider.SetValue = SliderSetValueUnclamped
 	
-							if tab.pattrib == "Roll" then
+							if tab.label == "Roll" then
 								slider:SetValue(math.Remap(math.deg(v2.val[i]), tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i]))
 							else
 								slider:SetValue(math.Remap(v2.val[i], tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i]))
 							end
 							function slider.OnValueChanged(_, val)
-								if tab.pattrib == "Roll" then
+								if tab.label == "Roll" then
 									val = math.Remap(math.rad(val), tab.outMin[i], tab.outMax[i], tab.inMin[i], tab.inMax[i])
 								else
 									val = math.Remap(val, tab.outMin[i], tab.outMax[i], tab.inMin[i], tab.inMax[i])
@@ -815,7 +813,7 @@ function PANEL:RebuildControls()
 
 							drop.Label = vgui.Create("DLabel", drop)
 							drop.Label:SetDark(true)
-							drop.Label:SetText(tab.pattrib)
+							drop.Label:SetText(tab.label)
 							drop.Label:Dock(LEFT)
 					
 							drop.Combo = vgui.Create("DComboBox", drop)
@@ -861,7 +859,7 @@ function PANEL:RebuildControls()
 							end
 						else
 							local slider = vgui.Create("DNumSlider", pnl)
-							slider:SetText(tab.pattrib)
+							slider:SetText(tab.label)
 							if outMax < outMin then
 								//tf2 speech_mediccall has a silly outmax of 0 and outmin of 1, presumably because the player's health percentage is used as the input. stop it from breaking the slider.
 								slider:SetMinMax(outMax, outMin)

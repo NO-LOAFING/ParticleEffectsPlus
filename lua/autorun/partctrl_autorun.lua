@@ -47,7 +47,7 @@ list.Add("ParticleController_BadPCFs", "vistasmokev1.pcf")  //has a smoke_blackb
 
 		//Adds a vector control for cpoint 1
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "vector", { 
-			["pattrib"] = "Start",	     //label shown in the editor. //TODO: this is a relic, should just be called "label"
+			["label"] = "Start",
 			["min"] = Vector(-512,-512,-512),
 			["max"] = Vector(512,512,512),
 			["default"] = Vector(0,0,0),
@@ -56,7 +56,7 @@ list.Add("ParticleController_BadPCFs", "vistasmokev1.pcf")  //has a smoke_blackb
 		//Adds an axis control for cpoint 2's x axis; by default, this is a slider
 		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Scale", "axis", { 
 			["axis"] = 0, //x
-			["pattrib"] = "Scale",
+			["label"] = "Scale",
 			["min"] = 1,
 			["max"] = 10,
 			["default"] = 1,
@@ -65,7 +65,7 @@ list.Add("ParticleController_BadPCFs", "vistasmokev1.pcf")  //has a smoke_blackb
 		//Adds an axis control for cpoint 2's y axis, with a dropdown
 		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Color", "axis", {
 			["axis"] = 1, //y
-			["pattrib"] = "Color",
+			["label"] = "Color",
 			["default"] = 0,
 			["dropdown"] = { //for each option, the number is the what the axis gets set to, and the string is the text displayed in the dropdown for that value
 				[0] = "Red",
@@ -88,7 +88,7 @@ list.Add("ParticleController_BadPCFs", "vistasmokev1.pcf")  //has a smoke_blackb
 
 		//See the effects below for more examples.
 	end,
-	DoProcessExtras = {"scale_max" = 50} //Table, optional; this sets the "extras" arg for the DoProcess func, so that multiple fx with different values can use the same function.
+	DoProcessExtras = {["scale_max"] = 50} //Table, optional; this sets the "extras" arg for the DoProcess func, so that multiple fx with different values can use the same function
 
 	DoEffect = function(self, ed)
 		//Function, used when we're playing the effect to set its EffectData values, usually by grabbing information from the control points we set up earlier.
@@ -101,7 +101,7 @@ list.Add("ParticleController_BadPCFs", "vistasmokev1.pcf")  //has a smoke_blackb
 
 		//Sets the Entity from cpoint 0's entity - this will be the grip point entity if it's unattached, or the entity it's attached to if it is attached
 		local ent = self.ParticleInfo[0].ent
-		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end //if we're attached to a prop_effect, get its model instead of its grip point
 		ed:SetEntity(ent)
 
 		//Sets the Attachment from cpoint 0's attachment setting - this will always be 0 if it's not attached to an entity
@@ -164,7 +164,7 @@ list.Set("PartCtrl_UtilFx", "ManhackSparks", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
 		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Beam Width",
+			["label"] = "Beam Width",
 			["min"] = 0,
 			["max"] = 32,
 			["default"] = 1,
@@ -191,7 +191,7 @@ list.Set("PartCtrl_UtilFx", "TeslaHitboxes", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Beam Count",
+			["label"] = "Beam Count",
 			["min"] = 1,
 			["max"] = 10, //don't go too crazy with this because it's uncapped, players can just add more copies if they want more beams anyway
 			["default"] = 4,
@@ -218,7 +218,7 @@ list.Set("PartCtrl_UtilFx", "CommandPointer", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Color",
+			["label"] = "Color",
 			["default"] = 0,
 			["dropdown"] = { //sets key from table "commandercolors" (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/effect_color_tables.h#L34)
 				[0] = "Red",
@@ -281,7 +281,7 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 		//flag definitions from here: https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shareddefs.h#L298
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Muzzleflash Type",
+			["label"] = "Muzzleflash Type",
 			["default"] = 2,
 			["dropdown"] = {
 				//[0] = "MUZZLEFLASH_AR2", //does nothing, prints error in console
@@ -501,7 +501,7 @@ list.Set("PartCtrl_UtilFx", "AR2Explosion", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Radius",
+			["label"] = "Radius",
 			["min"] = 1,
 			["max"] = 1023, //has an actual maximum of 16384.999 before it overflows but let's be reasonable here
 			["default"] = 175, //default is what the func_tank code uses for the HL2 suppressor (MORTAR_BLAST_RADIUS * 0.5)
@@ -524,7 +524,7 @@ local tracer = {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Attachment, Entity")
 		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Velocity",
+			["label"] = "Velocity",
 			["min"] = 1000,
 			["max"] = 16384.999, //biggest value used by anything is 16000 by dropship turret so this max is actually sensible
 			["default"] = extras.scale_default,
@@ -607,7 +607,7 @@ local impact = {
 			end
 			PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect SurfaceProp", "axis", {
 				["axis"] = 0, //x
-				["pattrib"] = "Surface Properties",
+				["label"] = "Surface Properties",
 				["default"] = 0,
 				["dropdown"] = options,
 			})
@@ -698,7 +698,7 @@ list.Set("PartCtrl_UtilFx", "AntlionGib", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Gib Velocity Scale",
+			["label"] = "Gib Velocity Scale",
 			["min"] = 0,
 			["max"] = 10, //max of 10 because these are really strong units and even 10 sends the gibs flying super far
 			["default"] = 4, //default from the only code i could find that uses this effect (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_vortigaunt_episodic.cpp#L921)
@@ -764,7 +764,7 @@ list.Set("PartCtrl_UtilFx", "ThumperDust", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Scale",
+			["label"] = "Scale",
 			["min"] = 1,
 			["max"] = 4096, //arbitrary cap, could theoretically go up to 16384.999 but don't want it to be too hard to pick an actually reasonable value
 			["default"] = 256,
@@ -786,7 +786,7 @@ list.Set("PartCtrl_UtilFx", "StriderBlood", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Scale",
+			["label"] = "Scale",
 			["min"] = 0,
 			["max"] = 16, //arbitrary cap, again, this is uncapped, but even 16 is pushing it on being reasonable, it's bigger than the flatgrass building
 			["default"] = 2, //default from magnusson, the only thing that uses this (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/episodic/weapon_striderbuster.cpp#L554)
@@ -838,7 +838,7 @@ list.Set("PartCtrl_UtilFx", "cball_bounce", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Radius",
+			["label"] = "Radius",
 			["min"] = 0,
 			["max"] = 256, //arbitrary cap
 			["default"] = 16, //default from the only code that uses this https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/prop_combine_ball.cpp#L1322
@@ -859,14 +859,14 @@ list.Set("PartCtrl_UtilFx", "HL1ShellEject", {
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "vector", {
-			["pattrib"] = "Velocity",
+			["label"] = "Velocity",
 			["min"] = Vector(-512,-512,-512),
 			["max"] = Vector(512,512,512),
 			["default"] = Vector(0,0,0), //this is relative to the world, not an attachment, so the default will have to be 0
 		})
 		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Shell Type",
+			["label"] = "Shell Type",
 			["default"] = 0,
 			["dropdown"] = {
 				[0] = "Shell",
@@ -891,7 +891,7 @@ list.Set("PartCtrl_UtilFx", "HL1Gib", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect MaterialIndex", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Gib Type",
+			["label"] = "Gib Type",
 			["default"] = 1,
 			["dropdown"] = {
 				[1] = "Human gibs",
@@ -900,7 +900,7 @@ list.Set("PartCtrl_UtilFx", "HL1Gib", {
 		})
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect HitBox", "axis", {
 			["axis"] = 1, //y
-			["pattrib"] = "Gib Velocity",
+			["label"] = "Gib Velocity",
 			["default"] = 0,
 			["dropdown"] = { //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L190-L201
 				[0] = "70%",
@@ -910,7 +910,7 @@ list.Set("PartCtrl_UtilFx", "HL1Gib", {
 		})
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
 			["axis"] = 2, //z
-			["pattrib"] = "Particle Color",
+			["label"] = "Particle Color",
 			["default"] = 0,
 			["dropdown"] = { //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L25
 				[0] = "Red",
@@ -940,7 +940,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact1", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Alpha",
+			["label"] = "Alpha",
 			["min"] = 0,
 			["max"] = 255, //this uses the "damage" value of the gauss beam, which is from 1-200, but it still functions up to 255 https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_weapon_gauss.cpp#L521
 			["default"] = 200,
@@ -990,7 +990,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Alpha, Spark Multiplier",
+			["label"] = "Alpha, Spark Multiplier",
 			["min"] = 0,
 			["max"] = 255/1.2, //again, this uses the gauss damage value, but the alpha for the impact sprite uses magnitude*1.2, so we have to cap this at 255/1.2 so the alpha won't overflow and glitch out
 			["default"] = 200,
@@ -1013,7 +1013,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Alpha, Lifetime Multiplier", //still uses the damage value for alpha, but also controls the lifetime of the sprite (flMagnitude * 0.05) 
+			["label"] = "Alpha, Lifetime Multiplier", //still uses the damage value for alpha, but also controls the lifetime of the sprite (flMagnitude * 0.05) 
 			["min"] = 0,
 			["max"] = 255,
 			["default"] = 100, //for this effect, gauss code scales the damage by the angle of the reflect, and the highest possible scalar for a reflect is 0.5 https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_weapon_gauss.cpp#L485-L506
@@ -1037,7 +1037,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
 		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Beam Type",
+			["label"] = "Beam Type",
 			["default"] = 1,
 			["dropdown"] = {
 				[0] = "Secondary fire",
@@ -1064,7 +1064,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
 		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Beam Type",
+			["label"] = "Beam Type",
 			["default"] = 1,
 			["dropdown"] = {
 				[0] = "Secondary fire",
@@ -1094,7 +1094,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeam_GMOD", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
 		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Beam Type",
+			["label"] = "Beam Type",
 			["default"] = 1,
 			["dropdown"] = {
 				[0] = "Secondary fire",
@@ -1123,7 +1123,7 @@ local cstrikeshells = {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Velocity",
+			["label"] = "Velocity",
 			["min"] = 0,
 			["max"] = 1000, //past 1000 or so, they're moving too fast to be perceptible, so that's a good arbitrary stopping point
 			["default"] = 100,
@@ -1160,7 +1160,7 @@ list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash_X", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Scale",
+			["label"] = "Scale",
 			["min"] = 0,
 			["max"] = 38, //starts to overflow and go back to being small once you get to 40 or so, not sure what's going on here in code
 			["default"] = 1.5, //this effect is called by weapon scripts, and the scales they use are all over the place, so use a rough average for default (1.6, 1.5, 1.3, 1.2) (https://github.com/search?q=CS_MuzzleFlash_X+language%3AText&type=code&l=Text)
@@ -1185,7 +1185,7 @@ list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			["axis"] = 0, //x
-			["pattrib"] = "Scale",
+			["label"] = "Scale",
 			["min"] = 0,
 			["max"] = 85, //different max before it overflows
 			["default"] = 1, //different values used by weapon scripts, so different default (1, 1.35, 1.3, 1.2, 1.1, 1.15) (https://github.com/search?q=CS_MuzzleFlash+language%3AText&type=code)
@@ -1934,17 +1934,17 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 			//Similar to above, create a series of checkboxes in the editor instead of a slider, but works internally by setting an axis value to the sum of the checkbox values
 			local min = 0
 			local max = 0
-			local pattrib //in this case, only used by the spawnicon tooltip's list of editable options, so just make this a list of checkbox names separated by newlines
+			local label //in this case, only used by the spawnicon tooltip's list of editable options, so just make this a list of checkbox names separated by newlines
 			for k, v in pairs (processedv.checkboxes) do
 				max = max + k
-				if !pattrib then
-					pattrib = ""
+				if !label then
+					label = ""
 				else
-					pattrib = pattrib .. "\n"
+					label = label .. "\n"
 				end
-				pattrib = pattrib .. v
+				label = label .. v
 			end
-			processedv.pattrib = pattrib
+			processedv.label = label
 			processedv.inMin = min
 			processedv.inMax = max
 			processedv.outMin = min
@@ -2037,7 +2037,7 @@ local processfuncs = {
 				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax)) //make sure the default value of the slider in the edit window isn't outside its range (see tf2 speech_mediccall)
 				cpoint_from_attrib_value(processed, attrib, "input control point number", "axis", {
 					["axis"] = axis,
-					["pattrib"] = pattrib,
+					["label"] = pattrib,
 					["inMin"] = inMin,
 					["inMax"] = inMax,
 					["outMin"] = outMin,
@@ -2069,13 +2069,13 @@ local processfuncs = {
 		["remap distance between two control points to scalar"] = function(processed, attrib)
 			//this uses all the same scalars as remap control point to scalar, but actually uses the distance between two positions to get the value, so use position controls
 			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
-			cpoint_from_attrib_value(processed, attrib, "starting control point", nil, {["pattrib"] = pattrib})
-			cpoint_from_attrib_value(processed, attrib, "ending control point", nil, {["pattrib"] = pattrib})
+			cpoint_from_attrib_value(processed, attrib, "starting control point", nil, {["label"] = pattrib})
+			cpoint_from_attrib_value(processed, attrib, "ending control point", nil, {["label"] = pattrib})
 		end,
 		["remap distance to control point to scalar"] = function(processed, attrib)
 			//like the above but uses the distance between a single cpoint's position and the particle (sprite?) itself (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Remap_Distance_to_Control_Point_to_Scalar)
 			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
-			cpoint_from_attrib_value(processed, attrib, "control point", nil, {["pattrib"] = pattrib})
+			cpoint_from_attrib_value(processed, attrib, "control point", nil, {["label"] = pattrib})
 		end,
 		["remap dot product to scalar"] = function (processed, attrib)
 			//like "remap control point to scalar", except it gets the angle(?) of 2 cpoints and does math with them to set the scalar. not listed in wiki.
@@ -2086,8 +2086,8 @@ local processfuncs = {
 			//whatever, just make this a position control, seems it's like "remap direction to cp to vector", and should be either this or a manual angle input.
 			//update: actually just combine this one, the only effects that have a position control *for this operator only* are ones that didn't set up the player yaw thing properly
 			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
-			cpoint_from_attrib_value(processed, attrib, "first input control point", "position_combine", {["pattrib"] = pattrib})
-			cpoint_from_attrib_value(processed, attrib, "second input control point", "position_combine", {["pattrib"] = pattrib})
+			cpoint_from_attrib_value(processed, attrib, "first input control point", "position_combine", {["label"] = pattrib})
+			cpoint_from_attrib_value(processed, attrib, "second input control point", "position_combine", {["label"] = pattrib})
 		end,
 		["rotation orient relative to cp"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point") end,
 		["set child control points from particle positions"] = function(processed, attrib)
@@ -2161,7 +2161,7 @@ local processfuncs = {
 					if doaxis then
 						cpoint_from_attrib_value(processed, attrib, "scale from conrol point (radius 1/radius 2/offset)", "axis", {
 							["axis"] = axis,
-							["pattrib"] = "Epitrochoid " .. axisv .. " multiplier",
+							["label"] = "Epitrochoid " .. axisv .. " multiplier",
 							//no min/max
 							["default"] = 1,
 						})
@@ -2200,7 +2200,7 @@ local processfuncs = {
 					if doaxis then
 						cpoint_from_attrib_value(processed, attrib, cpoint, "axis", {
 							["axis"] = axis,
-							["pattrib"] = "Ring " .. axisv .. " multiplier",
+							["label"] = "Ring " .. axisv .. " multiplier",
 							//no min/max
 							["default"] = 1,
 						})
@@ -2286,7 +2286,7 @@ local processfuncs = {
 				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax)) //make sure the default value of the slider in the edit window isn't outside its range (see tf2 speech_mediccall)
 				cpoint_from_attrib_value(processed, attrib, "input control point number", "axis", {
 					["axis"] = axis,
-					["pattrib"] = pattrib,
+					["label"] = pattrib,
 					["inMin"] = inMin,
 					["inMax"] = inMax,
 					["outMin"] = outMin,
@@ -2310,7 +2310,7 @@ local processfuncs = {
 				default = Vector(math.Remap(1, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(1, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(1, outMin.z, outMax.z, inMin.z, inMax.z))
 			end
 			cpoint_from_attrib_value(processed, attrib, "input control point number", "vector", {
-				["pattrib"] = pattrib,
+				["label"] = pattrib,
 				["inMin"] = inMin,
 				["inMax"] = inMax,
 				["outMin"] = outMin,
@@ -2321,7 +2321,7 @@ local processfuncs = {
 		end,
 		["remap initial distance to control point to scalar"] = function(processed, attrib)
 			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
-			cpoint_from_attrib_value(processed, attrib, "control point", nil, {["pattrib"] = pattrib})
+			cpoint_from_attrib_value(processed, attrib, "control point", nil, {["label"] = pattrib})
 		end,
 		["remap scalar to vector"] = function(processed, attrib)
 			local field = attrib["output field"] or 0
@@ -2361,7 +2361,7 @@ local processfuncs = {
 					//let players manually set the values if they spawned a child effect on its own, or for some hypothetical use case where it's intended to be supplied by code or something
 					//this is silly, who's going to use this?
 					cpoint_from_attrib_value(processed, attrib, "control_point_number", "vector", {
-						["pattrib"] = "Velocity Direction Normal",
+						["label"] = "Velocity Direction Normal",
 						["inMin"] = Vector(-1,-1,-1),
 						["inMax"] = Vector(1,1,1),
 						["outMin"] = Vector(-1,-1,-1),
@@ -2372,7 +2372,7 @@ local processfuncs = {
 					local name = attrib._categoryName .. " " .. attrib.functionName .. ": control_point_number (+ 1 for Inherit from parent)"
 					PartCtrl_CPoint_AddToProcessed(processed, cpoint + 1, name, "axis", {
 						["axis"] = 0,
-						["pattrib"] = "Velocity Scale",
+						["label"] = "Velocity Scale",
 						["inMin"] = 0,
 						["inMax"] = 1,
 						["outMin"] = 0, //I'd like the slider to use maximum/minimum velocity instead so it looks nicer,
@@ -2416,7 +2416,7 @@ local processfuncs = {
 			if axis > -1 then
 				cpoint_from_attrib_value(processed, attrib, "emission count scale control point", "axis", {
 					["axis"] = axis,
-					["pattrib"] = "Emission Count Scale",
+					["label"] = "Emission Count Scale",
 					["inMin"] = 0, //will crash if value is set to less than 0
 					["outMin"] = 0,
 					//no max
@@ -2809,7 +2809,7 @@ function PartCtrl_ProcessPCF(filename)
 						if v["vector"][k2] != nil then
 							local newtab = table.Copy(v2)
 							for k3, v3 in pairs (v["vector"]) do
-								if k3 != k2 and v3.pattrib == v2.pattrib and v3.inMin == v2.inMin and v3.inMax == v2.inMax
+								if k3 != k2 and v3.label == v2.label and v3.inMin == v2.inMin and v3.inMax == v2.inMax
 								and v3.outMin == v2.outMin and v3.outMax == v2.outMax then
 									newtab.name = newtab.name .. ",\n" .. v3.name
 									v["vector"][k3] = nil
@@ -2827,7 +2827,7 @@ function PartCtrl_ProcessPCF(filename)
 						if v["axis"][k2] != nil then
 							local newtab = table.Copy(v2)
 							for k3, v3 in pairs (v["axis"]) do
-								if k3 != k2 and v3.pattrib == v2.pattrib and v3.inMin == v2.inMin and v3.inMax == v2.inMax
+								if k3 != k2 and v3.label == v2.label and v3.inMin == v2.inMin and v3.inMax == v2.inMax
 								and v3.outMin == v2.outMin and v3.outMax == v2.outMax and v3.axis == v2.axis then
 									newtab.name = newtab.name .. ",\n" .. v3.name
 									v["axis"][k3] = nil

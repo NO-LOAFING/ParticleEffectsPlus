@@ -1528,7 +1528,7 @@ if SERVER then
 						for k, v in pairs (ent.ParticleInfo) do
 							if v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
 								local tab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]["cpoints"][k]["vector"][v.which]
-								if istable(tab) and tab.pattrib == "Color" then
+								if istable(tab) and tab.label == "Color" then
 									local vec = Vector()
 									vec.x = math.Remap(color.r/255, tab.outMin.x, tab.outMax.x, tab.inMin.x, tab.inMax.x)
 									vec.y = math.Remap(color.g/255, tab.outMin.y, tab.outMax.y, tab.inMin.y, tab.inMax.y)
