@@ -990,7 +990,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
-			["label"] = "Alpha, Spark Multiplier",
+			["label"] = "Alpha, Spark Count Multiplier",
 			["min"] = 0,
 			["max"] = 255/1.2, //again, this uses the gauss damage value, but the alpha for the impact sprite uses magnitude*1.2, so we have to cap this at 255/1.2 so the alpha won't overflow and glitch out
 			["default"] = 200,
@@ -1201,7 +1201,114 @@ list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash", {
 	end
 })
 
-//TODO: the rest, MuzzleEffect onward; already did all the hl2 Tracer ones and ImpactGunship https://wiki.facepunch.com/gmod/Default_Effects
+//Can't find any code registering this effect or giving it a callback function, might be a garry creation. Is it an implmentation of this? It's the only name that matches. https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx.cpp#L185
+//Or maybe this? https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/EffectsClient.cpp#L160
+list.Set("PartCtrl_UtilFx", "MuzzleEffect", {
+	title = "Garry's Mod",
+	default_time = 0.1, //lifetime from code?
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["label"] = "Scale",
+			["min"] = 0,
+			["max"] = 16, //past this point or so, the sprites stop getting bigger and just spread out more, this max is already pushing it
+			["default"] = 1,
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetAngles(self:CPointPosAng(0).ang)
+		ed:SetScale(self.ParticleInfo[1].val.x)
+		//without documentation of the callback func, had to try setting other values manually (flags, color, start, normal) to see if they're hooked up to something like FX_MuzzleEffect's color arg or CEffectsClient::MuzzleFlash's type arg, but none of these do anything useful
+		return true
+	end
+})
+
+//another one without a callback func i can find, is it this? //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_sparks.cpp#L620
+list.Set("PartCtrl_UtilFx", "MetalSpark", {
+	title = "Garry's Mod",
+	default_time = 0.1, //lifetime from code?
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		//tested SetScale, SetMagnitude, SetRadius, they don't do anything; if that's the correct func then it seems the scale arg isn't hooked up
+		return true
+	end
+})
+
+//another one without a callback func, might be this (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_sparks.cpp#L300)
+list.Set("PartCtrl_UtilFx", "ElectricSpark", {
+	title = "Garry's Mod",
+	default_time = 1,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["label"] = "Trail Length",
+			["min"] = 0,
+			["max"] = 10, //reasonable limit of what looks good, and even this is pushing it
+			["default"] = 1,
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+			["axis"] = 1, //y
+			["label"] = "Spark Count, Lifetime Multiplier",
+			["min"] = 0,
+			["max"] = 4, //because this is also a lifetime multiplier (and the default lifetime of some sparks is multiple secs), if this goes too high, it can easily hit an internal limit that makes particles stop spawning entirely, so cap it at the max value used in code (combine ball). if players want more sparks, then they can spawn more effects. https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/hl2/c_prop_combine_ball.cpp#L337
+			["default"] = 1,
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetScale(self.ParticleInfo[1].val.x)
+		ed:SetMagnitude(self.ParticleInfo[1].val.y)
+		return true
+	end
+})
+
+//another without a callback func, might be this (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_sparks.cpp#L722)
+list.Set("PartCtrl_UtilFx", "Sparks", {
+	title = "Garry's Mod",
+	default_time = 1,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["label"] = "Trail Length",
+			["min"] = 0,
+			["max"] = 32, //unlike ElectricSpark, this effect has a radius scalar, so it can actually still look good at higher values
+			["default"] = 1,
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+			["axis"] = 1, //y
+			["label"] = "Spark Count, Lifetime Multiplier",
+			["min"] = 0,
+			["max"] = 4, //see previous effect
+			["default"] = 1,
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
+			["axis"] = 2, //z
+			["label"] = "Trail Width",
+			["min"] = 0,
+			["max"] = 64,
+			["default"] = 6, //default from the only code i could find that uses this effect (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/hl2mp/weapon_stunstick.cpp#L897)
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetScale(self.ParticleInfo[1].val.x)
+		ed:SetMagnitude(self.ParticleInfo[1].val.y)
+		ed:SetRadius(self.ParticleInfo[1].val.z)
+		return true
+	end
+})
+
+//TODO: the rest, waterripple onward; already did all the hl2 Tracer ones and ImpactGunship https://wiki.facepunch.com/gmod/Default_Effects
 
 
 
