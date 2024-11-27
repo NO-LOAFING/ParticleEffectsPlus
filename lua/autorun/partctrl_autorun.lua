@@ -1308,7 +1308,81 @@ list.Set("PartCtrl_UtilFx", "Sparks", {
 	end
 })
 
-//TODO: the rest, waterripple onward; already did all the hl2 Tracer ones and ImpactGunship https://wiki.facepunch.com/gmod/Default_Effects
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L469
+list.Set("PartCtrl_UtilFx", "waterripple", {
+	title = "Garry's Mod",
+	default_time = 1.5, //lifetime value from code
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["label"] = "Scale",
+			["min"] = 0,
+			["max"] = 256, //arbitrary max
+			["default"] = 8,
+		})
+		--[[PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+			["axis"] = 1, //y
+			["label"] = "Fluid Type",
+			["default"] = 0,
+			["dropdown"] = {
+				[0] = "Water",
+				[1] = "Slime", //FX_WATER_IN_SLIME (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shareddefs.h#L566)
+			},
+		})]]
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetScale(self.ParticleInfo[1].val.x)
+		//ed:SetFlags(self.ParticleInfo[1].val.y) //some things like jeep and player code set a flag for slime instead of water, but waterripple doesn't have handling for this (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/vehicle_jeep.cpp#L670, https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/hl2_player.cpp#L3732)
+		return true
+	end
+})
+
+local SplashDoProcess = function(tab)
+	PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+	PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		["axis"] = 0, //x
+		["label"] = "Scale",
+		["min"] = 0,
+		["max"] = 32, //hard-coded max for water splash (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L133-L138)
+		["default"] = 6, //avg default size of gunshot splash (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/ammodef.cpp#L152-L171)
+	})
+	PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+		["axis"] = 1, //y
+		["label"] = "Fluid Type",
+		["default"] = 0,
+		["dropdown"] = {
+			[0] = "Water",
+			[1] = "Slime", //FX_WATER_IN_SLIME (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shareddefs.h#L566)
+		},
+	})
+end
+local SplashDoEffect = function(self, ed)
+	ed:SetOrigin(self:CPointPosAng(0).pos)
+	ed:SetScale(self.ParticleInfo[1].val.x)
+	ed:SetFlags(self.ParticleInfo[1].val.y)
+	return true
+end
+
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L450
+list.Set("PartCtrl_UtilFx", "gunshotsplash", {
+	title = "Garry's Mod",
+	default_time = 2, //max lifetime from code
+	DoProcess = SplashDoProcess,
+	DoEffect = SplashDoEffect
+})
+
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L431
+//Functionally 100% identical to gunshotsplash, but i've left them both here just in case another addon replaces them with different custom fx
+list.Set("PartCtrl_UtilFx", "watersplash", {
+	title = "Garry's Mod",
+	default_time = 2,
+	DoProcess = SplashDoProcess,
+	DoEffect = SplashDoEffect
+})
+
+//TODO: the rest, ShotgunShellEject onward https://wiki.facepunch.com/gmod/Default_Effects
 
 
 
