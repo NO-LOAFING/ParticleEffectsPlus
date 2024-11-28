@@ -1339,50 +1339,194 @@ list.Set("PartCtrl_UtilFx", "waterripple", {
 	end
 })
 
-local SplashDoProcess = function(tab)
-	PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
-	PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
-		["axis"] = 0, //x
-		["label"] = "Scale",
-		["min"] = 0,
-		["max"] = 32, //hard-coded max for water splash (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L133-L138)
-		["default"] = 6, //avg default size of gunshot splash (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/ammodef.cpp#L152-L171)
-	})
-	PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
-		["axis"] = 1, //y
-		["label"] = "Fluid Type",
-		["default"] = 0,
-		["dropdown"] = {
-			[0] = "Water",
-			[1] = "Slime", //FX_WATER_IN_SLIME (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shareddefs.h#L566)
-		},
-	})
-end
-local SplashDoEffect = function(self, ed)
-	ed:SetOrigin(self:CPointPosAng(0).pos)
-	ed:SetScale(self.ParticleInfo[1].val.x)
-	ed:SetFlags(self.ParticleInfo[1].val.y)
-	return true
-end
-
-//https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L450
-list.Set("PartCtrl_UtilFx", "gunshotsplash", {
+local splash = {
 	title = "Garry's Mod",
 	default_time = 2, //max lifetime from code
-	DoProcess = SplashDoProcess,
-	DoEffect = SplashDoEffect
-})
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["label"] = "Scale",
+			["min"] = 0,
+			["max"] = 32, //hard-coded max for water splash (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L133-L138)
+			["default"] = 6, //avg default size of gunshot splash (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/ammodef.cpp#L152-L171)
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+			["axis"] = 1, //y
+			["label"] = "Fluid Type",
+			["default"] = 0,
+			["dropdown"] = {
+				[0] = "Water",
+				[1] = "Slime", //FX_WATER_IN_SLIME (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shareddefs.h#L566)
+			},
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetScale(self.ParticleInfo[1].val.x)
+		ed:SetFlags(self.ParticleInfo[1].val.y)
+		return true
+	end
+}
 
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L450
+list.Set("PartCtrl_UtilFx", "gunshotsplash", splash)
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L431
 //Functionally 100% identical to gunshotsplash, but i've left them both here just in case another addon replaces them with different custom fx
-list.Set("PartCtrl_UtilFx", "watersplash", {
+list.Set("PartCtrl_UtilFx", "watersplash", splash)
+
+local shelleject = {
 	title = "Garry's Mod",
-	default_time = 2,
-	DoProcess = SplashDoProcess,
-	DoEffect = SplashDoEffect
+	default_time = 2, //max lifetime from code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/c_te_legacytempents.cpp#L1691)
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Entity")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetAngles(self:CPointPosAng(0).ang)
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		return true
+	end
+}
+
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_shelleject.cpp
+list.Set("PartCtrl_UtilFx", "ShotgunShellEject", shelleject)
+list.Set("PartCtrl_UtilFx", "RifleShellEject", shelleject)
+list.Set("PartCtrl_UtilFx", "ShellEject", shelleject)
+
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_impact.cpp#L96
+//Not really in this addon's wheelhouse
+--[[list.Set("PartCtrl_UtilFx", "RagdollImpact", {
+	title = "Garry's Mod",
+	default_time = 1,
+	info = "Draws a line between control points 0 and 1. If it hits a clientside ragdoll, pushes it.",
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
+		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect DamageType", "axis", {
+			["axis"] = 0, //x
+			["default"] = 0,
+			["checkboxes"] = {
+				[DMG_BLAST] = "DMG_BLAST (more knockback to client ragdolls)" //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_baseanimating.cpp#L395
+			}
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetStart(self:CPointPosAng(0).pos)
+		ed:SetDamageType(self.ParticleInfo[2].val.x)
+		return true
+	end
+})]]
+
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_explosion.cpp#L1418
+list.Set("PartCtrl_UtilFx", "HelicopterMegaBomb", {
+	title = "Garry's Mod",
+	default_time = 0.4, //max lifetime value from code
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		return true
+	end
 })
 
-//TODO: the rest, ShotgunShellEject onward https://wiki.facepunch.com/gmod/Default_Effects
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_explosion.cpp#L1314
+list.Set("PartCtrl_UtilFx", "WaterSurfaceExplosion", {
+	title = "Garry's Mod",
+	default_time = 2,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		--[[PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+			["axis"] = 0, //x
+			["label"] = "Force",
+			["min"] = 0,
+			["max"] = 1280,
+			["default"] = 128, //default value used by all code that creates this effect
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 1, //y
+			["label"] = "Scale",
+			["min"] = 0,
+			["max"] = 1280,
+			["default"] = 128, //default value used by all code that creates this effect
+		})]]
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+			["axis"] = 2, //z
+			["default"] = 0,
+			["checkboxes"] = { //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/tempentity.h
+				[tonumber("0x4")] = "No sound", //TE_EXPLFLAG_NOSOUND 
+				//[tonumber("0x40")] = "No fireball", //TE_EXPLFLAG_NOFIREBALL //water explosion code looks for these, but in practice, they don't work?
+				//[tonumber("0x8")] = "No particles", //TE_EXPLFLAG_NOPARTICLES //^
+			}
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 1, //y
+			["default"] = 128, //default value used by all code that creates this effect
+			["checkboxes"] = {
+				[128] = "Water ripples",
+			}
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		//ed:SetMagnitude(self.ParticleInfo[1].val.x) //magnitude and scale are hooked up, but in practice, don't seem to change the effect at all
+		ed:SetScale(self.ParticleInfo[1].val.y) //only exception is that scale makes the ripple effect not show up if set to 0, so turn it into a checkbox
+		ed:SetFlags(self.ParticleInfo[1].val.z)
+		return true
+	end
+})
+
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_explosion.cpp#L804
+list.Set("PartCtrl_UtilFx", "Explosion", {
+	title = "Garry's Mod",
+	default_time = 2,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		--[[PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+			["axis"] = 0, //x
+			["label"] = "Force",
+			["min"] = 0,
+			["max"] = 1280,
+			["default"] = 128,
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 1, //y
+			["label"] = "Scale",
+			["min"] = 0,
+			["max"] = 1280,
+			["default"] = 128,
+		})]]
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+			["axis"] = 2, //z
+			["default"] = 0,
+			["checkboxes"] = { //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/tempentity.h
+				//[tonumber("0x1")] = "No additive", //TE_EXPLFLAG_NOADDITIVE //no visible difference
+				//[tonumber("0x2")] = "No dynamic lights", //TE_EXPLFLAG_NODLIGHTS //already has no dynamic light, no effect
+				[tonumber("0x4")] = "No sound", //TE_EXPLFLAG_NOSOUND
+				[tonumber("0x8")] = "No sparks and debris", //TE_EXPLFLAG_NOPARTICLES
+				//[tonumber("0x10")] = "Draw alpha", //TE_EXPLFLAG_DRAWALPHA //no visible difference
+				//[tonumber("0x20")] = "Rotate", //TE_EXPLFLAG_ROTATE //no visible difference
+				[tonumber("0x40")] = "No fireball", //TE_EXPLFLAG_NOFIREBALL
+				[tonumber("0x80")] = "No fireball smoke", //TE_EXPLFLAG_NOFIREBALLSMOKE
+			}
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		--[[ed:SetMagnitude(self.ParticleInfo[1].val.x) //magnitude and scale are hooked up, but in practice, don't seem to change the effect at all
+		ed:SetScale(self.ParticleInfo[1].val.y)]]
+		ed:SetScale(1) //except the fireball stops showing up at scale 0. we already have a flag for that, so just ensure the scale is non-zero.
+		ed:SetMagnitude(1) //can't reproduce this, but at one point, the explosion effect was being arbitrarily skewed to the side if magnitude was high enough, so try to ensure that doesn't happen
+		ed:SetFlags(self.ParticleInfo[1].val.z)
+		return true
+	end
+})
+
+//TODO: the rest, HunterDamage onward https://wiki.facepunch.com/gmod/Default_Effects
 
 
 
