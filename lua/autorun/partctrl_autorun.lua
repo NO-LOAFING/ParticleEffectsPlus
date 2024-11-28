@@ -1397,7 +1397,7 @@ list.Set("PartCtrl_UtilFx", "RifleShellEject", shelleject)
 list.Set("PartCtrl_UtilFx", "ShellEject", shelleject)
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_impact.cpp#L96
-//Not really in this addon's wheelhouse
+//Only moves client ragdolls, not really in this addon's wheelhouse
 --[[list.Set("PartCtrl_UtilFx", "RagdollImpact", {
 	title = "Garry's Mod",
 	default_time = 1,
@@ -1517,10 +1517,16 @@ list.Set("PartCtrl_UtilFx", "Explosion", {
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:CPointPosAng(0).pos)
+		//ed:SetAngles(self:CPointPosAng(0).ang) //neither of these work, the utileffect implementation of explosions has no way to access the angle, even though internally it does have one (try firing the hl2 rpg at walls or ceilings)
+		//ed:SetNormal(self:CPointPosAng(0).ang:Forward()) //^
+		//test, see if we can access the explosion's angle through an associated entity; doesn't work
+		--[[local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)]]
 		--[[ed:SetMagnitude(self.ParticleInfo[1].val.x) //magnitude and scale are hooked up, but in practice, don't seem to change the effect at all
 		ed:SetScale(self.ParticleInfo[1].val.y)]]
 		ed:SetScale(1) //except the fireball stops showing up at scale 0. we already have a flag for that, so just ensure the scale is non-zero.
-		ed:SetMagnitude(1) //can't reproduce this, but at one point, the explosion effect was being arbitrarily skewed to the side if magnitude was high enough, so try to ensure that doesn't happen
+		ed:SetMagnitude(1) //can't consistently reproduce this, but sometimes, the explosion effect gets skewed forward (relative to the world, not rotatable) if the magnitude is high enough, so prevent that from happening
 		ed:SetFlags(self.ParticleInfo[1].val.z)
 		return true
 	end
