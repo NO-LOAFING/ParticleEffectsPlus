@@ -1579,7 +1579,7 @@ list.Set("PartCtrl_UtilFx", "BloodImpact", {
 		ed:SetOrigin(self:CPointPosAng(0).pos)
 		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
 		ed:SetColor(self.ParticleInfo[1].val.x)
-		//ed:SetScale(self.ParticleInfo[1].val.y) //this value is hooked up to the callback and effects funcs, but is unused
+		//ed:SetScale(self.ParticleInfo[1].val.y) //this value is hooked up to the callback and effect funcs, but is unused
 		return true
 	end
 })
@@ -1633,7 +1633,65 @@ list.Set("PartCtrl_UtilFx", "bloodspray", {
 	end
 })
 
-//TODO: the rest, WheelDust onward https://wiki.facepunch.com/gmod/Default_Effects
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_vehicle_jeep.cpp#L326
+list.Set("PartCtrl_UtilFx", "WheelDust", {
+	title = "Garry's Mod",
+	default_time = 0, //the code that plays this effect calls it every think; barely visible otherwise https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/fourwheelvehiclephysics.cpp#L767
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["label"] = "Scale",
+			["min"] = 0,
+			["max"] = 8, //the effect loses coherence at a scale higher than about 8, as the particles hit a size cap or something
+			["default"] = 1, //in the code that calls this, this is a scale from 0-1 (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/fourwheelvehiclephysics.cpp#L699)
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetScale(self.ParticleInfo[1].val.x)
+		return true
+	end
+})
+
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_rope.cpp#L868
+list.Set("PartCtrl_UtilFx", "ShakeRopes", {
+	title = "Garry's Mod",
+	default_time = 1, //arbitrary
+	info = "No visible particles; makes ropes move",
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
+			["axis"] = 0, //x
+			["label"] = "Radius",
+			["min"] = 0,
+			["max"] = 4096, //arbitrary
+			["default"] = 1024, //1024 from chopper code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/cbasehelicopter.cpp#L361, https://github.com/ValveSoftware/source-sdk-2013/blob/masterf/mp/src/game/server/hl2/cbasehelicopter.h#L65), 1200 from strider (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_strider.cpp#L4417)
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+			["axis"] = 1, //y
+			["label"] = "Magnitude",
+			["min"] = 0,
+			["max"] = 1280, //arbitrary
+			["default"] = 128, //128 from chopper code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/cbasehelicopter.cpp#L361), 150 from strider (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_strider.cpp#L4417)
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetRadius(self.ParticleInfo[1].val.x)
+		ed:SetMagnitude(self.ParticleInfo[1].val.y)
+		return true
+	end
+})
+
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/c_particle_system.cpp#L253
+//ParticleEffect is a convenience func to dispatch pcf effects through the util.Effect system, using the hitbox value to store an internal pcf effect ID; also uses some other effectdata values 
+//that aren't exposed to lua like a "customcolors" table and an "offset" value. ParticleEffectStop is similar, it makes pcf effects attached to an entity stop emission.
+//list.Set("PartCtrl_UtilFx", "ParticleEffect", )
+//list.Set("PartCtrl_UtilFx", "ParticleEffectStop", )
+
+//TODO: base gamemode and sandbox gamemode effects https://wiki.facepunch.com/gmod/Default_Effects#basegamemodeeffects
 
 
 
