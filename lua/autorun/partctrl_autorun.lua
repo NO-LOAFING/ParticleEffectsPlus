@@ -1532,7 +1532,108 @@ list.Set("PartCtrl_UtilFx", "Explosion", {
 	end
 })
 
-//TODO: the rest, HunterDamage onward https://wiki.facepunch.com/gmod/Default_Effects
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_blood.cpp#L591
+list.Set("PartCtrl_UtilFx", "HunterDamage", {
+	title = "Garry's Mod",
+	default_time = 3, //max lifetime from code
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		return true
+	end
+})
+
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_blood.cpp#L532
+list.Set("PartCtrl_UtilFx", "BloodImpact", {
+	title = "Garry's Mod",
+	default_time = .75, //max particle lifetime in code
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
+			["axis"] = 0, //x
+			["label"] = "Color",
+			["default"] = BLOOD_COLOR_RED,
+			["dropdown"] = {
+				[DONT_BLEED] = "Pink",
+				[BLOOD_COLOR_RED] = "Red",
+				[BLOOD_COLOR_YELLOW] = "Yellow",
+				[BLOOD_COLOR_GREEN] = "Green",
+				[BLOOD_COLOR_MECH] = "Mech",
+				[BLOOD_COLOR_ANTLION] = "Antlion",
+				[BLOOD_COLOR_ZOMBIE] = "Zombie",
+				[BLOOD_COLOR_ANTLION_WORKER] = "Antlion Worker",
+			},
+		})
+		--[[PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 1, //y
+			["label"] = "Scale",
+			["min"] = 0,
+			["max"] = 128,
+			["default"] = 1, //default scale from the only code that i can find using this effect, the zombie base. that can't be right, there have to be others using this in some way. (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_BaseZombie.cpp#L1169)
+		})]]
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetColor(self.ParticleInfo[1].val.x)
+		//ed:SetScale(self.ParticleInfo[1].val.y) //this value is hooked up to the callback and effects funcs, but is unused
+		return true
+	end
+})
+
+//https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_blood.cpp#L490
+list.Set("PartCtrl_UtilFx", "bloodspray", {
+	title = "Garry's Mod",
+	default_time = 1, //max particle lifetime in code
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
+			["axis"] = 0, //x
+			["label"] = "Color",
+			["default"] = BLOOD_COLOR_RED,
+			["dropdown"] = {
+				[DONT_BLEED] = "Pink",
+				[BLOOD_COLOR_RED] = "Red",
+				[BLOOD_COLOR_YELLOW] = "Yellow",
+				[BLOOD_COLOR_GREEN] = "Green",
+				[BLOOD_COLOR_MECH] = "Mech",
+				[BLOOD_COLOR_ANTLION] = "Antlion",
+				[BLOOD_COLOR_ZOMBIE] = "Zombie",
+				[BLOOD_COLOR_ANTLION_WORKER] = "Antlion Worker",
+			},
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 1, //y
+			["label"] = "Scale",
+			["min"] = 0,
+			["max"] = 128, //arbitrary max, this is uncapped
+			["default"] = 8, //from most of the code that calls this effect (barnacle, zombie) https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_barnacle.cpp#L1670, https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_BaseZombie.cpp#L2281
+		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+			["axis"] = 2, //z
+			["default"] = tonumber("0x01") + tonumber("0x02") + tonumber("0x04"),
+			["checkboxes"] = { //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shareddefs.h#L628
+				[tonumber("0x01")] = "Enable drops", //FX_BLOODSPRAY_DROPS
+				[tonumber("0x02")] = "Enable gore", //FX_BLOODSPRAY_GORE
+				[tonumber("0x04")] = "Enable cloud", //FX_BLOODSPRAY_CLOUD
+				//there's also FX_BLOODSPRAY_ALL = 0xFF but i'm fairly sure it's just a combination of all of these, it's not mentioned in the effect code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_blood.cpp#L76)
+			}
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetColor(self.ParticleInfo[1].val.x)
+		ed:SetScale(self.ParticleInfo[1].val.y)
+		ed:SetFlags(self.ParticleInfo[1].val.z)
+		return true
+	end
+})
+
+//TODO: the rest, WheelDust onward https://wiki.facepunch.com/gmod/Default_Effects
 
 
 
