@@ -1727,7 +1727,203 @@ list.Set("PartCtrl_UtilFx", "ToolTracer", {
 	end
 })
 
-//TODO: sandbox gamemode effects https://wiki.facepunch.com/gmod/Default_Effects#basegamemodeeffects https://github.com/search?q=repo%3AFacepunch%2Fgarrysmod+util.Effect&type=code
+//https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/balloon_pop.lua
+list.Set("PartCtrl_UtilFx", "balloon_pop", {
+	title = "Garry's Mod",
+	default_time = 3, //arbitrary; lifetime from code is 10, but this looks silly because most of the time is just spent with nearly invisible particles sitting on the ground
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "vector", {
+			["label"] = "Color",
+			//["min"] = Vector(0,0,0),
+			//["max"] = Vector(255,255,255),
+			//color picker code expects outMin/Max to be 0-1
+			["inMin"] = Vector(0,0,0),
+			["inMax"] = Vector(255,255,255),
+			["outMin"] = Vector(0,0,0),
+			["outMax"] = Vector(1,1,1),
+			["default"] = Vector(255,255,255), 
+		})
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetStart(self.ParticleInfo[1].val)
+		return true
+	end
+})
+
+//https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/entity_remove.lua
+list.Set("PartCtrl_UtilFx", "entity_remove", {
+	title = "Garry's Mod",
+	default_time = 1,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
+	end,
+	DoEffect = function(self, ed)
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		//remover tool code sets Origin as well, but remove property doesn't, and the effect code doesn't use this anywhere
+		return true
+	end
+})
+
+//https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/inflator_magic.lua
+list.Set("PartCtrl_UtilFx", "inflator_magic", {
+	title = "Garry's Mod",
+	default_time = 0, //should run continuously
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		return true
+	end
+})
+
+//https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/lasertracer.lua
+list.Set("PartCtrl_UtilFx", "LaserTracer", {
+	title = "Garry's Mod",
+	default_time = 0.1, //arbitrary, same as hl2 tracers; like those, this effect's lifetime depends on its length
+	min_length = 256,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Entity, Attachment")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetStart(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:CPointPosAng(1).pos)
+
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		ed:SetAttachment(self.ParticleInfo[0].attach)
+		return true
+	end
+})
+
+//https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/phys_freeze.lua
+list.Set("PartCtrl_UtilFx", "phys_freeze", {
+	title = "Garry's Mod",
+	default_time = 0.5,
+	info = "Must be attached to a model",
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Entity")
+	end,
+	DoEffect = function(self, ed)
+		//PlayerFrozeObject code sets origin, but the effect code doesn't use this, https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/init.lua#L150
+		//however, we need to set it anyway, or else the effect can fail to render sometimes
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		return true
+	end
+})
+
+//https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/phys_unfreeze.lua
+list.Set("PartCtrl_UtilFx", "phys_unfreeze", {
+	title = "Garry's Mod",
+	default_time = 0.5,
+	info = "Must be attached to a model",
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Entity")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		return true
+	end
+})
+
+//https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/propspawn.lua
+list.Set("PartCtrl_UtilFx", "propspawn", {
+	title = "Garry's Mod",
+	default_time = 1,
+	info = "Must be attached to a model",
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
+	end,
+	DoEffect = function(self, ed)
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		return true
+	end
+})
+
+//https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/selection_indicator.lua
+list.Set("PartCtrl_UtilFx", "selection_indicator", {
+	title = "Garry's Mod",
+	default_time = 1,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal, Entity")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+
+		//this effect uses the Attachment value to store a physics object id for its selection_ring child to get parented to; just make this 0 (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/weapons/gmod_tool/shared.lua#L198)
+		ed:SetAttachment(0)
+		return true
+	end
+})
+
+//https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/selection_ring.lua
+list.Set("PartCtrl_UtilFx", "selection_ring", {
+	title = "Garry's Mod",
+	default_time = 0.3, //max lifetime from code? or at least it's close?
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal, Entity")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+
+		//again, this effect uses the Attachment value to store a physics object id to get parented to; just make this 0 (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/selection_ring.lua#L16)
+		ed:SetAttachment(0)
+		return true
+	end
+})
+
+//https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/wheel_indicator.lua
+list.Set("PartCtrl_UtilFx", "wheel_indicator", {
+	title = "Garry's Mod",
+	default_time = 1.25,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+			["axis"] = 0, //x
+			["label"] = "Direction",
+			["default"] = 1,
+			["dropdown"] = {
+				[1] = "Clockwise",
+				[-1] = "Counter-Clockwise"
+			}
+		})
+	end,
+	DoEffect = function(self, ed)
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+
+		ed:SetOrigin(Vector(100,0,0)) //this is the local normalized forward vector of the effect * 100; make it point forward (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/entities/gmod_wheel.lua#L176)
+		ed:SetScale(self.ParticleInfo[1].val.x) //motor.Direction, which is either 1 or -1 (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/entities/gmod_wheel.lua#L169-L204)
+		return true
+	end
+})
 
 
 
