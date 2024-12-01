@@ -140,7 +140,7 @@ local needs_attachment_1 = "Must be attached to a model with at least 1 attachme
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_sparks.cpp#L1524
 list.Set("PartCtrl_UtilFx", "ManhackSparks", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -157,7 +157,7 @@ list.Set("PartCtrl_UtilFx", "ManhackSparks", {
 //so the effect is just black? only HL2 code that uses this effect is the prototype electrical drone helicopter, on which the effect doesn't show up either. ent_create npc_helicopter spawnflags 131072,
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_attackchopper.cpp#L2533
 --[[list.Set("PartCtrl_UtilFx", "TeslaZap", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
@@ -184,7 +184,7 @@ list.Set("PartCtrl_UtilFx", "ManhackSparks", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx.cpp#L1285
 list.Set("PartCtrl_UtilFx", "TeslaHitboxes", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0.2, //default repeat rate and beam count taken from ragdoll boogie and antlion (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/RagdollBoogie.cpp#L119, https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/game/server/hl2/npc_antlion.cpp#L2254)
 	on_model = {[0] = true},
 	DoProcess = function(tab)
@@ -212,7 +212,7 @@ list.Set("PartCtrl_UtilFx", "TeslaHitboxes", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx.cpp#L812
 list.Set("PartCtrl_UtilFx", "CommandPointer", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0, //needs to render every frame
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -238,7 +238,7 @@ list.Set("PartCtrl_UtilFx", "CommandPointer", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx.cpp#L794
 list.Set("PartCtrl_UtilFx", "GunshipImpact", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0, //internally this is the same as commandpointer, so it needs to render every frame if it wants to stay visible, but in the unused gunship code that calls this, it's just meant to be a little extra flair upon hitting a shot, so maybe don't repeat every frame? who cares, this effect sucks anyway 
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -253,7 +253,7 @@ list.Set("PartCtrl_UtilFx", "GunshipImpact", {
 //this effect has a lifetime of 100 seconds and is impossible to remove otherwise; extremely griefable, do not allow (it's just some ugly rainbow smoke anyway, nothing of value is lost) 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx.cpp#L755
 --[[list.Set("PartCtrl_UtilFx", "Smoke", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = -1, //whatever you do, don't repeat this
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Entity, Attachment")
@@ -273,7 +273,7 @@ list.Set("PartCtrl_UtilFx", "GunshipImpact", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx.cpp#L490
 list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0.1,
 	info = needs_attachment_1,
 	DoProcess = function(tab)
@@ -323,7 +323,7 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 //griefable, creates clientside models that last forever in singleplayer and 30 secs in multiplayer, which have no way to clean up - clientside ents.GetAll() can't even find them 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_stickybolt.cpp#L137-L145
 --[[list.Set("PartCtrl_UtilFx", "BoltImpact", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = -1,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -338,7 +338,7 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 //makes a barely noticeable yellow flash sprite and makes a loud metal sound; not a very useful effect and the sound might be griefable, but we've got other sound-playing ones too so whatever
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_smoke_trail.cpp#L1127
 list.Set("PartCtrl_UtilFx", "RPGShotDown", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -351,7 +351,7 @@ list.Set("PartCtrl_UtilFx", "RPGShotDown", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_impact_effects.cpp#L614
 list.Set("PartCtrl_UtilFx", "GlassImpact", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -365,7 +365,7 @@ list.Set("PartCtrl_UtilFx", "GlassImpact", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/hl2mp/weapon_stunstick.cpp#L900
 list.Set("PartCtrl_UtilFx", "StunstickImpact", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -381,7 +381,7 @@ list.Set("PartCtrl_UtilFx", "StunstickImpact", {
 //than C_BaseCombatWeapon?), also the beam only works if the weapon is being held by the local player (i.e. pick up a gravity gun you attached it to). No one is going to use this.
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/hl2mp/weapon_physcannon.cpp#L3683
 --[[list.Set("PartCtrl_UtilFx", "PhyscannonImpact", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	info = needs_attachment_1,
 	DoProcess = function(tab)
@@ -399,7 +399,7 @@ list.Set("PartCtrl_UtilFx", "StunstickImpact", {
 
 //all this one's code is commented out, does literally nothing (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/hud_blood.cpp#L34)
 --[[list.Set("PartCtrl_UtilFx", "HudBloodSplat", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, -1, "placeholder")
@@ -411,7 +411,7 @@ list.Set("PartCtrl_UtilFx", "StunstickImpact", {
 
 //dynamic light only, hunter uses a pcf for the actual visuals (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/episodic/npc_hunter.cpp#L5965, https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L695)
 list.Set("PartCtrl_UtilFx", "HunterMuzzleFlash", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0.1, //hunter fire rate
 	info = needs_attachment .. ";\nDynamic light only, no particles",
 	DoProcess = function(tab)
@@ -428,7 +428,7 @@ list.Set("PartCtrl_UtilFx", "HunterMuzzleFlash", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_combinegunship.cpp#L1760, https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L654
 list.Set("PartCtrl_UtilFx", "GunshipMuzzleFlash", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0.05, //gunship fire rate
 	info = needs_attachment,
 	DoProcess = function(tab)
@@ -445,7 +445,7 @@ list.Set("PartCtrl_UtilFx", "GunshipMuzzleFlash", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L593
 list.Set("PartCtrl_UtilFx", "ChopperMuzzleFlash", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0.1, //can't find the chopper fire rate but this seems close
 	info = needs_attachment,
 	DoProcess = function(tab)
@@ -463,7 +463,7 @@ list.Set("PartCtrl_UtilFx", "ChopperMuzzleFlash", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L528
 list.Set("PartCtrl_UtilFx", "AirboatMuzzleFlash", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0, //needs to render every frame to look like the one on the vehicle
 	info = needs_attachment,
 	DoProcess = function(tab)
@@ -481,7 +481,7 @@ list.Set("PartCtrl_UtilFx", "AirboatMuzzleFlash", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L403
 list.Set("PartCtrl_UtilFx", "AR2Impact", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0.25, //lifetime value from code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -495,7 +495,7 @@ list.Set("PartCtrl_UtilFx", "AR2Impact", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L379
 list.Set("PartCtrl_UtilFx", "AR2Explosion", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0.75, //max lifetime value from code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -517,7 +517,7 @@ list.Set("PartCtrl_UtilFx", "AR2Explosion", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/hl2/fx_hl2_tracers.cpp#L299
 local tracer = {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0.1,
 	DoProcess = function(tab, extras)
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
@@ -593,7 +593,7 @@ list.Set("PartCtrl_UtilFx", "Tracer", tracer5point5) //https://github.com/ValveS
 //AirboatGunImpact and HelicopterImpact don't make decals or hit ragdolls (note: this doesn't seem to actually be true), and play their own extra fx; only difference between them, aside from Xbox stuff, is that Airboat doesn't do material-based 
 //impact particles, while HelicopterImpact does on metal/computer only, and Airboat doesn't play impact sounds unless it destroyed something, which isn't applicable here
 local impact = {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	info = "Control point 1 sets the model to play the impact effect on; uses the world if unattached.\nControl point 0 draws a line to 1, and plays an impact effect where the line hits the model.",
 	DoProcess = function(tab, extras)
@@ -673,7 +673,7 @@ impact_nodecals_nosurfaceprop.DoProcessExtras.surfaceprop = false
 impact_nodecals_nosurfaceprop.info = impact_noflags.info .. "\nNo decals, no material-specific particle effects, no sounds."
 list.Set("PartCtrl_UtilFx", "AirboatGunImpact", impact_nodecals_nosurfaceprop)
 --[[list.Set("PartCtrl_UtilFx", "AirboatGunImpact", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Origin, Entity")
@@ -691,7 +691,7 @@ list.Set("PartCtrl_UtilFx", "AirboatGunImpact", impact_nodecals_nosurfaceprop)
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_antlion.cpp#L334
 list.Set("PartCtrl_UtilFx", "AntlionGib", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	//default_time = 0.75, //max effect lifetime from code
 	default_time = 3, //gib lifetime from code (2) + 1 sec fadeout time
 	DoProcess = function(tab)
@@ -728,7 +728,7 @@ end
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/game/client/hl2/c_weapon_crossbow.cpp#L159
 list.Set("PartCtrl_UtilFx", "CrossbowLoad", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	info = needs_attachment,
 	DoProcess = function(tab)
@@ -745,7 +745,7 @@ list.Set("PartCtrl_UtilFx", "CrossbowLoad", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/episodic/c_vort_charge_token.cpp#L481
 list.Set("PartCtrl_UtilFx", "VortDispel", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1.25, //lifetime from code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -758,7 +758,7 @@ list.Set("PartCtrl_UtilFx", "VortDispel", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_thumper_dust.cpp#L170
 list.Set("PartCtrl_UtilFx", "ThumperDust", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1.5, //lifetime from code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -780,7 +780,7 @@ list.Set("PartCtrl_UtilFx", "ThumperDust", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_strider.cpp#L1047
 list.Set("PartCtrl_UtilFx", "StriderBlood", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1, //lifetime from code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -802,7 +802,7 @@ list.Set("PartCtrl_UtilFx", "StriderBlood", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_strider.cpp#L949
 list.Set("PartCtrl_UtilFx", "StriderMuzzleFlash", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0.4, //max lifetime from code
 	info = needs_attachment,
 	DoProcess = function(tab)
@@ -819,7 +819,7 @@ list.Set("PartCtrl_UtilFx", "StriderMuzzleFlash", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_prop_combine_ball.cpp#L340
 list.Set("PartCtrl_UtilFx", "cball_explode", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -832,7 +832,7 @@ list.Set("PartCtrl_UtilFx", "cball_explode", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_prop_combine_ball.cpp#L326
 list.Set("PartCtrl_UtilFx", "cball_bounce", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -1204,7 +1204,7 @@ list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash", {
 //Can't find any code registering this effect or giving it a callback function, might be a garry creation. Is it an implmentation of this? It's the only name that matches. https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx.cpp#L185
 //Or maybe this? https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/EffectsClient.cpp#L160
 list.Set("PartCtrl_UtilFx", "MuzzleEffect", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0.1, //lifetime from code?
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
@@ -1227,7 +1227,7 @@ list.Set("PartCtrl_UtilFx", "MuzzleEffect", {
 
 //another one without a callback func i can find, is it this? //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_sparks.cpp#L620
 list.Set("PartCtrl_UtilFx", "MetalSpark", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0.1, //lifetime from code?
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -1242,7 +1242,7 @@ list.Set("PartCtrl_UtilFx", "MetalSpark", {
 
 //another one without a callback func, might be this (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_sparks.cpp#L300)
 list.Set("PartCtrl_UtilFx", "ElectricSpark", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -1272,7 +1272,7 @@ list.Set("PartCtrl_UtilFx", "ElectricSpark", {
 
 //another without a callback func, might be this (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_sparks.cpp#L722)
 list.Set("PartCtrl_UtilFx", "Sparks", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -1310,7 +1310,7 @@ list.Set("PartCtrl_UtilFx", "Sparks", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L469
 list.Set("PartCtrl_UtilFx", "waterripple", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1.5, //lifetime value from code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -1340,7 +1340,7 @@ list.Set("PartCtrl_UtilFx", "waterripple", {
 })
 
 local splash = {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 2, //max lifetime from code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -1376,7 +1376,7 @@ list.Set("PartCtrl_UtilFx", "gunshotsplash", splash)
 list.Set("PartCtrl_UtilFx", "watersplash", splash)
 
 local shelleject = {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 2, //max lifetime from code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/c_te_legacytempents.cpp#L1691)
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Entity")
@@ -1399,7 +1399,7 @@ list.Set("PartCtrl_UtilFx", "ShellEject", shelleject)
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_impact.cpp#L96
 //Only moves client ragdolls, not really in this addon's wheelhouse
 --[[list.Set("PartCtrl_UtilFx", "RagdollImpact", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1,
 	info = "Draws a line between control points 0 and 1. If it hits a clientside ragdoll, pushes it.",
 	DoProcess = function(tab)
@@ -1423,7 +1423,7 @@ list.Set("PartCtrl_UtilFx", "ShellEject", shelleject)
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_explosion.cpp#L1418
 list.Set("PartCtrl_UtilFx", "HelicopterMegaBomb", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0.4, //max lifetime value from code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -1436,7 +1436,7 @@ list.Set("PartCtrl_UtilFx", "HelicopterMegaBomb", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_explosion.cpp#L1314
 list.Set("PartCtrl_UtilFx", "WaterSurfaceExplosion", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 2,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -1482,7 +1482,7 @@ list.Set("PartCtrl_UtilFx", "WaterSurfaceExplosion", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_explosion.cpp#L804
 list.Set("PartCtrl_UtilFx", "Explosion", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 2,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -1534,7 +1534,7 @@ list.Set("PartCtrl_UtilFx", "Explosion", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_blood.cpp#L591
 list.Set("PartCtrl_UtilFx", "HunterDamage", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 3, //max lifetime from code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -1548,7 +1548,7 @@ list.Set("PartCtrl_UtilFx", "HunterDamage", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_blood.cpp#L532
 list.Set("PartCtrl_UtilFx", "BloodImpact", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = .75, //max particle lifetime in code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -1586,7 +1586,7 @@ list.Set("PartCtrl_UtilFx", "BloodImpact", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_blood.cpp#L490
 list.Set("PartCtrl_UtilFx", "bloodspray", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1, //max particle lifetime in code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -1635,7 +1635,7 @@ list.Set("PartCtrl_UtilFx", "bloodspray", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_vehicle_jeep.cpp#L326
 list.Set("PartCtrl_UtilFx", "WheelDust", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 0, //the code that plays this effect calls it every think; barely visible otherwise https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/fourwheelvehiclephysics.cpp#L767
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -1657,7 +1657,7 @@ list.Set("PartCtrl_UtilFx", "WheelDust", {
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_rope.cpp#L868
 list.Set("PartCtrl_UtilFx", "ShakeRopes", {
-	title = "Garry's Mod",
+	title = {"Garry's Mod", "Half-Life 2"},
 	default_time = 1, //arbitrary
 	info = "No visible particles; makes ropes move",
 	DoProcess = function(tab)
@@ -1691,7 +1691,43 @@ list.Set("PartCtrl_UtilFx", "ShakeRopes", {
 //list.Set("PartCtrl_UtilFx", "ParticleEffect", )
 //list.Set("PartCtrl_UtilFx", "ParticleEffectStop", )
 
-//TODO: base gamemode and sandbox gamemode effects https://wiki.facepunch.com/gmod/Default_Effects#basegamemodeeffects
+//https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/base/entities/effects/dof_node.lua
+//Used by gmod depth-of-field post-process - no good way to render this and then clean it up afterward, because internally this works by creating a sprite that renders forever until we run the
+//DOF_Kill function and delete them all (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/postprocess/dof.lua#L40)
+--[[list.Set("PartCtrl_UtilFx", "dof_node", {
+	title = "Garry's Mod",
+	default_time = 0,
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, -1, "placeholder")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetScale(1)
+		timer.Simple(0, function() DOF_Kill() end) //doesn't work, kills the effect before it has a chance to render
+		return true
+	end
+})]]
+
+//https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/base/entities/effects/tooltracer.lua#L4
+list.Set("PartCtrl_UtilFx", "ToolTracer", {
+	title = "Garry's Mod",
+	default_time = 0.25, //lifetime from code
+	DoProcess = function(tab)
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Entity, Attachment")
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+	end,
+	DoEffect = function(self, ed)
+		ed:SetStart(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:CPointPosAng(1).pos)
+
+		local ent = self.ParticleInfo[0].ent
+		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+		ed:SetEntity(ent)
+		ed:SetAttachment(self.ParticleInfo[0].attach)
+		return true
+	end
+})
+
+//TODO: sandbox gamemode effects https://wiki.facepunch.com/gmod/Default_Effects#basegamemodeeffects https://github.com/search?q=repo%3AFacepunch%2Fgarrysmod+util.Effect&type=code
 
 
 
@@ -1780,7 +1816,7 @@ local ParticleAttributeNames = { //names and comments from https://github.com/ni
 	[PARTCTRL_PARTICLE_ATTRIBUTE_YAW] = "Yaw", // YAW, 12 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_INDEX] = "PARTICLE_ATTRIBUTE_HITBOX_INDEX (internal)", //NULL, // HITBOX_INDEX is for internal use only
-	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ] = "PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XY (internal)", //NULL, // HITBOX_XYZ_RELATIVE is for internal use only
+	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ] = "PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ (internal)", //NULL, // HITBOX_XYZ_RELATIVE is for internal use only
 	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2] = "Alpha Alternate", // ALPHA2, 16
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P0] = "PARTICLE_ATTRIBUTE_TRACE_P0 (internal)",
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P1] = "PARTICLE_ATTRIBUTE_TRACE_P1 (internal)",
