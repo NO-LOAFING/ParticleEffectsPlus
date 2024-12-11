@@ -98,7 +98,11 @@ function PANEL:RebuildControls()
 	local ent = self.m_Entity
 	if !IsValid(ent) then self:EntityLost() return end
 	//self:GetParent():SetTitle("Particle Controller [" .. tostring(ent:EntIndex()) .. "]: " .. ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")")
-	self:GetParent():SetTitle(ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")")
+	if !ent.utilfx then
+		self:GetParent():SetTitle(ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")")
+	else
+		self:GetParent():SetTitle(ent:GetParticleName() .. " (Scripted Effect)")
+	end
 
 	//Make sure mouse input is enabled - this can get set to false if the window is created while the context menu is closed
 	self:SetMouseInputEnabled(true)
@@ -202,14 +206,28 @@ function PANEL:RebuildControls()
 	cat:Dock(FILL)
 	container:AddItem(cat)
 
+	local default_looptime = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()].default_time or 0
+	local default_loopmode = 1
+	if ent.utilfx then
+		if default_looptime < 0 then
+			//-1 sets no loop by default
+			default_loopmode = 0
+		else
+			default_loopmode = 2
+		end
+	end
+	default_looptime = math.max(0, default_looptime)
+	//MsgN("default time ", default_looptime, ", currently ", ent:GetLoopDelay())
+	//MsgN("default mode ", default_loopmode, ", currently ", ent:GetLoopMode())
+
 	//expand if any contained options are non-default 
 	cat:SetExpanded(
 		((ent:GetNumpad() or 0) != 0)
 		or (ent:GetNumpadToggle() != true)
 		or (ent:GetNumpadStartOn() != true)
 		//considered also adding a check here to make sure the effect isn't disabled, but i don't think that's possible without a numpad key set
-		or ((ent:GetLoopMode() or 1) != 1)
-		or ((ent:GetLoopDelay() or 0) != 0)
+		or ((ent:GetLoopMode() or 1) != default_loopmode)
+		or ((math.Round(ent:GetLoopDelay(), 6) or 0) != default_looptime)
 	)
 
 	local rpnl = vgui.Create("DSizeToContents", cat) //call this one rpnl and not pnl, just so we don't have to rewrite the numpad stuff copied from animprop that already has a panel with that name
@@ -425,7 +443,7 @@ function PANEL:RebuildControls()
 		//back.LoopDelaySlider = slider
 		slider:SetText("Seconds between repeats")
 		slider:SetMinMax(0, 5)
-		slider:SetDefaultValue(0.00)
+		slider:SetDefaultValue(default_looptime)
 		slider:SetDark(true)
 		slider:SetHeight(18)
 		slider:Dock(TOP)

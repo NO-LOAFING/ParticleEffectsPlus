@@ -1442,7 +1442,7 @@ if SERVER then
 			p:SetLoopDelay(0)
 		else
 			//utilfx don't support mode 1 (wait for end of effect) because we don't have a way to tell when a util effect is over, so use mode 2 (just a timer) instead
-			local time = PartCtrl_ProcessedPCFs[pcf][name].default_time or 1
+			local time = PartCtrl_ProcessedPCFs[pcf][name].default_time
 			if time < 0 then
 				//-1 sets no loop by default
 				p:SetLoopMode(0)

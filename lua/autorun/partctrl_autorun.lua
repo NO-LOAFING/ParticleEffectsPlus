@@ -3656,6 +3656,7 @@ function PartCtrl_ProcessUtilFx()
 				["on_model"] = v.on_model,
 				["min_length"] = v.min_length
 			}
+			if t.default_time == nil then t.default_time = 1 end
 
 			//Use the effect's DoProcess func to set up cpoints
 			v.DoProcess(t, v.DoProcessExtras)
