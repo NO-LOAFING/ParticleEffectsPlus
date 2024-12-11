@@ -2903,6 +2903,7 @@ local processfuncs = {
 			cpoint_from_attrib_value(processed, attrib, "end control point number", nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
 		end,
 		["position along ring"] = function(processed, attrib)
+			if attrib["control point number"] == nil then attrib["control point number"] = 0 end //all the fx in sfm workshop particles speedlines.pcf don't have this value set; seems to default to 0
 			cpoint_from_attrib_value(processed, attrib, "control point number", nil, {["sets_particle_pos"] = true})
 			//"Override CP (X/Y/Z *= Radius/Thickness/Speed)" and "Override CP 2 (X/Y/Z *= Pitch/Yaw/Roll)" control those things with the values of the cpoint
 			//These are all MULTIPLIERS so an axis doesn't do anything if the value is 0, ignore those
