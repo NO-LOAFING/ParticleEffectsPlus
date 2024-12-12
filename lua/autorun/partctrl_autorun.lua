@@ -852,89 +852,91 @@ list.Set("PartCtrl_UtilFx", "cball_bounce", {
 	end
 })
 
-//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_shelleject.cpp#L21
-list.Set("PartCtrl_UtilFx", "HL1ShellEject", {
-	title = "Half-Life: Source",
-	default_time = 1,
-	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "vector", {
-			["label"] = "Velocity",
-			["min"] = Vector(-512,-512,-512),
-			["max"] = Vector(512,512,512),
-			["default"] = Vector(0,0,0), //this is relative to the world, not an attachment, so the default will have to be 0
-		})
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
-			["axis"] = 0, //x
-			["label"] = "Shell Type",
-			["default"] = 0,
-			["dropdown"] = {
-				[0] = "Shell",
-				[1] = "Shotgun shell",
-			},
-		})
-	end,
-	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetAngles(self:CPointPosAng(0).ang)
-		ed:SetStart(self.ParticleInfo[1].val)
-		ed:SetFlags(self.ParticleInfo[2].val.x)
-		return true
-	end
-})
+if IsMounted("hl1") then //these two fx have error models or textures if hl1 is unmounted, so make them require it; the other hl1 fx work either way, so they don't need this check
+	//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_shelleject.cpp#L21
+	list.Set("PartCtrl_UtilFx", "HL1ShellEject", {
+		title = {"Garry's Mod", "Half-Life: Source"},
+		default_time = 1,
+		DoProcess = function(tab)
+			PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
+			PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "vector", {
+				["label"] = "Velocity",
+				["min"] = Vector(-512,-512,-512),
+				["max"] = Vector(512,512,512),
+				["default"] = Vector(0,0,0), //this is relative to the world, not an attachment, so the default will have to be 0
+			})
+			PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+				["axis"] = 0, //x
+				["label"] = "Shell Type",
+				["default"] = 0,
+				["dropdown"] = {
+					[0] = "Shell",
+					[1] = "Shotgun shell",
+				},
+			})
+		end,
+		DoEffect = function(self, ed)
+			ed:SetOrigin(self:CPointPosAng(0).pos)
+			ed:SetAngles(self:CPointPosAng(0).ang)
+			ed:SetStart(self.ParticleInfo[1].val)
+			ed:SetFlags(self.ParticleInfo[2].val.x)
+			return true
+		end
+	})
 
-//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L306
-list.Set("PartCtrl_UtilFx", "HL1Gib", {
-	title = "Half-Life: Source",
-	default_time = 10,
-	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect MaterialIndex", "axis", {
-			["axis"] = 0, //x
-			["label"] = "Gib Type",
-			["default"] = 1,
-			["dropdown"] = {
-				[1] = "Human gibs",
-				[2] = "Alien gibs",
-			},
-		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect HitBox", "axis", {
-			["axis"] = 1, //y
-			["label"] = "Gib Velocity",
-			["default"] = 0,
-			["dropdown"] = { //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L190-L201
-				[0] = "70%",
-				[50] = "200%",
-				[200] = "400%",
-			},
-		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
-			["axis"] = 2, //z
-			["label"] = "Particle Color",
-			["default"] = 0,
-			["dropdown"] = { //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L25
-				[0] = "Red",
-				[1] = "\"Green\"",
-				[2] = "Yellow",
-			},
-		})
-	end,
-	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
-		//callback function supplies a Scale value, and the effect function itself has an arg for it, but the value isn't actually used anywhere
-		ed:SetMaterialIndex(self.ParticleInfo[1].val.x)
-		ed:SetHitBox(self.ParticleInfo[1].val.y)
-		ed:SetColor(self.ParticleInfo[1].val.z)
-		return true
-	end
-})
-util.PrecacheModel("models/gibs/hghl1.mdl")
-util.PrecacheModel("models/gibs/aghl1.mdl")
+	//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L306
+	list.Set("PartCtrl_UtilFx", "HL1Gib", {
+		title = {"Garry's Mod", "Half-Life: Source"},
+		default_time = 10,
+		DoProcess = function(tab)
+			PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+			PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect MaterialIndex", "axis", {
+				["axis"] = 0, //x
+				["label"] = "Gib Type",
+				["default"] = 1,
+				["dropdown"] = {
+					[1] = "Human gibs",
+					[2] = "Alien gibs",
+				},
+			})
+			PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect HitBox", "axis", {
+				["axis"] = 1, //y
+				["label"] = "Gib Velocity",
+				["default"] = 0,
+				["dropdown"] = { //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L190-L201
+					[0] = "70%",
+					[50] = "200%",
+					[200] = "400%",
+				},
+			})
+			PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
+				["axis"] = 2, //z
+				["label"] = "Particle Color",
+				["default"] = 0,
+				["dropdown"] = { //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L25
+					[0] = "Red",
+					[1] = "\"Green\"",
+					[2] = "Yellow",
+				},
+			})
+		end,
+		DoEffect = function(self, ed)
+			ed:SetOrigin(self:CPointPosAng(0).pos)
+			ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+			//callback function supplies a Scale value, and the effect function itself has an arg for it, but the value isn't actually used anywhere
+			ed:SetMaterialIndex(self.ParticleInfo[1].val.x)
+			ed:SetHitBox(self.ParticleInfo[1].val.y)
+			ed:SetColor(self.ParticleInfo[1].val.z)
+			return true
+		end
+	})
+	util.PrecacheModel("models/gibs/hghl1.mdl")
+	util.PrecacheModel("models/gibs/aghl1.mdl")
+end
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L215
 list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact1", {
-	title = "Half-Life: Source",
+	title = {"Garry's Mod", "Half-Life: Source"},
 	default_time = 7, //sprite lifetime from code, + 1 for fadeout
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -956,7 +958,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact1", {
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L225
 list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact2", {
-	title = "Half-Life: Source",
+	title = {"Garry's Mod", "Half-Life: Source"},
 	default_time = 5, //rough average lifetime, can't figure out how this is determined in code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -970,7 +972,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact2", {
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L186
 list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchEnter", {
-	title = "Half-Life: Source",
+	title = {"Garry's Mod", "Half-Life: Source"},
 	default_time = 5, //rough average lifetime, can't figure out how this is determined in code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -984,7 +986,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchEnter", {
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L199
 list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
-	title = "Half-Life: Source",
+	title = {"Garry's Mod", "Half-Life: Source"},
 	default_time = 7, //impact sprite lifetime from code, + 1 for fadeout
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -1007,7 +1009,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L170
 list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
-	title = "Half-Life: Source",
+	title = {"Garry's Mod", "Half-Life: Source"},
 	default_time = 6, //sprite lifetime at default magnitude (see comments) + 1 for fadeout
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -1030,7 +1032,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L117
 list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
-	title = "Half-Life: Source",
+	title = {"Garry's Mod", "Half-Life: Source"},
 	default_time = 0.11, //lifetime from code, plus an extra 100th of a second just to make it clear that this is a tracer and not a continuous beam
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
@@ -1057,7 +1059,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 //follows the attachment. I think we'll do without this one.
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L35
 --[[list.Set("PartCtrl_UtilFx", "HL1GaussBeam", {
-	title = "Half-Life: Source",
+	title = {"Garry's Mod", "Half-Life: Source"},
 	default_time = 0.11, //lifetime from code, plus an extra 100th of a second just to make it clear that this is a tracer and not a continuous beam
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Entity")
@@ -1087,7 +1089,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 //No code for this one; the only utileffect not listed on https://wiki.facepunch.com/gmod/Default_Effects, found it by checking the effects_list concommand
 //Appears identical to HL1GaussBeamReflect, doesn't even have the special follow-the-attachment-point functionality of the regular HL1GaussBeam.
 list.Set("PartCtrl_UtilFx", "HL1GaussBeam_GMOD", {
-	title = "Half-Life: Source",
+	title = {"Garry's Mod", "Half-Life: Source"},
 	default_time = 0.11, //lifetime from code, plus an extra 100th of a second just to make it clear that this is a tracer and not a continuous beam
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
@@ -1117,7 +1119,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeam_GMOD", {
 
 //https://github.com/mastercomfig/tf2-patches/blob/master/src/game/client/cstrike/fx_cs_weaponfx.cpp#L16
 local cstrikeshells = {
-	title = "Counter-Strike: Source",
+	title = {"Garry's Mod", "Counter-Strike: Source"},
 	default_time = 1, //arbitrary; these take 10 whole seconds to fade out which is too much
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
@@ -1153,7 +1155,7 @@ list.Set("PartCtrl_UtilFx", "EjectBrass_9mm", cstrikeshells)
 
 //https://github.com/GEEKiDoS/cstrike-asw/blob/master/src/game/client/cstrike/fx_cs_muzzleflash.cpp#L95C6-L95C29
 list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash_X", {
-	title = "Counter-Strike: Source",
+	title = {"Garry's Mod", "Counter-Strike: Source"},
 	default_time = 0.08, //lifetime value from code
 	info = needs_attachment,
 	DoProcess = function(tab)
@@ -1178,7 +1180,7 @@ list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash_X", {
 
 //https://github.com/GEEKiDoS/cstrike-asw/blob/master/src/game/client/cstrike/fx_cs_muzzleflash.cpp#L22
 list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash", {
-	title = "Counter-Strike: Source",
+	title = {"Garry's Mod", "Counter-Strike: Source"},
 	default_time = 0.08, //lifetime value from code
 	info = needs_attachment,
 	DoProcess = function(tab)

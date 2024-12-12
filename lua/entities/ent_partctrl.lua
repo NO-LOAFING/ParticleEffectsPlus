@@ -624,7 +624,9 @@ if CLIENT then
 			end
 		end
 
-		AllPartCtrlEnts[self] = nil
+		if istable(AllPartCtrlEnts) then
+			AllPartCtrlEnts[self] = nil
+		end
 
 	end
 
