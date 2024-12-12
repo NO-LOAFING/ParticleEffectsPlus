@@ -305,13 +305,14 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 		})]]
 	end,
 	DoEffect = function(self, ed)
-		//origin and angles are stored by the effect func, but not actually used; still requires an attachment instead (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/c_te_legacytempents.cpp#L1804)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetAngles(self:CPointPosAng(0).ang)
-
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
 		ed:SetEntity(ent)
+		if !ent:GetAttachment(1) then return end //if the ent doesn't have a valid attachment 1, but we play this effect anyway, it can appear on the model being used by another utileffect, and we don't want that
+
+		//origin and angles are stored by the effect func, but not actually used; still requires an attachment instead (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/c_te_legacytempents.cpp#L1804)
+		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetAngles(self:CPointPosAng(0).ang)
 
 		ed:SetAttachment(self.ParticleInfo[0].attach) //not actually used, always uses attachment 1; leave this and origin/angles anyway just in case custom muzzleflash mods use them or something
 		ed:SetFlags(self.ParticleInfo[1].val.x) //+ self.ParticleInfo[1].val.y)
@@ -470,10 +471,13 @@ list.Set("PartCtrl_UtilFx", "AirboatMuzzleFlash", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
 	end,
 	DoEffect = function(self, ed)
+		local attach = self.ParticleInfo[0].attach
+		if attach <= 0 then return end //if the ent doesn't have a valid attachment, but we play this effect anyway, it can appear on the model being used by another utileffect, and we don't want that
+
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
 		ed:SetEntity(ent)
-		ed:SetAttachment(self.ParticleInfo[0].attach)
+		ed:SetAttachment(attach)
 		//airboat and func_tank code set scale 1 for this, but this isn't hooked up to anything (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/vehicle_airboat.cpp#L1556, https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/func_tank.cpp#L2966)
 		return true
 	end
@@ -1172,10 +1176,13 @@ list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash_X", {
 		})
 	end,
 	DoEffect = function(self, ed)
+		local attach = self.ParticleInfo[0].attach
+		if attach <= 0 then return end //if the ent doesn't have a valid attachment, but we play this effect anyway, it can appear on the model being used by another utileffect, and we don't want that
+
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
 		ed:SetEntity(ent)
-		ed:SetAttachment(self.ParticleInfo[0].attach)
+		ed:SetAttachment(attach)
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		return true
 	end
@@ -1197,10 +1204,13 @@ list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash", {
 		})
 	end,
 	DoEffect = function(self, ed)
+		local attach = self.ParticleInfo[0].attach
+		if attach <= 0 then return end //if the ent doesn't have a valid attachment, but we play this effect anyway, it can appear on the model being used by another utileffect, and we don't want that
+
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
 		ed:SetEntity(ent)
-		ed:SetAttachment(self.ParticleInfo[0].attach)
+		ed:SetAttachment(attach)
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		return true
 	end
@@ -3624,25 +3634,6 @@ end
 - can't test initializer "position within sphere random" value "create in model" because it always crashes upon spawning any particles (blood_impact.pcf/blood_antlionguard_injured_light is the only default effect with this set, and it doesn't crash because it doesn't actually emit any particles); can't test initializers "set hitbox position on model" or "set hitbox to closest hitbox" because i can't get them to work at all, these are csgo? ports anyway)
 - main table "control point to disable rendering if it is the camera" or "cull_control_point" don't work on children at all
 ]]
-
-local utilfx_cpointvalues = {
-	["angles"] = "util.Effect EffectData:SetAngles()",
-	["normal"] = "util.Effect EffectData:SetNormal()",
-	["attachment"] = "util.Effect EffectData:SetAttachment()",
-	["entity"] = "util.Effect EffectData:SetEntity()",
-	["origin"] = "util.Effect EffectData:SetOrigin()",
-	["start"] = "util.Effect EffectData:SetStart()",
-}
-
-local utilfx_axisvalues = {
-	[0] = "Scale",
-	[1] = "Magnitude",
-	[2] = "Radius",
-}
-
-local utilfx_axisvalues2 = {
-	[0] = "Color",
-}
 
 function PartCtrl_ProcessUtilFx()
 
