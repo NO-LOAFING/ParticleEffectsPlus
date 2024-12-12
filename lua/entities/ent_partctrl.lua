@@ -348,8 +348,7 @@ if CLIENT then
 			for k, v in pairs (self.ParticleInfo) do
 				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
 					if IsValid(v.ent) then
-						local isgrip = v.ent:GetClass() == "ent_partctrl_grip"
-						if window or isgrip then //hide helpers when they're attached to other ents unless the window is open
+						if window or v.ent.PartCtrl_Grip then //hide helpers when they're attached to other ents unless the window is open
 							//Draw particle effect helpers (numbers showing cpoint id, arrows showing cpoint orientation)
 							local pos = nil
 							local ang = nil
@@ -1070,7 +1069,7 @@ if SERVER then
 			MsgN("ent_partctrl ", ent, " (", ent:GetParticleName(), ") has nil target entity ", badparticle, "; most likely a bad dupe, removing")
 			for k, v in pairs (ent.ParticleInfo) do
 				//don't leave behind any orphaned grip points (i.e. loaded a dupe; one cpoint was attached to a non-dupable entity, another was attached to a grip)
-				if IsValid(v.ent) and v.ent:GetClass() == "ent_partctrl_grip" then
+				if IsValid(v.ent) and v.ent.PartCtrl_Grip then
 					v.ent:Remove()
 				end
 			end
@@ -1221,7 +1220,7 @@ if SERVER then
 		const:Spawn()
 		const:Activate()
 
-		if Ent2:GetClass() != "ent_partctrl_grip" then
+		if !Ent2.PartCtrl_Grip then
 			//If the constraint is removed by an Undo, unmerge the second entity - this shouldn't do anything if the constraint's removed some other way i.e. one of the ents is removed
 			timer.Simple(0.1, function()  //CallOnRemove won't do anything if we try to run it now instead of on a timer
 				if const:GetTable() then  //CallOnRemove can error if this table doesn't exist - this can happen if the constraint is removed at the same time it's created for some reason
@@ -1245,7 +1244,7 @@ if SERVER then
 			Ent1:SetParent(Ent2)
 		end
 
-		if Ent2:GetClass() == "ent_partctrl_grip" then
+		if Ent2.PartCtrl_Grip then
 			Ent1:DeleteOnRemove(Ent2)
 		end
 		Ent2:DeleteOnRemove(Ent1)
@@ -1520,7 +1519,7 @@ if SERVER then
 
 		function meta:SetColor(color, ...)
 
-			if isentity(self) and IsValid(self) and self:GetClass() == "ent_partctrl_grip" then
+			if isentity(self) and IsValid(self) and self.PartCtrl_Grip then
 				local tab = constraint.FindConstraint(self, "PartCtrl_Ent")
 				if istable(tab) then
 					local ent = tab.Ent1

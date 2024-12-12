@@ -52,7 +52,7 @@ function TOOL:LeftClick(trace)
 
 		local ent = trace.Entity
 		if IsValid(ent) then
-			if ent:GetClass() == "ent_partctrl_grip" then
+			if ent.PartCtrl_Grip then
 				if CLIENT then
 					local tab = ent.PartCtrl_ParticleEnts
 					if istable(tab) then
@@ -89,12 +89,12 @@ function TOOL:LeftClick(trace)
 		local k = 0
 		if stage == 1 then //Stage 1: selected a particle, then clicked on a model
 			ent = trace.Entity
-			if trace.Entity:GetClass() == "ent_partctrl_grip" then return false end
+			if trace.Entity.PartCtrl_Grip then return false end
 			p = self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")
 			k = self:GetWeapon():GetNWInt("PartCtrl_Attacher_CPoint")
 		elseif stage == 2 then //Stage 2: selected a model, then clicked on a particle
 			ent = self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")
-			if trace.Entity:GetClass() != "ent_partctrl_grip" then return false end
+			if !trace.Entity.PartCtrl_Grip then return false end
 			if CLIENT then
 				local tab = trace.Entity.PartCtrl_ParticleEnts
 				if istable(tab) then
@@ -217,7 +217,7 @@ if CLIENT then
 			ent = sel
 		end
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
-		if IsValid(ent) and ent:GetClass() != "ent_partctrl_grip" then
+		if IsValid(ent) and !ent.PartCtrl_Grip then
 			self.HighlightedEnt = ent
 			return
 		end

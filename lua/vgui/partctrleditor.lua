@@ -585,7 +585,7 @@ function PANEL:RebuildControls()
 					//button:DockMargin(0,0,0,0)
 					button:DockMargin(padding,padding,padding,0)
 
-					if ent2:GetClass() == "ent_partctrl_grip" then
+					if ent2.PartCtrl_Grip then
 						button:SetText("Attach to model")
 						button:SizeToContents()
 						button.DoClick = function()

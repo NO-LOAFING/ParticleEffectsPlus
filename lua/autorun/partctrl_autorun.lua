@@ -640,7 +640,7 @@ local impact = {
 		local ent = self.ParticleInfo[1].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
 		//special functionality for impact fx: set effect entity to world if unattached
-		if ent:GetClass() == "ent_partctrl_grip" then
+		if ent.PartCtrl_Grip then
 			ent = game.GetWorld()
 		end
 		ed:SetEntity(ent)

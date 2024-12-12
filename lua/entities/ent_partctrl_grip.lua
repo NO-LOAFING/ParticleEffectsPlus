@@ -9,6 +9,8 @@ ENT.Type			= "anim"
 ENT.Spawnable			= false
 //ENT.RenderGroup		= RENDERGROUP_TRANSLUCENT //tries to make it draw on top of particles, doesn't always work
 
+ENT.PartCtrl_Grip		= true //lets us detect if an ent is an ent_partctrl_grip without having to compare strings with GetClass
+
 
 
 
