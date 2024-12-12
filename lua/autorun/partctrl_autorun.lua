@@ -863,22 +863,25 @@ if IsMounted("hl1") then //these two fx have error models or textures if hl1 is 
 				["label"] = "Velocity",
 				["min"] = Vector(-512,-512,-512),
 				["max"] = Vector(512,512,512),
-				["default"] = Vector(0,0,0), //this is relative to the world, not an attachment, so the default will have to be 0
+				["default"] = Vector(0,-65,137.5), //average velocity from hgrunt/assassin code (https://github.com/nillerusr/source-engine/blob/master/game/server/hl1/hl1_npc_hgrunt.cpp#L1235 / https://github.com/nillerusr/source-engine/blob/master/game/server/hl1/hl1_npc_hassassin.cpp#L601), which is also fairly close to the average velocity from hl1 weapon code (https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_basecombatweapon_shared.cpp#L75)
 			})
 			PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
 				["axis"] = 0, //x
 				["label"] = "Shell Type",
 				["default"] = 0,
 				["dropdown"] = {
-					[0] = "Shell",
+					[0] = "9mm shell",
 					[1] = "Shotgun shell",
 				},
 			})
 		end,
 		DoEffect = function(self, ed)
 			ed:SetOrigin(self:CPointPosAng(0).pos)
-			ed:SetAngles(self:CPointPosAng(0).ang)
-			ed:SetStart(self.ParticleInfo[1].val)
+			local ang = self:CPointPosAng(0).ang
+			ed:SetAngles(ang)
+			//the velocity value this takes is relative to the world, not an attachment, so translate it
+			local val = LocalToWorld(self.ParticleInfo[1].val, angle_zero, vector_origin, ang)
+			ed:SetStart(val)
 			ed:SetFlags(self.ParticleInfo[2].val.x)
 			return true
 		end

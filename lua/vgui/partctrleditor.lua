@@ -758,7 +758,7 @@ function PANEL:RebuildControls()
 								end
 								slider:SetMinMax(-180, 180)
 							else
-								if tab.label == "Velocity Direction Normal" then
+								if tab.label == "Velocity Direction Normal" or tab.label == "Velocity" then
 									if i == 1 then
 										slider:SetText("Velocity Back/Forward")
 									elseif i == 2 then
