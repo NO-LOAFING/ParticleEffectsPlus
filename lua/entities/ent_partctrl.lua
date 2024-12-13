@@ -143,6 +143,10 @@ function ENT:Think()
 						end
 					end
 				end
+				if self.utilfx_waiting then
+					self:StartParticle()
+					self.utilfx_waiting = nil
+				end
 				if loop == 2 then //loop mode 2: repeat every X seconds
 					//TODO: do we need to handle the waiting var differently? tested, doesn't seem so
 					
@@ -164,13 +168,17 @@ function ENT:Think()
 				end
 			end
 		else
-			if self.particle and self.particle.IsValid and self.particle:IsValid() and self.particle != partctrl_wait then
-				//Stop any existing particles and throw them into the OldParticles table to get cleaned up
-				self.particle:StopEmission()
-				table.insert(self.OldParticles, self.particle)
+			if self.particle and self.particle != partctrl_wait then
+				if self.particle.IsValid and self.particle:IsValid() then
+					//Stop any existing particles and throw them into the OldParticles table to get cleaned up
+					self.particle:StopEmission()
+					table.insert(self.OldParticles, self.particle)
+				end
 				//Create a new particle as soon as we're no longer disabled
 				self.particle = partctrl_wait
-			end 
+			end
+			self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
+			if self.utilfx then self.utilfx_waiting = true end //tell utilfx to replay when reenabled as well, since they don't have a self.particle to check for
 		end
 
 		//Clean up old particle list
@@ -478,7 +486,7 @@ if CLIENT then
 		end					//prevented us from creating our effect here, then make this value non-nil so ENT:Think will try to create it once crash prevention is over.
 		//Reset loop-related vars
 		self.OldParticles = {}
-		self.NextLoop = nil
+		self.LastLoop = nil
 
 	end
 
@@ -979,10 +987,12 @@ else
 		elseif input == "loop_mode" then
 			
 			self:SetLoopMode(net.ReadUInt(2))
+			refreshtable = true
 
 		elseif input == "loop_delay" then
 			
 			self:SetLoopDelay(net.ReadFloat())
+			refreshtable = true
 
 		elseif input == "loop_safety" then
 			
