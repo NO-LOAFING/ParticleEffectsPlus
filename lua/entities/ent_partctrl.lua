@@ -573,6 +573,14 @@ if CLIENT then
 		if firstcpoint > 0 then ignore = nil end //cpoint 0 automatically follows the entity it's created on, but the others won't, so if our only position cpoint is > 0, then do AddControlPoint for it too.
 
 		if self.particle and self.particle:IsValid() then
+			//tests for angle editor, these functions don't seem to be doing anything
+			//self.particle:SetControlPointOrientation(firstcpoint, Angle(self.ParticleInfo[firstcpoint].pos.x, self.ParticleInfo[firstcpoint].pos.y, self.ParticleInfo[firstcpoint].pos.z))
+			//local ang = Angle(self.ParticleInfo[firstcpoint].pos.x, self.ParticleInfo[firstcpoint].pos.y, self.ParticleInfo[firstcpoint].pos.z)
+			//self.particle:SetControlPointOrientation(firstcpoint, ang:Forward(), ang:Right(), ang:Up())
+			//self.particle:SetControlPointForwardVector(firstcpoint, ang:Forward())
+			//self.particle:SetControlPointRightVector(firstcpoint, ang:Right())
+			//self.particle:SetControlPointUpVector(firstcpoint, ang:Up())
+
 			//Do other cpoints
 			for k, v in pairs (self.ParticleInfo) do
 				if k != ignore then

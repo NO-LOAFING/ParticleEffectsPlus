@@ -4516,7 +4516,7 @@ properties.Add("partctrl_dev_printparticleinfo", {
 	
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
 			if IsValid(k) then
-				MsgN(k, ".ParticleInfo:")
+				MsgN(k, ".ParticleInfo (",  k:GetPCF(), "/", k:GetParticleName(), "): ")
 				PrintTable(k.ParticleInfo)
 				MsgN()
 			end
