@@ -21,6 +21,34 @@ list.Add("ParticleController_BadPCFs", "vistasmokev1.pcf")  //has a smoke_blackb
 //TODO: this is all extremely bad and we probably don't care about any of these, but we SHOULD still have a blacklist system of some kind because there are a few standout effects not listed here
 //that we should get rid of, like the _unusual_parent_* series from the tf2 unusual weapon fx, which are just pointless dupes with conflicting names that clutter up searches.
 
+//Loading pcfs packed into compressed TF2 map files has a ton of problems; we can't detect if the map we're on specifically is compressed, so to be safe, don't load pcfs from any map.
+//See comments in the PartCtrl_ReadPCF function for more details on what we're trying to avoid here - the short version is that file reading starts returning garbage partway through the file 
+//without any warning, printing a "Warning! LZMA compression header is invalid! Extraction failed! particles\_.pcf ( ERR: 1 )" error in console - and causing the game to hang for nearly a minute 
+//every time this happens. pd_watergate takes over 5 minutes to load without this check.
+//Even if we manage to get enough info out of it before it fails, effects from these pcfs can cause crashes every time we try to spawn them, even in spawnicons. (i.e. pl_snowycoast_fx.pcf packed into pl_snowycoast)
+hook.Add("PartCtrl_PreProcessPCF", "discard_bsp_particles", function(filename)
+	if file.Exists(filename, "BSP") then
+		MsgN(filename, " is packed into the current BSP file, ignoring")
+		return false
+	end
+end)
+
+local tf2_unusual_wep_pcfs = {
+	["particles/weapon_unusual_cool.pcf"] = true,
+	["particles/weapon_unusual_energyorb.pcf"] = true,
+	["particles/weapon_unusual_hot.pcf"] = true,
+	["particles/weapon_unusual_isotope.pcf"] = true
+}
+hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
+	//These fx are all are dupes with conflicting names that cause unnecessary pcf reloads from conflicts every time you search for a tf2 weapon, remove them
+	if tf2_unusual_wep_pcfs[filename] then
+		for k, v in pairs (tab) do
+			if string.StartsWith(k, "_unusual_parent_") then
+				tab[k] = nil
+			end
+		end
+	end
+end)
 
 
 
@@ -3204,6 +3232,8 @@ local processfuncs = {
 	}
 }
 function PartCtrl_ProcessPCF(filename)
+	if hook.Call("PartCtrl_PreProcessPCF", nil, filename) == false then return end //Let hook funcs prevent PCFs from being read by returning false
+	
 	local t = PartCtrl_ReadPCF(filename)
 	if !t then
 		MsgN(filename, " couldn't be read")
@@ -3214,6 +3244,9 @@ function PartCtrl_ProcessPCF(filename)
 				["cpoints"] = {},
 				["children"] = t[particle].children,
 			}
+			//Go through all of the effects's operators (initializers, operators, renderers, etc. are all called "operators" internally, it's confusing) 
+			//and use the corresponding functions in processfuncs to "process" them (populate the table above with all their relevant cpoint info). 
+			//This is the meat of this function, everything else is just working with this info.
 			for k, v in pairs (processfuncs) do
 				if ptab[k] then
 					for _, attrib in pairs (ptab[k]) do
@@ -3521,15 +3554,6 @@ function PartCtrl_ProcessPCF(filename)
 			t2[particle]["defaults"] = defaults
 			t2[particle]["on_model"] = on_model
 			t2[particle]["sets_particle_pos"] = sets_particle_pos
-
-		end
-		for particle, _ in pairs (t2) do
-			//Cull empty effects, or effects that are stuck at the world origin because they don't have any cpoints setting their particle pos.
-			//Also, now that their parents have inherited cpoint data from them, cull effects with preventNameBasedLookup, since we can't spawn them on their own.
-			//If the player starts up the game in developer mode, effects aren't culled, but instead have a warning on the spawnicon telling the dev why they won't show up to players.
-			if (t2[particle].prevent_name_based_lookup or t2[particle]["renderer_emitter_shouldcull"] or !t2[particle]["sets_particle_pos"]) and GetConVarNumber("developer") < 1 then
-				t2[particle] = nil
-			end
 		end
 		for particle, _ in pairs (t2) do
 			//Now that we're done setting cpoint defaults, apply cpoint data from children
@@ -3578,11 +3602,21 @@ function PartCtrl_ProcessPCF(filename)
 					v["axis"] = newvectors
 				end
 			end
-			
-			//Store which PCFs this particle name is defined in - this is used to detect particles that are multiply defined and display a warning in the spawnicon
-			//(do this last so we don't conflict with particles that have been culled)
-			PartCtrl_PCFsByParticleName[particle] = PartCtrl_PCFsByParticleName[particle] or {}
-			PartCtrl_PCFsByParticleName[particle][filename] = true
+		end
+		//Let hook funcs modify the processed table arbitrarily (including deciding which fx to cull)
+		hook.Call("PartCtrl_PostProcessPCF", nil, filename, t2)
+		for particle, _ in pairs (t2) do
+			//Cull empty effects, or effects that are stuck at the world origin because they don't have any cpoints setting their particle pos.
+			//Also, now that their parents have inherited cpoint data from them, cull effects with preventNameBasedLookup, since we can't spawn them on their own.
+			//If the player starts up the game in developer mode, effects aren't culled, but instead have a warning on the spawnicon telling the dev why they won't show up to players.
+			if (t2[particle].prevent_name_based_lookup or t2[particle].renderer_emitter_shouldcull or !t2[particle].sets_particle_pos) and GetConVarNumber("developer") < 1 then
+				t2[particle] = nil
+			else
+				//Store which PCFs this particle name is defined in - this is used to detect particles that are multiply defined and display a warning in the spawnicon
+				//(do this last so we don't conflict with particles that have been culled)
+				PartCtrl_PCFsByParticleName[particle] = PartCtrl_PCFsByParticleName[particle] or {}
+				PartCtrl_PCFsByParticleName[particle][filename] = true
+			end
 		end
 		
 		if table.Count(t2) == 0 then
