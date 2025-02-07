@@ -1,25 +1,7 @@
-//Blacklist bad .pcf files from being loaded by the addon (TODO: this is all totally outdated, check all these files, they should be fine actually)
+//Blacklist bad .pcf files and effects from being loaded by the addon
 
 //The actual .pcf loading is done inside of ent_partctrl.lua, because entity code always runs after autorun code -
 //we want to be sure every addon that wants to add to the blacklist has the chance to do so before the .pcf files actually get read.
-
-//cstrike
-list.Add("ParticleController_BadPCFs", "achievement.pcf") //conflicts with tf2 effects
-list.Add("ParticleController_BadPCFs", "fire_medium_01.pcf") //broken textures, overrides some perfectly good, non-broken effects from stock fire_01
-//ep2
-//list.Add("ParticleController_BadPCFs","blob.pcf") //non-functional, seems to be a test of what would later become portal2 fluid particles; TODO: pcf reading should detect that this doesn't have any usable effects and cull it automatically
-list.Add("ParticleController_BadPCFs", "bonfire.pcf")  //broken, unused effects; effect names (bonfire, smoke) are really generic and might end up overriding something so let's skip this one
-//ep2 has an explosion.pcf that conflicts with the tf2 one of the same name, TODO: make sure this isn't a problem
-//list.Add("ParticleController_BadPCFs", "fire_ring.pcf")  //unused effects with broken textures
-list.Add("ParticleController_BadPCFs", "fireflow.pcf")  //another broken effect, almost the same as the bonfire one from earlier
-//list.Add("ParticleController_BadPCFs", "flamethrowertest.pcf")  //doesn't seem to work
-list.Add("ParticleController_BadPCFs", "largefire.pcf")  //more broken fire, has a smoke_blackbillow effect that conflicts with tf2
-list.Add("ParticleController_BadPCFs", "vistasmokev1.pcf")  //has a smoke_blackbillow effect that conflicts with tf2
-//gmod
-//list.Add("ParticleController_BadPCFs", "impact_fx.pcf") //this pcf isn't included in the manifest, and for good reason! almost all the effects use some outdated renderer and spew errors in the console when you try to use them.
-
-//TODO: this is all extremely bad and we probably don't care about any of these, but we SHOULD still have a blacklist system of some kind because there are a few standout effects not listed here
-//that we should get rid of, like the _unusual_parent_* series from the tf2 unusual weapon fx, which are just pointless dupes with conflicting names that clutter up searches.
 
 //Loading pcfs packed into compressed TF2 map files has a ton of problems; we can't detect if the map we're on specifically is compressed, so to be safe, don't load pcfs from any map.
 //See comments in the PartCtrl_ReadPCF function for more details on what we're trying to avoid here - the short version is that file reading starts returning garbage partway through the file 
@@ -31,6 +13,10 @@ hook.Add("PartCtrl_PreProcessPCF", "discard_bsp_particles", function(filename)
 		MsgN(filename, " is packed into the current BSP file, ignoring")
 		return false
 	end
+	//test
+	//if filename == "particles/ac_animations/sdk/explosion/generic_cinematic_explosion.pcf" or filename == "particles/maps/de_aztec.pcf" then
+	//	return false
+	//end
 end)
 
 local tf2_unusual_wep_pcfs = {
@@ -3780,7 +3766,6 @@ function PartCtrl_ReadAndProcessPCFs()
 
 	PartCtrl_AllPCFPaths = {}
 	local function PartCtrl_FindAllPCFPaths(dir)
-		//TODO: implement blacklist
 		local files, dirs = file.Find(dir .. "*", "GAME")
 		for _, filename in pairs (files) do
 			if string.EndsWith(filename, ".pcf") and !string.EndsWith(filename, "_dx80.pcf") and !string.EndsWith(filename, "_dx90_slow.pcf") and !string.EndsWith(filename, "_high.pcf") then
@@ -4009,7 +3994,7 @@ if CLIENT then
 							menu:Open()
 						end
 					end
-					cnode.FilePopulateCallback = particles.FilePopulateCallback //TODO: once we add blacklisting, test by blacklisting a .pcf file in a subfolder
+					cnode.FilePopulateCallback = particles.FilePopulateCallback
 				end
 			end
 			//clear out folders that generate empty - checking fi/fo up above doesn't work because some games (ep1) have empty tables even though they have files(??)
