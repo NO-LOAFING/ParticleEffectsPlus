@@ -40,14 +40,17 @@ local tf2_unusual_wep_pcfs = {
 	["particles/weapon_unusual_isotope.pcf"] = true
 }
 hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
-	//These fx are all are dupes with conflicting names that cause unnecessary pcf reloads from conflicts every time you search for a tf2 weapon, remove them
 	if tf2_unusual_wep_pcfs[filename] then
 		for k, v in pairs (tab) do
 			if string.StartsWith(k, "_unusual_parent_") then
-				tab[k] = nil
+				tab[k].shouldcull = "Blacklisted: _unusual_parent_ fx are all dupes with conflicting names,\nwhich slow the game down with unnecessary PCF reloads every time\nyou search for a TF2 weapon."
 			end
 		end
 	end
+	//test
+	--[[if filename == "particles/partctrl_test.pcf" then
+		tab["test_allerrors"].shouldcull = false
+	end]]
 end)
 
 
@@ -3233,7 +3236,7 @@ local processfuncs = {
 }
 function PartCtrl_ProcessPCF(filename)
 	if hook.Call("PartCtrl_PreProcessPCF", nil, filename) == false then return end //Let hook funcs prevent PCFs from being read by returning false
-	
+
 	local t = PartCtrl_ReadPCF(filename)
 	if !t then
 		MsgN(filename, " couldn't be read")
@@ -3602,14 +3605,39 @@ function PartCtrl_ProcessPCF(filename)
 					v["axis"] = newvectors
 				end
 			end
+
+			//Flag effects for culling - we do this before calling the PostProcessPCF hook, so the hook can override it
+			local shouldcull = nil
+			//Cull empty effects
+			if t2[particle].renderer_emitter_shouldcull then
+				shouldcull = "This particle effect has no valid renderer and/or no valid emitter, and no control points\ninherited from children, which means it's probably empty or blank. If this effect was\nflagged in error (it actually has a visible component of some kind), then report this bug!"
+			end
+			//Cull effects that are stuck at the world origin because they don't have any cpoints setting their particle pos
+			if !t2[particle].sets_particle_pos then
+				if shouldcull then
+					shouldcull = shouldcull .. "\n\n"
+				else
+					shouldcull = ""
+				end
+				shouldcull = shouldcull .. "This particle effect doesn't have any control point attributes setting the particles' spawn\nposition (i.e. 'Position Within Box Random'), which means it will always spawn particles\nat the world origin. This isn't useful to players 99% of the time, and would just clutter up\nspawnlists and searches with unusable effects. If this effect was flagged in error (it\nactually *does* control where particles spawn with a control point, it doesn't spawn them\nat 0,0,0), then report this bug!"
+			end
+			//Also, now that their parents have inherited cpoint data from them, cull effects with preventNameBasedLookup, since we can't spawn them on their own.
+			if t2[particle].prevent_name_based_lookup then
+				if shouldcull then
+					shouldcull = shouldcull .. "\n\n"
+				else
+					shouldcull = ""
+				end
+				shouldcull = shouldcull .. "This particle effect has the value preventNameBasedLookup set to true, which prevents\nthe game from spawning it directly, though other effects can still use it as a child."
+			end
+			t2[particle].shouldcull = shouldcull
 		end
 		//Let hook funcs modify the processed table arbitrarily (including deciding which fx to cull)
 		hook.Call("PartCtrl_PostProcessPCF", nil, filename, t2)
 		for particle, _ in pairs (t2) do
-			//Cull empty effects, or effects that are stuck at the world origin because they don't have any cpoints setting their particle pos.
-			//Also, now that their parents have inherited cpoint data from them, cull effects with preventNameBasedLookup, since we can't spawn them on their own.
+			//Cull bad effects from the table.
 			//If the player starts up the game in developer mode, effects aren't culled, but instead have a warning on the spawnicon telling the dev why they won't show up to players.
-			if (t2[particle].prevent_name_based_lookup or t2[particle].renderer_emitter_shouldcull or !t2[particle].sets_particle_pos) and GetConVarNumber("developer") < 1 then
+			if t2[particle].shouldcull and GetConVarNumber("developer") < 1 then
 				t2[particle] = nil
 			else
 				//Store which PCFs this particle name is defined in - this is used to detect particles that are multiply defined and display a warning in the spawnicon

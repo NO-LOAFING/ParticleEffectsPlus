@@ -85,19 +85,11 @@ function PANEL:Setup(pcf, name)
 			end
 
 			//developer warnings for culled fx
-			if !PartCtrl_ProcessedPCFs[pcf][name].sets_particle_pos then
-				tooltip = tooltip .. "\n\nERROR:\nThis particle effect doesn't have any control point attributes setting the particles' spawn\nposition (i.e. 'Position Within Box Random'), which means it will always spawn particles\nat the world origin. This isn't useful to players 99% of the time, and would just clutter up\nspawnlists and searches with unusable effects, so this effect will not be loaded outside of\ndeveloper mode.\n\nIf this effect was flagged in error (it actually *does* control where particles spawn with\na control point, it doesn't spawn them at 0,0,0), then report this bug!"
+			if PartCtrl_ProcessedPCFs[pcf][name].shouldcull then
+				tooltip = tooltip .. "\n\nERROR: This effect will not be loaded outside of developer mode.\n\n" .. tostring(PartCtrl_ProcessedPCFs[pcf][name].shouldcull) //just in case some doofus makes it a bool
+				//tooltip reaches max length if all 3 errors are on one effect, but whatever
 				table.insert(self.icons, {["icon"] = icon_deverror})
 			end
-			if PartCtrl_ProcessedPCFs[pcf][name].renderer_emitter_shouldcull then
-				tooltip = tooltip .. "\n\nERROR:\nThis particle effect has no valid renderer and/or no valid emitter, and no control points\ninherited from children, which means it's probably empty or blank. This effect will not be\nloaded outside of developer mode.\n\nIf this effect was flagged in error (it actually has a visible component of some kind), then\nreport this bug!"
-				table.insert(self.icons, {["icon"] = icon_deverror})
-			end
-			if PartCtrl_ProcessedPCFs[pcf][name].prevent_name_based_lookup then
-				tooltip = tooltip .. "\n\nERROR:\nThis particle effect has the value preventNameBasedLookup set to true, which prevents\nthe game from spawning it directly, though it's still usable as a child effect. This effect\nwill not be loaded outside of developer mode."
-				table.insert(self.icons, {["icon"] = icon_deverror})
-			end
-			//tooltip reaches max length if all 3 errors are on one effect, but whatever
 		else
 			tooltip = tooltip .. "\n(Scripted Effect)"
 			//table.insert(self.icons, {["icon"] = icon_utilfx})
