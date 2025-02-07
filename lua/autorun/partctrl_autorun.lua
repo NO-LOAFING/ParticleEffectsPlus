@@ -41,7 +41,15 @@ end)
 
 
 
+
+
+
+
+
+
+
 //Add util fx
+
 //Example:
 --[[list.Add("PartCtrl_UtilFx", "EffectName", { //Name of the effect that util.Effect() will call
 	title = "Garry's Mod",	//String; in the "Browse Particles" spawnlist, any game, addon, or legacy addon with this exact folder name will get a "Scripted Effects" subfolder containing this effect
@@ -1995,12 +2003,10 @@ list.Set("PartCtrl_UtilFx", "wheel_indicator", {
 
 //silly pretend enums, for more convenient networking mostly
 PARTCTRL_CPOINT_MODE_NONE		= 0
-PARTCTRL_CPOINT_MODE_MANUAL		= 1
-PARTCTRL_CPOINT_MODE_POSITION		= 2
-PARTCTRL_CPOINT_MODE_VECTOR		= 3
-PARTCTRL_CPOINT_MODE_AXIS		= 4
-PARTCTRL_CPOINT_MODE_POSITION_COMBINE	= 5
-partctrl_cpointmodebits = 3
+PARTCTRL_CPOINT_MODE_POSITION		= 1
+PARTCTRL_CPOINT_MODE_VECTOR		= 2
+PARTCTRL_CPOINT_MODE_AXIS		= 3
+PARTCTRL_CPOINT_MODE_POSITION_COMBINE	= 4
 //another networking convenience
 partctrl_cpointbits = 7 //-1 - 63
 
@@ -3283,8 +3289,8 @@ function PartCtrl_ProcessPCF(filename)
 				end
 			end
 		end
-		//Inherit cpoint info from children; for spawnicons, particle entities, and control windows to make use of; cpoint defaults handle inheritance differently because of how outputs work,
-		//so store all of this in a separate table for now, and don't apply it until after we're done setting cpoint defaults.
+		//Inherit cpoint info from children; for spawnicons, particle entities, and control windows to make use of; cpoint modes handle inheritance differently because of how outputs work,
+		//so store all of this in a separate table for now, and don't apply it until after we're done setting cpoint modes.
 		for particle, _ in pairs (t2) do
 			local cpoints = table.Copy(t2[particle].cpoints)
 			local function cpoints_from_child_fx(cpoints, particle2, depth)
@@ -3349,14 +3355,14 @@ function PartCtrl_ProcessPCF(filename)
 			t2[particle].cpoints_with_children = cpoints_from_child_fx(cpoints, particle)
 		end
 		for particle, _ in pairs (t2) do
-			//Store the default use for each cpoint - this is used by both particle entities and spawnicons, so do it here to ensure that they match
-			local defaults = {}
+			//Store the PARTCTRL_CPOINT_MODE_ for each cpoint
+			local modes = {}
 			local output_children = {}
 			local output_axis = {}
 			local on_model = nil
 			local sets_particle_pos = nil
-			local function SetCPointDefaults(particle2, parent)
-				//MsgN("Doing SetCPointDefaults for particle ", particle2, ", parent ", parent, "\nCurrent output_children:")
+			local function SetCPointModes(particle2, parent)
+				//MsgN("Doing SetCPointModes for particle ", particle2, ", parent ", parent, "\nCurrent output_children:")
 				//a little heavy-handed? maybe. might result in some false positives in complex hierarchy trees. haven't found any actual examples of this causing problems,
 				//and we'd have to totally rework how we handle hierarchy here to make this more accurate (currently have no way to get the parent of a parent, etc. to check if
 				//it's using output_children).
@@ -3391,13 +3397,13 @@ function PartCtrl_ProcessPCF(filename)
 							//- outputs override the target cpoint on the effect itself, and on all of its children
 							//- outputs on the children of an effect do NOT override the target cpoint on their parent
 							//- output_axis follows the same two rules above but only overrides a single axis
-							if defaults[k] == nil then
+							if modes[k] == nil then
 								did_output = true
-								defaults[k] = PARTCTRL_CPOINT_MODE_NONE
+								modes[k] = PARTCTRL_CPOINT_MODE_NONE
 							end
 						end
 						if v["position"] then
-							//If we're inheriting cpoint defaults from a child, make sure it's not from an attrib that shouldn't be inherited
+							//If we're inheriting the cpoint mode from a child, make sure it's not from an attrib that shouldn't be inherited
 							local newtab = {}
 							for k2, v2 in pairs (v["position"]) do
 								if !(parenttab and v2["dont_inherit"]) --[[and !(t2[particle2].constraint_does_override and v2["overridable_by_constraint"])]] then
@@ -3414,16 +3420,16 @@ function PartCtrl_ProcessPCF(filename)
 							end
 							for k2, v2 in pairs (newtab) do
 								if (t2[particle2].has_renderer and t2[particle2].has_emitter) or v2["doesnt_need_renderer_or_emitter"] then
-									if defaults[k] == nil or defaults[k] == PARTCTRL_CPOINT_MODE_POSITION_COMBINE or (did_output and ignore_outputs) then
+									if modes[k] == nil or modes[k] == PARTCTRL_CPOINT_MODE_POSITION_COMBINE or (did_output and ignore_outputs) then
 										if t2[particle2].constraint_does_override and v2["overridable_by_constraint"]
 										or t2[particle2].drag_does_override and v2["overridable_by_drag"] then
-											defaults[k] = PARTCTRL_CPOINT_MODE_POSITION_COMBINE
+											modes[k] = PARTCTRL_CPOINT_MODE_POSITION_COMBINE
 										else
-											defaults[k] = PARTCTRL_CPOINT_MODE_POSITION
+											modes[k] = PARTCTRL_CPOINT_MODE_POSITION
 										end
 										did_output = false //make sure position_combine below doesn't override this
 									end
-									if defaults[k] == PARTCTRL_CPOINT_MODE_POSITION and v2["on_model"] then
+									if modes[k] == PARTCTRL_CPOINT_MODE_POSITION and v2["on_model"] then
 										//also make a list of all the cpoints that have "on_model" fx so that we can print extra info about it in spawnicons
 										on_model = on_model or {}
 										on_model[k] = true
@@ -3436,7 +3442,7 @@ function PartCtrl_ProcessPCF(filename)
 							end
 						end
 						if v["position_combine"] then
-							//If we're inheriting cpoint defaults from a child, make sure it's not from an attrib that shouldn't be inherited
+							//If we're inheriting the cpoint mode from a child, make sure it's not from an attrib that shouldn't be inherited
 							local newtab = {}
 							if parenttab then
 								for k2, v2 in pairs (v["position_combine"]) do
@@ -3464,20 +3470,20 @@ function PartCtrl_ProcessPCF(filename)
 								end
 								if ((t2[particle2].has_renderer and t2[particle2].has_emitter) or v2["doesnt_need_renderer_or_emitter"]) 
 								and (!t2[particle2].movement_lock or !t2[particle2].movement_lock[k] or t2[particle].movement_lock_cpoint == k) then
-									if defaults[k] == nil or (did_output and ignore_outputs) then
-										defaults[k] = PARTCTRL_CPOINT_MODE_POSITION_COMBINE
+									if modes[k] == nil or (did_output and ignore_outputs) then
+										modes[k] = PARTCTRL_CPOINT_MODE_POSITION_COMBINE
 									end
 								end
 							end
 						end
 						if v["vector"] then
-							if defaults[k] == nil then
-								defaults[k] = PARTCTRL_CPOINT_MODE_VECTOR
+							if modes[k] == nil then
+								modes[k] = PARTCTRL_CPOINT_MODE_VECTOR
 							end
 						end
 						if v["axis"] then
 							local doaxis = false
-							if defaults[k] == nil then
+							if modes[k] == nil then
 								for k2, v2 in pairs (v["axis"]) do
 									//handle output_axis overriding specific axes
 									if !istable(output_axis[k]) or !output_axis[k][v2.axis] then
@@ -3486,42 +3492,42 @@ function PartCtrl_ProcessPCF(filename)
 								end
 							end
 							if doaxis then
-								defaults[k] = PARTCTRL_CPOINT_MODE_AXIS
+								modes[k] = PARTCTRL_CPOINT_MODE_AXIS
 							end
 						end
 					end
 				end
-				//MsgN("Current defaults:")
-				//PrintTable(defaults)
+				//MsgN("Current modes:")
+				//PrintTable(modes)
 			end
-			SetCPointDefaults(particle)
+			SetCPointModes(particle)
 			//Cpoints that haven't been filled in yet should inherit from children
-			local function CPointDefaultsFromChildren(particle2, depth)
+			local function CPointModesFromChildren(particle2, depth)
 				depth = depth or 0
 				depth = depth + 1
 				if depth > 99 then
-					MsgN(filename, " ", particle2, " CPointDefaultsFromChildren has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
+					MsgN(filename, " ", particle2, " CPointModesFromChildren has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
 					return
 				end
 
 				if istable(t2[particle2].children) then
 					for _, child in pairs (t2[particle2].children) do
 						if !t2[child] then
-							//MsgN(filename, " ", particle2, " CPointDefaultsFromChildren tried to get nonexistent child effect ", child)
+							//MsgN(filename, " ", particle2, " CPointModesFromChildren tried to get nonexistent child effect ", child)
 						else
-							SetCPointDefaults(child, particle2)
+							SetCPointModes(child, particle2)
 							//Now inherit from the child's children, and so on
 							//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
-							CPointDefaultsFromChildren(child, depth)
+							CPointModesFromChildren(child, depth)
 						end
 					end
 				end
 			end
-			CPointDefaultsFromChildren(particle)
+			CPointModesFromChildren(particle)
 
 			local shouldcull = !t2[particle].has_renderer or !t2[particle].has_emitter
 			local needfallback = true
-			for k, v in pairs (defaults) do
+			for k, v in pairs (modes) do
 				if !shouldcull and !needfallback then break end
 				if shouldcull and v != PARTCTRL_CPOINT_MODE_NONE then
 					//Clear out empty effects (no renderer, no emitter, no cpoints even from children)
@@ -3538,20 +3544,23 @@ function PartCtrl_ProcessPCF(filename)
 			if needfallback then
 				//PartCtrl_CPoint_AddToProcessed(t2[particle], -1, "fallback position cpoint created due to no position cpoint") //causes bizarre unnecessary cpoint -1 on utaunt_rainbow_teamcolor_red
 				t2[particle].cpoints_with_children[-1] = {["position"] = {[1] = {["name"] = "fallback position cpoint created due to no position cpoint"}}}
-				defaults[-1] = PARTCTRL_CPOINT_MODE_POSITION
+				modes[-1] = PARTCTRL_CPOINT_MODE_POSITION
 			end
-			t2[particle]["defaults"] = defaults
+			//Finally, store the cpoint modes
+			for k, v in pairs (modes) do
+				t2[particle].cpoints_with_children[k].mode = v
+			end
 			t2[particle]["on_model"] = on_model
 			t2[particle]["sets_particle_pos"] = sets_particle_pos
 		end
 		for particle, _ in pairs (t2) do
-			//Now that we're done setting cpoint defaults, apply cpoint data from children
+			//Now that we're done setting cpoint modes, apply cpoint data from children
 			t2[particle].cpoints = t2[particle].cpoints_with_children
 			t2[particle].cpoints_with_children = nil
 			for k, v in pairs (t2[particle].cpoints) do
-				//Fill in empty default entries
-				if t2[particle].defaults[k] == nil then
-					t2[particle].defaults[k] = PARTCTRL_CPOINT_MODE_NONE
+				//Fill in empty mode entries
+				if v.mode == nil then
+					t2[particle].cpoints[k].mode = PARTCTRL_CPOINT_MODE_NONE
 				end
 				//Squish together vector and axis entries that have the same values except for the name
 				if v["vector"] and table.Count(v["vector"]) > 1 then
@@ -3618,7 +3627,7 @@ function PartCtrl_ProcessPCF(filename)
 			end
 			t2[particle].shouldcull = shouldcull
 		end
-		//Let hook funcs modify the processed table arbitrarily (including deciding which fx to cull)
+		//Now that the processed table is finished, let hook funcs modify it arbitrarily (including deciding which fx to cull)
 		hook.Call("PartCtrl_PostProcessPCF", nil, filename, t2)
 		for particle, _ in pairs (t2) do
 			//Cull bad effects from the table.
@@ -3693,7 +3702,6 @@ function PartCtrl_ProcessUtilFx()
 		for k, v in pairs (utilfx) do
 			local t = {
 				["cpoints"] = {},
-				["defaults"] = {},
 				["info"] = v.info,
 				["utilfx"] = true,
 				["default_time"] = v.default_time,
@@ -3705,14 +3713,14 @@ function PartCtrl_ProcessUtilFx()
 			//Use the effect's DoProcess func to set up cpoints
 			v.DoProcess(t, v.DoProcessExtras)
 
-			//Set cpoint modes
+			//Set cpoint modes; TODO: is there any case where we need to make this settable by modders somehow?
 			for k, v in pairs (t.cpoints) do
 				if v["position"] then
-					t.defaults[k] = PARTCTRL_CPOINT_MODE_POSITION
+					t.cpoints[k].mode = PARTCTRL_CPOINT_MODE_POSITION
 				elseif v["vector"] then
-					t.defaults[k] = PARTCTRL_CPOINT_MODE_VECTOR
+					t.cpoints[k].mode = PARTCTRL_CPOINT_MODE_VECTOR
 				elseif v["axis"] then
-					t.defaults[k] = PARTCTRL_CPOINT_MODE_AXIS
+					t.cpoints[k].mode = PARTCTRL_CPOINT_MODE_AXIS
 				end
 			end
 

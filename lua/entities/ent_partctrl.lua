@@ -96,6 +96,7 @@ function ENT:Think()
 
 		local pcf = self:GetPCF()
 		if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()]) then return end
+		local ptab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()]
 
 		//TODO: see if we need to copy the demo fix that ragdoll resizer/animpropoverhaul/advbone have for their info tables
 
@@ -213,23 +214,24 @@ function ENT:Think()
 			//Cache which cpoint the renderbounds are relative to, so we don't have to keep retrieving this
 			if self.ParticleInfo_LastCPoint == nil then
 				for k, v in pairs (self.ParticleInfo) do
-					if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+					if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
 						self.ParticleInfo_LastCPoint = k
 						if self.ParticleInfo_FirstPos == nil then
 							self.ParticleInfo_FirstPos = k
 						end
-					elseif v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+					elseif ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
 						self.ParticleInfo_LastCPoint = self.ParticleInfo_FirstPos or self.ParticleInfo_LastCPoint
 					end
 				end
 			end
 			//Set our renderbounds to the particle renderbounds, so that we run our Draw func whenever any part of the particle is visible; these are relative to the last position cpoint
 			local pos
-			local v = self.ParticleInfo[self.ParticleInfo_LastCPoint]
-			if v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
-				v = self.ParticleInfo[self.ParticleInfo_FirstPos]
+			local k = self.ParticleInfo_LastCPoint
+			if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+				k = self.ParticleInfo_FirstPos
 			end
-			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+			if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+				local v = self.ParticleInfo[k]
 				if IsValid(v.ent) then
 					if IsValid(v.ent.AttachedEntity) then
 						pos = v.ent.AttachedEntity:GetAttachment(v.attach)
@@ -255,7 +257,7 @@ function ENT:Think()
 			//For utilfx, just make our renderbounds a box around all the cpoints, so that helpers render when any cpoint is on-screen
 			local mins, maxs
 			for k, v in pairs (self.ParticleInfo) do
-				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
 					if IsValid(v.ent) then
 						local pos
 						if IsValid(v.ent.AttachedEntity) then
@@ -353,8 +355,9 @@ if CLIENT then
 	function ENT:DrawCPointHelpers()	
 		if self.ParticleInfo then
 			local window = IsValid(self.PartCtrlWindow) and g_ContextMenu:IsVisible()
+			local ptab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]
 			for k, v in pairs (self.ParticleInfo) do
-				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
 					if IsValid(v.ent) then
 						if window or v.ent.PartCtrl_Grip then //hide helpers when they're attached to other ents unless the window is open
 							//Draw particle effect helpers (numbers showing cpoint id, arrows showing cpoint orientation)
@@ -544,8 +547,9 @@ if CLIENT then
 
 		//Create our particle system and attach it to our first position cpoint
 		local firstcpoint = nil
+		local ptab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]
 		local function DoFirstCPoint(k)
-			if istable(self.ParticleInfo[k]) and self.ParticleInfo[k].mode == PARTCTRL_CPOINT_MODE_POSITION and IsValid(self.ParticleInfo[k].ent) then
+			if istable(self.ParticleInfo[k]) and ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION and IsValid(self.ParticleInfo[k].ent) then
 				local ent = self.ParticleInfo[k].ent
 				if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
 				local attach = self.ParticleInfo[k].attach
@@ -562,7 +566,7 @@ if CLIENT then
 			end
 		end
 		for k, v in SortedPairs (self.ParticleInfo) do
-			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+			if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
 				firstcpoint = k
 				break 
 			end
@@ -585,9 +589,10 @@ if CLIENT then
 			for k, v in pairs (self.ParticleInfo) do
 				if k != ignore then
 				//if k >= 0 then //don't do this for -1 because it's not a real cpoint
-					if v.mode == PARTCTRL_CPOINT_MODE_POSITION or v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+					local mode = ptab.cpoints[k].mode
+					if mode == PARTCTRL_CPOINT_MODE_POSITION or mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
 						local tab = v
-						if v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+						if mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
 							//"combine" this cpoint with the first position cpoint by having it follow all the same parameters as that one
 							tab = self.ParticleInfo[firstcpoint]
 						end
@@ -605,7 +610,7 @@ if CLIENT then
 							end
 							self.particle:AddControlPoint(k, ent, pattach, attachstr, tab.pos)
 						end
-					elseif v.mode == PARTCTRL_CPOINT_MODE_VECTOR or v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+					elseif mode == PARTCTRL_CPOINT_MODE_VECTOR or mode == PARTCTRL_CPOINT_MODE_AXIS then
 						self.particle:SetControlPoint(k, v.val)
 					end
 				end
@@ -628,7 +633,7 @@ if CLIENT then
 		//Remove us from the list of particles on each cpoint ent (used by properties)
 		if istable(self.ParticleInfo) then
 			for k, v in pairs (self.ParticleInfo) do
-				if v.mode == PARTCTRL_CPOINT_MODE_POSITION and IsValid(v.ent) and istable(v.ent.PartCtrl_ParticleEnts) then
+				if IsValid(v.ent) and istable(v.ent.PartCtrl_ParticleEnts) then
 					v.ent.PartCtrl_ParticleEnts[self] = nil
 					//Refresh attacher tool effect list if this effect was removed from the list
 					local panel = controlpanel.Get("partctrl_attacher")
@@ -758,8 +763,7 @@ end
 
 //Networking for edit menu inputs
 local EditMenuInputs = {
-	[0] = "cpoint_mode",
-	"cpoint_position_ent_setwithtool",
+	[0] = "cpoint_position_ent_setwithtool",
 	"cpoint_position_ent_detach",
 	"cpoint_position_attach",
 	"cpoint_position_pos",
@@ -799,15 +803,11 @@ if CLIENT then
 				net.WriteInt(args[1], partctrl_cpointbits) //cpoint id, can be -1
 			end
 
-			if input == "cpoint_mode" then
-
-				net.WriteUInt(args[2], partctrl_cpointmodebits) //new cpoint mode
-			
-			//elseif input == "cpoint_position_ent_setwithtool" then
+			//if input == "cpoint_position_ent_setwithtool" then
 
 			//elseif input == "cpoint_position_ent_detach" then
 
-			elseif input == "cpoint_position_attach" then
+			if input == "cpoint_position_attach" then
 
 				net.WriteUInt(args[2], 8) //new attachment id; don't know what the max attachment number is, assume 255
 
@@ -883,18 +883,14 @@ else
 		input = table.KeyFromValue(EditMenuInputs, input)
 
 		local k = nil
+		local mode = nil
 		if string.StartsWith(input, "cpoint_") then
 			k = net.ReadInt(partctrl_cpointbits) //cpoint id, can be -1
+			mode = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()].cpoints[k].mode
 		end
 		local refreshtable = false
 
-		if input == "cpoint_mode" then
-
-			local newmode = net.ReadUInt(partctrl_cpointmodebits)
-			//TODO: once we implement more cpoint modes, handle switching between modes (figure out what we want the default values to be,
-			//create grip point ent in case we're switching from something else to position)
-
-		elseif input == "cpoint_position_ent_setwithtool" then
+		if input == "cpoint_position_ent_setwithtool" then
 			
 			if !IsValid(ply) then return end
 			if !GetConVar("toolmode_allow_partctrl_attacher"):GetBool() then return end //TODO: this was copied from advbonemerge, which also does a CanTool check with a fake trace. is that necessary here?
@@ -929,7 +925,7 @@ else
 
 			local new = net.ReadUInt(8)
 
-			if !istable(self.ParticleInfo[k]) or self.ParticleInfo[k].mode != PARTCTRL_CPOINT_MODE_POSITION then return end
+			if !istable(self.ParticleInfo[k]) or mode != PARTCTRL_CPOINT_MODE_POSITION then return end
 
 			self.ParticleInfo[k].attach = new
 			refreshtable = true
@@ -939,7 +935,7 @@ else
 			local axis = net.ReadUInt(2)
 			local new = net.ReadFloat()
 
-			if !istable(self.ParticleInfo[k]) or self.ParticleInfo[k].mode != PARTCTRL_CPOINT_MODE_POSITION then return end
+			if !istable(self.ParticleInfo[k]) or mode != PARTCTRL_CPOINT_MODE_POSITION then return end
 
 			self.ParticleInfo[k].pos[axis] = new
 			refreshtable = true
@@ -952,7 +948,7 @@ else
 
 			local new = net.ReadVector()
 
-			if !istable(self.ParticleInfo[k]) or self.ParticleInfo[k].mode != PARTCTRL_CPOINT_MODE_VECTOR then return end
+			if !istable(self.ParticleInfo[k]) or mode != PARTCTRL_CPOINT_MODE_VECTOR then return end
 
 			self.ParticleInfo[k].val = new
 			refreshtable = true
@@ -962,7 +958,7 @@ else
 			local axis = net.ReadUInt(2)
 			local new = net.ReadFloat()
 
-			if !istable(self.ParticleInfo[k]) or self.ParticleInfo[k].mode != PARTCTRL_CPOINT_MODE_VECTOR then return end
+			if !istable(self.ParticleInfo[k]) or mode != PARTCTRL_CPOINT_MODE_VECTOR then return end
 
 			self.ParticleInfo[k].val[axis] = new
 			refreshtable = true
@@ -976,10 +972,10 @@ else
 			local axis = net.ReadUInt(2)
 			local new = net.ReadFloat()
 
-			if !istable(self.ParticleInfo[k]) or self.ParticleInfo[k].mode != PARTCTRL_CPOINT_MODE_AXIS then return end
+			if !istable(self.ParticleInfo[k]) or mode != PARTCTRL_CPOINT_MODE_AXIS then return end
 
 			//Sanity check: for some axis controls ("Emission Count Scale"), going out of range causes a crash, so make sure that doesn't happen
-			local tab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]["cpoints"][k]["axis"][self.ParticleInfo[k]["which_" .. axis-1]] //awesome
+			local tab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()].cpoints[k].axis[self.ParticleInfo[k]["which_" .. axis-1]] //awesome
 			if istable(tab) then
 				if tab.inMin then
 					new = math.max(tab.inMin, new)
@@ -1070,13 +1066,15 @@ if SERVER then
 	//If we received a request for an info table, then send it to the client
 	net.Receive("PartCtrl_InfoTable_GetFromSv", function(_, ply)
 		local ent = net.ReadEntity()
-		if !IsValid(ent) or !istable(ent.ParticleInfo) then return end
+		if !IsValid(ent) or !istable(ent.ParticleInfo) or !istable(PartCtrl_ProcessedPCFs[ent:GetPCF()]) then return end
+		local ptab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]
+		if !istable(ptab) then return end
 
 		//Make sure the table is ready to send first - if we're a dupe, and our constraints haven't restored the .ent values for our cpoints using PARTCTRL_CPOINT_MODE_POSITION,
 		//then this is most likely a bad dupe, so remove us and stop here
 		local badparticle = nil
 		for k, v in pairs (ent.ParticleInfo) do
-			if v.mode == PARTCTRL_CPOINT_MODE_POSITION and v.ent == nil then
+			if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION and v.ent == nil then
 				//MsgN("stop")
 				//return
 				badparticle = k
@@ -1104,15 +1102,15 @@ if SERVER then
 			for k, v in pairs (ent.ParticleInfo) do
 				net.WriteInt(k, partctrl_cpointbits)
 
-				net.WriteUInt(v.mode, partctrl_cpointmodebits) 
-				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+				local mode = ptab.cpoints[k].mode
+				if mode == PARTCTRL_CPOINT_MODE_POSITION then
 					net.WriteEntity(v.ent or NULL)
 					net.WriteUInt(v.attach or 0, 8) //don't know what the max attachment number is, assume 255
 					net.WriteVector(v.pos or Vector())
-				elseif v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
+				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
 					net.WriteUInt(v.which or 0, 4) //the number of attributes modifying a single cpoint is potentially unlimited, but the vast majority won't have more than 1 since they'll all conflict with each other, so assume a generous max of 16
 					net.WriteVector(v.val or Vector())
-				elseif v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 					net.WriteVector(v.val or Vector())
 					for i = 0, 2 do
 						net.WriteUInt(v["which_" .. i] or 0, 4) //again, potentially unlimited but very unlikely to have more than 3 (one for each axis), assume generous max of 16
@@ -1129,7 +1127,9 @@ else
 	net.Receive("PartCtrl_InfoTable_SendToCl", function()
 
 		local self = net.ReadEntity()
-		if !IsValid(self) or !self:GetClass("ent_partctrl") then return end
+		if !IsValid(self) or !self:GetClass("ent_partctrl") or !istable(PartCtrl_ProcessedPCFs[self:GetPCF()]) then return end
+		local ptab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]
+		if !istable(ptab) then return end
 
 		local tab = {}
 
@@ -1137,21 +1137,22 @@ else
 
 		for i = 1, net.ReadInt(partctrl_cpointbits + 1) do
 			local k = net.ReadInt(partctrl_cpointbits)
+			local v = {}
 
-			local v = {mode = net.ReadUInt(partctrl_cpointmodebits)}
-			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+			local mode = ptab.cpoints[k].mode
+			if mode == PARTCTRL_CPOINT_MODE_POSITION then
 				v.ent = net.ReadEntity()
 				v.attach = net.ReadUInt(8)
 				v.pos = net.ReadVector()
-			elseif v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
+			elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
 				v.which = net.ReadUInt(4)
 				v.val = net.ReadVector()
-			elseif v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+			elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 				v.val = net.ReadVector()
 				for i = 0, 2 do
 					v["which_" .. i] = net.ReadUInt(4)
 					//Sanity check: for some axis controls ("Emission Count Scale"), going out of range causes a crash, so make sure that doesn't happen
-					local tab2 = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]["cpoints"][k]["axis"][v["which_" .. i]]
+					local tab2 = ptab.cpoints[k].axis[v["which_" .. i]]
 					if istable(tab2) then
 						if tab2.inMin then
 							v.val[i+1] = math.max(tab2.inMin, v.val[i+1])
@@ -1189,7 +1190,7 @@ else
 					end
 				end
 				//Refresh control window if we changed something that requires the controls to be rebuilt
-				if window and (self.ParticleInfo[k].mode != oldtab[k].mode or self.ParticleInfo[k].ent != oldtab[k].ent) then
+				if window and (self.ParticleInfo[k].ent != oldtab[k].ent) then
 					self.PartCtrlWindow.CPointCategories[k].RebuildContents(self.ParticleInfo[k])
 				end
 			end
@@ -1253,7 +1254,7 @@ if SERVER then
 			end)
 		end
 
-		if istable(Ent1.ParticleInfo) and istable(Ent1.ParticleInfo[CPoint]) and Ent1.ParticleInfo[CPoint].mode == PARTCTRL_CPOINT_MODE_POSITION then
+		if istable(Ent1.ParticleInfo) and istable(Ent1.ParticleInfo[CPoint]) and PartCtrl_ProcessedPCFs[Ent1:GetPCF()][Ent1:GetParticleName()].cpoints[CPoint].mode == PARTCTRL_CPOINT_MODE_POSITION then
 			Ent1.ParticleInfo[CPoint].ent = Ent2
 		end
 		if DoParent then
@@ -1299,9 +1300,7 @@ if SERVER then
 		if istable(data.ParticleInfo) then
 			data.ParticleInfo = table.Copy(data.ParticleInfo) //make sure to create a separate table; otherwise, clearing the .ent value below will also clear the one still in use on the actual entity
 			for k, v in pairs (data.ParticleInfo) do
-				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
-					data.ParticleInfo[k].ent = nil
-				end
+				data.ParticleInfo[k].ent = nil
 			end
 		end
 
@@ -1360,18 +1359,15 @@ if SERVER then
 		local tab = {}
 		local grips = {}
 		for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
-			local mode = PartCtrl_ProcessedPCFs[pcf][name].defaults[k]
-			if mode == PARTCTRL_CPOINT_MODE_POSITION then
+			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
 				grips[k] = true
 				tab[k] = {
-					mode = PARTCTRL_CPOINT_MODE_POSITION,
 					ent = nil,
 					attach = 0,
 					pos = Vector(0,0,0),
 				}
-			elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
+			elseif v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
 				tab[k] = {
-					mode = PARTCTRL_CPOINT_MODE_VECTOR,
 					which = 0, //which entry in v["vector"] for the edit window to get values like inMin and pattach from
 					val = Vector(0,0,0),
 				}
@@ -1382,9 +1378,8 @@ if SERVER then
 					end
 					break
 				end
-			elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
+			elseif v.mode == PARTCTRL_CPOINT_MODE_AXIS then
 				tab[k] = {
-					mode = PARTCTRL_CPOINT_MODE_AXIS,
 					val = Vector(0,0,0)
 				}
 				for i = 0, 2 do
@@ -1399,14 +1394,10 @@ if SERVER then
 						end
 					end
 				end
-			elseif mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
-				tab[k] = {
-					mode = PARTCTRL_CPOINT_MODE_POSITION_COMBINE
-				}
-			else
-				tab[k] = {
-					mode = PARTCTRL_CPOINT_MODE_NONE
-				}
+			//elseif v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+			//	
+			//else
+			//	
 			end
 		end
 		local grip_radius = 6/2
@@ -1543,10 +1534,11 @@ if SERVER then
 					local ent = tab.Ent1
 					if IsValid(ent) and ent:GetClass() == "ent_partctrl" and istable(ent.ParticleInfo) and istable(PartCtrl_ProcessedPCFs) then
 						if !istable(PartCtrl_ProcessedPCFs[ent:GetPCF()]) or !istable(PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]) then return end
+						local ptab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]
 						local refreshtable = false
 						for k, v in pairs (ent.ParticleInfo) do
-							if v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
-								local tab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]["cpoints"][k]["vector"][v.which]
+							if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_VECTOR then
+								local tab = ptab.cpoints[k].vector[v.which]
 								if istable(tab) and tab.label == "Color" then
 									local vec = Vector()
 									vec.x = math.Remap(color.r/255, tab.outMin.x, tab.outMax.x, tab.inMin.x, tab.inMax.x)

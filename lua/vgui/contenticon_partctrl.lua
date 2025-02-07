@@ -66,7 +66,7 @@ function PANEL:Setup(pcf, name)
 
 	local tooltip = name
 	self.icons = {}
-	if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) or !istable(PartCtrl_ProcessedPCFs[pcf][name].defaults) then
+	if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) or !istable(PartCtrl_ProcessedPCFs[pcf][name].cpoints) then
 		tooltip = tooltip .. "\n(" .. pcf .. ")\n\nInvalid particle effect (from game/addon that isn't mounted?)"
 		//table.insert(self.icons, {["icon"] = icon_invalid})
 		self:SetMaterial("icon16/cancel.png") //icon_invalid) //why doesn't this one take a Material()? whatever
@@ -97,9 +97,9 @@ function PANEL:Setup(pcf, name)
 		end
 
 		local types = {}
-		for _, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].defaults) do
-			types[v] = types[v] or 0
-			types[v] = types[v] + 1
+		for _, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
+			types[v.mode] = types[v.mode] or 0
+			types[v.mode] = types[v.mode] + 1
 		end
 
 		if types[PARTCTRL_CPOINT_MODE_POSITION] > 1 then
@@ -112,7 +112,7 @@ function PANEL:Setup(pcf, name)
 		self.EditCPointsText = {}
 		self.ColorCPoints = {}
 		for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
-			if PartCtrl_ProcessedPCFs[pcf][name].defaults[k] == PARTCTRL_CPOINT_MODE_VECTOR then
+			if v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
 				if !v["vector"] then MsgN(pcf, ": ", name, " - this effect is trying to get a vector value that it doesn't have, some dumb inheritance problem, go report this!") end
 				if v["vector"][1].label == "Color" then
 					self.ColorCPoints[k] = v["vector"][1]
@@ -120,7 +120,7 @@ function PANEL:Setup(pcf, name)
 					self.EditCPoints[k] = v["vector"][1].default or vector_origin
 					table.insert(self.EditCPointsText, v["vector"][1].label)
 				end
-			elseif PartCtrl_ProcessedPCFs[pcf][name].defaults[k] == PARTCTRL_CPOINT_MODE_AXIS then
+			elseif v.mode == PARTCTRL_CPOINT_MODE_AXIS then
 				local usedaxis = {[0] = 0, [1] = 0, [2] = 0}
 				for k2, v2 in pairs (v["axis"]) do
 					if usedaxis[v2.axis] == 0 then
@@ -294,10 +294,10 @@ function PANEL:StartParticle()
 		self.maxs = nil
 		self.iGrips = {}
 		self.iPositionCombine = {}
-		for k, v in pairs (PartCtrl_ProcessedPCFs[self.pcf][self.name].defaults) do
-			if v == PARTCTRL_CPOINT_MODE_POSITION then
+		for k, v in pairs (PartCtrl_ProcessedPCFs[self.pcf][self.name].cpoints) do
+			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
 				table.insert(self.iGrips, k)
-			elseif v == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+			elseif v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
 				table.insert(self.iPositionCombine, k)
 			end
 		end

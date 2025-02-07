@@ -526,7 +526,7 @@ function PANEL:RebuildControls()
 		pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 		pnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
 
-		//Rebuild the contents of this category whenever the player changes the cpoint mode or entity
+		//Rebuild the contents of this category whenever the player changes the cpoint entity
 		function pnl.RebuildContents(v2)
 
 			local ent2 = v2.ent
@@ -541,42 +541,9 @@ function PANEL:RebuildControls()
 
 			local expand = false
 
-			--[[local drop = vgui.Create("Panel", pnl)
-
-			drop.Label = vgui.Create("DLabel", drop)
-			drop.Label:SetDark(true)
-			drop.Label:SetText("Control Point Mode")
-			drop.Label:Dock(LEFT)
-
-			drop.Combo = vgui.Create("DComboBox", drop)
-			drop.Combo:SetHeight(25)
-			drop.Combo:Dock(FILL)
-
-			local modestrs = {
-				[PARTCTRL_CPOINT_MODE_POSITION] = "Position (move with grip point, or attach to an entity)"
-				//TODO: add other cpoint modes, make these more descriptive?
-			}
-			drop.Combo:SetValue(modestrs[v2.mode])
-			local tab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()].cpoints[k]
-			if istable(tab) then
-				if tab["position"] then
-					drop.Combo:AddChoice(modestrs[PARTCTRL_CPOINT_MODE_POSITION], PARTCTRL_CPOINT_MODE_POSITION)
-				end
-				//TODO: add other cpoint modes,  figure out what we want to do if tab doesn't exist
-			end
-			function drop.Combo.OnSelect(_, index, value, data)
-				ent:DoInput("cpoint_mode", k, data)
-			end
-
-			drop:SetHeight(25)
-			drop:Dock(TOP)
-			drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
-			function drop.PerformLayout(_, w, h)
-				drop.Label:SetWide(w / 2.4)
-			end]]
-
 			//Add mode-specific options
-			if v2.mode == PARTCTRL_CPOINT_MODE_POSITION then
+			local mode = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()].cpoints[k].mode
+			if mode == PARTCTRL_CPOINT_MODE_POSITION then
 				if IsValid(ent2) then
 					local button = vgui.Create("DButton", pnl)
 					//button:SetWidth(button:GetWide() + 14) //+ 4)
@@ -708,7 +675,7 @@ function PANEL:RebuildControls()
 
 					expand = true
 				end
-			elseif v2.mode == PARTCTRL_CPOINT_MODE_VECTOR then
+			elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
 				//TODO: selector to change v2.which value
 
 				local tab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]["cpoints"][k]["vector"][v2.which]
@@ -813,7 +780,7 @@ function PANEL:RebuildControls()
 
 					expand = true
 				end
-			elseif v2.mode == PARTCTRL_CPOINT_MODE_AXIS then
+			elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 				local slidercount = 0
 				for i = 1, 3 do
 					local tab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]["cpoints"][k]["axis"][v2["which_" .. i-1]]

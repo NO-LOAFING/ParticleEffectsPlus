@@ -116,7 +116,7 @@ function TOOL:LeftClick(trace)
 			end
 		end
 	
-		if !IsValid(ent) or !IsValid(p) or !istable(p.ParticleInfo) or !istable(p.ParticleInfo[k]) or p.ParticleInfo[k].mode != PARTCTRL_CPOINT_MODE_POSITION then return false end
+		if !IsValid(ent) or !IsValid(p) or !istable(p.ParticleInfo) or !istable(p.ParticleInfo[k]) or PartCtrl_ProcessedPCFs[p:GetPCF()][p:GetParticleName()].cpoints[k].mode != PARTCTRL_CPOINT_MODE_POSITION then return false end
 		if CLIENT then return true end
 	
 		local oldent = p.ParticleInfo[k].ent
