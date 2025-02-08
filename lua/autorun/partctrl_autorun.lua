@@ -2001,13 +2001,13 @@ list.Set("PartCtrl_UtilFx", "wheel_indicator", {
 //.PCF FILE READING CODE//
 //////////////////////////
 
-//silly pretend enums, for more convenient networking mostly
+//silly pretend enums
 PARTCTRL_CPOINT_MODE_NONE		= 0
 PARTCTRL_CPOINT_MODE_POSITION		= 1
 PARTCTRL_CPOINT_MODE_VECTOR		= 2
 PARTCTRL_CPOINT_MODE_AXIS		= 3
 PARTCTRL_CPOINT_MODE_POSITION_COMBINE	= 4
-//another networking convenience
+//for networking convenience
 partctrl_cpointbits = 7 //-1 - 63
 
 partctrl_wait = "wait" //another convenient global, used by particlesystems that can't currently be created (due to CrashCheck or a disabled particle entity) but should be created as soon as possible
@@ -3558,46 +3558,63 @@ function PartCtrl_ProcessPCF(filename)
 			t2[particle].cpoints = t2[particle].cpoints_with_children
 			t2[particle].cpoints_with_children = nil
 			for k, v in pairs (t2[particle].cpoints) do
-				//Fill in empty mode entries
 				if v.mode == nil then
+					//Fill in empty mode entries
 					t2[particle].cpoints[k].mode = PARTCTRL_CPOINT_MODE_NONE
 				end
-				//Squish together vector and axis entries that have the same values except for the name
-				if v["vector"] and table.Count(v["vector"]) > 1 then
+				if v.vector then
+					//Squish together vector entries that have the same values except for the name
 					local newvectors = {}
-					for k2, v2 in pairs (v["vector"]) do
-						if v["vector"][k2] != nil then
+					for k2, v2 in pairs (v.vector) do
+						if v.vector[k2] != nil then
 							local newtab = table.Copy(v2)
-							for k3, v3 in pairs (v["vector"]) do
+							for k3, v3 in pairs (v.vector) do
 								if k3 != k2 and v3.label == v2.label and v3.inMin == v2.inMin and v3.inMax == v2.inMax
 								and v3.outMin == v2.outMin and v3.outMax == v2.outMax then
 									newtab.name = newtab.name .. ",\n" .. v3.name
-									v["vector"][k3] = nil
+									v.vector[k3] = nil
 								end
 							end
-							v["vector"][k2] = nil
+							v.vector[k2] = nil
 							table.insert(newvectors, newtab)
 						end
 					end
-					v["vector"] = newvectors
+					t2[particle].cpoints[k].vector = newvectors
+					//set "which" value (which entry in v.vector for the particle entity, edit window, etc. to get values like inMin and label from)
+					t2[particle].cpoints[k].which = 0
+					for k2, v2 in pairs (newvectors) do
+						t2[particle].cpoints[k].which = k2
+						break
+					end
 				end
-				if v["axis"] and table.Count(v["axis"]) > 1 then
+				if v.axis then
+					//Squish together axis entries that have the same values except for the name
 					local newvectors = {}
-					for k2, v2 in pairs (v["axis"]) do
-						if v["axis"][k2] != nil then
+					for k2, v2 in pairs (v.axis) do
+						if v.axis[k2] != nil then
 							local newtab = table.Copy(v2)
-							for k3, v3 in pairs (v["axis"]) do
+							for k3, v3 in pairs (v.axis) do
 								if k3 != k2 and v3.label == v2.label and v3.inMin == v2.inMin and v3.inMax == v2.inMax
 								and v3.outMin == v2.outMin and v3.outMax == v2.outMax and v3.axis == v2.axis then
 									newtab.name = newtab.name .. ",\n" .. v3.name
-									v["axis"][k3] = nil
+									v.axis[k3] = nil
 								end
 							end
-							v["axis"][k2] = nil
+							v.axis[k2] = nil
 							table.insert(newvectors, newtab)
 						end
 					end
-					v["axis"] = newvectors
+					t2[particle].cpoints[k].axis = newvectors
+					//set "which" value for each axis (which entry in v.axis for the particle entity, edit window, etc. to get values like inMin and label from)
+					for i = 0, 2 do
+						t2[particle].cpoints[k]["which_" .. i] = 0
+						for k2, v2 in pairs (newvectors) do
+							if v2.axis == i then 
+								t2[particle].cpoints[k]["which_" .. i] = k2
+								break
+							end
+						end
+					end
 				end
 			end
 
@@ -3713,14 +3730,29 @@ function PartCtrl_ProcessUtilFx()
 			//Use the effect's DoProcess func to set up cpoints
 			v.DoProcess(t, v.DoProcessExtras)
 
-			//Set cpoint modes; TODO: is there any case where we need to make this settable by modders somehow?
+			//Set cpoint modes and "which" values
+			//TODO: is there any case where we need to make these editable by modders somehow? PCFs can override these with PostProcessPCF, but that's not an option here.
 			for k, v in pairs (t.cpoints) do
-				if v["position"] then
+				if v.position then
 					t.cpoints[k].mode = PARTCTRL_CPOINT_MODE_POSITION
-				elseif v["vector"] then
+				elseif v.vector then
 					t.cpoints[k].mode = PARTCTRL_CPOINT_MODE_VECTOR
-				elseif v["axis"] then
+					t.cpoints[k].which = 0
+					for k2, v2 in pairs (v.vector) do
+						t.cpoints[k].which = k2
+						break
+					end
+				elseif v.axis then
 					t.cpoints[k].mode = PARTCTRL_CPOINT_MODE_AXIS
+					for i = 0, 2 do
+						t.cpoints[k]["which_" .. i] = 0
+						for k2, v2 in pairs (v.axis) do
+							if v2.axis == i then 
+								t.cpoints[k]["which_" .. i] = k2
+								break
+							end
+						end
+					end
 				end
 			end
 

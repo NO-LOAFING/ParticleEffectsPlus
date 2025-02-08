@@ -676,9 +676,8 @@ function PANEL:RebuildControls()
 					expand = true
 				end
 			elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
-				//TODO: selector to change v2.which value
-
-				local tab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]["cpoints"][k]["vector"][v2.which]
+				local tab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()].cpoints[k]
+				tab = tab.vector[tab.which]
 				if istable(tab) then
 					//Roll sets the angle of the particle, with the putput measured in radians (pi radians = 180 degrees). Output maximum/minimum sets how many radians it can be rotated up to, 
 					//with values past pi just rotating it past 180 degrees. With a standard render_animated_sprites, only the x value does anything, regardless of orientation type. With render 
@@ -783,7 +782,8 @@ function PANEL:RebuildControls()
 			elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 				local slidercount = 0
 				for i = 1, 3 do
-					local tab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]["cpoints"][k]["axis"][v2["which_" .. i-1]]
+					local tab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()].cpoints[k]
+					tab = tab.axis[tab["which_" .. i-1]]
 					if istable(tab) then
 						//For axis controls, min/max are optional. If a value isn't supplied, then use an arbitrary value and unclamp the slider in that direction.
 						local unclampMin = (tab.inMin == nil and tab.outMin == nil)

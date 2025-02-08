@@ -113,24 +113,17 @@ function PANEL:Setup(pcf, name)
 		self.ColorCPoints = {}
 		for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
 			if v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
-				if !v["vector"] then MsgN(pcf, ": ", name, " - this effect is trying to get a vector value that it doesn't have, some dumb inheritance problem, go report this!") end
-				if v["vector"][1].label == "Color" then
-					self.ColorCPoints[k] = v["vector"][1]
+				if !v.vector or !v.vector[v.which] then MsgN(pcf, ": ", name, " - this effect is trying to get a vector value that it doesn't have, some dumb inheritance problem, go report this!") end
+				if v.vector[v.which].label == "Color" then
+					self.ColorCPoints[k] = v.vector[v.which]
 				else
-					self.EditCPoints[k] = v["vector"][1].default or vector_origin
-					table.insert(self.EditCPointsText, v["vector"][1].label)
+					self.EditCPoints[k] = v.vector[v.which].default or vector_origin
+					table.insert(self.EditCPointsText, v.vector[v.which].label)
 				end
 			elseif v.mode == PARTCTRL_CPOINT_MODE_AXIS then
-				local usedaxis = {[0] = 0, [1] = 0, [2] = 0}
-				for k2, v2 in pairs (v["axis"]) do
-					if usedaxis[v2.axis] == 0 then
-						usedaxis[v2.axis] = k2
-					end
-				end
-
 				self.EditCPoints[k] = Vector(0,0,0)
 				for i = 0, 2 do
-					axistab = v["axis"][ usedaxis[i] ]
+					axistab = v.axis[v["which_" .. i]]
 					if istable(axistab) then
 						self.EditCPoints[k][i+1] = axistab.default or 0
 						table.insert(self.EditCPointsText, axistab.label)

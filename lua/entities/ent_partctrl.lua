@@ -767,10 +767,8 @@ local EditMenuInputs = {
 	"cpoint_position_ent_detach",
 	"cpoint_position_attach",
 	"cpoint_position_pos",
-	"cpoint_vector_which",
 	"cpoint_vector_val_all",
 	"cpoint_vector_val_axis",
-	"cpoint_axis_which",
 	"cpoint_axis_val",
 	"loop_mode",
 	"loop_delay",
@@ -816,10 +814,6 @@ if CLIENT then
 				net.WriteUInt(args[2], 2) //axis (1/2/3)
 				net.WriteFloat(args[3]) //new value for axis
 
-			//elseif input == "cpoint_vector_which" then
-
-				//TODO
-
 			elseif input == "cpoint_vector_val_all" then
 
 				net.WriteVector(args[2]) //new value for all 3 axes
@@ -828,10 +822,6 @@ if CLIENT then
 
 				net.WriteUInt(args[2], 2) //axis (1/2/3)
 				net.WriteFloat(args[3]) //new value for axis
-
-			//elseif input == "cpoint_axis_which" then
-
-				//TODO
 				
 			elseif input == "cpoint_axis_val" then
 
@@ -883,10 +873,10 @@ else
 		input = table.KeyFromValue(EditMenuInputs, input)
 
 		local k = nil
-		local mode = nil
+		local cpointtab = nil
 		if string.StartsWith(input, "cpoint_") then
 			k = net.ReadInt(partctrl_cpointbits) //cpoint id, can be -1
-			mode = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()].cpoints[k].mode
+			cpointtab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()].cpoints[k]
 		end
 		local refreshtable = false
 
@@ -925,7 +915,7 @@ else
 
 			local new = net.ReadUInt(8)
 
-			if !istable(self.ParticleInfo[k]) or mode != PARTCTRL_CPOINT_MODE_POSITION then return end
+			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_POSITION then return end
 
 			self.ParticleInfo[k].attach = new
 			refreshtable = true
@@ -935,20 +925,16 @@ else
 			local axis = net.ReadUInt(2)
 			local new = net.ReadFloat()
 
-			if !istable(self.ParticleInfo[k]) or mode != PARTCTRL_CPOINT_MODE_POSITION then return end
+			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_POSITION then return end
 
 			self.ParticleInfo[k].pos[axis] = new
 			refreshtable = true
-
-		//elseif input == "cpoint_vector_which" then
-
-			//TODO
 
 		elseif input == "cpoint_vector_val_all" then
 
 			local new = net.ReadVector()
 
-			if !istable(self.ParticleInfo[k]) or mode != PARTCTRL_CPOINT_MODE_VECTOR then return end
+			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_VECTOR then return end
 
 			self.ParticleInfo[k].val = new
 			refreshtable = true
@@ -958,24 +944,20 @@ else
 			local axis = net.ReadUInt(2)
 			local new = net.ReadFloat()
 
-			if !istable(self.ParticleInfo[k]) or mode != PARTCTRL_CPOINT_MODE_VECTOR then return end
+			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_VECTOR then return end
 
 			self.ParticleInfo[k].val[axis] = new
 			refreshtable = true
-
-		//elseif input == "cpoint_axis_which" then
-
-			//TODO
 
 		elseif input == "cpoint_axis_val" then
 
 			local axis = net.ReadUInt(2)
 			local new = net.ReadFloat()
 
-			if !istable(self.ParticleInfo[k]) or mode != PARTCTRL_CPOINT_MODE_AXIS then return end
+			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_AXIS then return end
 
 			//Sanity check: for some axis controls ("Emission Count Scale"), going out of range causes a crash, so make sure that doesn't happen
-			local tab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()].cpoints[k].axis[self.ParticleInfo[k]["which_" .. axis-1]] //awesome
+			local tab = cpointtab.axis[cpointtab["which_" .. axis-1]]
 			if istable(tab) then
 				if tab.inMin then
 					new = math.max(tab.inMin, new)
@@ -1108,13 +1090,9 @@ if SERVER then
 					net.WriteUInt(v.attach or 0, 8) //don't know what the max attachment number is, assume 255
 					net.WriteVector(v.pos or Vector())
 				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
-					net.WriteUInt(v.which or 0, 4) //the number of attributes modifying a single cpoint is potentially unlimited, but the vast majority won't have more than 1 since they'll all conflict with each other, so assume a generous max of 16
 					net.WriteVector(v.val or Vector())
 				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 					net.WriteVector(v.val or Vector())
-					for i = 0, 2 do
-						net.WriteUInt(v["which_" .. i] or 0, 4) //again, potentially unlimited but very unlikely to have more than 3 (one for each axis), assume generous max of 16
-					end
 				end
 			end
 
@@ -1145,14 +1123,12 @@ else
 				v.attach = net.ReadUInt(8)
 				v.pos = net.ReadVector()
 			elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
-				v.which = net.ReadUInt(4)
 				v.val = net.ReadVector()
 			elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 				v.val = net.ReadVector()
 				for i = 0, 2 do
-					v["which_" .. i] = net.ReadUInt(4)
 					//Sanity check: for some axis controls ("Emission Count Scale"), going out of range causes a crash, so make sure that doesn't happen
-					local tab2 = ptab.cpoints[k].axis[v["which_" .. i]]
+					local tab2 = ptab.cpoints[k].axis[ptab.cpoints[k]["which_" .. i]]
 					if istable(tab2) then
 						if tab2.inMin then
 							v.val[i+1] = math.max(tab2.inMin, v.val[i+1])
@@ -1368,36 +1344,23 @@ if SERVER then
 				}
 			elseif v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
 				tab[k] = {
-					which = 0, //which entry in v["vector"] for the edit window to get values like inMin and pattach from
 					val = Vector(0,0,0),
 				}
-				for k2, v2 in pairs (v["vector"]) do
-					tab[k]["which"] = k2
-					if v2.default then
-						tab[k]["val"] = Vector(v2.default)
-					end
-					break
+				if v.vector[v.which].default then
+					tab[k]["val"] = Vector(v.vector[v.which].default)
 				end
 			elseif v.mode == PARTCTRL_CPOINT_MODE_AXIS then
 				tab[k] = {
 					val = Vector(0,0,0)
 				}
 				for i = 0, 2 do
-					tab[k]["which_" .. i] = 0 //which entry in v["axis"] for the edit window to get values like inMin and pattach from
-					for k2, v2 in pairs (v["axis"]) do
-						if v2.axis == i then 
-							tab[k]["which_" .. i] = k2
-							if v2.default then
-								tab[k]["val"][i+1] = v2.default
-							end
-							break
+					axistab = v.axis[v["which_" .. i]]
+					if istable(axistab) then
+						if axistab.default then
+							tab[k]["val"][i+1] = axistab.default
 						end
 					end
 				end
-			//elseif v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
-			//	
-			//else
-			//	
 			end
 		end
 		local grip_radius = 6/2
@@ -1538,7 +1501,7 @@ if SERVER then
 						local refreshtable = false
 						for k, v in pairs (ent.ParticleInfo) do
 							if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_VECTOR then
-								local tab = ptab.cpoints[k].vector[v.which]
+								local tab = ptab.cpoints[k].vector[ptab.cpoints[k].which]
 								if istable(tab) and tab.label == "Color" then
 									local vec = Vector()
 									vec.x = math.Remap(color.r/255, tab.outMin.x, tab.outMax.x, tab.inMin.x, tab.inMax.x)
