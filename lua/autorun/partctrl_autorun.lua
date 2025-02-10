@@ -4155,6 +4155,8 @@ if CLIENT then
 
 	search.AddProvider(function(str)
 
+		local searchTerms = string.Explode(" ", str)
+
 		if searchParticles == nil then
 			searchParticles = {}
 			for pcf, _ in SortedPairs (PartCtrl_ProcessedPCFs) do
@@ -4167,15 +4169,19 @@ if CLIENT then
 		local results = {}
 
 		for k, v in ipairs (searchParticles) do
-			if v.name_lower:find(str, nil, true) or v.pcf:find(str, nil, true) then
-				local entry = {
-					text = v.name,
-					icon = spawnmenu.CreateContentIcon("partctrl", g_SpawnMenu.SearchPropPanel, {["spawnname"] = v.pcf, ["nicename"] = v.name}),
-					words = {v.name}
-				}
-				table.insert(results, entry)
-				//entry.icon.IsInSearch = true //used by spawnicon code; TODO: stops working when the search is refreshed by the model search
-				//MsgN("according to addprovider, g_SpawnMenu.SearchPropPanel is ", g_SpawnMenu.SearchPropPanel, " and icon is ", entry.icon)
+			for k2, v2 in ipairs (searchTerms) do
+				if !(v.name_lower:find(v2, nil, true) or v.pcf:find(v2, nil, true)) then
+					break
+				elseif k2 == #searchTerms then
+					local entry = {
+						text = v.name,
+						icon = spawnmenu.CreateContentIcon("partctrl", g_SpawnMenu.SearchPropPanel, {["spawnname"] = v.pcf, ["nicename"] = v.name}),
+						words = {v.name}
+					}
+					table.insert(results, entry)
+					//entry.icon.IsInSearch = true //used by spawnicon code; TODO: stops working when the search is refreshed by the model search
+					//MsgN("according to addprovider, g_SpawnMenu.SearchPropPanel is ", g_SpawnMenu.SearchPropPanel, " and icon is ", entry.icon)
+				end
 			end
 			if #results >= GetConVarNumber("sbox_search_maxresults") / 2 then break end
 		end
