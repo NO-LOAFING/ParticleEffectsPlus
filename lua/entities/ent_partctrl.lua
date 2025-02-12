@@ -657,6 +657,15 @@ end
 
 if SERVER then
 
+	function ENT:UpdateTransmitState()
+
+		//Fix particle not rendering if the first movement cpoint (which this ent is attached to) is located outside the PVS 
+		//(i.e. if the first cpoint of a beam is outside the PVS, but the second cpoint is right in front of you, then it should 
+		//render; also prevents large fx from disappearing as you go around a corner and exit their PVS)
+		return TRANSMIT_ALWAYS
+
+	end
+
 	function PartCtrlNumpadFunction(pl, ent, keydown)
 
 		if !IsValid(ent) then return end
