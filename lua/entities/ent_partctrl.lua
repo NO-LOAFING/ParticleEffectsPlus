@@ -5,7 +5,6 @@ ENT.PrintName			= "Particle Controller"
 ENT.Author			= ""
 
 ENT.Spawnable			= false
-ENT.AdminSpawnable		= false
 //ENT.RenderGroup		= RENDERGROUP_NONE
 
 if CLIENT then
@@ -325,15 +324,16 @@ if CLIENT then
 		PartCtrl_IsSkyboxDrawing = false
 	end)
 
-	//local colortext = Color(130,255,31,255) //matches effect grip
-	local colortext = Color(234,125,0,255) //matches temporary arrow texture; gmod blue would probably be a better final color
-	local colorborder = Color(255,255,255,255)
+	//make these global so that special fx can use them too
+	//partctrl_colortext = Color(130,255,31,255) //matches effect grip
+	partctrl_colortext = Color(234,125,0,255) //matches temporary arrow texture; gmod blue would probably be a better final color
+	partctrl_colorborder = Color(255,255,255,255)
 	surface.CreateFont( "PartCtrl_3D2DFont", {
 		font = "Arial",
 		size = 100,
 		weight = 5000,
 	} )
-	local arrowmat = Material("hud/arrow_big") //TODO: make better custom material eventually, this is a tf2 material; end of the arrow should be at the end of the texture; also compare "trails/laser" which doesn't render through walls
+	partctrl_arrowmat = Material("hud/arrow_big") //TODO: make better custom material eventually, this is a tf2 material; end of the arrow should be at the end of the texture; also compare "trails/laser" which doesn't render through walls
 
 	function ENT:Draw()
 
@@ -352,7 +352,8 @@ if CLIENT then
 
 	end
 
-	function ENT:DrawCPointHelpers()	
+	function ENT:DrawCPointHelpers()
+
 		if self.ParticleInfo then
 			local window = IsValid(self.PartCtrlWindow) and g_ContextMenu:IsVisible()
 			local ptab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]
@@ -376,7 +377,7 @@ if CLIENT then
 								pos = v.ent:GetPos() + self.ParticleInfo[k].pos
 							end
 
-							render.SetMaterial(arrowmat)
+							render.SetMaterial(partctrl_arrowmat)
 							render.DrawBeam(pos, pos + (ang:Forward() * 20), 20, 1, 0, color_white)
 
 							//TODO: this doesn't render through walls like the arrows or grips do, is there a better way than 3D2D to make text that resizes nicely like this?
@@ -390,7 +391,7 @@ if CLIENT then
 							camang:RotateAroundAxis( camang:Up(), -90 )
 							camang:RotateAroundAxis( camang:Forward(), 90 )
 							cam.Start3D2D(pos, camang, 0.125)
-								draw.SimpleTextOutlined(k,"PartCtrl_3D2DFont",0,-50,colortext,TEXT_ALIGN_CENTER,TEXT_ALIGN_BOTTOM,3,colorborder)
+								draw.SimpleTextOutlined(k,"PartCtrl_3D2DFont",0,-50,partctrl_colortext,TEXT_ALIGN_CENTER,TEXT_ALIGN_BOTTOM,3,partctrl_colorborder)
 							cam.End3D2D()
 						end
 					end
@@ -403,6 +404,7 @@ if CLIENT then
 			//	render.DrawWireframeBox(vector_origin, angle_zero, self._wsmins, self._wsmaxs, color_white, true)
 			//end
 		end
+
 	end
 
 	hook.Add("PostDrawTranslucentRenderables", "PartCtrl_DrawParticleHelpers", function(depth, skybox)
@@ -746,6 +748,7 @@ if SERVER then
 			for k2, v2 in pairs (tab) do
 				if v2.Constraint != oldconst and v2.Ent1 == self then
 					clear = false
+					break
 				end
 			end
 		end
@@ -1164,7 +1167,7 @@ else
 			for k, v in pairs (oldtab) do
 				if self.ParticleInfo[k].ent != oldtab[k].ent then
 					local oldent = oldtab[k].ent
-					//Remove us from the list of particles on the ent
+					//Remove us from the list of particles on the old ent
 					if oldent.PartCtrl_ParticleEnts then
 						oldent.PartCtrl_ParticleEnts[self] = nil
 					end

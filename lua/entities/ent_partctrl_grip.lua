@@ -159,7 +159,7 @@ function ENT:PhysicsUpdate(physobj)
 		local isconstrained = false
 		local consts = constraint.GetTable(self)
 		for k, v in pairs (consts) do
-			if v.Type and v.Type != "PartCtrl_Ent" then
+			if v.Type and v.Type != "PartCtrl_Ent" and v.Type != "PartCtrl_SpecialEffect" then
 				isconstrained = true
 				break
 			end
@@ -206,7 +206,7 @@ duplicator.RegisterEntityClass("ent_partctrl_grip", function(ply, data)
 	//If this ent was duplicated but doesn't have an associated particle entity (i.e. duped in multiplayer, and the particle ent was prevented from spawning) then delete it
 	timer.Simple(0, function()
 		if !IsValid(ent) then return end
-		if !istable(constraint.FindConstraint(ent, "PartCtrl_Ent")) then ent:Remove() end
+		if !istable(constraint.FindConstraint(ent, "PartCtrl_Ent")) and !istable(constraint.FindConstraint(ent, "PartCtrl_SpecialEffect")) then ent:Remove() end
 	end)
 
 	return ent
