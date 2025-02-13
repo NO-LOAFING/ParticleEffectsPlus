@@ -4475,7 +4475,7 @@ PartCtrl_EditProperty_Filter = function(self, ent, ply)
 	if count < 1 then return false end
 	if count == 1 then
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
-			if !(IsValid(k) and ((k:GetClass() == "ent_partctrl" and k.GetPCF) or k.PartCtrl_SpecialEffect)) then
+			if !(IsValid(k) and ((k.PartCtrl_Ent and k.GetPCF) or k.PartCtrl_SpecialEffect)) then
 				return false
 			end
 		end
@@ -4501,7 +4501,7 @@ PartCtrl_EditProperty_MenuOpen = function(self, option, ent)
 		
 		local submenu = option:AddSubMenu()
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
-			if IsValid(k) and ((k:GetClass() == "ent_partctrl" and k.GetPCF) or k.PartCtrl_SpecialEffect) then
+			if IsValid(k) and ((k.PartCtrl_Ent and k.GetPCF) or k.PartCtrl_SpecialEffect) then
 				local opt = submenu:AddOption(k.PartCtrl_ShortName or k:GetParticleName())
 				opt.DoClick = function() OpenPartCtrlEditor(k) end
 			end

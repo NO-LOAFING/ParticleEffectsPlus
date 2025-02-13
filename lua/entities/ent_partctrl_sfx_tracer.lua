@@ -38,7 +38,7 @@ function ENT:Initialize()
 			//Set nwvar defaults here
 			self:SetAttachmentID(0)
 			self.DoneFirstSpawn = true
-		else MsgN("already did that") end
+		end
 	end
 
 	//self:SetNoDraw(true)
@@ -47,7 +47,7 @@ function ENT:Initialize()
 	self:SetCollisionBounds(vector_origin,vector_origin) //stop this ent from bloating up duplicator bounds
 
 	self.PartCtrl_SpecialEffect_ChildFX = {}
-	//TODO: figure out how we want the duplicator to treat this - 
+	//TODO: figure out how we want the duplicator to treat this
 
 	//TODO: do numpad stuff once we implement the tracer effect
 	--[[if SERVER then
@@ -243,7 +243,7 @@ if SERVER then
 		const:Spawn()
 		const:Activate()
 
-		if Ent2:GetClass() != "ent_partctrl" then
+		if !Ent2.PartCtrl_Ent then
 
 			//This constraint is associating the special effect with its parent entity, so parent it
 
@@ -306,7 +306,7 @@ if SERVER then
 		end
 
 		//Don't store this table, it's full of entity values that won't dupe correctly and needs to be refilled from scratch
-		self.PartCtrl_SpecialEffect_ChildFX =
+		self.PartCtrl_SpecialEffect_ChildFX = nil
 
 	end
 

@@ -7,6 +7,8 @@ ENT.Author			= ""
 ENT.Spawnable			= false
 //ENT.RenderGroup		= RENDERGROUP_NONE
 
+ENT.PartCtrl_Ent		= true //lets us detect if an ent is an ent_partctrl without having to compare strings with GetClass
+
 if CLIENT then
 	language.Add("Undone_PartCtrl", "Undone Particle Effect")
     	language.Add("Cleanup_partctrl", "Particle Effects")
@@ -878,7 +880,7 @@ else
 	net.Receive("PartCtrl_EditMenuInput_SendToSv", function(_, ply)
 
 		local self = net.ReadEntity()
-		if !IsValid(self) or self:GetClass() != "ent_partctrl" or !istable(self.ParticleInfo) then return end
+		if !IsValid(self) or !self.PartCtrl_Ent or !istable(self.ParticleInfo) then return end
 
 		local input = net.ReadUInt(EditMenuInputs_bits)
 		if !input then return end
@@ -1117,7 +1119,7 @@ else
 	net.Receive("PartCtrl_InfoTable_SendToCl", function()
 
 		local self = net.ReadEntity()
-		if !IsValid(self) or !self:GetClass("ent_partctrl") or !istable(PartCtrl_ProcessedPCFs[self:GetPCF()]) then return end
+		if !IsValid(self) or !self.PartCtrl_Ent or !istable(PartCtrl_ProcessedPCFs[self:GetPCF()]) then return end
 		local ptab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]
 		if !istable(ptab) then return end
 
@@ -1202,7 +1204,7 @@ else
 	//If we received a message from the server telling us an ent's info table is out of date, then change its ParticleInfo_Received value so its Think function requests a new one
 	net.Receive("PartCtrl_InfoTableUpdate_SendToCl", function()
 		local ent = net.ReadEntity()
-		if !IsValid(ent) or ent:GetClass() != "ent_partctrl" then return end
+		if !IsValid(ent) or !ent.PartCtrl_Ent then return end
 
 		ent.ParticleInfo_Received = false
 	end)
@@ -1219,7 +1221,7 @@ if SERVER then
 	
 	function constraint.PartCtrl_Ent(Ent1, Ent2, CPoint, DoParent, ply)
 
-		if !Ent1 or !Ent2 or Ent1:GetClass() != "ent_partctrl" then return end
+		if !Ent1 or !Ent2 or !Ent1.PartCtrl_Ent then return end
 		//if !istable(PartCtrl_ProcessedPCFs[Ent1:GetPCF()]) or !istable(PartCtrl_ProcessedPCFs[Ent1:GetPCF()][Ent1:GetParticleName()]) then return end //causes grip ents from dupes with invalid fx to delete themselves due to having no particle
 		
 		//create a dummy ent for the constraint functions to use
@@ -1507,7 +1509,7 @@ if SERVER then
 				local tab = constraint.FindConstraint(self, "PartCtrl_Ent")
 				if istable(tab) then
 					local ent = tab.Ent1
-					if IsValid(ent) and ent:GetClass() == "ent_partctrl" and istable(ent.ParticleInfo) and istable(PartCtrl_ProcessedPCFs) then
+					if IsValid(ent) and ent.PartCtrl_Ent and istable(ent.ParticleInfo) and istable(PartCtrl_ProcessedPCFs) then
 						if !istable(PartCtrl_ProcessedPCFs[ent:GetPCF()]) or !istable(PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]) then return end
 						local ptab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]
 						local refreshtable = false

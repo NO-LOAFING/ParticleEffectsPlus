@@ -57,14 +57,14 @@ function TOOL:LeftClick(trace)
 					local tab = ent.PartCtrl_ParticleEnts
 					if istable(tab) then
 						for k, _ in pairs (tab) do //a grip point entity should only have a single associated particle
-							if IsValid(k) and (k:GetClass() == "ent_partctrl" or k.PartCtrl_SpecialEffect) then
+							if IsValid(k) and (k.PartCtrl_Ent or k.PartCtrl_SpecialEffect) then
 								return true
 							end
 						end
 					end
 				else
 					local tab = constraint.FindConstraint(ent, "PartCtrl_Ent")
-					if istable(tab) and IsValid(tab.Ent1) and tab.Ent1:GetClass() == "ent_partctrl" then
+					if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_Ent then
 						self:GetWeapon():SetNWInt("PartCtrl_Attacher_CPoint", tab.CPoint)
 						self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", tab.Ent1)
 						self:SetStage(1)
@@ -108,7 +108,7 @@ function TOOL:LeftClick(trace)
 				local tab = trace.Entity.PartCtrl_ParticleEnts
 				if istable(tab) then
 					for k2, _ in pairs (tab) do //a grip point entity should only have a single associated particle
-						if IsValid(k2) and (k2:GetClass() == "ent_partctrl" or k2.PartCtrl_SpecialEffect) then
+						if IsValid(k2) and (k2.PartCtrl_Ent or k2.PartCtrl_SpecialEffect) then
 							p = k2
 							//don't worry about k for clients
 						end
@@ -116,7 +116,7 @@ function TOOL:LeftClick(trace)
 				end
 			else
 				local tab = constraint.FindConstraint(trace.Entity, "PartCtrl_Ent")
-				if istable(tab) and IsValid(tab.Ent1) and tab.Ent1:GetClass() == "ent_partctrl" then
+				if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_Ent then
 					p = tab.Ent1
 					k = tab.CPoint
 				else
@@ -139,7 +139,7 @@ function TOOL:LeftClick(trace)
 		if !p.PartCtrl_SpecialEffect then
 			oldent = p.ParticleInfo[k].ent
 			local tab = constraint.FindConstraint(oldent, "PartCtrl_Ent")
-			if istable(tab) and IsValid(tab.Ent1) and tab.Ent1:GetClass() == "ent_partctrl" then
+			if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_Ent then
 				oldconst = tab.Constraint
 				doparent = tab.DoParent
 			else
@@ -235,7 +235,7 @@ if CLIENT then
 			if IsValid(haloent) then
 				local animcolor = 189 + math.cos( RealTime() * 4 ) * 17
 
-				if haloent:GetClass() == "ent_partctrl" then
+				if haloent.PartCtrl_Ent then
 					//If our selected entity is a particle grip point, we can't draw a halo around the grip point model because it's scaled down to 0, and can't draw a halo around
 					//the grip sprite because that just draws a square around it. Instead, tell the group point entity to draw a different sprite.
 					if istable(haloent.ParticleInfo) then
@@ -375,13 +375,13 @@ function TOOL.BuildCPanel(panel)
 			local addedfx = false
 
 			local function AddEffect(effectent)
-				if !IsValid(effectent) or (!effectent.PartCtrl_SpecialEffect and (effectent:GetClass() != "ent_partctrl" or !effectent.GetParticleName)) then return end
+				if !IsValid(effectent) or (!effectent.PartCtrl_SpecialEffect and (!effectent.PartCtrl_Ent or !effectent.GetParticleName)) then return end
 				local line = panel.effectlist:AddLine(effectent.PartCtrl_ShortName or effectent:GetParticleName())
 				line.OnSelect = function() OpenPartCtrlEditor(effectent) line:SetSelected(false) end
 				addedfx = true
 			end
 
-			if ent:GetClass() == "ent_partctrl" or ent.PartCtrl_SpecialEffect then
+			if ent.PartCtrl_Ent or ent.PartCtrl_SpecialEffect then
 				AddEffect(ent)
 			else
 				if istable(ent.PartCtrl_ParticleEnts) then
