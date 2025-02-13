@@ -42,7 +42,6 @@ function ENT:Initialize()
 			g:SetAngles(self:GetAngles())
 			g:Spawn()
 			constraint.PartCtrl_SpecialEffect(self, g, ply)
-			//Set nwvar defaults here
 			self:SetNWVarDefaults()
 			self.DoneFirstSpawn = true
 		end

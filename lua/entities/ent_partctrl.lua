@@ -1125,8 +1125,6 @@ else
 
 		local tab = {}
 
-		local window = IsValid(self.PartCtrlWindow) and istable(self.PartCtrlWindow.CPointCategories)
-
 		for i = 1, net.ReadInt(partctrl_cpointbits + 1) do
 			local k = net.ReadInt(partctrl_cpointbits)
 			local v = {}
@@ -1165,7 +1163,7 @@ else
 		self:BeginNewParticle()
 
 		if istable(oldtab) then
-			local window = IsValid(self.PartCtrlWindow) and istable(self.PartCtrlWindow.CPointCategories)
+			local window = IsValid(self.PartCtrlWindow) and istable(self.PartCtrlWindow.CPointCategories) and istable(self.PartCtrlWindow.CPointCategories[self])
 			for k, v in pairs (oldtab) do
 				if self.ParticleInfo[k].ent != oldtab[k].ent then
 					local oldent = oldtab[k].ent
@@ -1181,7 +1179,7 @@ else
 				end
 				//Refresh control window if we changed something that requires the controls to be rebuilt
 				if window and (self.ParticleInfo[k].ent != oldtab[k].ent) then
-					self.PartCtrlWindow.CPointCategories[k].RebuildContents(self.ParticleInfo[k])
+					self.PartCtrlWindow.CPointCategories[self][k].RebuildContents(self.ParticleInfo[k])
 				end
 			end
 		end
