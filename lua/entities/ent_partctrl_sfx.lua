@@ -12,26 +12,6 @@ ENT.PartCtrl_SpecialEffect	= true
 
 
 
-//for override
-function ENT:SetupDataTables()
-
-	self:NetworkVar("Int", 0, "AttachmentID") //all special fx must have this one
-
-end
-
-
-
-
-//for override
-function ENT:SetNWVarDefaults()
-
-	self:SetAttachmentID(0) //all special fx must have this one
-
-end
-
-
-
-
 function ENT:Initialize()
 
 	if SERVER then
@@ -298,19 +278,89 @@ if SERVER then
 	end
 	duplicator.RegisterConstraint("PartCtrl_SpecialEffect", constraint.PartCtrl_SpecialEffect, "Ent1", "Ent2", "ply")
 
+end
 
 
 
-	function ENT:OnEntityCopyTableFinish(data)
 
-		//Don't store this DTvar
-		if data.DT then
-			data.DT["NumpadState"] = nil
-		end
+//Networking for edit menu inputs
+//Note that each child class defines its own list of inputs
+if CLIENT then
 
-		//Don't store this table, it's full of entity values that won't dupe correctly and needs to be refilled from scratch
-		self.PartCtrl_SpecialEffect_ChildFX = nil
+	function ENT:DoInput(input, ...)
+
+		net.Start("PartCtrl_SpecialEffect_EditMenuInput_SendToSv")
+
+			net.WriteEntity(self)
+			local args = {...}
+
+			net.WriteUInt(self.EditMenuInputs[input], self.EditMenuInputs_bits)
+
+			if input == "self_parent_setwithtool" then
+			//TODO: self-attachment inputs
+			--[[elseif input == "self_parent_detach" then
+				
+			elseif input == "self_attach" then]]
+			
+			//elseif input == "child_setwithtool" then
+			
+			elseif input == "child_detach" then
+	
+				net.WriteEntity(args[1]) //child entity to remove
+	
+			end
+
+			//TODO: handle entity-specific inputs
+
+		net.SendToServer()
 
 	end
+	
+else
+
+	util.AddNetworkString("PartCtrl_SpecialEffect_EditMenuInput_SendToSv")
+
+	//Respond to inputs from the clientside edit menu
+	net.Receive("PartCtrl_SpecialEffect_EditMenuInput_SendToSv", function(_, ply)
+
+		local self = net.ReadEntity()
+		if !IsValid(self) or !self.PartCtrl_SpecialEffect then return end
+
+		local input = net.ReadUInt(self.EditMenuInputs_bits)
+		if !input then return end
+		input = table.KeyFromValue(self.EditMenuInputs, input)
+
+		if input == "self_parent_setwithtool" then
+		//TODO: self-attachment inputs		
+		--[[elseif input == "self_parent_detach" then
+			
+		elseif input == "self_attach" then]]
+		
+		elseif input == "child_setwithtool" then
+
+			if !IsValid(ply) then return end
+			if !GetConVar("toolmode_allow_partctrl_attacher"):GetBool() then return end //TODO: this was copied from advbonemerge, which also does a CanTool check with a fake trace. is that necessary here?
+
+			local tool = ply:GetTool("partctrl_attacher")
+			if !istable(tool) or !IsValid(tool:GetWeapon()) then return end
+
+			ply:ConCommand("gmod_tool partctrl_attacher")
+			//Fix: The tool's holster function clears the nwentity, and if this is already the toolgun's selected tool, it'll "holster" the tool before "deploying" it again.
+			//To make this worse, it's different if the toolgun is the active weapon or not (if active, it holsters then deploys; if not active, it deploys, holsters, then deploys again)
+			//so instead of having to deal with any of that, just set the entity on a delay so we're sure the tool is already done equipping.
+			timer.Simple(0.1, function()
+				if !IsValid(self) or !IsValid(ply) then return end
+				tool:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", self)
+				tool:SetStage(1)
+			end)
+		
+		elseif input == "child_detach" then
+
+		end
+
+		//TODO: handle entity-specific inputs
+
+	end)
 
 end
+

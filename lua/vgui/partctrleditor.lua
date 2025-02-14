@@ -970,7 +970,7 @@ function PANEL:RebuildControls()
 			button:SizeToContents()
 			button.DoClick = function()
 				surface.PlaySound("ui/buttonclickrelease.wav")
-				//ent:DoInput("cpoint_position_ent_setwithtool", k)
+				ent:DoInput("child_setwithtool")
 			end
 			pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 

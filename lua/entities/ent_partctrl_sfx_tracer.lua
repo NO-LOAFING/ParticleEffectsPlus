@@ -29,6 +29,33 @@ end
 
 
 
+//Networking for edit menu inputs
+local EditMenuInputs = {
+	//All special fx must have these ones
+	[0] = "self_parent_setwithtool",
+	"self_parent_detach",
+	"self_attach",
+	"child_setwithtool",
+	"child_detach",
+	//Entity-specific inputs
+	//TODO
+}
+ENT.EditMenuInputs_bits = 4 //max 15
+ENT.EditMenuInputs = table.Flip(EditMenuInputs)
+
+if CLIENT then
+	
+	//TODO: entity-specific input sending
+
+else
+	
+	//TODO: entity-specific input receiving
+
+end
+
+
+
+
 duplicator.RegisterEntityClass("ent_partctrl_sfx_tracer", function(ply, data)
 
 	local ent = ents.Create("ent_partctrl_sfx_tracer")
