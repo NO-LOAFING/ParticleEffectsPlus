@@ -351,7 +351,7 @@ else
 			timer.Simple(0.1, function()
 				if !IsValid(self) or !IsValid(ply) then return end
 				tool:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", self)
-				tool:SetStage(1)
+				tool:SetStage(3)
 			end)
 		
 		elseif input == "child_detach" then

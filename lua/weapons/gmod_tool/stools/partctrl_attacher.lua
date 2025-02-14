@@ -8,13 +8,21 @@ TOOL.ClientConVar["drawhalo"] = "1"
 
 TOOL.Information = {
 	{name = "left0", stage = 0, icon = "gui/lmb.png"},
-	{name = "left1", stage = 1, icon = "gui/lmb.png"},
-	{name = "left2", stage = 2, icon = "gui/lmb.png"},
 	{name = "leftuse0", stage = 0, icon = "gui/lmb.png", icon2 = "gui/e.png"},
+	{name = "middle0", stage = 0, icon = "gui/mmb.png"},
+
+	{name = "left1", stage = 1, icon = "gui/lmb.png"},
 	{name = "leftuse1", stage = 1, icon = "gui/lmb.png", icon2 = "gui/e.png"},
-	{name = "middle012", icon = "gui/mmb.png"},
+	{name = "middle1", stage = 1, icon = "gui/mmb.png"},
 	{name = "reload1", stage = 1, icon = "gui/r.png"},
+
+	{name = "left2", stage = 2, icon = "gui/lmb.png"},
+	{name = "middle2", stage = 2, icon = "gui/mmb.png"},
 	{name = "reload2", stage = 2, icon = "gui/r.png"},
+
+	{name = "info3", stage = 3, icon = "gui/info.png"},
+	{name = "left3", stage = 3, icon = "gui/lmb.png"},
+	{name = "reload3", stage = 3, icon = "gui/r.png"},
 }
 
 if CLIENT then
@@ -23,13 +31,21 @@ if CLIENT then
 	language.Add("tool.partctrl_attacher.help", "Particles are used for all sorts of different special effects. You can spawn them from the spawn menu, and then attach them to models with this tool.")
 
 	language.Add("tool.partctrl_attacher.left0", "Select a particle effect to attach, or select a model to attach a particle effect to")
-	language.Add("tool.partctrl_attacher.left1", "Now select a model to attach the particle effect to")
-	language.Add("tool.partctrl_attacher.left2", "Now select a particle effect to attach to the model")
 	language.Add("tool.partctrl_attacher.leftuse0", "Select yourself")
+	language.Add("tool.partctrl_attacher.middle0", "Scroll through a model's attachments")
+
+	language.Add("tool.partctrl_attacher.left1", "Now select a model to attach the particle effect to")
 	language.Add("tool.partctrl_attacher.leftuse1", "Select yourself")
-	language.Add("tool.partctrl_attacher.middle012", "Scroll through a model's attachments")
+	language.Add("tool.partctrl_attacher.middle1", "Scroll through a model's attachments") //have to duplicate this one just so we don't have it for stage 3, argh
 	language.Add("tool.partctrl_attacher.reload1", "Deselect particle effect and cancel")
+
+	language.Add("tool.partctrl_attacher.left2", "Now select a particle effect to attach to the model")
+	language.Add("tool.partctrl_attacher.middle2", "Scroll through a model's attachments") //^
 	language.Add("tool.partctrl_attacher.reload2", "Deselect model and cancel")
+
+	languate.Add("tool.partctrl_attacher.info3", "Tool is adding a particle effect to a special effect; reload or holster to cancel")
+	language.Add("tool.partctrl_attacher.left3", "Select a particle effect to add")
+	language.Add("tool.partctrl_attacher.reload3", "Deselect special effect and cancel")
 
 	language.Add("undone_PartCtrl_Ent", "Undone Attach Particle Effect")
 end
@@ -87,7 +103,7 @@ function TOOL:LeftClick(trace)
 			end
 		end
 
-	else
+	elseif stage != 3 then
 
 		//Attach selected thing to other thing
 
@@ -194,6 +210,46 @@ function TOOL:LeftClick(trace)
 			net.WriteEntity(p)
 		net.Broadcast()
 	
+		self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", NULL)
+		self:SetStage(0)
+	
+		return true
+
+	else
+		
+		//Parent a particle effect to a special effect
+
+		local ent = self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")
+		local p = nil
+		if !trace.Entity.PartCtrl_Grip then return false end
+		if CLIENT then
+			local tab = trace.Entity.PartCtrl_ParticleEnts
+			if istable(tab) then
+				for k2, _ in pairs (tab) do //a grip point entity should only have a single associated particle
+					if IsValid(k2) and k2.PartCtrl_Ent then
+						p = k2
+					end
+				end
+			end
+		else
+			local tab = constraint.FindConstraint(trace.Entity, "PartCtrl_Ent")
+			if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_Ent then
+				p = tab.Ent1
+			end
+		end
+
+		if !IsValid(ent) or !IsValid(p) or !istable(p.ParticleInfo) then return false end
+		if CLIENT then return true end
+
+		//TODO: attach the particle
+		//- remove all of its PartCtrl_Ent constraints
+		//- delete any grip points it has
+		//- rewrite its info table to remove the ent values, reset attach values, and add sfx role values
+		//constraint.PartCtrl_SpecialEffect(ent, p, self:GetOwner())
+		//- ^ make this constraint parent the particle to the special effect, and also set new nwvar(s) on it to
+		//  A: prevent it from creating particles on its own
+		//  B: add exceptions to functionality that assumes something is wrong when there aren't any ent values in the info table
+
 		self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", NULL)
 		self:SetStage(0)
 	
