@@ -185,7 +185,9 @@ function TOOL:LeftClick(trace)
 		undo.Create("PartCtrl_Ent")
 			undo.AddEntity(const)  //the constraint entity will unmerge newent upon being removed
 			undo.SetPlayer(self:GetOwner())
-		undo.Finish("Attach Particle Effect " .. tostring(p.PartCtrl_ShortName or p:GetParticleName()) .. " to "  .. tostring(ent:GetModel()))
+		local str = p.PrintName
+		if p.GetParticleName then str = p:GetParticleName() end
+		undo.Finish("Attach Particle Effect " .. str .. " to "  .. tostring(ent:GetModel()))
 	
 		//Tell clients to retrieve the updated info table
 		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
@@ -376,7 +378,9 @@ function TOOL.BuildCPanel(panel)
 
 			local function AddEffect(effectent)
 				if !IsValid(effectent) or (!effectent.PartCtrl_SpecialEffect and (!effectent.PartCtrl_Ent or !effectent.GetParticleName)) then return end
-				local line = panel.effectlist:AddLine(effectent.PartCtrl_ShortName or effectent:GetParticleName())
+				local str = effectent.PrintName
+				if effectent.GetParticleName then str = effectent:GetParticleName() end
+				local line = panel.effectlist:AddLine(str)
 				line.OnSelect = function() OpenPartCtrlEditor(effectent) line:SetSelected(false) end
 				addedfx = true
 			end

@@ -4493,7 +4493,9 @@ PartCtrl_EditProperty_MenuOpen = function(self, option, ent)
 	if table.Count(ent.PartCtrl_ParticleEnts) == 1 then
 
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
-			option:SetText("Edit Particle Effect (" .. (k.PartCtrl_ShortName or k:GetParticleName()) .. ")")
+			local str = k.PrintName
+			if k.GetParticleName then str = k:GetParticleName() end
+			option:SetText("Edit Particle Effect (" .. str .. ")")
 			option.DoClick = function() OpenPartCtrlEditor(k) end
 		end
 
@@ -4502,7 +4504,9 @@ PartCtrl_EditProperty_MenuOpen = function(self, option, ent)
 		local submenu = option:AddSubMenu()
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
 			if IsValid(k) and ((k.PartCtrl_Ent and k.GetPCF) or k.PartCtrl_SpecialEffect) then
-				local opt = submenu:AddOption(k.PartCtrl_ShortName or k:GetParticleName())
+				local str = k.PrintName
+				if k.GetParticleName then str = k:GetParticleName() end
+				local opt = submenu:AddOption(str)
 				opt.DoClick = function() OpenPartCtrlEditor(k) end
 			end
 		end
@@ -4550,7 +4554,7 @@ properties.Add("partctrl_dev_printpcfdata", {
 	
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
 			if IsValid(k) then
-				if k.PartCtrl_SpecialEffect then MsgN("Can't get raw pcf data for special effect " .. k.PartCtrl_ShortName) return end
+				if k.PartCtrl_SpecialEffect then MsgN("Can't get raw pcf data for special effect " .. k.PrintName) return end
 				if k:GetPCF() == "UtilFx" then MsgN("UtilFx isn't a real pcf, doofus!") return end
 				MsgN("PartCtrl_ReadPCF(\"" .. k:GetPCF() .. "\")[\"" .. k:GetParticleName() .. "\"]:")
 				PrintTable(PartCtrl_ReadPCF(k:GetPCF())[k:GetParticleName()])
@@ -4581,7 +4585,7 @@ properties.Add("partctrl_dev_printprocessed", {
 	
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
 			if IsValid(k) then
-				if k.PartCtrl_SpecialEffect then MsgN("Can't get processed pcf data for special effect " .. k.PartCtrl_ShortName) return end
+				if k.PartCtrl_SpecialEffect then MsgN("Can't get processed pcf data for special effect " .. k.PrintName) return end
 				MsgN("PartCtrl_ProcessedPCFs[\"" .. k:GetPCF() .. "\"][\"" .. k:GetParticleName() .. "\"]:")
 				PrintTable(PartCtrl_ProcessedPCFs[k:GetPCF()][k:GetParticleName()])
 				MsgN()
@@ -4611,7 +4615,7 @@ properties.Add("partctrl_dev_printparticleinfo", {
 	
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
 			if IsValid(k) then
-				if k.PartCtrl_SpecialEffect then MsgN("Can't get ParticleInfo data for special effect " .. k.PartCtrl_ShortName) return end
+				if k.PartCtrl_SpecialEffect then MsgN("Can't get ParticleInfo data for special effect " .. k.PrintName) return end
 				MsgN(k, ".ParticleInfo (",  k:GetPCF(), "/", k:GetParticleName(), "): ")
 				PrintTable(k.ParticleInfo)
 				MsgN()

@@ -92,21 +92,26 @@ local function SliderSetValueUnclampedMax(self, val)
 end
 
 
+local function GetParticleName(ent)
+	if ent.PartCtrl_Ent then
+		//return "Particle Controller [" .. tostring(ent:EntIndex()) .. "]: " .. ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")")
+		if !ent.utilfx then
+			return ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")"
+		else
+			return ent:GetParticleName() .. " (Scripted Effect)"
+		end
+	else
+		return ent.PrintName
+	end
+end
+
+
 function PANEL:RebuildControls()
 
 	self:Clear()
 	local ent = self.m_Entity
 	if !IsValid(ent) then self:EntityLost() return end
-	if ent.PartCtrl_Ent then
-		//self:GetParent():SetTitle("Particle Controller [" .. tostring(ent:EntIndex()) .. "]: " .. ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")")
-		if !ent.utilfx then
-			self:GetParent():SetTitle(ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")")
-		else
-			self:GetParent():SetTitle(ent:GetParticleName() .. " (Scripted Effect)")
-		end
-	elseif ent.PartCtrl_SpecialEffect then
-		self:GetParent():SetTitle(tostring(ent))
-	end
+	self:GetParent():SetTitle(GetParticleName(ent))
 
 	//Make sure mouse input is enabled - this can get set to false if the window is created while the context menu is closed
 	self:SetMouseInputEnabled(true)
@@ -180,11 +185,12 @@ function PANEL:RebuildControls()
 		if info then
 	
 			local pnl = vgui.Create("DSizeToContents", container)
+			pnl:SetSizeX(false)
 			pnl:DockMargin(3,3,3,3)
 			pnl:Dock(FILL)
 			container:AddItem(pnl)
 			pnl.Paint = function(self, w, h) 
-				draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
+				draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
 				//draw info icon
 				surface.SetDrawColor(255,255,255,255)
 				surface.SetMaterial(icon_info)
@@ -915,6 +921,8 @@ function PANEL:RebuildControls()
 		
 		//TODO: options for specific special fx
 
+
+		//Category for child fx
 		local cat = vgui.Create("DCollapsibleCategory", container)
 		cat:SetLabel("Effects")
 		cat:DockMargin(3,3,3,3)
@@ -926,13 +934,72 @@ function PANEL:RebuildControls()
 		pnl:Dock(FILL)
 		cat:SetContents(pnl)
 		pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
-		pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 		pnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
 
 		//Rebuild the contents of this category whenever a child effect is added or removed
 		function pnl.RebuildContents()
 
-			PrintTable(ent:GetChildren())
+			pnl:Clear()
+
+			//filler to ensure pnl is stretched to full width
+			local filler = vgui.Create("Panel", pnl)
+			filler:Dock(TOP)
+			filler:SetHeight(0)
+
+
+			//scraps from when the add effect button was in a separate category bubble; this was too much padding
+			--[[local pnl2 = vgui.Create("DSizeToContents", pnl)
+			pnl2:SetSizeX(false)
+			pnl2:Dock(TOP)
+			//cat:SetContents(pnl2)
+			pnl2.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
+			pnl2:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+			pnl2:DockMargin(3+1,3+1,3+1,3) //fix the 1px of blank white space between the header and the contents; need +1 extra margin on each side except the bottom to match first-level categories (this is stupid)
+			
+			local button = vgui.Create("DButton", pnl2)
+			button:DockMargin(padding,padding,padding,0)
+			//the rest is the same]]
+
+			local button = vgui.Create("DButton", pnl)
+			//button:SetWidth(button:GetWide() + 14) //+ 4)
+			button:SetHeight(30)
+			button:Dock(TOP)
+			//button:DockMargin(0,0,0,0)
+			button:DockMargin(padding,padding,padding,padding)
+			button:SetText("Add effect")
+			button:SizeToContents()
+			button.DoClick = function()
+				surface.PlaySound("ui/buttonclickrelease.wav")
+				//ent:DoInput("cpoint_position_ent_setwithtool", k)
+			end
+			pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+
+
+			//TEST, use ent:GetChildren() eventually
+			for _, child in pairs (ents.FindByClass("ent_partctrl")) do
+				
+				local cat = vgui.Create("DCollapsibleCategory", pnl)
+				cat:SetLabel(GetParticleName(child))
+				cat:DockMargin(3+1,1,3+1,3) //need extra +1 on left and right to match the margins of first-level category (this is stupid)
+				cat:Dock(TOP)
+				//container2:AddItem(cat)
+				cat:SetExpanded(true)
+
+				local container2 = vgui.Create("DCategoryList", cat)
+				container2.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
+				container2:DockPadding(-30,0,-30,0)
+				container2:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
+				container2.pnlCanvas:DockPadding(2-1,2-1,2-1,2+2) //need extra -1 on left and right to match the padding of first-level category (this is stupid); also extra +2 on bottom and -1 on top as well (this is stupider)
+				container2:Dock(FILL)
+				cat:SetContents(container2)
+
+				BuildParticleEntControls(child, container2)
+
+				pnl:DockPadding(0,0,0,4) //bottom of 4 is specifically required to make bottom margin of this panel correct if it contains a DCollapsibleCategory
+
+			end
+
+			//PrintTable(ent:GetChildren())
 			//TODO
 
 		end

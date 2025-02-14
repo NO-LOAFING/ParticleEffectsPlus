@@ -1,8 +1,8 @@
 AddCSLuaFile()
 
 ENT.Base 			= "ent_partctrl_sfx"
-ENT.PrintName			= "Particle Controller - Tracer" //TODO: these names suck, improve them eventually
-ENT.Category			= "Particle Controller"
+ENT.PrintName			= "Tracer Effect"
+ENT.Category			= "Particle Controller" //TODO: this name sucks, improve it eventually
 
 ENT.Spawnable			= true
 

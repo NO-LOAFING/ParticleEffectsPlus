@@ -155,7 +155,7 @@ if CLIENT then
 				camang:RotateAroundAxis( camang:Up(), -90 )
 				camang:RotateAroundAxis( camang:Forward(), 90 )
 				cam.Start3D2D(pos, camang, 0.125)
-					draw.SimpleTextOutlined(self.PartCtrl_ShortName,"PartCtrl_3D2DFont",0,-50,partctrl_colortext,TEXT_ALIGN_CENTER,TEXT_ALIGN_BOTTOM,3,partctrl_colorborder)
+					draw.SimpleTextOutlined(self.PartCtrl_ShortName or self.PrintName,"PartCtrl_3D2DFont",0,-50,partctrl_colortext,TEXT_ALIGN_CENTER,TEXT_ALIGN_BOTTOM,3,partctrl_colorborder)
 				cam.End3D2D()
 			end
 		end
