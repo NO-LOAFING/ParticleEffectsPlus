@@ -59,9 +59,9 @@ end
 
 
 
-if CLIENT then
+function ENT:Think()
 
-	function ENT:Think()
+	if CLIENT then
 
 		//If the parent entity changed, update stuff like properties and control panels
 		//(Standard ent_partctrl does this upon a client receiving a particleinfo table update, but we don't have one of those)
@@ -92,7 +92,17 @@ if CLIENT then
 			end
 		end
 
+		//Do effect-specific think
+		self:SpecialEffectThink()
+
 	end
+
+end
+
+
+
+
+if CLIENT then
 
 	function ENT:Draw()
 		//Instead of drawing the cpoint helpers ourselves, we tell our PostDrawTranslucentRenderables hook to do it, so that it always renders above particle effects
@@ -228,7 +238,7 @@ if SERVER then
 
 		if !Ent2.PartCtrl_Ent then
 
-			//This constraint is associating the special effect with its parent entity, so parent it
+			//This constraint is associating the special effect with its parent entity, so parent the former to the latter
 
 			Ent1:SetPos(Ent2:GetPos())
 			Ent1:SetAngles(Ent2:GetAngles())
@@ -254,9 +264,13 @@ if SERVER then
 
 		else
 			
-			//This constraint is associating the special effect with a child ent_partctrl
+			//This constraint is associating the special effect with a child ent_partctrl, so parent the latter to the former
 
-			//TODO
+			Ent2:SetPos(Ent1:GetPos())
+			Ent2:SetAngles(Ent1:GetAngles())
+			Ent2:SetParent(Ent1)
+
+			Ent1:DeleteOnRemove(Ent2)
 
 		end
 
@@ -355,6 +369,8 @@ else
 			end)
 		
 		elseif input == "child_detach" then
+
+			//TODO: child detach input
 
 		end
 

@@ -314,6 +314,19 @@ end
 
 
 
+function ENT:IsSpecialEffectChild()
+
+	local ent = self:GetParent()
+	if IsValid(ent) then
+		return ent.PartCtrl_SpecialEffect
+	end
+	return false
+
+end
+
+
+
+
 if CLIENT then
 
 	local PartCtrl_IsSkyboxDrawing = false
@@ -648,6 +661,11 @@ if CLIENT then
 			end
 		end
 
+		//If we're a child of a special effect, remove us from its control window
+		if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
+			self.PartCtrlWindow.SpecialEffect_ChildList.RebuildContents()
+		end
+
 		if istable(AllPartCtrlEnts) then
 			AllPartCtrlEnts[self] = nil
 		end
@@ -781,6 +799,7 @@ local EditMenuInputs = {
 	"cpoint_position_ent_detach",
 	"cpoint_position_attach",
 	"cpoint_position_pos",
+	"cpoint_position_sfx_role",
 	"cpoint_vector_val_all",
 	"cpoint_vector_val_axis",
 	"cpoint_axis_val",
@@ -827,6 +846,10 @@ if CLIENT then
 				
 				net.WriteUInt(args[2], 2) //axis (1/2/3)
 				net.WriteFloat(args[3]) //new value for axis
+
+			elseif input == "cpoint_position_sfx_role" then
+				
+				net.WriteUInt(args[2], 2) //new value for sfx role (max 3)
 
 			elseif input == "cpoint_vector_val_all" then
 
@@ -942,6 +965,15 @@ else
 			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_POSITION then return end
 
 			self.ParticleInfo[k].pos[axis] = new
+			refreshtable = true
+
+		elseif input == "cpoint_position_sfx_role" then
+			
+			local new = net.ReadUInt(2)
+
+			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_POSITION then return end
+
+			self.ParticleInfo[k].sfx_role = new
 			refreshtable = true
 
 		elseif input == "cpoint_vector_val_all" then
@@ -1066,29 +1098,31 @@ if SERVER then
 		local ptab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]
 		if !istable(ptab) then return end
 
-		//Make sure the table is ready to send first - if we're a dupe, and our constraints haven't restored the .ent values for our cpoints using PARTCTRL_CPOINT_MODE_POSITION,
-		//then this is most likely a bad dupe, so remove us and stop here
-		local badparticle = nil
-		for k, v in pairs (ent.ParticleInfo) do
-			if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION and v.ent == nil then
-				//MsgN("stop")
-				//return
-				badparticle = k
-				break
-			end
-		end
-		if badparticle != nil then
-			MsgN("ent_partctrl ", ent, " (", ent:GetParticleName(), ") has nil target entity ", badparticle, "; most likely a bad dupe, removing")
+		if !ent:IsSpecialEffectChild() then
+			//Make sure the table is ready to send first - if we're a dupe, and our constraints haven't restored the .ent values for our cpoints using PARTCTRL_CPOINT_MODE_POSITION,
+			//then this is most likely a bad dupe, so remove us and stop here
+			local badparticle = nil
 			for k, v in pairs (ent.ParticleInfo) do
-				//don't leave behind any orphaned grip points (i.e. loaded a dupe; one cpoint was attached to a non-dupable entity, another was attached to a grip)
-				if IsValid(v.ent) and v.ent.PartCtrl_Grip then
-					v.ent:Remove()
+				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION and v.ent == nil then
+					//MsgN("stop")
+					//return
+					badparticle = k
+					break
 				end
 			end
-			ent:Remove()
-			return
+			if badparticle != nil then
+				MsgN("ent_partctrl ", ent, " (", ent:GetParticleName(), ") has nil target entity ", badparticle, "; most likely a bad dupe, removing")
+				for k, v in pairs (ent.ParticleInfo) do
+					//don't leave behind any orphaned grip points (i.e. loaded a dupe; one cpoint was attached to a non-dupable entity, another was attached to a grip)
+					if IsValid(v.ent) and v.ent.PartCtrl_Grip then
+						v.ent:Remove()
+					end
+				end
+				ent:Remove()
+				return
+			end
+			//MsgN("go")
 		end
-		//MsgN("go")
 
 		net.Start("PartCtrl_InfoTable_SendToCl", true)
 
@@ -1103,6 +1137,7 @@ if SERVER then
 					net.WriteEntity(v.ent or NULL)
 					net.WriteUInt(v.attach or 0, 8) //don't know what the max attachment number is, assume 255
 					net.WriteVector(v.pos or Vector())
+					net.WriteUInt(v.sfx_role or 0, 2) //max of 3, since we don't need any more so far (projectile effect has 0-2)
 				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
 					net.WriteVector(v.val or Vector())
 				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
@@ -1134,6 +1169,7 @@ else
 				v.ent = net.ReadEntity()
 				v.attach = net.ReadUInt(8)
 				v.pos = net.ReadVector()
+				v.sfx_role = net.ReadUInt(2)
 			elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
 				v.val = net.ReadVector()
 			elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
@@ -1180,6 +1216,24 @@ else
 				//Refresh control window if we changed something that requires the controls to be rebuilt
 				if window and (self.ParticleInfo[k].ent != oldtab[k].ent) then
 					self.PartCtrlWindow.CPointCategories[self][k].RebuildContents(self.ParticleInfo[k])
+				end
+			end
+			//Also, if we're a child of a special effect, update its control window
+			local parwindow = self:GetParent().PartCtrlWindow
+			if IsValid(parwindow) then
+				//If we were just parented, and still have our own control window from back when we were unparented, close it
+				if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow != parwindow then
+					self.PartCtrlWindow:OnEntityLost()
+				end
+				//Assign ourself to the parent's control window, so that info table updates and such will update those controls
+				self.PartCtrlWindow = parwindow
+			end
+			if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
+				//Update the list of children to add or remove us
+				self.PartCtrlWindow.SpecialEffect_ChildList.RebuildContents()
+				//If we're no longer parented, then stop being assigned to its control window
+				if !parwindow then
+					self.PartCtrlWindow = nil
 				end
 			end
 		end
@@ -1353,6 +1407,7 @@ if SERVER then
 					ent = nil,
 					attach = 0,
 					pos = Vector(0,0,0),
+					sfx_role = 0,
 				}
 			elseif v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
 				tab[k] = {
@@ -1535,6 +1590,8 @@ if SERVER then
 			else //don't actually run the normal SetColor on grips, it could cause unwanted behavior when loading the color from dupes
 				return old_SetColor(self, color, ...)
 			end
+
+			//TODO: color children of special fx
 			
 		end
 

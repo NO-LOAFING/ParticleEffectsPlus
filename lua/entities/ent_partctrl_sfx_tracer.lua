@@ -7,6 +7,10 @@ ENT.Category			= "Particle Controller" //TODO: this name sucks, improve it event
 ENT.Spawnable			= true
 
 ENT.PartCtrl_ShortName		= "Tracer"
+ENT.SpecialEffectRoles		= {
+	[0] = "Start",
+	[1] = "End",
+}
 
 
 
@@ -24,6 +28,29 @@ function ENT:SetNWVarDefaults()
 
 	self:SetAttachmentID(0) //all special fx must have this one
 
+end
+
+
+
+
+function ENT:SpecialEffectDefaultRoles(cpoints)
+	//First half of the cpoints default to the start, second half of the cpoints start at the end
+	//This means fx with 2 cpoints will automatically connect the first to the start, and the second to the end
+	local results = {}
+	for k, cpoint in pairs (cpoints) do
+		if k > (#cpoints/2) then
+			results[cpoint] = 1
+		else
+			results[cpoint] = 0
+		end
+	end
+	return results
+end
+
+
+
+
+function ENT:SpecialEffectThink()
 end
 
 

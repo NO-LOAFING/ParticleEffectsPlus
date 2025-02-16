@@ -43,7 +43,7 @@ if CLIENT then
 	language.Add("tool.partctrl_attacher.middle2", "Scroll through a model's attachments") //^
 	language.Add("tool.partctrl_attacher.reload2", "Deselect model and cancel")
 
-	languate.Add("tool.partctrl_attacher.info3", "Tool is adding a particle effect to a special effect; reload or holster to cancel")
+	language.Add("tool.partctrl_attacher.info3", "Tool is adding a particle effect to a special effect; reload or holster to cancel")
 	language.Add("tool.partctrl_attacher.left3", "Select a particle effect to add")
 	language.Add("tool.partctrl_attacher.reload3", "Deselect special effect and cancel")
 
@@ -241,14 +241,30 @@ function TOOL:LeftClick(trace)
 		if !IsValid(ent) or !IsValid(p) or !istable(p.ParticleInfo) then return false end
 		if CLIENT then return true end
 
-		//TODO: attach the particle
-		//- remove all of its PartCtrl_Ent constraints
-		//- delete any grip points it has
-		//- rewrite its info table to remove the ent values, reset attach values, and add sfx role values
-		//constraint.PartCtrl_SpecialEffect(ent, p, self:GetOwner())
-		//- ^ make this constraint parent the particle to the special effect, and also set new nwvar(s) on it to
-		//  A: prevent it from creating particles on its own
-		//  B: add exceptions to functionality that assumes something is wrong when there aren't any ent values in the info table
+		constraint.PartCtrl_SpecialEffect(ent, p, self:GetOwner())
+		constraint.RemoveConstraints(p, "PartCtrl_Ent")
+		local cpointtab = PartCtrl_ProcessedPCFs[p:GetPCF()][p:GetParticleName()].cpoints
+		local cpoints_for_defaults = {}
+		for k, v in pairs (p.ParticleInfo) do
+			if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+				if v.ent.PartCtrl_Grip then
+					v.ent:DontDeleteOnRemove(p)
+					v.ent:Remove()
+				end
+				p.ParticleInfo[k].ent = nil //this will be replaced clientside by the special effect
+				p.ParticleInfo[k].attach = 0
+				table.insert(cpoints_for_defaults, k)
+			end
+		end
+		for k, v in pairs (ent:SpecialEffectDefaultRoles(cpoints_for_defaults)) do
+			p.ParticleInfo[k].sfx_role = v
+		end
+
+		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+			net.WriteEntity(p)
+		net.Broadcast()
+
+		//TODO: undo; this will be more complicated than running DetachFromModel because it needs to spawn new grips for *every* position control
 
 		self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", NULL)
 		self:SetStage(0)

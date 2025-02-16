@@ -554,138 +554,171 @@ function PANEL:RebuildControls()
 				//Add mode-specific options
 				local mode = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].cpoints[k].mode
 				if mode == PARTCTRL_CPOINT_MODE_POSITION then
-					local modelent = v2.ent
-					if IsValid(modelent) then
-						if IsValid(modelent.AttachedEntity) then modelent = modelent.AttachedEntity end
+					if ent == ent2 then
+						local modelent = v2.ent
+						if IsValid(modelent) then
+							if IsValid(modelent.AttachedEntity) then modelent = modelent.AttachedEntity end
 
-						local button = vgui.Create("DButton", pnl)
-						//button:SetWidth(button:GetWide() + 14) //+ 4)
-						button:SetHeight(30)
-						button:Dock(TOP)
-						//button:DockMargin(0,0,0,0)
-						button:DockMargin(padding,padding,padding,0)
-	
-						if modelent.PartCtrl_Grip then
-							button:SetText("Attach to model")
-							button:SizeToContents()
-							button.DoClick = function()
-								surface.PlaySound("ui/buttonclickrelease.wav")
-								ent2:DoInput("cpoint_position_ent_setwithtool", k)
+							local button = vgui.Create("DButton", pnl)
+							//button:SetWidth(button:GetWide() + 14) //+ 4)
+							button:SetHeight(30)
+							button:Dock(TOP)
+							//button:DockMargin(0,0,0,0)
+							button:DockMargin(padding,padding,padding,0)
+		
+							if modelent.PartCtrl_Grip then
+								button:SetText("Attach to model")
+								button:SizeToContents()
+								button.DoClick = function()
+									surface.PlaySound("ui/buttonclickrelease.wav")
+									ent2:DoInput("cpoint_position_ent_setwithtool", k)
+								end
+							else
+								button:SetText("Detach from model (" .. string.GetFileFromFilename(modelent:GetModel()) .. ")")
+								button:SizeToContents()
+								button.DoClick = function()
+									ent2:DoInput("cpoint_position_ent_detach", k)
+								end
+		
+								local attachcount = 0
+								local tab = modelent:GetAttachments()
+								if istable(tab) then attachcount = table.Count(tab) end
+		
+								if attachcount > 0 then
+									local slider = vgui.Create("DNumSlider", pnl)
+									slider:SetText("Attachment")
+									slider:SetDecimals(0)
+									slider:SetMinMax(0, attachcount)
+									slider:SetDefaultValue(0)
+									slider:SetDark(true)
+									slider:SetHeight(18)
+									slider:Dock(TOP)
+									slider:DockMargin(padding,betweenitems,0,3)
+							
+									slider:SetValue(v2.attach)
+									function slider.OnValueChanged(_, val)
+										val = math.Round(val)
+										if val != slider.PartCtrl_AttachSlider.attach then //only send updates on whole numbers
+											surface.PlaySound("weapons/pistol/pistol_empty.wav")
+											slider.PartCtrl_AttachSlider.attach = val
+											ent2:DoInput("cpoint_position_attach", k, val)
+											pnl.DoPosSliderHeights(val == 0)
+										end
+									end
+		
+									//Let the HUDPaint hook in autorun detect that the player is hovering over this slider
+									slider.PartCtrl_AttachSlider = {ent = modelent, attach = v2.attach}
+									slider.Slider.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider
+									slider.Slider.Knob.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+									slider.TextArea.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+									slider.Label.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+									slider.Scratch.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+								end
 							end
-						else
-							button:SetText("Detach from model (" .. string.GetFileFromFilename(modelent:GetModel()) .. ")")
-							button:SizeToContents()
-							button.DoClick = function()
-								ent2:DoInput("cpoint_position_ent_detach", k)
+		
+							pnl.possliders = {}
+		
+							local slider = vgui.Create("DNumSlider", pnl)
+							slider:SetText("Offset X")
+							slider:SetMinMax(-128, 128)
+							slider:SetDefaultValue(0)
+							slider:SetDark(true)
+							slider:Dock(TOP)
+		
+							slider.ValueChanged = SliderValueChangedUnclamped
+							slider.SetValue = SliderSetValueUnclamped
+							slider.height = 18
+							slider.margin = {padding,betweenitems,0,3}
+							pnl.possliders[1] = slider
+					
+							slider:SetValue(v2.pos[1])
+							function slider.OnValueChanged(_, val)
+								ent2:DoInput("cpoint_position_pos", k, 1, val)
 							end
-	
-							local attachcount = 0
-							local tab = modelent:GetAttachments()
-							if istable(tab) then attachcount = table.Count(tab) end
-	
-							if attachcount > 0 then
-								local slider = vgui.Create("DNumSlider", pnl)
-								slider:SetText("Attachment")
-								slider:SetDecimals(0)
-								slider:SetMinMax(0, attachcount)
-								slider:SetDefaultValue(0)
-								slider:SetDark(true)
-								slider:SetHeight(18)
-								slider:Dock(TOP)
-								slider:DockMargin(padding,betweenitems,0,3)
-						
-								slider:SetValue(v2.attach)
-								function slider.OnValueChanged(_, val)
-									val = math.Round(val)
-									if val != slider.PartCtrl_AttachSlider.attach then //only send updates on whole numbers
-										surface.PlaySound("weapons/pistol/pistol_empty.wav")
-										slider.PartCtrl_AttachSlider.attach = val
-										ent2:DoInput("cpoint_position_attach", k, val)
-										pnl.DoPosSliderHeights(val == 0)
+		
+							local slider = vgui.Create("DNumSlider", pnl)
+							slider:SetText("Offset Y")
+							slider:SetMinMax(-128, 128)
+							slider:SetDefaultValue(0)
+							slider:SetDark(true)
+							slider:Dock(TOP)
+		
+							slider.ValueChanged = SliderValueChangedUnclamped
+							slider.SetValue = SliderSetValueUnclamped
+							slider.height = 18
+							slider.margin = {padding,0,0,3} //no top padding, squish these 3 together
+							pnl.possliders[2] = slider
+		
+							slider:SetValue(v2.pos[2])
+							function slider.OnValueChanged(_, val)
+								ent2:DoInput("cpoint_position_pos", k, 2, val)
+							end
+		
+							local slider = vgui.Create("DNumSlider", pnl)
+							slider:SetText("Offset Z")
+							slider:SetMinMax(-128, 128)
+							slider:SetDefaultValue(0)
+							slider:SetDark(true)
+							slider:Dock(TOP)
+		
+							slider.ValueChanged = SliderValueChangedUnclamped
+							slider.SetValue = SliderSetValueUnclamped
+							slider.height = 18
+							slider.margin = {padding,0,0,3} //no top padding, squish these 3 together
+							pnl.possliders[3] = slider
+					
+							slider:SetValue(v2.pos[3])
+							function slider.OnValueChanged(_, val)
+								ent2:DoInput("cpoint_position_pos", k, 3, val)
+							end
+		
+							//Only show these sliders if attachment 0 is selected, because the offset feature in all the particle functions only works if attached to model origin
+							//(Dynamically resize these panels, don't run RebuildContents and recreate the whole thing, because that would interrupt dragging the attachment slider)
+							function pnl.DoPosSliderHeights(show)
+								for k, v in pairs (pnl.possliders) do
+									if show then
+										v:SetHeight(v.height)
+										v:DockMargin(v.margin[1], v.margin[2], v.margin[3], v.margin[4])
+									else
+										v:SetHeight(0)
+										v:DockMargin(0,0,0,0)
 									end
 								end
-	
-								//Let the HUDPaint hook in autorun detect that the player is hovering over this slider
-								slider.PartCtrl_AttachSlider = {ent = modelent, attach = v2.attach}
-								slider.Slider.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider
-								slider.Slider.Knob.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
-								slider.TextArea.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
-								slider.Label.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
-								slider.Scratch.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
 							end
+							pnl.DoPosSliderHeights(v2.attach == 0)
+		
+							expand = true
 						end
+					else
+						//This is a child effect, so show special effect options instead
+
+						local drop = vgui.Create("Panel", pnl)
 	
-						pnl.possliders = {}
-	
-						local slider = vgui.Create("DNumSlider", pnl)
-						slider:SetText("Offset X")
-						slider:SetMinMax(-128, 128)
-						slider:SetDefaultValue(0)
-						slider:SetDark(true)
-						slider:Dock(TOP)
-	
-						slider.ValueChanged = SliderValueChangedUnclamped
-						slider.SetValue = SliderSetValueUnclamped
-						slider.height = 18
-						slider.margin = {padding,betweenitems,0,3}
-						pnl.possliders[1] = slider
+						drop.Label = vgui.Create("DLabel", drop)
+						drop.Label:SetDark(true)
+						drop.Label:SetText("Position")
+						drop.Label:Dock(LEFT)
 				
-						slider:SetValue(v2.pos[1])
-						function slider.OnValueChanged(_, val)
-							ent2:DoInput("cpoint_position_pos", k, 1, val)
+						drop.Combo = vgui.Create("DComboBox", drop)
+						drop.Combo:SetHeight(25)
+						drop.Combo:Dock(FILL)
+
+						for k, v in pairs (ent.SpecialEffectRoles) do
+							drop.Combo:AddChoice(v, k)
 						end
-	
-						local slider = vgui.Create("DNumSlider", pnl)
-						slider:SetText("Offset Y")
-						slider:SetMinMax(-128, 128)
-						slider:SetDefaultValue(0)
-						slider:SetDark(true)
-						slider:Dock(TOP)
-	
-						slider.ValueChanged = SliderValueChangedUnclamped
-						slider.SetValue = SliderSetValueUnclamped
-						slider.height = 18
-						slider.margin = {padding,0,0,3} //no top padding, squish these 3 together
-						pnl.possliders[2] = slider
-	
-						slider:SetValue(v2.pos[2])
-						function slider.OnValueChanged(_, val)
-							ent2:DoInput("cpoint_position_pos", k, 2, val)
+						drop.Combo:SetValue(ent.SpecialEffectRoles[v2.sfx_role])
+						function drop.Combo.OnSelect(_, index, value, data)
+							ent2:DoInput("cpoint_position_sfx_role", k, data)
 						end
-	
-						local slider = vgui.Create("DNumSlider", pnl)
-						slider:SetText("Offset Z")
-						slider:SetMinMax(-128, 128)
-						slider:SetDefaultValue(0)
-						slider:SetDark(true)
-						slider:Dock(TOP)
-	
-						slider.ValueChanged = SliderValueChangedUnclamped
-						slider.SetValue = SliderSetValueUnclamped
-						slider.height = 18
-						slider.margin = {padding,0,0,3} //no top padding, squish these 3 together
-						pnl.possliders[3] = slider
 				
-						slider:SetValue(v2.pos[3])
-						function slider.OnValueChanged(_, val)
-							ent2:DoInput("cpoint_position_pos", k, 3, val)
+						drop:SetHeight(25)
+						drop:Dock(TOP)
+						drop:DockMargin(padding,padding,padding,0)
+						//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
+						function drop.PerformLayout(_, w, h)
+							drop.Label:SetWide(w / 2.4)
 						end
-	
-						//Only show these sliders if attachment 0 is selected, because the offset feature in all the particle functions only works if attached to model origin
-						//(Dynamically resize these panels, don't run RebuildContents and recreate the whole thing, because that would interrupt dragging the attachment slider)
-						function pnl.DoPosSliderHeights(show)
-							for k, v in pairs (pnl.possliders) do
-								if show then
-									v:SetHeight(v.height)
-									v:DockMargin(v.margin[1], v.margin[2], v.margin[3], v.margin[4])
-								else
-									v:SetHeight(0)
-									v:DockMargin(0,0,0,0)
-								end
-							end
-						end
-						pnl.DoPosSliderHeights(v2.attach == 0)
-	
+
 						expand = true
 					end
 				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
@@ -935,6 +968,7 @@ function PANEL:RebuildControls()
 		cat:SetContents(pnl)
 		pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
 		pnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
+		self.SpecialEffect_ChildList = pnl //make this externally accessible so other funcs can rebuild it
 
 		//Rebuild the contents of this category whenever a child effect is added or removed
 		function pnl.RebuildContents()
@@ -975,32 +1009,31 @@ function PANEL:RebuildControls()
 			pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 
 
-			//TEST, use ent:GetChildren() eventually
-			for _, child in pairs (ents.FindByClass("ent_partctrl")) do
-				
-				local cat = vgui.Create("DCollapsibleCategory", pnl)
-				cat:SetLabel(GetParticleName(child))
-				cat:DockMargin(3+1,1,3+1,3) //need extra +1 on left and right to match the margins of first-level category (this is stupid)
-				cat:Dock(TOP)
-				//container2:AddItem(cat)
-				cat:SetExpanded(true)
+			for _, child in pairs (ent:GetChildren()) do
+				if child.PartCtrl_Ent then
+					//Set its edit window to this one, so that info table updates and such will update these controls
+					child.PartCtrlWindow = self
 
-				local container2 = vgui.Create("DCategoryList", cat)
-				container2.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
-				container2:DockPadding(-30,0,-30,0)
-				container2:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
-				container2.pnlCanvas:DockPadding(2-1,2-1,2-1,2+2) //need extra -1 on left and right to match the padding of first-level category (this is stupid); also extra +2 on bottom and -1 on top as well (this is stupider)
-				container2:Dock(FILL)
-				cat:SetContents(container2)
+					local cat = vgui.Create("DCollapsibleCategory", pnl)
+					cat:SetLabel(GetParticleName(child))
+					cat:DockMargin(3+1,1,3+1,3) //need extra +1 on left and right to match the margins of first-level category (this is stupid)
+					cat:Dock(TOP)
+					//container2:AddItem(cat)
+					cat:SetExpanded(true)
 
-				BuildParticleEntControls(child, container2)
+					local container2 = vgui.Create("DCategoryList", cat)
+					container2.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
+					container2:DockPadding(-30,0,-30,0)
+					container2:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
+					container2.pnlCanvas:DockPadding(2-1,2-1,2-1,2+2) //need extra -1 on left and right to match the padding of first-level category (this is stupid); also extra +2 on bottom and -1 on top as well (this is stupider)
+					container2:Dock(FILL)
+					cat:SetContents(container2)
 
-				pnl:DockPadding(0,0,0,4) //bottom of 4 is specifically required to make bottom margin of this panel correct if it contains a DCollapsibleCategory
+					BuildParticleEntControls(child, container2)
 
+					pnl:DockPadding(0,0,0,4) //bottom of 4 is specifically required to make bottom margin of this panel correct if it contains a DCollapsibleCategory
+				end
 			end
-
-			//PrintTable(ent:GetChildren())
-			//TODO
 
 		end
 		
