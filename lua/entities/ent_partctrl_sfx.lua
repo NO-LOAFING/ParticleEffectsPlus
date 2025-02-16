@@ -78,12 +78,10 @@ function ENT:Think()
 			if panel and panel.effectlist and (panel.CurEntity == self.LastParent or panel.CurEntity == ent) then
 				panel.effectlist.PopulateEffectList(panel.CurEntity)
 			end
-			//TODO: window stuff
-			--[[local window = IsValid(self.PartCtrlWindow) and istable(self.PartCtrlWindow.CPointCategories)
 			//Refresh control window if we changed something that requires the controls to be rebuilt
-			if window then
-				self.PartCtrlWindow.CPointCategories[k].RebuildContents(self.ParticleInfo[k])
-			end]]
+			if IsValid(self.PartCtrlWindow) and IsValid(self.PartCtrlWindow.SpecialEffect_AttachOptions) then
+				self.PartCtrlWindow.SpecialEffect_AttachOptions.RebuildContents()
+			end
 			if IsValid(ent) then
 				//Store us in a list on the new ent (used by properties)
 				ent.PartCtrl_ParticleEnts = ent.PartCtrl_ParticleEnts or {}
@@ -310,11 +308,13 @@ if CLIENT then
 
 			net.WriteUInt(self.EditMenuInputs[input], self.EditMenuInputs_bits)
 
-			if input == "self_parent_setwithtool" then
-			//TODO: self-attachment inputs
-			--[[elseif input == "self_parent_detach" then
+			//if input == "attachment_ent_setwithtool" then
+			
+			//elseif input == "attachment_ent_detach" then
 				
-			elseif input == "self_attach" then]]
+			if input == "attachment_attach" then
+
+				net.WriteUInt(args[1], 8) //new attachment id; don't know what the max attachment number is, assume 255
 			
 			//elseif input == "child_setwithtool" then
 			
@@ -344,11 +344,41 @@ else
 		if !input then return end
 		input = table.KeyFromValue(self.EditMenuInputs, input)
 
-		if input == "self_parent_setwithtool" then
-		//TODO: self-attachment inputs		
-		--[[elseif input == "self_parent_detach" then
+		if input == "attachment_ent_setwithtool" then
+
+			if !IsValid(ply) then return end
+			if !GetConVar("toolmode_allow_partctrl_attacher"):GetBool() then return end //TODO: this was copied from advbonemerge, which also does a CanTool check with a fake trace. is that necessary here?
+
+			local tool = ply:GetTool("partctrl_attacher")
+			if !istable(tool) or !IsValid(tool:GetWeapon()) then return end
+
+			ply:ConCommand("gmod_tool partctrl_attacher")
+			//Fix: The tool's holster function clears the nwentity, and if this is already the toolgun's selected tool, it'll "holster" the tool before "deploying" it again.
+			//To make this worse, it's different if the toolgun is the active weapon or not (if active, it holsters then deploys; if not active, it deploys, holsters, then deploys again)
+			//so instead of having to deal with any of that, just set the entity on a delay so we're sure the tool is already done equipping.
+			timer.Simple(0.1, function()
+				if !IsValid(self) or !IsValid(ply) then return end
+				tool:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", self)
+				tool:SetStage(1)
+			end)
+
+		elseif input == "attachment_ent_detach" then
+
+			//Send a notification to the player saying whether or not we managed to detach the particle
+			if self:DetachFromEntity(ply) then
+				ply:SendLua("GAMEMODE:AddNotify('#undone_PartCtrl_Ent', NOTIFY_UNDO, 2)")
+				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
+			else
+				ply:SendLua("GAMEMODE:AddNotify('Failed to detach particle', NOTIFY_ERROR, 5)")
+				ply:SendLua("surface.PlaySound('buttons/button11.wav')")
+			end
+			//don't refresh table, DetachFromEntity handles this
 			
-		elseif input == "self_attach" then]]
+		elseif input == "attachment_attach" then
+
+			local new = net.ReadUInt(8)
+
+			self:SetAttachmentID(new)
 		
 		elseif input == "child_setwithtool" then
 

@@ -2123,7 +2123,9 @@ function PartCtrl_ReadPCF(filename)
 
 	local header = ReadUntilNull(f)
 	//MsgN(header)
-	if header != "<!-- dmx encoding binary 2 format pcf 1 -->\n" then MsgN(filename, " has bad pcf format ", string.TrimRight(header, "\n"), " instead of dmx encoding binary 2 format pcf 1, ignoring") return end //TODO: i don't think gmod reads any .pcf formats other than this, but test it anyway to make sure
+	if header != "<!-- dmx encoding binary 2 format pcf 1 -->\n" and header != "<!-- dmx encoding binary 2 format dmx 1 -->\n" then MsgN(filename, " has unsupported pcf format ", string.TrimRight(header, "\n"), ", ignoring") return end //note: binary 2 format dmx 1 (only used by css's fire_medium_01.pcf) appears to be identical to orangebox's binary 2 format pcf 1
+	//TODO: a recent-ish update made gmod able to read other pcf formats; we'll need to test multiple other games on this list to make sure we can read and process their pcfs properly (https://developer.valvesoftware.com/wiki/PCF#File_Format)
+	//this will require this function to be fundamentally restructured and have different processing funcs for each dmx format
 
 
 	local nStrings = f:ReadUShort() //this is a short in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions

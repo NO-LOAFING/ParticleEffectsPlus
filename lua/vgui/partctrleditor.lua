@@ -951,6 +951,99 @@ function PANEL:RebuildControls()
 		BuildParticleEntControls(ent, container)
 
 	elseif ent.PartCtrl_SpecialEffect then
+
+		//Category for attaching this effect
+		local cat = vgui.Create("DCollapsibleCategory", container)
+		cat:SetLabel("Attachment Settings")
+		cat:DockMargin(3,3,3,3)
+		cat:Dock(FILL)
+		container:AddItem(cat)
+		cat:SetExpanded(true)
+
+		local pnl = vgui.Create("DSizeToContents", cat)
+		pnl:Dock(FILL)
+		cat:SetContents(pnl)
+		pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
+		pnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
+		self.SpecialEffect_AttachOptions = pnl //make this externally accessible so other funcs can rebuild it
+
+		//Rebuild the contents of this category whenever the parent entity is changed
+		function pnl.RebuildContents()
+
+			pnl:Clear()
+
+			//filler to ensure pnl is stretched to full width
+			local filler = vgui.Create("Panel", pnl)
+			filler:Dock(TOP)
+			filler:SetHeight(0)
+
+			local modelent = ent:GetParent()
+			if IsValid(modelent) then
+				if IsValid(modelent.AttachedEntity) then modelent = modelent.AttachedEntity end
+
+				local button = vgui.Create("DButton", pnl)
+				//button:SetWidth(button:GetWide() + 14) //+ 4)
+				button:SetHeight(30)
+				button:Dock(TOP)
+				//button:DockMargin(0,0,0,0)
+				button:DockMargin(padding,padding,padding,0)
+
+				pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+
+				if modelent.PartCtrl_Grip then
+					button:SetText("Attach to model")
+					button:SizeToContents()
+					button.DoClick = function()
+						surface.PlaySound("ui/buttonclickrelease.wav")
+						ent:DoInput("attachment_ent_setwithtool")
+					end
+				else
+					button:SetText("Detach from model (" .. string.GetFileFromFilename(modelent:GetModel()) .. ")")
+					button:SizeToContents()
+					button.DoClick = function()
+						ent:DoInput("attachment_ent_detach")
+					end
+
+					local attachcount = 0
+					local tab = modelent:GetAttachments()
+					if istable(tab) then attachcount = table.Count(tab) end
+
+					if attachcount > 0 then
+						local slider = vgui.Create("DNumSlider", pnl)
+						slider:SetText("Attachment")
+						slider:SetDecimals(0)
+						slider:SetMinMax(0, attachcount)
+						slider:SetDefaultValue(0)
+						slider:SetDark(true)
+						slider:SetHeight(18)
+						slider:Dock(TOP)
+						slider:DockMargin(padding,betweenitems,0,3)
+				
+						slider:SetValue(ent:GetAttachmentID())
+						function slider.OnValueChanged(_, val)
+							val = math.Round(val)
+							if val != slider.PartCtrl_AttachSlider.attach then //only send updates on whole numbers
+								surface.PlaySound("weapons/pistol/pistol_empty.wav")
+								slider.PartCtrl_AttachSlider.attach = val
+								ent:DoInput("attachment_attach", val)
+							end
+						end
+
+						//Let the HUDPaint hook in autorun detect that the player is hovering over this slider
+						slider.PartCtrl_AttachSlider = {ent = modelent, attach = ent:GetAttachmentID()}
+						slider.Slider.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider
+						slider.Slider.Knob.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+						slider.TextArea.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+						slider.Label.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+						slider.Scratch.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+					end
+				end
+			end
+
+		end
+
+		pnl.RebuildContents()
+
 		
 		//TODO: options for specific special fx
 

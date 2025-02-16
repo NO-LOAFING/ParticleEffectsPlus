@@ -59,9 +59,9 @@ end
 //Networking for edit menu inputs
 local EditMenuInputs = {
 	//All special fx must have these ones
-	[0] = "self_parent_setwithtool",
-	"self_parent_detach",
-	"self_attach",
+	[0] = "attachment_ent_setwithtool",
+	"attachment_ent_detach",
+	"attachment_attach",
 	"child_setwithtool",
 	"child_detach",
 	//Entity-specific inputs
