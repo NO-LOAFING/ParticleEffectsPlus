@@ -400,7 +400,15 @@ else
 		
 		elseif input == "child_detach" then
 
-			//TODO: child detach input
+			//TODO: currently we just delete it as placeholder functionality; eventually we want to spawn new grips for all of its
+			//position controls and reattach them all, like a more complicated ent:DetachFromEntity()
+
+			local child = net.ReadEntity()
+			if IsValid(child) and child.PartCtrl_Ent and child:GetParent() == self then
+				child:Remove()
+				ply:SendLua("GAMEMODE:AddNotify('#undone_PartCtrl_Ent', NOTIFY_UNDO, 2)")
+				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
+			end
 
 		end
 

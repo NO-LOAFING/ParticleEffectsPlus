@@ -695,9 +695,9 @@ function PANEL:RebuildControls()
 						drop.Combo:Dock(FILL)
 
 						for k, v in pairs (ent.SpecialEffectRoles) do
-							drop.Combo:AddChoice(v, k)
+							drop.Combo:AddChoice(k .. ": " .. v, k)
 						end
-						drop.Combo:SetValue(ent.SpecialEffectRoles[v2.sfx_role])
+						drop.Combo:SetValue(v2.sfx_role .. ": " .. ent.SpecialEffectRoles[v2.sfx_role])
 						function drop.Combo.OnSelect(_, index, value, data)
 							ent2:DoInput("cpoint_position_sfx_role", k, data)
 						end
@@ -1121,6 +1121,7 @@ function PANEL:RebuildControls()
 		function rcontainer.RebuildContents()
 
 			rcontainer:Clear()
+			if !IsValid(ent) then return end
 
 
 			//category for "add new effect" button; no header for this one
@@ -1138,7 +1139,7 @@ function PANEL:RebuildControls()
 			button:SetHeight(30)
 			button:Dock(TOP)
 
-			button:SetText("Add effect to " .. ent.PartCtrl_ShortName)
+			button:SetText("Add particle effect to " .. ent.PartCtrl_ShortName)
 			button:SizeToContents()
 			button.DoClick = function()
 				surface.PlaySound("ui/buttonclickrelease.wav")
@@ -1168,6 +1169,18 @@ function PANEL:RebuildControls()
 					cat:SetContents(container2)
 
 					BuildParticleEntControls(child, container2)
+
+					local button = vgui.Create("DButton", container2)
+					button:DockMargin(padding,1,padding,0) //1 on top makes it match the margins of all the collapsibles for cpoints
+					//button:DockMargin(3,1,3,0) //alternate style, make it take up the same form factor as the collapsibles; looks a bit odd when compared to other buttons
+					button:SetHeight(30)
+					button:Dock(TOP)
+		
+					button:SetText("Detach " .. child:GetParticleName())
+					button:SizeToContents()
+					button.DoClick = function()
+						ent:DoInput("child_detach", child)
+					end
 				end
 			end
 
