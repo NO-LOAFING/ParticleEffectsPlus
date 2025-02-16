@@ -136,15 +136,6 @@ function PANEL:RebuildControls()
 	local icon_info = Material("icon16/information.png")
 
 
-	local container = vgui.Create("DCategoryList", self)
-	container.Paint = function(self, w, h)
-		derma.SkinHook("Paint", "CategoryList", self, w, h)
-		draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
-		return false
-	end
-	container:Dock(FILL)
-
-
 	self.CPointCategories = {} //make these externally accessible so that the entity can change them upon receiving inputs from the server
 
 	local function BuildParticleEntControls(ent2, container)
@@ -947,17 +938,69 @@ function PANEL:RebuildControls()
 
 
 	if ent.PartCtrl_Ent then
+
+		local container = vgui.Create("DCategoryList", self)
+		container.Paint = function(self, w, h)
+			derma.SkinHook("Paint", "CategoryList", self, w, h)
+			draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
+			return false
+		end
+		container:Dock(FILL)
 		
 		BuildParticleEntControls(ent, container)
 
+		//dummy category to add extra padding to bottom of list if there's a scrollbar
+		local pnl = vgui.Create("DSizeToContents", container)
+		//pnl:DockMargin(3,1,3,3)
+		pnl:Dock(FILL)
+		container:AddItem(pnl)
+		//pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
+		//pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+
 	elseif ent.PartCtrl_SpecialEffect then
 
+		//Special effect controls have two columns - left column is for options on the special effect itself, right column is for child fx
+		local back = vgui.Create("DPanel", self)
+		back.Paint = function(self, w, h)
+			derma.SkinHook("Paint", "CategoryList", self, w, h)
+			draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
+	
+			return false
+		end
+		back:Dock(FILL)
+
+		local lcontainer = vgui.Create("DCategoryList", back)
+		lcontainer.Paint = function(self, w, h)
+			//derma.SkinHook("Paint", "CategoryList", self, w, h)
+			//draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
+			return false
+		end
+		lcontainer:DockMargin(0,0,0,0)
+
+		local rcontainer = vgui.Create("DCategoryList", back)
+		rcontainer.Paint = function(self, w, h)
+			//derma.SkinHook("Paint", "CategoryList", self, w, h)
+			//draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
+			return false
+		end
+		rcontainer:DockMargin(0,0,0,0)
+
+		local divider = vgui.Create("DHorizontalDivider", back)
+		divider:Dock(FILL)
+		divider:SetLeft(lcontainer)
+		divider:SetRight(rcontainer)
+		divider:SetDividerWidth(4)//(8)
+		//divider:SetLeftMin()
+		//divider:SetRightMin()
+		divider:SetLeftWidth(352)
+
+
 		//Category for attaching this effect
-		local cat = vgui.Create("DCollapsibleCategory", container)
+		local cat = vgui.Create("DCollapsibleCategory", lcontainer)
 		cat:SetLabel("Attachment Settings")
-		cat:DockMargin(3,3,3,3)
+		cat:DockMargin(3,3,-2,3) //-2 right for divider
 		cat:Dock(FILL)
-		container:AddItem(cat)
+		lcontainer:AddItem(cat)
 		cat:SetExpanded(true)
 
 		local pnl = vgui.Create("DSizeToContents", cat)
@@ -1038,6 +1081,21 @@ function PANEL:RebuildControls()
 						slider.Scratch.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
 					end
 				end
+
+				//test dual scrollbars
+				--[[local text = vgui.Create("DLabel", pnl)
+				text:SetDark(true)
+				text:SetWrap(true)
+				text:SetTextInset(0, 0)
+				text:SetText("cause this is filler, filler night!!")
+				for i = 0, 32 do
+					text:SetText(text:GetText() .. "\nAAAA")
+				end
+				text:SetContentAlignment(5)
+				text:SetAutoStretchVertical(true)
+				text:DockMargin(padding,betweenitems,padding,0)
+				text:Dock(TOP)]]
+
 			end
 
 		end
@@ -1048,70 +1106,57 @@ function PANEL:RebuildControls()
 		//TODO: options for specific special fx
 
 
-		//Category for child fx
-		local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("Effects")
-		cat:DockMargin(3,3,3,3)
-		cat:Dock(FILL)
-		container:AddItem(cat)
-		cat:SetExpanded(true)
-
-		local pnl = vgui.Create("DSizeToContents", cat)
+		//dummy category to add extra padding to bottom of list if there's a scrollbar (for lcontainer)
+		local pnl = vgui.Create("DSizeToContents", lcontainer)
+		//pnl:DockMargin(3,1,3,3)
 		pnl:Dock(FILL)
-		cat:SetContents(pnl)
-		pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
-		pnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
-		self.SpecialEffect_ChildList = pnl //make this externally accessible so other funcs can rebuild it
-
-		//Rebuild the contents of this category whenever a child effect is added or removed
-		function pnl.RebuildContents()
-
-			pnl:Clear()
-
-			//filler to ensure pnl is stretched to full width
-			local filler = vgui.Create("Panel", pnl)
-			filler:Dock(TOP)
-			filler:SetHeight(0)
+		lcontainer:AddItem(pnl)
+		//pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
+		//pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 
 
-			//scraps from when the add effect button was in a separate category bubble; this was too much padding
-			--[[local pnl2 = vgui.Create("DSizeToContents", pnl)
+		self.SpecialEffect_ChildList = rcontainer //make this externally accessible so other funcs can rebuild it
+
+		//Rebuild the contents of this column whenever a child effect is added or removed
+		function rcontainer.RebuildContents()
+
+			rcontainer:Clear()
+
+
+			//category for "add new effect" button; no header for this one
+			local pnl2 = vgui.Create("DSizeToContents", rcontainer)
 			pnl2:SetSizeX(false)
 			pnl2:Dock(TOP)
+			rcontainer:AddItem(pnl2)
 			//cat:SetContents(pnl2)
 			pnl2.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
 			pnl2:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-			pnl2:DockMargin(3+1,3+1,3+1,3) //fix the 1px of blank white space between the header and the contents; need +1 extra margin on each side except the bottom to match first-level categories (this is stupid)
+			pnl2:DockMargin(-2,3,3,3) //fix the 1px of blank white space between the header and the contents; 0 left for divider
 			
 			local button = vgui.Create("DButton", pnl2)
 			button:DockMargin(padding,padding,padding,0)
-			//the rest is the same]]
-
-			local button = vgui.Create("DButton", pnl)
-			//button:SetWidth(button:GetWide() + 14) //+ 4)
 			button:SetHeight(30)
 			button:Dock(TOP)
-			//button:DockMargin(0,0,0,0)
-			button:DockMargin(padding,padding,padding,padding)
-			button:SetText("Add effect")
+
+			button:SetText("Add effect to " .. ent.PartCtrl_ShortName)
 			button:SizeToContents()
 			button.DoClick = function()
 				surface.PlaySound("ui/buttonclickrelease.wav")
 				ent:DoInput("child_setwithtool")
 			end
-			pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 
 
+			//Categories for each child effect
 			for _, child in pairs (ent:GetChildren()) do
 				if child.PartCtrl_Ent then
 					//Set its edit window to this one, so that info table updates and such will update these controls
 					child.PartCtrlWindow = self
 
-					local cat = vgui.Create("DCollapsibleCategory", pnl)
+					local cat = vgui.Create("DCollapsibleCategory", rcontainer)
 					cat:SetLabel(GetParticleName(child))
-					cat:DockMargin(3+1,1,3+1,3) //need extra +1 on left and right to match the margins of first-level category (this is stupid)
+					cat:DockMargin(-2,1,3,3) //need extra +1 on left and right to match the margins of first-level category; 0 left for divider
 					cat:Dock(TOP)
-					//container2:AddItem(cat)
+					rcontainer:AddItem(cat)
 					cat:SetExpanded(true)
 
 					local container2 = vgui.Create("DCategoryList", cat)
@@ -1123,25 +1168,22 @@ function PANEL:RebuildControls()
 					cat:SetContents(container2)
 
 					BuildParticleEntControls(child, container2)
-
-					pnl:DockPadding(0,0,0,4) //bottom of 4 is specifically required to make bottom margin of this panel correct if it contains a DCollapsibleCategory
 				end
 			end
 
+			//dummy category to add extra padding to bottom of list if there's a scrollbar (for rcontainer)
+			local pnl = vgui.Create("DSizeToContents", rcontainer)
+			//pnl:DockMargin(3,1,3,3)
+			pnl:Dock(FILL)
+			rcontainer:AddItem(pnl)
+			//pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
+			//pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+
 		end
 		
-		pnl.RebuildContents()
+		rcontainer.RebuildContents()
 
 	end
-
-
-	//dummy category to add extra padding to bottom of list if there's a scrollbar
-	local pnl = vgui.Create("DSizeToContents", container)
-	//pnl:DockMargin(3,1,3,3)
-	pnl:Dock(FILL)
-	container:AddItem(pnl)
-	pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
-	//pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 
 end
 
