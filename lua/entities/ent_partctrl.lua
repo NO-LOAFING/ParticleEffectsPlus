@@ -2,7 +2,6 @@ AddCSLuaFile()
 
 ENT.Base 			= "base_gmodentity"
 ENT.PrintName			= "Particle Controller"
-ENT.Author			= ""
 
 ENT.Spawnable			= false
 //ENT.RenderGroup		= RENDERGROUP_NONE
@@ -92,6 +91,8 @@ end
 
 
 function ENT:Think()
+
+	//MsgN("parent: ", self:GetParent())
 
 	if CLIENT then
 
@@ -196,7 +197,7 @@ function ENT:Think()
 			end
 		end
 		//If there are too many old particles, remove the oldest one
-		local max = 16 //TODO: make this a server convar so admins can control how many particles a player can create this way
+		local max = 32 //TODO: make this a server convar so admins can control how many particles a player can create this way
 		if self:GetLoopSafety() then max = 0 end
 		while #self.OldParticles > max do
 			local v = self.OldParticles[1]
@@ -542,6 +543,15 @@ if CLIENT then
 
 		//If doing utilfx, then do that and stop here
 		if self.utilfx then
+			//Make sure we don't run DoEffect if we have an invalid entity, that'll cause errors that we can't really detect from here
+			local bad = false
+			for k, v in pairs (self.ParticleInfo) do
+				if v.ent != nil and !IsValid(v.ent) then
+					bad = true
+					break
+				end
+			end
+			if bad then return end
 			self.cpoint_posang = {} //Reset this table every time
 			local ed = EffectData()
 			if list.GetForEdit("PartCtrl_UtilFx", true)[self:GetParticleName()].DoEffect(self, ed) then

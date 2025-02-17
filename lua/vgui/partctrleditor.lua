@@ -1113,7 +1113,6 @@ function PANEL:RebuildControls()
 		
 		//Add numpad + loop controls for special fx if applicable; do this here so we have just a bit less duplicate code
 		if ent.GetNumpad and ent.GetNumpadToggle and ent.GetNumpadStartOn and ent.GetLoop and ent.GetLoopDelay and ent.GetLoopSafety then
-			MsgN('yeah')
 			
 			local cat = vgui.Create("DCollapsibleCategory", lcontainer)
 			cat:SetLabel("Key & Repeat Settings")

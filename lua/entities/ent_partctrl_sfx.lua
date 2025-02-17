@@ -2,7 +2,6 @@ AddCSLuaFile()
 
 ENT.Base 			= "base_gmodentity"
 ENT.PrintName			= "Particle Controller - Special Effect Base"
-ENT.Author			= ""
 
 ENT.Spawnable			= false
 //ENT.RenderGroup		= RENDERGROUP_NONE
@@ -28,7 +27,7 @@ function ENT:Initialize()
 	end
 
 	//self:SetNoDraw(true)
-	self:SetModel("models/props_junk/watermelon01.mdl") //dummy model to prevent addons that look for the error model from affecting this entity, should this be something smaller?
+	//self:SetModel("models/props_junk/watermelon01.mdl") //dummy model to prevent addons that look for the error model from affecting this entity, should this be something smaller?
 	self:DrawShadow(false) //make sure the ent's shadow doesn't render, just in case RENDERGROUP_NONE/SetNoDraw don't work and we have to rely on the blank draw function
 	self:SetCollisionBounds(vector_origin,vector_origin) //stop this ent from bloating up duplicator bounds
 
@@ -48,12 +47,11 @@ end
 
 function ENT:Think()
 
-	if CLIENT then
-
-		//If the parent entity changed, update stuff like properties and control panels
-		//(Standard ent_partctrl does this upon a client receiving a particleinfo table update, but we don't have one of those)
-		local ent = self:GetParent()
-		if self.LastParent != ent then
+	//If the parent entity changed, update stuff like properties and control panels
+	//(Standard ent_partctrl does this upon a client receiving a particleinfo table update, but we don't have one of those)
+	local ent = self:GetParent()
+	if self.LastParent != ent then
+		if CLIENT then
 			if IsValid(self.LastParent) then
 				//Remove us from the list of particles on the old ent
 				if self.LastParent.PartCtrl_ParticleEnts then
@@ -75,12 +73,19 @@ function ENT:Think()
 				ent.PartCtrl_ParticleEnts[self] = true
 				self.LastParent = ent
 			end
+		else
+			timer.Simple(0, function()
+				if self:GetParent() == ent then
+					MsgN("reasserting parenting to ", ent)
+					self:SetParent(ent)
+				end
+			end)
+			self.LastParent = ent
 		end
-
-		//Do effect-specific think
-		self:SpecialEffectThink()
-
 	end
+
+	//Do effect-specific think
+	self:SpecialEffectThink()
 
 end
 

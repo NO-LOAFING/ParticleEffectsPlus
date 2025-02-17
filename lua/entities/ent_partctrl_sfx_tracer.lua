@@ -30,6 +30,10 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Bool", 3, "NumpadStartOn")
 	self:NetworkVar("Bool", 4, "NumpadState")
 
+	self:NetworkVar("Float", 1, "TracerSpread")
+	self:NetworkVar("Int", 2, "TracerCount")
+	self:NetworkVar("Int", 3, "TracerDir")
+
 end
 
 
@@ -46,6 +50,10 @@ function ENT:SetNWVarDefaults()
 	self:SetNumpad(0)
 	self:SetNumpadToggle(true)
 	self:SetNumpadStartOn(true)
+
+	self:SetTracerSpread(10)
+	self:SetTracerCount(1)
+	self:SetTracerDir(0)
 
 end
 
@@ -76,15 +84,97 @@ if CLIENT then
 
 	function ENT:SpecialEffectAddControls(window, container)
 
-		//duplicate code, argh
 		local ent = self
-		local ent2 = self
 		local padding = window.padding
 		local betweenitems = window.betweenitems
-		local SliderValueChangedUnclampedMax = window.SliderValueChangedUnclampedMax
-		local SliderSetValueUnclampedMax = window.SliderSetValueUnclampedMax
+
+		local cat = vgui.Create("DCollapsibleCategory", container)
+		cat:SetLabel("Tracer Settings")
+		cat:DockMargin(3,1,-2,3) //-2 right for divider
+		cat:Dock(FILL)
+		container:AddItem(cat)
+
+		local rpnl = vgui.Create("DSizeToContents", cat) //call this one rpnl and not pnl, just so we don't have to rewrite the numpad stuff copied from animprop that already has a panel with that name
+		rpnl:Dock(FILL)
+		cat:SetContents(rpnl)
+		rpnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
+		rpnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+		rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
 
 
+		local slider = vgui.Create("DNumSlider", rpnl)
+		slider:SetText("Tracer Spread (in degrees)")
+		slider:SetMinMax(0, 360)
+		slider:SetDefaultValue(10)
+		slider:SetDark(true)
+		slider:SetHeight(18)
+		slider:Dock(TOP)
+		slider:DockMargin(padding,padding-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+
+		slider:SetValue(ent:GetTracerSpread() or 0.00)
+		function slider.OnValueChanged(_, val)
+			ent:DoInput("tracer_spread", val)
+		end
+
+
+		local slider = vgui.Create("DNumSlider", rpnl)
+		slider:SetText("Tracer Count")
+		slider:SetDecimals(0)
+		slider:SetMinMax(0, 10)
+		slider:SetDefaultValue(1)
+		slider:SetDark(true)
+		slider:SetHeight(18)
+		slider:Dock(TOP)
+		slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+
+		local val = ent:GetTracerCount() or 0
+		slider:SetValue(val)
+		slider.Val = val
+		function slider.OnValueChanged(_, val) //only send updates on whole numbers
+			val = math.Round(val)
+			if val != slider.Val then
+				slider.Val = val
+				ent:DoInput("tracer_count", val)
+			end
+		end
+
+
+		local drop = vgui.Create("Panel", rpnl)
+		
+		drop.Label = vgui.Create("DLabel", drop)
+		drop.Label:SetDark(true)
+		drop.Label:SetText("Tracer Direction")
+		drop.Label:Dock(LEFT)
+
+		drop.Combo = vgui.Create("DComboBox", drop)
+		drop.Combo:SetHeight(25)
+		drop.Combo:Dock(FILL)
+
+		local dir0 = "Forward"
+		local dir1 = "Right"
+		local dir2 = "Up"
+		local val = ent:GetTracerDir() or 0
+		if val == 0 then
+			drop.Combo:SetValue(dir0)
+		elseif val == 1 then
+			drop.Combo:SetValue(dir1)
+		elseif val == 2 then
+			drop.Combo:SetValue(dir2)
+		end
+		drop.Combo:AddChoice(dir0, 0)
+		drop.Combo:AddChoice(dir1, 1)
+		drop.Combo:AddChoice(dir2, 2)
+		function drop.Combo.OnSelect(_, index, value, data)
+			ent:DoInput("tracer_dir", data)
+		end
+
+		drop:SetHeight(25)
+		drop:Dock(TOP)
+		drop:DockMargin(padding,betweenitems,padding,0)
+		//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
+		function drop.PerformLayout(_, w, h)
+			drop.Label:SetWide(w / 2.4)
+		end
 
 	end
 
@@ -94,6 +184,8 @@ end
 
 
 function ENT:SpecialEffectInitialize()
+
+	MsgN("new tracer ", self)
 
 	//do numpad stuff; just reuse the numpad funcs from the standard ent_partctrl
 	if SERVER then
@@ -114,6 +206,159 @@ end
 
 
 function ENT:SpecialEffectThink()
+
+	if CLIENT then
+
+		local numpadisdisabling = self:GetNumpadState()
+		if !self:GetNumpadStartOn() then
+			numpadisdisabling = !numpadisdisabling
+		end
+		if !numpadisdisabling then
+			local loop = self:GetLoop()
+			local time = CurTime()
+
+			if loop or self.LastLoop == nil then //loop mode 2: repeat every X seconds
+				if self.LastLoop and (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
+					//This loop mode can start a new particle while the old particle is still valid, so handle it
+					if self.particle and self.particle.IsValid and self.particle:IsValid() then
+						//self.particle:StopEmission() //interacts poorly with fx that players would actually want to repeat quickly like explosions, so commented it out; unfortunately this means we get stupid effect pileups with fx that last forever like flamethrowers, but there's no legitimate reason to repeat those anyway so we'll just have to trust people here
+						table.insert(self.OldParticles, self.particle)
+					end
+					//MsgN(time, ": did loop 2")
+					self:StartParticle()
+					self.LastLoop = nil
+				end
+
+				if self.LastLoop == nil then
+					self.LastLoop = time
+					//MsgN(time, ": set last loop to ", self.LastLoop)
+				end
+			end
+
+		else
+			//TODO: implement loop safety somehow
+			--[[if self.particle and self.particle != partctrl_wait then
+				if self.particle.IsValid and self.particle:IsValid() then
+					//Stop any existing particles and throw them into the OldParticles table to get cleaned up
+					self.particle:StopEmission()
+					table.insert(self.OldParticles, self.particle)
+				end
+				//Create a new particle as soon as we're no longer disabled
+				self.particle = partctrl_wait
+			end]]
+			self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
+			if self.utilfx then self.utilfx_waiting = true end //tell utilfx to replay when reenabled as well, since they don't have a self.particle to check for
+		end
+
+		//If loop mode is set to minimum, ensure we run next frame (for consistency with standard fx)
+		if self:GetLoopDelay() == 0 and self:GetLoop() then
+			self:NextThink(CurTime())
+			return true
+		end
+
+	end
+
+end
+
+if CLIENT then
+	
+	function ENT:StartParticle()
+
+		local ent = self:GetParent()
+		if !IsValid(ent) then return end
+
+		local pos = nil
+		local ang = nil
+		if IsValid(ent.AttachedEntity) then
+			pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
+		else
+			pos = ent:GetAttachment(self:GetAttachmentID())
+		end
+		if istable(pos) then
+			ang = pos.Ang
+			pos = pos.Pos
+		else
+			ang = ent:GetAngles()
+			pos = ent:GetPos() //+ self.ParticleInfo[k].pos
+		end
+
+		local dir = self:GetTracerDir()
+		if dir == 1 then
+			ang = ang:Right():Angle()
+		elseif dir == 2 then
+			ang = ang:Up():Angle()
+		end
+
+		for i = 1, self:GetTracerCount() do
+
+			//emulation of valve spread code https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/basecombatweapon_shared.h#L103, https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shot_manipulator.h#L59
+			//this doesn't go beyond 90 degrees unfortunately
+			//local spread = math.sin(math.rad(self:GetTracerSpread()*2)/2)
+			//local fwd = ang:Forward() + (math.Rand(-0.5,0.5)+math.Rand(-0.5,0.5)) * spread * ang:Right() + (math.Rand(-0.5,0.5)+math.Rand(-0.5,0.5)) * spread * ang:Up()
+		
+			//old adv particle controller spread code - this is nonsense but it does everything we need it to do
+			local spread = self:GetTracerSpread()/90
+			local fwd = Angle(ang)
+			local randang = AngleRand()
+			fwd:RotateAroundAxis(fwd:Forward(), randang.r)
+			fwd:RotateAroundAxis(fwd:Right(), randang.p * (spread / 2))
+			fwd:RotateAroundAxis(fwd:Up(), randang.y * (spread / 4))
+			fwd = fwd:Forward()
+
+			local tr = {}
+			tr.start = pos
+			tr.endpos = pos+(fwd*30000)
+			tr.filter = ent
+			tr = util.TraceLine(tr)
+
+			local hit = ents.CreateClientside("ent_partctrl_sfxtarget")
+			hit:SetPos(tr.HitPos)
+			hit:SetAngles(tr.HitNormal:Angle())
+			hit:Spawn()
+			hit.OwnerEntity = self
+			hit.Particles = {}
+			//store values used by impact utilfx
+			hit.PartCtrl_TraceHit = tr.Entity
+			hit.PartCtrl_SurfaceProp = tr.SurfaceProps
+
+			for _, child in pairs (self:GetChildren()) do
+				if child.PartCtrl_Ent then
+					local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
+					local addtotarget = false
+					local cpoints_to_restore = {}
+					for k, v in pairs (child.ParticleInfo) do
+						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+							cpoints_to_restore[k] = v.ent
+							if v.sfx_role == 0 then
+								child.ParticleInfo[k].ent = ent
+								child.ParticleInfo[k].attach = self:GetAttachmentID()
+							else
+								child.ParticleInfo[k].ent = hit
+								child.ParticleInfo[k].attach = 0
+								addtotarget = true
+							end
+							
+						end
+					end
+					if child.particle and child.particle.IsValid and child.particle:IsValid() then
+						//child.particle:StopEmission() //interacts poorly with fx that players would actually want to repeat quickly like explosions, so commented it out; unfortunately this means we get stupid effect pileups with fx that last forever like flamethrowers, but there's no legitimate reason to repeat those anyway so we'll just have to trust people here
+						table.insert(child.OldParticles, child.particle)
+					end
+					child:StartParticle()
+					if addtotarget then
+						table.insert(hit.Particles, child.particle)
+					end
+					for k, v in pairs (cpoints_to_restore) do
+						child.ParticleInfo[k].ent = v
+						child.ParticleInfo[k].attach = 0
+					end
+				end
+			end
+
+		end
+
+	end
+
 end
 
 
@@ -134,6 +379,9 @@ local EditMenuInputs = {
 	"numpad_num",
 	"numpad_toggle",
 	"numpad_starton",
+	"tracer_spread",
+	"tracer_count",
+	"tracer_dir",
 }
 ENT.EditMenuInputs_bits = 4 //max 15
 ENT.EditMenuInputs = table.Flip(EditMenuInputs)
@@ -165,6 +413,18 @@ if CLIENT then
 		elseif input == "numpad_starton" then
 
 			net.WriteBool(args[1])
+
+		elseif input == "tracer_spread" then
+			
+			net.WriteFloat(args[1]) //new spread
+
+		elseif input == "tracer_count" then 
+
+			net.WriteUInt(args[1], 5) //new count; generous max of 31
+
+		elseif input == "tracer_dir" then
+			
+			net.WriteUInt(args[1], 2) //new dir (0/1/2)
 
 		end
 
@@ -225,6 +485,19 @@ else
 		elseif input == "numpad_starton" then
 
 			self:SetNumpadStartOn(net.ReadBool())
+
+		elseif input == "tracer_spread" then
+
+			self:SetTracerSpread(net.ReadFloat())
+
+		elseif input == "tracer_count" then
+
+			self:SetTracerCount(net.ReadUInt(5))
+
+		elseif input == "tracer_dir" then
+			
+			local new = math.min(net.ReadUInt(2), 2)
+			self:SetTracerDir(new)
 
 		end
 
