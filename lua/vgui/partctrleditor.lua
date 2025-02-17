@@ -124,16 +124,24 @@ function PANEL:RebuildControls()
 	color_helpdark.r = math.max(0, color_helpdark.r - 40)
 	color_helpdark.g = math.max(0, color_helpdark.g - 40)
 	color_helpdark.b = math.max(0, color_helpdark.b - 40)
+	self.color_helpdark = color_helpdark //make this accessible by external funcs
 
 	local padding = 14 //space between the edges of lists and their contents
 	local betweenitems = 8 //space between items in lists
 	local betweencategories = 28 //space between categories in lists
+	self.padding = padding
+	self.betweenitems = betweenitems
 
 	local padding_help = 22 //bigger padding for help text
 	local betweenitems_help = 5 //smaller betweenitems for help text
 	local betweenitems_help2 = 3 //even smaller betweenitems for second help text paragraphs
 
 	local icon_info = Material("icon16/information.png")
+
+	//make this other stuff externally accessible too
+	self.SliderValueChangedUnclampedMax = SliderValueChangedUnclampedMax
+	self.SliderSetValueUnclampedMax = SliderSetValueUnclampedMax
+
 
 
 	self.CPointCategories = {} //make these externally accessible so that the entity can change them upon receiving inputs from the server
@@ -1103,7 +1111,8 @@ function PANEL:RebuildControls()
 		pnl.RebuildContents()
 
 		
-		//TODO: options for specific special fx
+		//Add effect-specific controls
+		ent:SpecialEffectAddControls(self, lcontainer)
 
 
 		//dummy category to add extra padding to bottom of list if there's a scrollbar (for lcontainer)

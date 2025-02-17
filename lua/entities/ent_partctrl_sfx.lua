@@ -32,27 +32,14 @@ function ENT:Initialize()
 	self:DrawShadow(false) //make sure the ent's shadow doesn't render, just in case RENDERGROUP_NONE/SetNoDraw don't work and we have to rely on the blank draw function
 	self:SetCollisionBounds(vector_origin,vector_origin) //stop this ent from bloating up duplicator bounds
 
-	self.PartCtrl_SpecialEffect_ChildFX = {}
-	//TODO: figure out how we want the duplicator to treat this
-
-	//TODO: do numpad stuff once we implement the tracer effect
-	--[[if SERVER then
-		self:SetNumpadState(false) //Numpad state should always start off as false
-		//Different from NumpadState. This value is always true when the key is held down and false when it's not, even if the numpad state is set to toggle instead.
-		//Used when changing the numpadkey or numpadtoggle vars to make sure stuff doesn't cause problems.
-		self.NumpadKeyDown = false
-		//Set up numpad functions
-		local ply = self:GetPlayer() //NOTE: this still works if ply doesn't exist
-		local key = self:GetNumpad()
-		self.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", self, true)
-		self.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", self, false)
-	end]]
-
 	if CLIENT then
 		AllPartCtrlEnts = AllPartCtrlEnts or {}
 		AllPartCtrlEnts[self] = true
 		self.LastDrawn = 0
 	end
+
+	//Do effect-specific initialize
+	self:SpecialEffectInitialize()
 
 end
 
@@ -324,7 +311,7 @@ if CLIENT then
 	
 			end
 
-			//TODO: handle entity-specific inputs
+			self:SpecialEffectDoInput(input, args)
 
 		net.SendToServer()
 
@@ -412,7 +399,7 @@ else
 
 		end
 
-		//TODO: handle entity-specific inputs
+		self:SpecialEffectDoInput(input, ply)
 
 	end)
 
