@@ -27,11 +27,17 @@ function ENT:Initialize()
 	end
 
 	//self:SetNoDraw(true)
-	//self:SetModel("models/props_junk/watermelon01.mdl") //dummy model to prevent addons that look for the error model from affecting this entity, should this be something smaller?
+	self:SetModel("models/props_junk/watermelon01.mdl") //dummy model to prevent addons that look for the error model from affecting this entity, should this be something smaller?
 	self:DrawShadow(false) //make sure the ent's shadow doesn't render, just in case RENDERGROUP_NONE/SetNoDraw don't work and we have to rely on the blank draw function
 	self:SetCollisionBounds(vector_origin,vector_origin) //stop this ent from bloating up duplicator bounds
 
 	if CLIENT then
+		//Handle special effect parenting hierarchy ourselves instead of using the standard Set/GetParent funcs, because those can start erroneously returning NULL clientside
+		//if we use advbonemerge to put an entity with an attached effect a couple rungs down in a parenting hierarchy (why? advbonemerge ents don't have this problem)
+		self.SpecialEffectChildren = self.SpecialEffectChildren or {} //if a child is initialized before us, it'll create this table first
+		self:OnSpecialEffectParentChanged(nil, nil, self:GetSpecialEffectParent()) //nwvar callbacks don't run when the value is set immediately upon spawning, so run it manually
+
+		//For PostDrawTranslucentRenderables hook
 		AllPartCtrlEnts = AllPartCtrlEnts or {}
 		AllPartCtrlEnts[self] = true
 		self.LastDrawn = 0
@@ -47,43 +53,6 @@ end
 
 function ENT:Think()
 
-	//If the parent entity changed, update stuff like properties and control panels
-	//(Standard ent_partctrl does this upon a client receiving a particleinfo table update, but we don't have one of those)
-	local ent = self:GetParent()
-	if self.LastParent != ent then
-		if CLIENT then
-			if IsValid(self.LastParent) then
-				//Remove us from the list of particles on the old ent
-				if self.LastParent.PartCtrl_ParticleEnts then
-					self.LastParent.PartCtrl_ParticleEnts[self] = nil
-				end
-			end
-			//Refresh attacher tool effect list if this effect was removed from or added to the list
-			local panel = controlpanel.Get("partctrl_attacher")
-			if panel and panel.effectlist and (panel.CurEntity == self.LastParent or panel.CurEntity == ent) then
-				panel.effectlist.PopulateEffectList(panel.CurEntity)
-			end
-			//Refresh control window if we changed something that requires the controls to be rebuilt
-			if IsValid(self.PartCtrlWindow) and IsValid(self.PartCtrlWindow.SpecialEffect_AttachOptions) then
-				self.PartCtrlWindow.SpecialEffect_AttachOptions.RebuildContents()
-			end
-			if IsValid(ent) then
-				//Store us in a list on the new ent (used by properties)
-				ent.PartCtrl_ParticleEnts = ent.PartCtrl_ParticleEnts or {}
-				ent.PartCtrl_ParticleEnts[self] = true
-				self.LastParent = ent
-			end
-		else
-			timer.Simple(0, function()
-				if self:GetParent() == ent then
-					MsgN("reasserting parenting to ", ent)
-					self:SetParent(ent)
-				end
-			end)
-			self.LastParent = ent
-		end
-	end
-
 	//Do effect-specific think
 	self:SpecialEffectThink()
 
@@ -94,15 +63,52 @@ end
 
 if CLIENT then
 
+	function ENT:OnSpecialEffectParentChanged(_, old, new)
+
+		//Both this timer and the lines below it are needed to fix an issue with advbonemerge - if we advbonemerge a model with an attached special effect, this value will change before
+		//the ent_advbonemerge becomes valid on the client, meaning it'll be a null entity here and we won't be able to do anything with it, like give it a PartCtrl_ParticleEnts list.
+		timer.Simple(0, function()
+			if !IsValid(self) then return end
+			if !IsValid(new) then new = self:GetSpecialEffectParent() end
+			//MsgN(self, " sfx parent changed from ", old, " to ", new, self:GetSpecialEffectParent())
+
+			//If the parent entity changed, update stuff like properties and control panels
+			//(Standard ent_partctrl does this upon a client receiving a particleinfo table update, but we don't have one of those)
+			if IsValid(old) then
+				//Remove us from the list of particles on the old ent
+				if old.PartCtrl_ParticleEnts then
+					old.PartCtrl_ParticleEnts[self] = nil
+				end
+			end
+			//Refresh attacher tool effect list if this effect was removed from or added to the list
+			local panel = controlpanel.Get("partctrl_attacher")
+			if panel and panel.effectlist and (panel.CurEntity == old or panel.CurEntity == new) then
+				panel.effectlist.PopulateEffectList(panel.CurEntity)
+			end
+			//Refresh control window if we changed something that requires the controls to be rebuilt
+			if IsValid(self.PartCtrlWindow) and IsValid(self.PartCtrlWindow.SpecialEffect_AttachOptions) then
+				self.PartCtrlWindow.SpecialEffect_AttachOptions.RebuildContents()
+			end
+			if IsValid(new) then
+				//Store us in a list on the new ent (used by properties)
+				new.PartCtrl_ParticleEnts = new.PartCtrl_ParticleEnts or {}
+				new.PartCtrl_ParticleEnts[self] = true
+			end
+		end)
+
+	end
+
 	function ENT:Draw()
+
 		//Instead of drawing the cpoint helpers ourselves, we tell our PostDrawTranslucentRenderables hook to do it, so that it always renders above particle effects
 		self.LastDrawn = CurTime()
+
 	end
 
 	function ENT:DrawCPointHelpers()
 
 		local window = IsValid(self.PartCtrlWindow) and g_ContextMenu:IsVisible()
-		local ent = self:GetParent()
+		local ent = self:GetSpecialEffectParent()
 		if IsValid(ent) then
 			if window or ent.PartCtrl_Grip then //hide helpers when they're attached to other ents unless the window is open
 				//Draw particle effect helpers (numbers showing cpoint id, arrows showing cpoint orientation)
@@ -145,7 +151,7 @@ if CLIENT then
 	function ENT:OnRemove()
 
 		//Remove us from the list of particles on our parent (used by properties)
-		local ent = self:GetParent()
+		local ent = self:GetSpecialEffectParent()
 		if IsValid(ent) and istable(ent.PartCtrl_ParticleEnts) then
 			ent.PartCtrl_ParticleEnts[self] = nil
 			//Refresh attacher tool effect list if this effect was removed from the list
@@ -153,6 +159,11 @@ if CLIENT then
 			if panel and panel.effectlist and panel.CurEntity == ent then
 				panel.effectlist.PopulateEffectList(panel.CurEntity)
 			end
+		end
+
+		//For PostDrawTranslucentRenderables hook
+		if istable(AllPartCtrlEnts) then
+			AllPartCtrlEnts[self] = nil
 		end
 
 	end
@@ -164,9 +175,15 @@ end
 
 if SERVER then
 
+	function ENT:UpdateTransmitState()
+
+		return TRANSMIT_ALWAYS
+
+	end
+
 	function ENT:DetachFromEntity(ply)
 	
-		local ent = self:GetParent()
+		local ent = self:GetSpecialEffectParent()
 		if !IsValid(ent) then return end
 
 		local oldconst = nil
@@ -233,6 +250,7 @@ if SERVER then
 			Ent1:SetPos(Ent2:GetPos())
 			Ent1:SetAngles(Ent2:GetAngles())
 			Ent1:SetParent(Ent2)
+			Ent1:SetSpecialEffectParent(Ent2)
 
 			if !Ent2.PartCtrl_Grip then
 				//If the constraint is removed by an Undo, unmerge the second entity - this shouldn't do anything if the constraint's removed some other way i.e. one of the ents is removed
@@ -259,6 +277,7 @@ if SERVER then
 			Ent2:SetPos(Ent1:GetPos())
 			Ent2:SetAngles(Ent1:GetAngles())
 			Ent2:SetParent(Ent1)
+			Ent2:SetSpecialEffectParent(Ent1)
 
 			Ent1:DeleteOnRemove(Ent2)
 
@@ -396,7 +415,7 @@ else
 			//position controls and reattach them all, like a more complicated ent:DetachFromEntity()
 
 			local child = net.ReadEntity()
-			if IsValid(child) and child.PartCtrl_Ent and child:GetParent() == self then
+			if IsValid(child) and child.PartCtrl_Ent and child:GetSpecialEffectParent() == self then
 				child:Remove()
 				ply:SendLua("GAMEMODE:AddNotify('#undone_PartCtrl_Ent', NOTIFY_UNDO, 2)")
 				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
@@ -409,4 +428,3 @@ else
 	end)
 
 end
-

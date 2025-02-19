@@ -316,7 +316,7 @@ if CLIENT then
 						self.SelectedGripPoint = haloent.ParticleInfo[self:GetWeapon():GetNWInt("PartCtrl_Attacher_CPoint")].ent
 					end
 				elseif haloent.PartCtrl_SpecialEffect then
-					self.SelectedGripPoint = haloent:GetParent()
+					self.SelectedGripPoint = haloent:GetSpecialEffectParent()
 				else
 					if IsValid(haloent.AttachedEntity) then haloent = haloent.AttachedEntity end
 					halo.Add({haloent}, Color(255, 255, animcolor, 255), 2.3, 2.3, 1, true, false)

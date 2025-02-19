@@ -1028,7 +1028,7 @@ function PANEL:RebuildControls()
 			filler:Dock(TOP)
 			filler:SetHeight(0)
 
-			local modelent = ent:GetParent()
+			local modelent = ent:GetSpecialEffectParent()
 			if IsValid(modelent) then
 				if IsValid(modelent.AttachedEntity) then modelent = modelent.AttachedEntity end
 
@@ -1410,7 +1410,7 @@ function PANEL:RebuildControls()
 
 
 			//Categories for each child effect
-			for _, child in pairs (ent:GetChildren()) do
+			for child, _ in pairs (ent.SpecialEffectChildren) do
 				if child.PartCtrl_Ent then
 					//Set its edit window to this one, so that info table updates and such will update these controls
 					child.PartCtrlWindow = self

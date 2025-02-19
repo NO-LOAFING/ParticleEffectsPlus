@@ -19,7 +19,12 @@ ENT.DefaultLoopTime = 0.1
 
 function ENT:SetupDataTables()
 
-	self:NetworkVar("Int", 0, "AttachmentID") //all special fx must have this one
+	//all special fx must have these ones
+	self:NetworkVar("Int", 0, "AttachmentID")
+	self:NetworkVar("Entity", 0, "SpecialEffectParent")
+	if CLIENT then
+		self:NetworkVarNotify("SpecialEffectParent", self.OnSpecialEffectParentChanged)
+	end
 
 	self:NetworkVar("Bool", 0, "Loop") //because special fx can't use loop mode 1 (loop when effect is finished), just make this a bool instead
 	self:NetworkVar("Float", 0, "LoopDelay")
@@ -264,7 +269,7 @@ if CLIENT then
 	
 	function ENT:StartParticle()
 
-		local ent = self:GetParent()
+		local ent = self:GetSpecialEffectParent()
 		if !IsValid(ent) then return end
 
 		local pos = nil
@@ -321,7 +326,7 @@ if CLIENT then
 			hit.PartCtrl_TraceHit = tr.Entity
 			hit.PartCtrl_SurfaceProp = tr.SurfaceProps
 
-			for _, child in pairs (self:GetChildren()) do
+			for child, _ in pairs (self.SpecialEffectChildren) do
 				if child.PartCtrl_Ent then
 					local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
 					local addtotarget = false
@@ -512,9 +517,10 @@ if SERVER then
 
 	function ENT:OnEntityCopyTableFinish(data)
 
-		//Don't store this DTvar
+		//Don't store these DTvars
 		if data.DT then
 			data.DT["NumpadState"] = nil
+			data.DT["SpecialEffectParent"] = nil
 		end
 
 	end

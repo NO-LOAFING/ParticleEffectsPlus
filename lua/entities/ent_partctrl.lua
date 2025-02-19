@@ -33,6 +33,11 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Bool", 2, "NumpadStartOn")
 	self:NetworkVar("Bool", 3, "NumpadState")
 
+	self:NetworkVar("Entity", 0, "SpecialEffectParent")
+	if CLIENT then
+		self:NetworkVarNotify("SpecialEffectParent", self.OnSpecialEffectParentChanged)
+	end
+
 end
 
 
@@ -52,8 +57,6 @@ function ENT:Initialize()
 		//TODO: should we handle this better? if we load a dupe or something with an effect that's no longer valid, it just spawns an orphaned ent_partctrl that doesn't do anything, but is that
 		//what we want? what if it's not valid because the player just doesn't have a game or addon loaded, and they decide to save it again and then load it again with the game reenabled?
 	end
-
-	//if SERVER then self:SetTransmitWithParent(true) end
 
 	self.utilfx = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()].utilfx
 
@@ -76,10 +79,13 @@ function ENT:Initialize()
 	end
 
 	if CLIENT then
+		self:OnSpecialEffectParentChanged(nil, nil, self:GetSpecialEffectParent()) //nwvar callbacks don't run when the value is set immediately upon spawning, so run it manually
+
 		if !self.utilfx then
 			PartCtrl_AddParticles(self:GetPCF(), self:GetParticleName()) //crash prevention
 		end
 
+		//For PostDrawTranslucentRenderables hook
 		AllPartCtrlEnts = AllPartCtrlEnts or {}
 		AllPartCtrlEnts[self] = true
 		self.LastDrawn = 0
@@ -91,8 +97,6 @@ end
 
 
 function ENT:Think()
-
-	//MsgN("parent: ", self:GetParent())
 
 	if CLIENT then
 
@@ -315,20 +319,20 @@ end
 
 
 
-function ENT:IsSpecialEffectChild()
-
-	local ent = self:GetParent()
-	if IsValid(ent) then
-		return ent.PartCtrl_SpecialEffect
-	end
-	return false
-
-end
-
-
-
-
 if CLIENT then
+
+	function ENT:OnSpecialEffectParentChanged(_,old,new)
+		if old != new then
+			//MsgN(self, " sfx parent changed from ", old, " to ", new)
+			if IsValid(old) and old.SpecialEffectChildren then
+				old.SpecialEffectChildren[self] = nil
+			end
+			if IsValid(new) then
+				new.SpecialEffectChildren = new.SpecialEffectChildren or {}
+				new.SpecialEffectChildren[self] = true
+			end
+		end
+	end
 
 	local PartCtrl_IsSkyboxDrawing = false
 
@@ -673,9 +677,14 @@ if CLIENT then
 
 		//If we're a child of a special effect, remove us from its control window
 		if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
+			local sfxpar = self:GetSpecialEffectParent()
+			if IsValid(sfxpar) and sfxpar.SpecialEffectChildren then
+				sfxpar.SpecialEffectChildren[self] = nil
+			end
 			self.PartCtrlWindow.SpecialEffect_ChildList.RebuildContents()
 		end
 
+		//For PostDrawTranslucentRenderables hook
 		if istable(AllPartCtrlEnts) then
 			AllPartCtrlEnts[self] = nil
 		end
@@ -1108,7 +1117,7 @@ if SERVER then
 		local ptab = PartCtrl_ProcessedPCFs[ent:GetPCF()][ent:GetParticleName()]
 		if !istable(ptab) then return end
 
-		if !ent:IsSpecialEffectChild() then
+		if !IsValid(ent:GetSpecialEffectParent()) then //children of special fx don't need valid .ent values
 			//Make sure the table is ready to send first - if we're a dupe, and our constraints haven't restored the .ent values for our cpoints using PARTCTRL_CPOINT_MODE_POSITION,
 			//then this is most likely a bad dupe, so remove us and stop here
 			local badparticle = nil
@@ -1229,14 +1238,18 @@ else
 				end
 			end
 			//Also, if we're a child of a special effect, update its control window
-			local parwindow = self:GetParent().PartCtrlWindow
-			if IsValid(parwindow) then
-				//If we were just parented, and still have our own control window from back when we were unparented, close it
-				if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow != parwindow then
-					self.PartCtrlWindow:OnEntityLost()
+			local sfxpar = self:GetSpecialEffectParent()
+			local parwindow
+			if IsValid(sfxpar) then
+				parwindow = sfxpar.PartCtrlWindow
+				if IsValid(parwindow) then
+					//If we were just parented, and still have our own control window from back when we were unparented, close it
+					if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow != parwindow then
+						self.PartCtrlWindow:OnEntityLost()
+					end
+					//Assign ourself to the parent's control window, so that info table updates and such will update those controls
+					self.PartCtrlWindow = parwindow
 				end
-				//Assign ourself to the parent's control window, so that info table updates and such will update those controls
-				self.PartCtrlWindow = parwindow
 			end
 			if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
 				//Update the list of children to add or remove us
@@ -1343,9 +1356,10 @@ if SERVER then
 
 	function ENT:OnEntityCopyTableFinish(data)
 
-		//Don't store this DTvar
+		//Don't store these DTvars
 		if data.DT then
 			data.DT["NumpadState"] = nil
+			data.DT["SpecialEffectParent"] = nil
 		end
 
 		//Clear out entity values when copying the ParticleInfo table, these won't dupe correctly anyway and will be filled back in by constraints
