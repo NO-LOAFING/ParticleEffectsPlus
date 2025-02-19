@@ -67,7 +67,7 @@ if CLIENT then
 
 		//Both this timer and the lines below it are needed to fix an issue with advbonemerge - if we advbonemerge a model with an attached special effect, this value will change before
 		//the ent_advbonemerge becomes valid on the client, meaning it'll be a null entity here and we won't be able to do anything with it, like give it a PartCtrl_ParticleEnts list.
-		timer.Simple(0, function()
+		timer.Simple(0.1, function()
 			if !IsValid(self) then return end
 			if !IsValid(new) then new = self:GetSpecialEffectParent() end
 			//MsgN(self, " sfx parent changed from ", old, " to ", new, self:GetSpecialEffectParent())
@@ -184,7 +184,19 @@ if SERVER then
 	function ENT:DetachFromEntity(ply)
 	
 		local ent = self:GetSpecialEffectParent()
-		if !IsValid(ent) then return end
+		if !IsValid(ent) then return false end
+
+		//If the ent is an adv bonemerged grip point, then unmerge it instead
+		if ent.PartCtrl_MergedGrip then
+			if ent:Unmerge(ply) then
+				ply:SendLua("GAMEMODE:AddNotify('#undone_AdvBonemerge', NOTIFY_UNDO, 2)")
+				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
+			else
+				ply:SendLua("GAMEMODE:AddNotify('Cannot unmerge this entity', NOTIFY_ERROR, 5)")
+				ply:SendLua("surface.PlaySound('buttons/button11.wav')")
+			end
+			return nil
+		end
 
 		local oldconst = nil
 		local tab = constraint.FindConstraints(ent, "PartCtrl_SpecialEffect")
@@ -195,10 +207,10 @@ if SERVER then
 				end
 			end
 		end
-		if !IsValid(oldconst) then return end
+		if !IsValid(oldconst) then return false end
 
 		local g = ents.Create("ent_partctrl_grip")
-		if !IsValid(g) then return end
+		if !IsValid(g) then return false end
 		g:Spawn()
 
 		local ang = nil
@@ -252,7 +264,7 @@ if SERVER then
 			Ent1:SetParent(Ent2)
 			Ent1:SetSpecialEffectParent(Ent2)
 
-			if !Ent2.PartCtrl_Grip then
+			if !(Ent2.PartCtrl_Grip or Ent2.PartCtrl_MergedGrip) then
 				//If the constraint is removed by an Undo, unmerge the second entity - this shouldn't do anything if the constraint's removed some other way i.e. one of the ents is removed
 				timer.Simple(0.1, function()  //CallOnRemove won't do anything if we try to run it now instead of on a timer
 					if const:GetTable() then  //CallOnRemove can error if this table doesn't exist - this can happen if the constraint is removed at the same time it's created for some reason
@@ -376,10 +388,11 @@ else
 		elseif input == "attachment_ent_detach" then
 
 			//Send a notification to the player saying whether or not we managed to detach the particle
-			if self:DetachFromEntity(ply) then
+			local detach = self:DetachFromEntity(ply)
+			if detach == true then
 				ply:SendLua("GAMEMODE:AddNotify('#undone_PartCtrl_Ent', NOTIFY_UNDO, 2)")
 				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
-			else
+			elseif detach == false then
 				ply:SendLua("GAMEMODE:AddNotify('Failed to detach particle', NOTIFY_ERROR, 5)")
 				ply:SendLua("surface.PlaySound('buttons/button11.wav')")
 			end

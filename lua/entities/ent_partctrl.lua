@@ -733,9 +733,21 @@ if SERVER then
 
 	function ENT:DetachFromEntity(k, ply)
 	
-		if !istable(self.ParticleInfo[k]) then return end
+		if !istable(self.ParticleInfo[k]) then return false end
 		local ent = self.ParticleInfo[k].ent
-		if !IsValid(ent) then return end
+		if !IsValid(ent) then return false end
+
+		//If the ent is an adv bonemerged grip point, then unmerge it instead
+		if ent.PartCtrl_MergedGrip then
+			if ent:Unmerge(ply) then
+				ply:SendLua("GAMEMODE:AddNotify('#undone_AdvBonemerge', NOTIFY_UNDO, 2)")
+				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
+			else
+				ply:SendLua("GAMEMODE:AddNotify('Cannot unmerge this entity', NOTIFY_ERROR, 5)")
+				ply:SendLua("surface.PlaySound('buttons/button11.wav')")
+			end
+			return nil
+		end
 
 		local oldconst = nil
 		local doparent = false
@@ -748,10 +760,10 @@ if SERVER then
 				end
 			end
 		end
-		if !IsValid(oldconst) then return end
+		if !IsValid(oldconst) then return false end
 
 		local g = ents.Create("ent_partctrl_grip")
-		if !IsValid(g) then return end
+		if !IsValid(g) then return false end
 		g:Spawn()
 
 		local ang = nil
@@ -958,10 +970,11 @@ else
 		elseif input == "cpoint_position_ent_detach" then
 
 			//Send a notification to the player saying whether or not we managed to detach the particle
-			if self:DetachFromEntity(k, ply) then
+			local detach = self:DetachFromEntity(k, ply)
+			if detach == true then
 				ply:SendLua("GAMEMODE:AddNotify('#undone_PartCtrl_Ent', NOTIFY_UNDO, 2)")
 				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
-			else
+			elseif detach == false then
 				ply:SendLua("GAMEMODE:AddNotify('Failed to detach particle', NOTIFY_ERROR, 5)")
 				ply:SendLua("surface.PlaySound('buttons/button11.wav')")
 			end
@@ -1304,7 +1317,7 @@ if SERVER then
 		const:Spawn()
 		const:Activate()
 
-		if !Ent2.PartCtrl_Grip then
+		if !(Ent2.PartCtrl_Grip or Ent2.PartCtrl_MergedGrip) then
 			//If the constraint is removed by an Undo, unmerge the second entity - this shouldn't do anything if the constraint's removed some other way i.e. one of the ents is removed
 			timer.Simple(0.1, function()  //CallOnRemove won't do anything if we try to run it now instead of on a timer
 				if const:GetTable() then  //CallOnRemove can error if this table doesn't exist - this can happen if the constraint is removed at the same time it's created for some reason
@@ -1328,7 +1341,7 @@ if SERVER then
 			Ent1:SetParent(Ent2)
 		end
 
-		if Ent2.PartCtrl_Grip then
+		if (Ent2.PartCtrl_Grip or Ent2.PartCtrl_MergedGrip) then
 			Ent1:DeleteOnRemove(Ent2)
 		end
 		Ent2:DeleteOnRemove(Ent1)

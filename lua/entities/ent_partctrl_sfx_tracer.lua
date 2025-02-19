@@ -190,8 +190,6 @@ end
 
 function ENT:SpecialEffectInitialize()
 
-	MsgN("new tracer ", self)
-
 	//do numpad stuff; just reuse the numpad funcs from the standard ent_partctrl
 	if SERVER then
 		self:SetNumpadState(false) //Numpad state should always start off as false
