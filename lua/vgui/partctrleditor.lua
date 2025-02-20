@@ -548,8 +548,6 @@ function PANEL:RebuildControls()
 				filler:Dock(TOP)
 				filler:SetHeight(0)
 	
-				local expand = false
-	
 				//Add mode-specific options
 				local mode = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].cpoints[k].mode
 				if mode == PARTCTRL_CPOINT_MODE_POSITION then
@@ -605,7 +603,6 @@ function PANEL:RebuildControls()
 											surface.PlaySound("weapons/pistol/pistol_empty.wav")
 											slider.PartCtrl_AttachSlider.attach = val
 											ent2:DoInput("cpoint_position_attach", k, val)
-											pnl.DoPosSliderHeights(val == 0)
 										end
 									end
 		
@@ -618,79 +615,6 @@ function PANEL:RebuildControls()
 									slider.Scratch.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
 								end
 							end
-		
-							pnl.possliders = {}
-		
-							local slider = vgui.Create("DNumSlider", pnl)
-							slider:SetText("Offset X")
-							slider:SetMinMax(-128, 128)
-							slider:SetDefaultValue(0)
-							slider:SetDark(true)
-							slider:Dock(TOP)
-		
-							slider.ValueChanged = SliderValueChangedUnclamped
-							slider.SetValue = SliderSetValueUnclamped
-							slider.height = 18
-							slider.margin = {padding,betweenitems,0,3}
-							pnl.possliders[1] = slider
-					
-							slider:SetValue(v2.pos[1])
-							function slider.OnValueChanged(_, val)
-								ent2:DoInput("cpoint_position_pos", k, 1, val)
-							end
-		
-							local slider = vgui.Create("DNumSlider", pnl)
-							slider:SetText("Offset Y")
-							slider:SetMinMax(-128, 128)
-							slider:SetDefaultValue(0)
-							slider:SetDark(true)
-							slider:Dock(TOP)
-		
-							slider.ValueChanged = SliderValueChangedUnclamped
-							slider.SetValue = SliderSetValueUnclamped
-							slider.height = 18
-							slider.margin = {padding,0,0,3} //no top padding, squish these 3 together
-							pnl.possliders[2] = slider
-		
-							slider:SetValue(v2.pos[2])
-							function slider.OnValueChanged(_, val)
-								ent2:DoInput("cpoint_position_pos", k, 2, val)
-							end
-		
-							local slider = vgui.Create("DNumSlider", pnl)
-							slider:SetText("Offset Z")
-							slider:SetMinMax(-128, 128)
-							slider:SetDefaultValue(0)
-							slider:SetDark(true)
-							slider:Dock(TOP)
-		
-							slider.ValueChanged = SliderValueChangedUnclamped
-							slider.SetValue = SliderSetValueUnclamped
-							slider.height = 18
-							slider.margin = {padding,0,0,3} //no top padding, squish these 3 together
-							pnl.possliders[3] = slider
-					
-							slider:SetValue(v2.pos[3])
-							function slider.OnValueChanged(_, val)
-								ent2:DoInput("cpoint_position_pos", k, 3, val)
-							end
-		
-							//Only show these sliders if attachment 0 is selected, because the offset feature in all the particle functions only works if attached to model origin
-							//(Dynamically resize these panels, don't run RebuildContents and recreate the whole thing, because that would interrupt dragging the attachment slider)
-							function pnl.DoPosSliderHeights(show)
-								for k, v in pairs (pnl.possliders) do
-									if show then
-										v:SetHeight(v.height)
-										v:DockMargin(v.margin[1], v.margin[2], v.margin[3], v.margin[4])
-									else
-										v:SetHeight(0)
-										v:DockMargin(0,0,0,0)
-									end
-								end
-							end
-							pnl.DoPosSliderHeights(v2.attach == 0)
-		
-							expand = true
 						end
 					else
 						//This is a child effect, so show special effect options instead
@@ -721,8 +645,6 @@ function PANEL:RebuildControls()
 						function drop.PerformLayout(_, w, h)
 							drop.Label:SetWide(w / 2.4)
 						end
-
-						expand = true
 					end
 				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
 					local tab = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].cpoints[k]
@@ -825,8 +747,6 @@ function PANEL:RebuildControls()
 								end
 							end
 						end
-	
-						expand = true
 					end
 				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 					local slidercount = 0
@@ -931,14 +851,10 @@ function PANEL:RebuildControls()
 									ent2:DoInput("cpoint_axis_val", k, i, val)
 								end
 							end
-	
-							expand = true
 						end
 					end
 					//TODO: handle output_axis disabling the control for a specific axis on a cpoint, and not others? no practical examples of this actually being used by anything at the moment
 				end
-	
-				pnl:GetParent():SetExpanded(expand)
 	
 			end
 			pnl.RebuildContents(v)

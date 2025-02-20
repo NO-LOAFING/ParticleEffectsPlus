@@ -247,7 +247,7 @@ function ENT:Think()
 					if istable(pos) then
 						pos = pos.Pos
 					else
-						pos = v.ent:GetPos() + v.pos
+						pos = v.ent:GetPos()
 					end
 				end
 			end
@@ -274,7 +274,7 @@ function ENT:Think()
 						if istable(pos) then
 							pos = pos.Pos
 						else
-							pos = v.ent:GetPos() + v.pos
+							pos = v.ent:GetPos()
 						end
 						if !mins then
 							mins = pos
@@ -394,7 +394,7 @@ if CLIENT then
 								pos = pos.Pos
 							else
 								ang = v.ent:GetAngles()
-								pos = v.ent:GetPos() + self.ParticleInfo[k].pos
+								pos = v.ent:GetPos()
 							end
 
 							render.SetMaterial(partctrl_arrowmat)
@@ -535,7 +535,7 @@ if CLIENT then
 				pos = pos.Pos
 			else
 				ang = ent:GetAngles()
-				pos = ent:GetPos() + self.ParticleInfo[k].pos
+				pos = ent:GetPos()
 			end
 			self.cpoint_posang[k] = {["ang"] = ang, ["pos"] = pos}
 			return self.cpoint_posang[k]
@@ -589,7 +589,7 @@ if CLIENT then
 					attach = nil
 					pattach = PATTACH_ABSORIGIN_FOLLOW
 				end
-				self.particle = CreateParticleSystem(ent, self:GetParticleName(), pattach, attach, self.ParticleInfo[k].pos)
+				self.particle = CreateParticleSystem(ent, self:GetParticleName(), pattach, attach)
 				//if self.particle and self.particle:IsValid() then
 				//	self.particle:SetIsViewModelEffect(false) //thought this would fix the position issues on viewmodel effects, but it doesn't change anything
 				//end
@@ -608,14 +608,6 @@ if CLIENT then
 		if firstcpoint > 0 then ignore = nil end //cpoint 0 automatically follows the entity it's created on, but the others won't, so if our only position cpoint is > 0, then do AddControlPoint for it too.
 
 		if self.particle and self.particle:IsValid() then
-			//tests for angle editor, these functions don't seem to be doing anything
-			//self.particle:SetControlPointOrientation(firstcpoint, Angle(self.ParticleInfo[firstcpoint].pos.x, self.ParticleInfo[firstcpoint].pos.y, self.ParticleInfo[firstcpoint].pos.z))
-			//local ang = Angle(self.ParticleInfo[firstcpoint].pos.x, self.ParticleInfo[firstcpoint].pos.y, self.ParticleInfo[firstcpoint].pos.z)
-			//self.particle:SetControlPointOrientation(firstcpoint, ang:Forward(), ang:Right(), ang:Up())
-			//self.particle:SetControlPointForwardVector(firstcpoint, ang:Forward())
-			//self.particle:SetControlPointRightVector(firstcpoint, ang:Right())
-			//self.particle:SetControlPointUpVector(firstcpoint, ang:Up())
-
 			//Do other cpoints
 			for k, v in pairs (self.ParticleInfo) do
 				if k != ignore then
@@ -639,7 +631,7 @@ if CLIENT then
 								attachstr = nil
 								pattach = PATTACH_ABSORIGIN_FOLLOW
 							end
-							self.particle:AddControlPoint(k, ent, pattach, attachstr, tab.pos)
+							self.particle:AddControlPoint(k, ent, pattach, attachstr)
 						end
 					elseif mode == PARTCTRL_CPOINT_MODE_VECTOR or mode == PARTCTRL_CPOINT_MODE_AXIS then
 						self.particle:SetControlPoint(k, v.val)
@@ -829,7 +821,6 @@ local EditMenuInputs = {
 	[0] = "cpoint_position_ent_setwithtool",
 	"cpoint_position_ent_detach",
 	"cpoint_position_attach",
-	"cpoint_position_pos",
 	"cpoint_position_sfx_role",
 	"cpoint_vector_val_all",
 	"cpoint_vector_val_axis",
@@ -872,11 +863,6 @@ if CLIENT then
 			if input == "cpoint_position_attach" then
 
 				net.WriteUInt(args[2], 8) //new attachment id; don't know what the max attachment number is, assume 255
-
-			elseif input == "cpoint_position_pos" then
-				
-				net.WriteUInt(args[2], 2) //axis (1/2/3)
-				net.WriteFloat(args[3]) //new value for axis
 
 			elseif input == "cpoint_position_sfx_role" then
 				
@@ -987,16 +973,6 @@ else
 			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_POSITION then return end
 
 			self.ParticleInfo[k].attach = new
-			refreshtable = true
-
-		elseif input == "cpoint_position_pos" then
-			
-			local axis = net.ReadUInt(2)
-			local new = net.ReadFloat()
-
-			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_POSITION then return end
-
-			self.ParticleInfo[k].pos[axis] = new
 			refreshtable = true
 
 		elseif input == "cpoint_position_sfx_role" then
@@ -1168,7 +1144,6 @@ if SERVER then
 				if mode == PARTCTRL_CPOINT_MODE_POSITION then
 					net.WriteEntity(v.ent or NULL)
 					net.WriteUInt(v.attach or 0, 8) //don't know what the max attachment number is, assume 255
-					net.WriteVector(v.pos or Vector())
 					net.WriteUInt(v.sfx_role or 0, 2) //max of 3, since we don't need any more so far (projectile effect has 0-2)
 				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
 					net.WriteVector(v.val or Vector())
@@ -1200,7 +1175,6 @@ else
 			if mode == PARTCTRL_CPOINT_MODE_POSITION then
 				v.ent = net.ReadEntity()
 				v.attach = net.ReadUInt(8)
-				v.pos = net.ReadVector()
 				v.sfx_role = net.ReadUInt(2)
 			elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
 				v.val = net.ReadVector()
@@ -1443,7 +1417,6 @@ if SERVER then
 				tab[k] = {
 					ent = nil,
 					attach = 0,
-					pos = Vector(0,0,0),
 					sfx_role = 0,
 				}
 			elseif v.mode == PARTCTRL_CPOINT_MODE_VECTOR then

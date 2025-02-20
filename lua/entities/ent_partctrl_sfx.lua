@@ -124,7 +124,7 @@ if CLIENT then
 					pos = pos.Pos
 				else
 					ang = ent:GetAngles()
-					pos = ent:GetPos() //+ self.ParticleInfo[k].pos
+					pos = ent:GetPos()
 				end
 
 				render.SetMaterial(partctrl_arrowmat)
