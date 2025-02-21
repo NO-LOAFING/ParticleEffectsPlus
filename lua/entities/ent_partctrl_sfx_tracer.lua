@@ -371,6 +371,18 @@ if CLIENT then
 
 	end
 
+	function ENT:SpecialEffectRefresh()
+
+		if self.SpecialEffectChildren then
+			for child, _ in pairs (self.SpecialEffectChildren) do
+				child:BeginNewParticle()
+			end
+		end
+
+		self.LastLoop = nil
+
+	end
+
 end
 
 
@@ -446,15 +458,17 @@ else
 	
 	function ENT:SpecialEffectDoInput(input, ply)
 
+		local refreshtable = false
+
 		if input == "loop_mode" then
 				
 			self:SetLoop(net.ReadBool())
-			//refreshtable = true
+			refreshtable = true
 
 		elseif input == "loop_delay" then
 			
 			self:SetLoopDelay(net.ReadFloat())
-			//refreshtable = true
+			refreshtable = true
 
 		elseif input == "loop_safety" then
 			
@@ -501,20 +515,22 @@ else
 		elseif input == "tracer_spread" then
 
 			self:SetTracerSpread(net.ReadFloat())
+			refreshtable = true
 
 		elseif input == "tracer_count" then
 
 			self:SetTracerCount(net.ReadUInt(5))
+			refreshtable = true
 
 		elseif input == "tracer_dir" then
 			
 			local new = math.min(net.ReadUInt(2), 2)
 			self:SetTracerDir(new)
+			refreshtable = true
 
 		end
 
-		//TODO: changing relevant settings on normal fx *resets* the effect by sending "PartCtrl_InfoTableUpdate_SendToCl" to clients, which results in them getting new info tables
-		//and calling BeginNewParticle on themselves, which calls RemoveParticle to clean up all their old ones. what would be the right way to implement this on tracer fx?
+		return refreshtable
 
 	end
 

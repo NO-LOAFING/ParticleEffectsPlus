@@ -94,6 +94,9 @@ if CLIENT then
 				new.PartCtrl_ParticleEnts = new.PartCtrl_ParticleEnts or {}
 				new.PartCtrl_ParticleEnts[self] = true
 			end
+
+			//Restart the effect
+			if self.SpecialEffectRefresh then self:SpecialEffectRefresh() end
 		end)
 
 	end
@@ -352,10 +355,18 @@ if CLIENT then
 		net.SendToServer()
 
 	end
+
+	net.Receive("PartCtrl_SpecialEffect_Refresh_SendToCl", function()
+		local ent = net.ReadEntity()
+		if !IsValid(ent) or !ent.PartCtrl_SpecialEffect then return end
+
+		if ent.SpecialEffectRefresh then ent:SpecialEffectRefresh() end
+	end)
 	
 else
 
 	util.AddNetworkString("PartCtrl_SpecialEffect_EditMenuInput_SendToSv")
+	util.AddNetworkString("PartCtrl_SpecialEffect_Refresh_SendToCl")
 
 	//Respond to inputs from the clientside edit menu
 	net.Receive("PartCtrl_SpecialEffect_EditMenuInput_SendToSv", function(_, ply)
@@ -366,6 +377,8 @@ else
 		local input = net.ReadUInt(self.EditMenuInputs_bits)
 		if !input then return end
 		input = table.KeyFromValue(self.EditMenuInputs, input)
+
+		local refreshtable = false
 
 		if input == "attachment_ent_setwithtool" then
 
@@ -403,6 +416,7 @@ else
 			local new = net.ReadUInt(8)
 
 			self:SetAttachmentID(new)
+			refreshtable = true
 		
 		elseif input == "child_setwithtool" then
 
@@ -436,7 +450,16 @@ else
 
 		end
 
-		if self.SpecialEffectDoInput then self:SpecialEffectDoInput(input, ply) end
+		if self.SpecialEffectDoInput then 
+			refreshtable = refreshtable or self:SpecialEffectDoInput(input, ply)
+		end
+
+		if refreshtable then
+			//Tell clients to refresh the special effect
+			net.Start("PartCtrl_SpecialEffect_Refresh_SendToCl")
+				net.WriteEntity(self)
+			net.Broadcast()
+		end
 
 	end)
 
