@@ -607,7 +607,7 @@ if CLIENT then
 		local ignore = firstcpoint
 		if firstcpoint > 0 then ignore = nil end //cpoint 0 automatically follows the entity it's created on, but the others won't, so if our only position cpoint is > 0, then do AddControlPoint for it too.
 
-		if self.particle and self.particle:IsValid() then
+		if self.particle and self.particle.IsValid and self.particle:IsValid() then
 			//Do other cpoints
 			for k, v in pairs (self.ParticleInfo) do
 				if k != ignore then

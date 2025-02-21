@@ -188,10 +188,11 @@ end
 
 
 
-function ENT:SpecialEffectInitialize()
+if SERVER then
 
-	//do numpad stuff; just reuse the numpad funcs from the standard ent_partctrl
-	if SERVER then
+	function ENT:SpecialEffectInitialize()
+
+		//do numpad stuff; just reuse the numpad funcs from the standard ent_partctrl
 		self:SetNumpadState(false) //Numpad state should always start off as false
 		//Different from NumpadState. This value is always true when the key is held down and false when it's not, even if the numpad state is set to toggle instead.
 		//Used when changing the numpadkey or numpadtoggle vars to make sure stuff doesn't cause problems.
@@ -201,6 +202,7 @@ function ENT:SpecialEffectInitialize()
 		local key = self:GetNumpad()
 		self.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", self, true)
 		self.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", self, false)
+
 	end
 
 end
@@ -208,9 +210,11 @@ end
 
 
 
-function ENT:SpecialEffectThink()
+if CLIENT then
 
-	if CLIENT then
+	function ENT:SpecialEffectThink()
+
+		if PartCtrl_AddParticles_CrashCheck_PreventingCrash or !self.SpecialEffectChildren or table.Count(self.SpecialEffectChildren) == 0 then return end
 
 		local numpadisdisabling = self:GetNumpadState()
 		if !self:GetNumpadStartOn() then
@@ -221,40 +225,39 @@ function ENT:SpecialEffectThink()
 			local time = CurTime()
 
 			if loop or self.LastLoop == nil then //loop mode 2: repeat every X seconds
-				if self.LastLoop and (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
-					//This loop mode can start a new particle while the old particle is still valid, so handle it
-					if self.particle and self.particle.IsValid and self.particle:IsValid() then
-						//self.particle:StopEmission() //interacts poorly with fx that players would actually want to repeat quickly like explosions, so commented it out; unfortunately this means we get stupid effect pileups with fx that last forever like flamethrowers, but there's no legitimate reason to repeat those anyway so we'll just have to trust people here
-						table.insert(self.OldParticles, self.particle)
+				if self.LastLoop == nil or (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
+					local wait = false
+					for child, _ in pairs (self.SpecialEffectChildren) do
+						if !child.ParticleInfo then
+							wait = true
+							break
+						end
 					end
-					//MsgN(time, ": did loop 2")
-					self:StartParticle()
-					self.LastLoop = nil
-				end
-
-				if self.LastLoop == nil then
-					self.LastLoop = time
-					//MsgN(time, ": set last loop to ", self.LastLoop)
+					if !wait then
+						self:StartParticle()
+						self.LastLoop = time
+						//MsgN(time, ": set last loop to ", self.LastLoop)
+					end
 				end
 			end
 
 		else
-			//TODO: implement loop safety somehow
-			--[[if self.particle and self.particle != partctrl_wait then
-				if self.particle.IsValid and self.particle:IsValid() then
-					//Stop any existing particles and throw them into the OldParticles table to get cleaned up
-					self.particle:StopEmission()
-					table.insert(self.OldParticles, self.particle)
+			for child, _ in pairs (self.SpecialEffectChildren) do
+				if child.particle and child.particle != partctrl_wait then
+					if child.particle.IsValid and child.particle:IsValid() then
+						//Stop any existing particles and throw them into the OldParticles table to get cleaned up
+						//child.particle:StopEmission() //doesn't interact well with tracer count; because all the tracers except the last one are already in OldParticles, only the last one gets cut off while the rest keep playing, which looks odd
+						table.insert(child.OldParticles, child.particle)
+					end
+					//Create a new particle as soon as we're no longer disabled
+					child.particle = partctrl_wait
 				end
-				//Create a new particle as soon as we're no longer disabled
-				self.particle = partctrl_wait
-			end]]
+			end
 			self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
-			if self.utilfx then self.utilfx_waiting = true end //tell utilfx to replay when reenabled as well, since they don't have a self.particle to check for
 		end
 
 		//If loop mode is set to minimum, ensure we run next frame (for consistency with standard fx)
-		if self:GetLoopDelay() == 0 and self:GetLoop() then
+		if self:GetLoop() and self:GetLoopDelay() == 0 then
 			self:NextThink(CurTime())
 			return true
 		end

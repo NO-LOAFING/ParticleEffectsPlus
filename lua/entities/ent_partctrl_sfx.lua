@@ -44,7 +44,7 @@ function ENT:Initialize()
 	end
 
 	//Do effect-specific initialize
-	self:SpecialEffectInitialize()
+	if self.SpecialEffectInitialize then self:SpecialEffectInitialize() end
 
 end
 
@@ -54,7 +54,7 @@ end
 function ENT:Think()
 
 	//Do effect-specific think
-	self:SpecialEffectThink()
+	if self.SpecialEffectThink then self:SpecialEffectThink() end
 
 end
 
@@ -347,7 +347,7 @@ if CLIENT then
 	
 			end
 
-			self:SpecialEffectDoInput(input, args)
+			if self.SpecialEffectDoInput then self:SpecialEffectDoInput(input, args) end
 
 		net.SendToServer()
 
@@ -436,7 +436,7 @@ else
 
 		end
 
-		self:SpecialEffectDoInput(input, ply)
+		if self.SpecialEffectDoInput then self:SpecialEffectDoInput(input, ply) end
 
 	end)
 
