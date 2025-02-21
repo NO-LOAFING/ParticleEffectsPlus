@@ -89,6 +89,7 @@ function ENT:Initialize()
 		AllPartCtrlEnts = AllPartCtrlEnts or {}
 		AllPartCtrlEnts[self] = true
 		self.LastDrawn = 0
+		
 	end
 
 end
@@ -331,10 +332,14 @@ if CLIENT then
 			if IsValid(old) and old.SpecialEffectChildren then
 				old.SpecialEffectChildren[self] = nil
 				self.MaxOldParticlesOverride = nil //TODO: make sure this updates properly after detaching from a special effect, once we implement that
+				//Restart the effect (TODO: make sure this works once we implement detaching fx)
+				if old.SpecialEffectRefresh then old:SpecialEffectRefresh() end
 			end
 			if IsValid(new) then
 				new.SpecialEffectChildren = new.SpecialEffectChildren or {}
 				new.SpecialEffectChildren[self] = true
+				//Restart the effect
+				if new.SpecialEffectRefresh then new:SpecialEffectRefresh() end
 			end
 		end
 	end
@@ -550,6 +555,8 @@ if CLIENT then
 
 	function ENT:StartParticle()
 
+		if !self.ParticleInfo then return end
+
 		//If doing utilfx, then do that and stop here
 		if self.utilfx then
 			//Make sure we don't run DoEffect if we have an invalid entity, that'll cause errors that we can't really detect from here
@@ -672,13 +679,16 @@ if CLIENT then
 			end
 		end
 
-		//If we're a child of a special effect, remove us from its control window
-		if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
-			local sfxpar = self:GetSpecialEffectParent()
-			if IsValid(sfxpar) and sfxpar.SpecialEffectChildren then
+		local sfxpar = self:GetSpecialEffectParent()
+		if IsValid(sfxpar) then
+			if sfxpar.SpecialEffectChildren then
 				sfxpar.SpecialEffectChildren[self] = nil
+				if sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
 			end
-			self.PartCtrlWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
+			//If we're a child of a special effect, remove us from its control window
+			if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
+				self.PartCtrlWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
+			end
 		end
 
 		//For PostDrawTranslucentRenderables hook
