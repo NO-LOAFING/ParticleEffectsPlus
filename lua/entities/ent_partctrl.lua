@@ -1243,6 +1243,7 @@ else
 			local sfxpar = self:GetSpecialEffectParent()
 			local parwindow
 			if IsValid(sfxpar) then
+				if sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
 				parwindow = sfxpar.PartCtrlWindow
 				if IsValid(parwindow) then
 					//If we were just parented, and still have our own control window from back when we were unparented, close it
