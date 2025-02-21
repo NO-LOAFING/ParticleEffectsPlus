@@ -673,7 +673,7 @@ if CLIENT then
 			if IsValid(sfxpar) and sfxpar.SpecialEffectChildren then
 				sfxpar.SpecialEffectChildren[self] = nil
 			end
-			self.PartCtrlWindow.SpecialEffect_ChildList.RebuildContents()
+			self.PartCtrlWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
 		end
 
 		//For PostDrawTranslucentRenderables hook
@@ -1240,7 +1240,7 @@ else
 			end
 			if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
 				//Update the list of children to add or remove us
-				self.PartCtrlWindow.SpecialEffect_ChildList.RebuildContents()
+				self.PartCtrlWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
 				//If we're no longer parented, then stop being assigned to its control window
 				if !parwindow then
 					self.PartCtrlWindow = nil

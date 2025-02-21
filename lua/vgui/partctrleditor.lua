@@ -1288,7 +1288,7 @@ function PANEL:RebuildControls()
 		end
 
 
-		//Add effect-specific controls
+		//Add special effect-specific controls
 		ent:SpecialEffectAddControls(self, lcontainer)
 
 
@@ -1301,51 +1301,51 @@ function PANEL:RebuildControls()
 		//pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 
 
+		//Add child effect controls
+
+		//category for "add new effect" button; no header for this one
+		local pnl2 = vgui.Create("DSizeToContents", rcontainer)
+		pnl2:SetSizeX(false)
+		pnl2:Dock(TOP)
+		rcontainer:AddItem(pnl2)
+		//cat:SetContents(pnl2)
+		pnl2.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
+		pnl2:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+		pnl2:DockMargin(-2,3,3,3) //fix the 1px of blank white space between the header and the contents; 0 left for divider
+		
+		local button = vgui.Create("DButton", pnl2)
+		button:DockMargin(padding,padding,padding,0)
+		button:SetHeight(30)
+		button:Dock(TOP)
+
+		button:SetText("Add particle effect to " .. ent.PartCtrl_ShortName)
+		button:SizeToContents()
+		button.DoClick = function()
+			surface.PlaySound("ui/buttonclickrelease.wav")
+			ent:DoInput("child_setwithtool")
+		end
+
+
+		rcontainer.ChildControls = {}
 		self.SpecialEffect_ChildList = rcontainer //make this externally accessible so other funcs can rebuild it
 
-		//Rebuild the contents of this column whenever a child effect is added or removed
-		function rcontainer.RebuildContents()
+		//This is called below for each child we have when creating this panel, and also called externally when child fx are updated, to add/remove fx from this panel after the fact.
+		function rcontainer.AddOrRemoveChild(child)
 
-			rcontainer:Clear()
-			if !IsValid(ent) then return end
+			if !IsValid(ent) or !ent.SpecialEffectChildren then return end
 
+			if ent.SpecialEffectChildren[child] and child.PartCtrl_Ent then
 
-			//category for "add new effect" button; no header for this one
-			local pnl2 = vgui.Create("DSizeToContents", rcontainer)
-			pnl2:SetSizeX(false)
-			pnl2:Dock(TOP)
-			rcontainer:AddItem(pnl2)
-			//cat:SetContents(pnl2)
-			pnl2.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
-			pnl2:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-			pnl2:DockMargin(-2,3,3,3) //fix the 1px of blank white space between the header and the contents; 0 left for divider
-			
-			local button = vgui.Create("DButton", pnl2)
-			button:DockMargin(padding,padding,padding,0)
-			button:SetHeight(30)
-			button:Dock(TOP)
+				if !IsValid(rcontainer.ChildControls[child]) then
 
-			button:SetText("Add particle effect to " .. ent.PartCtrl_ShortName)
-			button:SizeToContents()
-			button.DoClick = function()
-				surface.PlaySound("ui/buttonclickrelease.wav")
-				ent:DoInput("child_setwithtool")
-			end
-
-
-			//Categories for each child effect
-			for child, _ in pairs (ent.SpecialEffectChildren) do
-				if child.PartCtrl_Ent then
-					//Set its edit window to this one, so that info table updates and such will update these controls
-					child.PartCtrlWindow = self
-
+					//This effect is a new child, add controls for it
 					local cat = vgui.Create("DCollapsibleCategory", rcontainer)
 					cat:SetLabel(GetParticleName(child))
 					cat:DockMargin(-2,1,3,3) //need extra +1 on left and right to match the margins of first-level category; 0 left for divider
 					cat:Dock(TOP)
 					rcontainer:AddItem(cat)
 					cat:SetExpanded(true)
-
+	
 					local container2 = vgui.Create("DCategoryList", cat)
 					container2.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
 					container2:DockPadding(-30,0,-30,0)
@@ -1353,23 +1353,45 @@ function PANEL:RebuildControls()
 					container2.pnlCanvas:DockPadding(2-1,2-1,2-1,2+2) //need extra -1 on left and right to match the padding of first-level category (this is stupid); also extra +2 on bottom and -1 on top as well (this is stupider)
 					container2:Dock(FILL)
 					cat:SetContents(container2)
+					cat.container = container2
 
-					BuildParticleEntControls(child, container2)
+					rcontainer.ChildControls[child] = cat
 
-					local button = vgui.Create("DButton", container2)
+					//Set the child's edit window to this one, so that info table updates and such will update these controls
+					child.PartCtrlWindow = self
+
+					BuildParticleEntControls(child, rcontainer.ChildControls[child].container)
+
+					local button = vgui.Create("DButton", rcontainer.ChildControls[child].container)
 					button:DockMargin(padding,1,padding,0) //1 on top makes it match the margins of all the collapsibles for cpoints
 					//button:DockMargin(3,1,3,0) //alternate style, make it take up the same form factor as the collapsibles; looks a bit odd when compared to other buttons
 					button:SetHeight(30)
 					button:Dock(TOP)
-		
+
 					button:SetText("Detach " .. child:GetParticleName())
 					button:SizeToContents()
 					button.DoClick = function()
 						ent:DoInput("child_detach", child)
+
 					end
+
+					//we want this to always be at the end
+					rcontainer.AddDummy()
+
 				end
+
+			elseif IsValid(rcontainer.ChildControls[child]) then
+
+				//This effect is no longer a child, remove its controls
+				rcontainer.ChildControls[child]:Remove()
+				rcontainer.ChildControls[child] = nil
+
 			end
 
+		end
+
+		function rcontainer.AddDummy()
+			if IsValid(rcontainer.dummy) then rcontainer.dummy:Remove() end
 			//dummy category to add extra padding to bottom of list if there's a scrollbar (for rcontainer)
 			local pnl = vgui.Create("DSizeToContents", rcontainer)
 			//pnl:DockMargin(3,1,3,3)
@@ -1377,10 +1399,16 @@ function PANEL:RebuildControls()
 			rcontainer:AddItem(pnl)
 			//pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
 			//pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-
+			rcontainer.dummy = pnl
 		end
-		
-		rcontainer.RebuildContents()
+
+		//Add categories for each child effect
+		for child, _ in pairs (ent.SpecialEffectChildren) do
+			rcontainer.AddOrRemoveChild(child)
+		end
+
+		//also do this here in case no children were added
+		rcontainer.AddDummy()
 
 	end
 
