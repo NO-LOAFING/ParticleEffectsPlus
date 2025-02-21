@@ -125,7 +125,7 @@ if CLIENT then
 		local slider = vgui.Create("DNumSlider", rpnl)
 		slider:SetText("Tracer Count")
 		slider:SetDecimals(0)
-		slider:SetMinMax(0, 10)
+		slider:SetMinMax(1, 10)
 		slider:SetDefaultValue(1)
 		slider:SetDark(true)
 		slider:SetHeight(18)
@@ -216,6 +216,11 @@ if CLIENT then
 
 		if PartCtrl_AddParticles_CrashCheck_PreventingCrash or !self.SpecialEffectChildren or table.Count(self.SpecialEffectChildren) == 0 then return end
 
+		local max = nil
+		if self:GetLoopSafety() then
+			max = math.max(0, self:GetTracerCount() - 1)
+		end
+
 		local numpadisdisabling = self:GetNumpadState()
 		if !self:GetNumpadStartOn() then
 			numpadisdisabling = !numpadisdisabling
@@ -223,11 +228,11 @@ if CLIENT then
 		if !numpadisdisabling then
 			local loop = self:GetLoop()
 			local time = CurTime()
-
 			if loop or self.LastLoop == nil then //loop mode 2: repeat every X seconds
 				if self.LastLoop == nil or (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
 					local wait = false
 					for child, _ in pairs (self.SpecialEffectChildren) do
+						child.MaxOldParticlesOverride = max
 						if !child.ParticleInfo then
 							wait = true
 							break
@@ -240,10 +245,11 @@ if CLIENT then
 					end
 				end
 			end
-
 		else
+			if max != nil then max = 0 end
 			for child, _ in pairs (self.SpecialEffectChildren) do
 				if child.particle and child.particle != partctrl_wait then
+					child.MaxOldParticlesOverride = max
 					if child.particle.IsValid and child.particle:IsValid() then
 						//Stop any existing particles and throw them into the OldParticles table to get cleaned up
 						//child.particle:StopEmission() //doesn't interact well with tracer count; because all the tracers except the last one are already in OldParticles, only the last one gets cut off while the rest keep playing, which looks odd
@@ -506,6 +512,9 @@ else
 			self:SetTracerDir(new)
 
 		end
+
+		//TODO: changing relevant settings on normal fx *resets* the effect by sending "PartCtrl_InfoTableUpdate_SendToCl" to clients, which results in them getting new info tables
+		//and calling BeginNewParticle on themselves, which calls RemoveParticle to clean up all their old ones. what would be the right way to implement this on tracer fx?
 
 	end
 

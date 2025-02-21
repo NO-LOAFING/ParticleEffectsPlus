@@ -202,7 +202,11 @@ function ENT:Think()
 		end
 		//If there are too many old particles, remove the oldest one
 		local max = 32 //TODO: make this a server convar so admins can control how many particles a player can create this way
-		if self:GetLoopSafety() then max = 0 end
+		if self.MaxOldParticlesOverride then
+			max = self.MaxOldParticlesOverride //used by special fx
+		elseif self:GetLoopSafety() then 
+			max = 0
+		end
 		while #self.OldParticles > max do
 			local v = self.OldParticles[1]
 			//MsgN(#self.OldParticles, " is too many particles, removing oldest ", v)
@@ -326,6 +330,7 @@ if CLIENT then
 			//MsgN(self, " sfx parent changed from ", old, " to ", new)
 			if IsValid(old) and old.SpecialEffectChildren then
 				old.SpecialEffectChildren[self] = nil
+				self.MaxOldParticlesOverride = nil //TODO: make sure this updates properly after detaching from a special effect, once we implement that
 			end
 			if IsValid(new) then
 				new.SpecialEffectChildren = new.SpecialEffectChildren or {}
