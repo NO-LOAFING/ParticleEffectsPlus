@@ -56,7 +56,8 @@ end)
 	title = {"MyCoolAddon", "My Cool Addon: Workshop Edition"}, //Can also be a table of strings instead, just in case you want to, say, support both a legacy addon folder name and a workshop addon name
 	
 	default_time = 1,	//Float, default setting of "seconds between repeats" on newly spawned fx, should roughly correspond to how long it takes for the effect to "finish", defaults to 1 if absent
-	info = "Text text text" //String, optional, adds extra info to the spawnicon and edit window
+	info = "Text text text",//String, optional, adds extra info to the spawnicon and edit window
+	info_sfx = "Text text", //String, optional, alternative info text used instead of the above if attached to a special effect (tracer/beam/projectile)
 	on_model = {[0] = true}, //Table, optional, adds extra info to the spawnicon about which cpoints make the effect cover the whole model if attached
 	min_length = 129,	//Float/int, optional, overrides how far apart the grip points will spawn; used by some tracer fx that don't render if the points are too close together
 
@@ -113,7 +114,7 @@ end)
 
 		//See the effects below for more examples.
 	end,
-	DoProcessExtras = {["scale_max"] = 50} //Table, optional; this sets the "extras" arg for the DoProcess func, so that multiple fx with different values can use the same function
+	DoProcessExtras = {["scale_max"] = 50}, //Table, optional; this sets the "extras" arg for the DoProcess func, so that multiple fx with different values can use the same function
 
 	DoEffect = function(self, ed)
 		//Function, used when we're playing the effect to set its EffectData values, usually by grabbing information from the control points we set up earlier.
@@ -150,6 +151,7 @@ end)
 
 local needs_attachment = "Must be attached to a model, on a non-0 attachment"
 local needs_attachment_1 = "Must be attached to a model with at least 1 attachment; always uses attachment #1"
+local needs_model = "Must be attached to a model"
 
 --[[list.Set("PartCtrl_UtilFx", "Spawnlist_Populator_Test", {
 	//test: populate a game, workshop addon, and legacy addon, with and without existing particles
@@ -624,7 +626,8 @@ list.Set("PartCtrl_UtilFx", "Tracer", tracer5point5) //https://github.com/ValveS
 local impact = {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
-	info = "Control point 1 sets the model to play the impact effect on; uses the world if unattached.\nControl point 0 draws a line to 1, and plays an impact effect where the line hits the model.",
+	info = "Control point 1 sets the model to play the impact effect on; uses the world if unattached.\nControl point 0 draws a line to 1, and plays the effect where the line hits the model.",
+	info_sfx = "Control point 0 draws a line to 1, and plays the effect at the point of impact.", //special fx have functionality to override what entity the impact effect uses, so omit the part about cpoint 1 setting it.
 	DoProcess = function(tab, extras)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin, Entity")
@@ -690,21 +693,26 @@ local impact_noflags = table.Copy(impact)
 impact_noflags.DoProcessExtras.toggleable_decals = false
 list.Set("PartCtrl_UtilFx", "Impact", impact_noflags)
 impact.info = impact.info .. "\nIdentical to Impact, except decals can be disabled."
+impact.info_sfx = impact.info_sfx .. "\nIdentical to Impact, except decals can be disabled."
 list.Set("PartCtrl_UtilFx", "Impact_GMOD", impact)
 local impact_noflags2 = table.Copy(impact_noflags)
-impact_noflags2.info = impact_noflags2.info .. "\nIdentical to Impact, except the particle effects have 2x scale."
+impact_noflags2.info = impact_noflags2.info .. "\nIdentical to Impact, except particles have 2x scale."
+impact_noflags2.info_sfx = impact_noflags2.info_sfx .. "\nIdentical to Impact, except particles have 2x scale."
 list.Set("PartCtrl_UtilFx", "ImpactGauss", impact_noflags2)
 list.Set("PartCtrl_UtilFx", "ImpactJeep", impact_noflags2)
 local impact_noflags3 = table.Copy(impact_noflags)
-impact_noflags3.info = impact_noflags3.info .. "\nIdentical to Impact, except the particle effects have 3x scale."
+impact_noflags3.info = impact_noflags3.info .. "\nIdentical to Impact, except particles have 3x scale."
+impact_noflags3.info_sfx = impact_noflags3.info_sfx .. "\nIdentical to Impact, except particles have 3x scale."
 list.Set("PartCtrl_UtilFx", "ImpactGunship", impact_noflags3)
 local impact_nodecals = table.Copy(impact_noflags)
 impact_nodecals.DoProcessExtras.has_decals = false
 impact_nodecals.info = impact_noflags3.info .. "\nNo decals; doesn't do material-specific particle effects except on metal or computer."
+impact_nodecals.info_sfx = impact_noflags3.info_sfx .. "\nNo decals; doesn't do material-specific particle effects except on metal or computer."
 list.Set("PartCtrl_UtilFx", "HelicopterImpact", impact_nodecals)
 local impact_nodecals_nosurfaceprop = table.Copy(impact_nodecals)
 impact_nodecals_nosurfaceprop.DoProcessExtras.surfaceprop = false
 impact_nodecals_nosurfaceprop.info = impact_noflags.info .. "\nNo decals, no material-specific particle effects, no sounds."
+impact_nodecals_nosurfaceprop.info_sfx = impact_noflags.info_sfx .. "\nNo decals, no material-specific particle effects, no sounds."
 list.Set("PartCtrl_UtilFx", "AirboatGunImpact", impact_nodecals_nosurfaceprop)
 --[[list.Set("PartCtrl_UtilFx", "AirboatGunImpact", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
@@ -1851,7 +1859,7 @@ list.Set("PartCtrl_UtilFx", "LaserTracer", {
 list.Set("PartCtrl_UtilFx", "phys_freeze", {
 	title = "Garry's Mod",
 	default_time = 0.5,
-	info = "Must be attached to a model",
+	info = needs_model,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Entity")
 	end,
@@ -1871,7 +1879,7 @@ list.Set("PartCtrl_UtilFx", "phys_freeze", {
 list.Set("PartCtrl_UtilFx", "phys_unfreeze", {
 	title = "Garry's Mod",
 	default_time = 0.5,
-	info = "Must be attached to a model",
+	info = needs_model,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Entity")
 	end,
@@ -1889,7 +1897,7 @@ list.Set("PartCtrl_UtilFx", "phys_unfreeze", {
 list.Set("PartCtrl_UtilFx", "propspawn", {
 	title = "Garry's Mod",
 	default_time = 1,
-	info = "Must be attached to a model",
+	info = needs_model,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
 	end,
@@ -3727,6 +3735,7 @@ function PartCtrl_ProcessUtilFx()
 			local t = {
 				["cpoints"] = {},
 				["info"] = v.info,
+				["info_sfx"] = v.info_sfx,
 				["utilfx"] = true,
 				["default_time"] = v.default_time,
 				["on_model"] = v.on_model,

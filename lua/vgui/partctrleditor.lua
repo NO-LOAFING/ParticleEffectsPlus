@@ -181,6 +181,8 @@ function PANEL:RebuildControls()
 	
 		//category for info; no header for this one
 		local info = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].info
+		local info2 = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].info_sfx
+		if ent != ent2 and info2 then info = info2 end //use alt info text for special effect children, if applicable
 		if info then
 	
 			local pnl = vgui.Create("DSizeToContents", container)
