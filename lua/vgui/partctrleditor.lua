@@ -213,313 +213,320 @@ function PANEL:RebuildControls()
 	
 		end
 	
-	
-		//category for key
-		local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("Key & Repeat Settings")
-		cat:DockMargin(3,3,3,3)
-		cat:Dock(FILL)
-		container:AddItem(cat)
-	
-		local default_looptime = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].default_time or 0
-		local default_loopmode = 1
-		if ent2.utilfx then
-			if default_looptime < 0 then
-				//-1 sets no loop by default
-				default_loopmode = 0
-			else
-				default_loopmode = 2
-			end
-		end
-		default_looptime = math.max(0, default_looptime)
-		//MsgN("default time ", default_looptime, ", currently ", ent2:GetLoopDelay())
-		//MsgN("default mode ", default_loopmode, ", currently ", ent2:GetLoopMode())
-	
-		//expand if any contained options are non-default 
-		cat:SetExpanded(
-			((ent2:GetNumpad() or 0) != 0)
-			or (ent2:GetNumpadToggle() != true)
-			or (ent2:GetNumpadStartOn() != true)
-			//considered also adding a check here to make sure the effect isn't disabled, but i don't think that's possible without a numpad key set
-			or ((ent2:GetLoopMode() or 1) != default_loopmode)
-			or ((math.Round(ent2:GetLoopDelay(), 6) or 0) != default_looptime)
-		)
-	
-		local rpnl = vgui.Create("DSizeToContents", cat) //call this one rpnl and not pnl, just so we don't have to rewrite the numpad stuff copied from animprop that already has a panel with that name
-		rpnl:Dock(FILL)
-		cat:SetContents(rpnl)
-		rpnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
-		rpnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-		rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
-	
-			local pnl = vgui.Create("Panel", rpnl)
-	
-			local numpadpnl = vgui.Create("DPanel", pnl)
-			numpadpnl:SetPaintBackground(false)
-	
-			numpadpnl.numpad = vgui.Create("DBinder", numpadpnl)
-			//back.Numpad = numpadpnl.numpad
-			numpadpnl.label = vgui.Create("DLabel", numpadpnl)
-			numpadpnl.label:SetText("Effect Key")
-			numpadpnl.label:SetDark(true)
-	
-			function numpadpnl:PerformLayout()
-				self:SetWide(100)
-				self:SetTall(70)
-	
-				self.numpad:InvalidateLayout(true)
-				self.numpad:SetSize(100, 50)
-	
-				self.label:SizeToContents()
-	
-				self.numpad:Center()
-				self.numpad:AlignTop(20)
-	
-				self.label:CenterHorizontal()
-				self.label:AlignTop(0)
-	
-				local wide = self.label:GetWide()
-				if wide > 100 then self:SetWide(wide) end
-			end
-			numpadpnl:Dock(LEFT)
-	
-			numpadpnl.numpad:SetSelectedNumber(ent2:GetNumpad() or 0)
-			function numpadpnl.numpad.SetValue(_, val)
-				numpadpnl.numpad:SetSelectedNumber(val)
-				ent2:DoInput("numpad_num", val)
-			end
-	
-			pnl:Dock(TOP)
-			//pnl:DockMargin(padding,betweenitems-3,0,padding) //numpad label is 3px too tall, compensate for it here
-			//pnl:DockMargin(padding,padding-3,0,padding) //numpad label is 3px too tall, compensate for it here
-			pnl:DockMargin(padding,padding-3,0,0) //numpad label is 3px too tall, compensate for it here
-			pnl:SetHeight(70)
-			//function pnl.Paint(_, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(255,0,0,70)) end //for testing the full size of this panel
-	
-			local anotherpnl = vgui.Create("Panel", pnl)
-			anotherpnl:Dock(LEFT)
-			anotherpnl:SetWidth(90)
-	
-			local check = vgui.Create("DCheckBoxLabel", anotherpnl)
-			//back.NumpadToggleCheckbox = check
-			check:SetText("Toggle")
-			check:SetDark(true)
-			check:SetHeight(15)
-			check:Dock(TOP)
-			check:DockMargin(8,28,0,0)
-	
-			check:SetValue(ent2:GetNumpadToggle())
-			check.OnChange = function(_, val)
-				ent2:DoInput("numpad_toggle", val)
-			end
-	
-			local check = vgui.Create("DCheckBoxLabel", anotherpnl)
-			//back.NumpadStartOnCheckbox = check
-			check:SetText("Start on")
-			check:SetDark(true)
-			check:SetHeight(15)
-			check:Dock(BOTTOM)
-			check:DockMargin(8,0,0,8)
-	
-			check:SetValue(ent2:GetNumpadStartOn())
-			check.OnChange = function(_, val)
-				ent2:DoInput("numpad_starton", val)
-			end
-	
-			local pnldisabled = vgui.Create("Panel", pnl)
-			//pnldisabled:Dock(RIGHT)
-			//pnldisabled:DockMargin(0,3,padding,0) //+3 to top to align the top of this panel with the top of the numpad label text
-			pnldisabled:Dock(FILL)
-			pnldisabled:DockMargin(-12,3,padding,0) //+3 to top to align the top of this panel with the top of the numpad label text, -12 to left to get it 8px away from checkbox text
-			//pnldisabled:SetWidth(115)
-	
-			local text = vgui.Create("DLabel", pnldisabled)
-			text:SetFont("DermaDefaultBold")
-			text:SetColor(Color(255,0,0,255))
-			text:SetText("DISABLED")
-			text:SizeToContents()
-			text:CenterHorizontal()
-			text:AlignTop(9)
-	
-			local text2 = vgui.Create("DLabel", pnldisabled)
-			text2:SetColor(Color(255,0,0,255))
-			text2:SetText("(press effect")
-			text2:SizeToContents()
-			text2:CenterHorizontal()
-			text2:AlignTop(17 + text:GetTall())
-	
-			local text3 = vgui.Create("DLabel", pnldisabled)
-			text3:SetColor(Color(255,0,0,255))
-			text3:SetText("key to enable)")
-			text3:SizeToContents()
-			text3:CenterHorizontal()
-			text3:AlignTop(17 + text:GetTall() + text2:GetTall())
-	
-			function pnldisabled.Paint(_, w, h)
-				draw.RoundedBox(4, 0, 0, w, h, Color(255,0,0,70))
-				//text:SizeToContents()
-				text:CenterHorizontal()
-				//text2:SizeToContents()
-				text2:CenterHorizontal()
-				//text3:SizeToContents()
-				text3:CenterHorizontal()
-			end
-	
-			function pnldisabled.Think()
-				if !IsValid(ent2) then return end
-	
-				local numpadisdisabling = ent2:GetNumpadState()
-				local starton = ent2:GetNumpadStartOn()
-				if !starton then
-					numpadisdisabling = !numpadisdisabling
-				end
-	
-				if numpadisdisabling then
-					pnldisabled:SetAlpha(255)
-	
-					local newtext = nil
-					if ent2:GetNumpadToggle() then
-						newtext = "(press effect"
-					else
-						if starton then
-							newtext = "(release effect"
-						else
-							newtext = "(hold effect"
-						end
-					end
-					if newtext != text2:GetText() then
-						text2:SetText(newtext)
-						text2:SizeToContents()
-					end
+
+		local first = true
+
+		if !ent.DisableChildAutoplay then //don't add these controls if the effect won't use them
+
+			//category for key
+			local cat = vgui.Create("DCollapsibleCategory", container)
+			cat:SetLabel("Key & Repeat Settings")
+			cat:DockMargin(3,3,3,3)
+			first = false
+			cat:Dock(FILL)
+			container:AddItem(cat)
+		
+			local default_looptime = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].default_time or 0
+			local default_loopmode = 1
+			if ent2.utilfx then
+				if default_looptime < 0 then
+					//-1 sets no loop by default
+					default_loopmode = 0
 				else
-					pnldisabled:SetAlpha(0)
+					default_loopmode = 2
 				end
 			end
-	
-	
-		//category for repeats
-		--[[local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("Repeat Settings")
-		cat:DockMargin(3,3,3,3)
-		cat:Dock(FILL)
-		container:AddItem(cat)
-	
-		//expand if any contained options are non-default
-		cat:SetExpanded(
-			((ent2:GetLoopMode() or 1) != 1)
-			or ((ent2:GetLoopDelay() or 0) != 0)
-		)
-	
-		local rpnl = vgui.Create("DSizeToContents", cat) //again, call this one rpnl and not pnl, just so we don't have to rewrite the repeat stuff copied from animprop
-		rpnl:Dock(FILL)
-		cat:SetContents(rpnl)
-		rpnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
-		rpnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-		rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents]]
-	
-			local drop = vgui.Create("Panel", rpnl)
-	
-			drop.Label = vgui.Create("DLabel", drop)
-			drop.Label:SetDark(true)
-			drop.Label:SetText("Repeat Type")
-			drop.Label:Dock(LEFT)
-	
-			drop.Combo = vgui.Create("DComboBox", drop)
-			drop.Combo:SetHeight(25)
-			drop.Combo:Dock(FILL)
-	
-			local loopmode0 = "Don't repeat"
-			local loopmode1 = "Repeat X seconds after ending"
-			local loopmode2 = "Repeat every X seconds"
-			local val = ent2:GetLoopMode() or 1
-			if val == 0 then
-				drop.Combo:SetValue(loopmode0)
-			elseif val == 1 then
-				drop.Combo:SetValue(loopmode1)
-			elseif val == 2 then
-				drop.Combo:SetValue(loopmode2)
-			end
-			drop.Combo:AddChoice(loopmode0, 0)
-			if !ent2.utilfx then drop.Combo:AddChoice(loopmode1, 1) end //utilfx don't support this mode because we don't have a way to detect when they've ended
-			drop.Combo:AddChoice(loopmode2, 2)
-			function drop.Combo.OnSelect(_, index, value, data)
-				ent2:DoInput("loop_mode", data)
-			end
-	
-			drop:SetHeight(25)
-			drop:Dock(TOP)
-			drop:DockMargin(padding,betweenitems,padding,0)
-			//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
-			function drop.PerformLayout(_, w, h)
-				drop.Label:SetWide(w / 2.4)
-			end
-	
-			local slider = vgui.Create("DNumSlider", rpnl)
-			//back.LoopDelaySlider = slider
-			slider:SetText("Seconds between repeats")
-			slider:SetMinMax(0, 5)
-			slider:SetDefaultValue(default_looptime)
-			slider:SetDark(true)
-			slider:SetHeight(18)
-			slider:Dock(TOP)
-			slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
-	
-			function slider:Think()
-				if !IsValid(ent2) then return end
-	
-				//Disable the slider if set to "do not repeat"
-				if ent2:GetLoopMode() == 0 then
-					slider:SetMouseInputEnabled(false)
-					slider:SetAlpha(75)
-				else
-					slider:SetMouseInputEnabled(true)
-					slider:SetAlpha(255)
+			default_looptime = math.max(0, default_looptime)
+			//MsgN("default time ", default_looptime, ", currently ", ent2:GetLoopDelay())
+			//MsgN("default mode ", default_loopmode, ", currently ", ent2:GetLoopMode())
+		
+			//expand if any contained options are non-default 
+			cat:SetExpanded(
+				((ent2:GetNumpad() or 0) != 0)
+				or (ent2:GetNumpadToggle() != true)
+				or (ent2:GetNumpadStartOn() != true)
+				//considered also adding a check here to make sure the effect isn't disabled, but i don't think that's possible without a numpad key set
+				or ((ent2:GetLoopMode() or 1) != default_loopmode)
+				or ((math.Round(ent2:GetLoopDelay(), 6) or 0) != default_looptime)
+			)
+		
+			local rpnl = vgui.Create("DSizeToContents", cat) //call this one rpnl and not pnl, just so we don't have to rewrite the numpad stuff copied from animprop that already has a panel with that name
+			rpnl:Dock(FILL)
+			cat:SetContents(rpnl)
+			rpnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
+			rpnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+			rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
+		
+				local pnl = vgui.Create("Panel", rpnl)
+		
+				local numpadpnl = vgui.Create("DPanel", pnl)
+				numpadpnl:SetPaintBackground(false)
+		
+				numpadpnl.numpad = vgui.Create("DBinder", numpadpnl)
+				//back.Numpad = numpadpnl.numpad
+				numpadpnl.label = vgui.Create("DLabel", numpadpnl)
+				numpadpnl.label:SetText("Effect Key")
+				numpadpnl.label:SetDark(true)
+		
+				function numpadpnl:PerformLayout()
+					self:SetWide(100)
+					self:SetTall(70)
+		
+					self.numpad:InvalidateLayout(true)
+					self.numpad:SetSize(100, 50)
+		
+					self.label:SizeToContents()
+		
+					self.numpad:Center()
+					self.numpad:AlignTop(20)
+		
+					self.label:CenterHorizontal()
+					self.label:AlignTop(0)
+		
+					local wide = self.label:GetWide()
+					if wide > 100 then self:SetWide(wide) end
 				end
-			end
-	
-			slider.ValueChanged = SliderValueChangedUnclampedMax
-			slider.SetValue = SliderSetValueUnclampedMax
-	
-			slider:SetValue(ent2:GetLoopDelay() or 0.00)
-			function slider.OnValueChanged(_, val)
-				ent2:DoInput("loop_delay", val)
-			end
-	
-			if !IsValid(ent2) or !ent2.utilfx then //this option doesn't do anything for utilfx, so don't show it
-				local check = vgui.Create( "DCheckBoxLabel", rpnl)
-				check:SetText("Clean up particles when disabled or repeated")
+				numpadpnl:Dock(LEFT)
+		
+				numpadpnl.numpad:SetSelectedNumber(ent2:GetNumpad() or 0)
+				function numpadpnl.numpad.SetValue(_, val)
+					numpadpnl.numpad:SetSelectedNumber(val)
+					ent2:DoInput("numpad_num", val)
+				end
+		
+				pnl:Dock(TOP)
+				//pnl:DockMargin(padding,betweenitems-3,0,padding) //numpad label is 3px too tall, compensate for it here
+				//pnl:DockMargin(padding,padding-3,0,padding) //numpad label is 3px too tall, compensate for it here
+				pnl:DockMargin(padding,padding-3,0,0) //numpad label is 3px too tall, compensate for it here
+				pnl:SetHeight(70)
+				//function pnl.Paint(_, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(255,0,0,70)) end //for testing the full size of this panel
+		
+				local anotherpnl = vgui.Create("Panel", pnl)
+				anotherpnl:Dock(LEFT)
+				anotherpnl:SetWidth(90)
+		
+				local check = vgui.Create("DCheckBoxLabel", anotherpnl)
+				//back.NumpadToggleCheckbox = check
+				check:SetText("Toggle")
 				check:SetDark(true)
 				check:SetHeight(15)
 				check:Dock(TOP)
-				check:DockMargin(padding,betweenitems,0,0)
-	
-				check:SetValue(ent2:GetLoopSafety())
+				check:DockMargin(8,28,0,0)
+		
+				check:SetValue(ent2:GetNumpadToggle())
 				check.OnChange = function(_, val)
-					ent2:DoInput("loop_safety", val)
+					ent2:DoInput("numpad_toggle", val)
 				end
-				--[[check.Think = function()
+		
+				local check = vgui.Create("DCheckBoxLabel", anotherpnl)
+				//back.NumpadStartOnCheckbox = check
+				check:SetText("Start on")
+				check:SetDark(true)
+				check:SetHeight(15)
+				check:Dock(BOTTOM)
+				check:DockMargin(8,0,0,8)
+		
+				check:SetValue(ent2:GetNumpadStartOn())
+				check.OnChange = function(_, val)
+					ent2:DoInput("numpad_starton", val)
+				end
+		
+				local pnldisabled = vgui.Create("Panel", pnl)
+				//pnldisabled:Dock(RIGHT)
+				//pnldisabled:DockMargin(0,3,padding,0) //+3 to top to align the top of this panel with the top of the numpad label text
+				pnldisabled:Dock(FILL)
+				pnldisabled:DockMargin(-12,3,padding,0) //+3 to top to align the top of this panel with the top of the numpad label text, -12 to left to get it 8px away from checkbox text
+				//pnldisabled:SetWidth(115)
+		
+				local text = vgui.Create("DLabel", pnldisabled)
+				text:SetFont("DermaDefaultBold")
+				text:SetColor(Color(255,0,0,255))
+				text:SetText("DISABLED")
+				text:SizeToContents()
+				text:CenterHorizontal()
+				text:AlignTop(9)
+		
+				local text2 = vgui.Create("DLabel", pnldisabled)
+				text2:SetColor(Color(255,0,0,255))
+				text2:SetText("(press effect")
+				text2:SizeToContents()
+				text2:CenterHorizontal()
+				text2:AlignTop(17 + text:GetTall())
+		
+				local text3 = vgui.Create("DLabel", pnldisabled)
+				text3:SetColor(Color(255,0,0,255))
+				text3:SetText("key to enable)")
+				text3:SizeToContents()
+				text3:CenterHorizontal()
+				text3:AlignTop(17 + text:GetTall() + text2:GetTall())
+		
+				function pnldisabled.Paint(_, w, h)
+					draw.RoundedBox(4, 0, 0, w, h, Color(255,0,0,70))
+					//text:SizeToContents()
+					text:CenterHorizontal()
+					//text2:SizeToContents()
+					text2:CenterHorizontal()
+					//text3:SizeToContents()
+					text3:CenterHorizontal()
+				end
+		
+				function pnldisabled.Think()
 					if !IsValid(ent2) then return end
-					if ent2.utilfx then
-						check:SetDisabled(true)
-						check:SetTooltip("Option not available for scripted effects") //never mind, tooltips don't work on disabled checkboxes
-					else
-						check:SetDisabled(false)
-						//check:SetTooltip("")
+		
+					local numpadisdisabling = ent2:GetNumpadState()
+					local starton = ent2:GetNumpadStartOn()
+					if !starton then
+						numpadisdisabling = !numpadisdisabling
 					end
-				end]]
-			end
-	
-			--[[local help = vgui.Create("DLabel", rpnl)
-			help:SetDark(true)
-			help:SetWrap(true)
-			help:SetTextInset(0, 0)
-			help:SetText("If checked, cleans up all particles when the effect is disabled or repeated.")
-			//help:SetContentAlignment(5)
-			help:SetAutoStretchVertical(true)
-			//help:DockMargin(32,0,32,8)
-			help:DockMargin(padding_help,betweenitems_help,padding_help,0)
-			help:Dock(TOP)
-			help:SetTextColor(color_helpdark)]]
+		
+					if numpadisdisabling then
+						pnldisabled:SetAlpha(255)
+		
+						local newtext = nil
+						if ent2:GetNumpadToggle() then
+							newtext = "(press effect"
+						else
+							if starton then
+								newtext = "(release effect"
+							else
+								newtext = "(hold effect"
+							end
+						end
+						if newtext != text2:GetText() then
+							text2:SetText(newtext)
+							text2:SizeToContents()
+						end
+					else
+						pnldisabled:SetAlpha(0)
+					end
+				end
+		
+		
+			//category for repeats
+			--[[local cat = vgui.Create("DCollapsibleCategory", container)
+			cat:SetLabel("Repeat Settings")
+			cat:DockMargin(3,3,3,3)
+			cat:Dock(FILL)
+			container:AddItem(cat)
+		
+			//expand if any contained options are non-default
+			cat:SetExpanded(
+				((ent2:GetLoopMode() or 1) != 1)
+				or ((ent2:GetLoopDelay() or 0) != 0)
+			)
+		
+			local rpnl = vgui.Create("DSizeToContents", cat) //again, call this one rpnl and not pnl, just so we don't have to rewrite the repeat stuff copied from animprop
+			rpnl:Dock(FILL)
+			cat:SetContents(rpnl)
+			rpnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
+			rpnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+			rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents]]
+		
+				local drop = vgui.Create("Panel", rpnl)
+		
+				drop.Label = vgui.Create("DLabel", drop)
+				drop.Label:SetDark(true)
+				drop.Label:SetText("Repeat Type")
+				drop.Label:Dock(LEFT)
+		
+				drop.Combo = vgui.Create("DComboBox", drop)
+				drop.Combo:SetHeight(25)
+				drop.Combo:Dock(FILL)
+		
+				local loopmode0 = "Don't repeat"
+				local loopmode1 = "Repeat X seconds after ending"
+				local loopmode2 = "Repeat every X seconds"
+				local val = ent2:GetLoopMode() or 1
+				if val == 0 then
+					drop.Combo:SetValue(loopmode0)
+				elseif val == 1 then
+					drop.Combo:SetValue(loopmode1)
+				elseif val == 2 then
+					drop.Combo:SetValue(loopmode2)
+				end
+				drop.Combo:AddChoice(loopmode0, 0)
+				if !ent2.utilfx then drop.Combo:AddChoice(loopmode1, 1) end //utilfx don't support this mode because we don't have a way to detect when they've ended
+				drop.Combo:AddChoice(loopmode2, 2)
+				function drop.Combo.OnSelect(_, index, value, data)
+					ent2:DoInput("loop_mode", data)
+				end
+		
+				drop:SetHeight(25)
+				drop:Dock(TOP)
+				drop:DockMargin(padding,betweenitems,padding,0)
+				//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
+				function drop.PerformLayout(_, w, h)
+					drop.Label:SetWide(w / 2.4)
+				end
+		
+				local slider = vgui.Create("DNumSlider", rpnl)
+				//back.LoopDelaySlider = slider
+				slider:SetText("Seconds between repeats")
+				slider:SetMinMax(0, 5)
+				slider:SetDefaultValue(default_looptime)
+				slider:SetDark(true)
+				slider:SetHeight(18)
+				slider:Dock(TOP)
+				slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+		
+				function slider:Think()
+					if !IsValid(ent2) then return end
+		
+					//Disable the slider if set to "do not repeat"
+					if ent2:GetLoopMode() == 0 then
+						slider:SetMouseInputEnabled(false)
+						slider:SetAlpha(75)
+					else
+						slider:SetMouseInputEnabled(true)
+						slider:SetAlpha(255)
+					end
+				end
+		
+				slider.ValueChanged = SliderValueChangedUnclampedMax
+				slider.SetValue = SliderSetValueUnclampedMax
+		
+				slider:SetValue(ent2:GetLoopDelay() or 0.00)
+				function slider.OnValueChanged(_, val)
+					ent2:DoInput("loop_delay", val)
+				end
+		
+				if !IsValid(ent2) or !ent2.utilfx then //this option doesn't do anything for utilfx, so don't show it
+					local check = vgui.Create( "DCheckBoxLabel", rpnl)
+					check:SetText("Clean up particles when disabled or repeated")
+					check:SetDark(true)
+					check:SetHeight(15)
+					check:Dock(TOP)
+					check:DockMargin(padding,betweenitems,0,0)
+		
+					check:SetValue(ent2:GetLoopSafety())
+					check.OnChange = function(_, val)
+						ent2:DoInput("loop_safety", val)
+					end
+					--[[check.Think = function()
+						if !IsValid(ent2) then return end
+						if ent2.utilfx then
+							check:SetDisabled(true)
+							check:SetTooltip("Option not available for scripted effects") //never mind, tooltips don't work on disabled checkboxes
+						else
+							check:SetDisabled(false)
+							//check:SetTooltip("")
+						end
+					end]]
+				end
+		
+				--[[local help = vgui.Create("DLabel", rpnl)
+				help:SetDark(true)
+				help:SetWrap(true)
+				help:SetTextInset(0, 0)
+				help:SetText("If checked, cleans up all particles when the effect is disabled or repeated.")
+				//help:SetContentAlignment(5)
+				help:SetAutoStretchVertical(true)
+				//help:DockMargin(32,0,32,8)
+				help:DockMargin(padding_help,betweenitems_help,padding_help,0)
+				help:Dock(TOP)
+				help:SetTextColor(color_helpdark)]]
+
+		end
 	
 	
 		//categories for each cpoint
@@ -528,7 +535,12 @@ function PANEL:RebuildControls()
 	
 			local cat = vgui.Create("DCollapsibleCategory", container)
 			cat:SetLabel("Control Point #" .. tostring(k))
-			cat:DockMargin(3,1,3,3)
+			if first then
+				cat:DockMargin(3,3,3,3)
+				first = false
+			else
+				cat:DockMargin(3,1,3,3)
+			end
 			cat:Dock(FILL)
 			container:AddItem(cat)
 			cat:SetExpanded(true)

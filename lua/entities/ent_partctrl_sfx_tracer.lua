@@ -8,9 +8,10 @@ ENT.Spawnable			= true
 
 ENT.PartCtrl_ShortName		= "Tracer"
 ENT.SpecialEffectRoles		= {
-	[0] = "Start",
-	[1] = "End",
+	[0] = "Start point",
+	[1] = "Hit point",
 }
+ENT.DisableChildAutoplay	= true
 
 ENT.DefaultLoopTime = 0.1
 
@@ -193,6 +194,7 @@ if SERVER then
 	function ENT:SpecialEffectInitialize()
 
 		//do numpad stuff; just reuse the numpad funcs from the standard ent_partctrl
+
 		self:SetNumpadState(false) //Numpad state should always start off as false
 		//Different from NumpadState. This value is always true when the key is held down and false when it's not, even if the numpad state is set to toggle instead.
 		//Used when changing the numpadkey or numpadtoggle vars to make sure stuff doesn't cause problems.
@@ -293,7 +295,6 @@ if CLIENT then
 			ang = ent:GetAngles()
 			pos = ent:GetPos()
 		end
-
 		local dir = self:GetTracerDir()
 		if dir == 1 then
 			ang = ang:Right():Angle()
@@ -337,10 +338,8 @@ if CLIENT then
 				if child.PartCtrl_Ent then
 					local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
 					local addtotarget = false
-					local cpoints_to_restore = {}
 					for k, v in pairs (child.ParticleInfo) do
 						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
-							cpoints_to_restore[k] = v.ent
 							if v.sfx_role == 0 then
 								child.ParticleInfo[k].ent = ent
 								child.ParticleInfo[k].attach = self:GetAttachmentID()
@@ -359,10 +358,6 @@ if CLIENT then
 					child:StartParticle()
 					if addtotarget then
 						table.insert(hit.Particles, child.particle)
-					end
-					for k, v in pairs (cpoints_to_restore) do
-						child.ParticleInfo[k].ent = v
-						child.ParticleInfo[k].attach = 0
 					end
 				end
 			end

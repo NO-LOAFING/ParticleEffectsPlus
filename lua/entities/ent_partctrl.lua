@@ -117,76 +117,79 @@ function ENT:Think()
 			return
 		end
 
-		local numpadisdisabling = self:GetNumpadState()
-		if !self:GetNumpadStartOn() then
-			numpadisdisabling = !numpadisdisabling
-		end
-		if !numpadisdisabling then
-			local loop = self:GetLoopMode()
-			local time = CurTime()
-			if self.particle or self.utilfx then 
-				local waiting = (self.particle == partctrl_wait)
-				if self.particle and !(self.particle.IsValid and self.particle:IsValid()) then
-					//Particle is non-nil but invalid; that probably means that it ran to completion and expired, so make a new particle
-					if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle] then
-						//Remove now-invalid particles from the crashcheck list
-						PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = nil
-					end
-					
-					if waiting then
-						//MsgN(time, ": waiting")
-						//We're ready to create the particle now, but crashcheck is making us wait, so just start the particle as soon as possible
-						self:StartParticle()
-					else
-						if loop == 1 then //loop mode 1: repeat X seconds after ending
-							if self.LastLoop == nil then
-								self.LastLoop = time
-								//MsgN(time, ": set last loop to ", self.LastLoop)
-							end
-							if (self.LastLoop + self:GetLoopDelay()) <= time then
-								//MsgN(time, ": did loop 1")
-								self:StartParticle()
-								self.LastLoop = nil
+		local sfxpar = self:GetSpecialEffectParent()
+		if !IsValid(sfxpar) or !sfxpar.DisableChildAutoplay then
+			local numpadisdisabling = self:GetNumpadState()
+			if !self:GetNumpadStartOn() then
+				numpadisdisabling = !numpadisdisabling
+			end
+			if !numpadisdisabling then
+				local loop = self:GetLoopMode()
+				local time = CurTime()
+				if self.particle or self.utilfx then 
+					local waiting = (self.particle == partctrl_wait)
+					if self.particle and !(self.particle.IsValid and self.particle:IsValid()) then
+						//Particle is non-nil but invalid; that probably means that it ran to completion and expired, so make a new particle
+						if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle] then
+							//Remove now-invalid particles from the crashcheck list
+							PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = nil
+						end
+						
+						if waiting then
+							//MsgN(time, ": waiting")
+							//We're ready to create the particle now, but crashcheck is making us wait, so just start the particle as soon as possible
+							self:StartParticle()
+						else
+							if loop == 1 then //loop mode 1: repeat X seconds after ending
+								if self.LastLoop == nil then
+									self.LastLoop = time
+									//MsgN(time, ": set last loop to ", self.LastLoop)
+								end
+								if (self.LastLoop + self:GetLoopDelay()) <= time then
+									//MsgN(time, ": did loop 1")
+									self:StartParticle()
+									self.LastLoop = nil
+								end
 							end
 						end
 					end
-				end
-				if self.utilfx_waiting then
-					self:StartParticle()
-					self.utilfx_waiting = nil
-				end
-				if loop == 2 then //loop mode 2: repeat every X seconds
-					//TODO: do we need to handle the waiting var differently? tested, doesn't seem so
-					
-					if self.LastLoop and (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
-						//This loop mode can start a new particle while the old particle is still valid, so handle it
-						if self.particle and self.particle.IsValid and self.particle:IsValid() then
-							//self.particle:StopEmission() //interacts poorly with fx that players would actually want to repeat quickly like explosions, so commented it out; unfortunately this means we get stupid effect pileups with fx that last forever like flamethrowers, but there's no legitimate reason to repeat those anyway so we'll just have to trust people here
-							table.insert(self.OldParticles, self.particle)
-						end
-						//MsgN(time, ": did loop 2")
+					if self.utilfx_waiting then
 						self:StartParticle()
-						self.LastLoop = nil
+						self.utilfx_waiting = nil
 					end
+					if loop == 2 then //loop mode 2: repeat every X seconds
+						//TODO: do we need to handle the waiting var differently? tested, doesn't seem so
+						
+						if self.LastLoop and (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
+							//This loop mode can start a new particle while the old particle is still valid, so handle it
+							if self.particle and self.particle.IsValid and self.particle:IsValid() then
+								//self.particle:StopEmission() //interacts poorly with fx that players would actually want to repeat quickly like explosions, so commented it out; unfortunately this means we get stupid effect pileups with fx that last forever like flamethrowers, but there's no legitimate reason to repeat those anyway so we'll just have to trust people here
+								table.insert(self.OldParticles, self.particle)
+							end
+							//MsgN(time, ": did loop 2")
+							self:StartParticle()
+							self.LastLoop = nil
+						end
 
-					if self.LastLoop == nil then
-						self.LastLoop = time
-						//MsgN(time, ": set last loop to ", self.LastLoop)
+						if self.LastLoop == nil then
+							self.LastLoop = time
+							//MsgN(time, ": set last loop to ", self.LastLoop)
+						end
 					end
 				end
-			end
-		else
-			if self.particle and self.particle != partctrl_wait then
-				if self.particle.IsValid and self.particle:IsValid() then
-					//Stop any existing particles and throw them into the OldParticles table to get cleaned up
-					self.particle:StopEmission()
-					table.insert(self.OldParticles, self.particle)
+			else
+				if self.particle and self.particle != partctrl_wait then
+					if self.particle.IsValid and self.particle:IsValid() then
+						//Stop any existing particles and throw them into the OldParticles table to get cleaned up
+						self.particle:StopEmission()
+						table.insert(self.OldParticles, self.particle)
+					end
+					//Create a new particle as soon as we're no longer disabled
+					self.particle = partctrl_wait
 				end
-				//Create a new particle as soon as we're no longer disabled
-				self.particle = partctrl_wait
+				self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
+				if self.utilfx then self.utilfx_waiting = true end //tell utilfx to replay when reenabled as well, since they don't have a self.particle to check for
 			end
-			self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
-			if self.utilfx then self.utilfx_waiting = true end //tell utilfx to replay when reenabled as well, since they don't have a self.particle to check for
 		end
 
 		//Clean up old particle list
@@ -384,7 +387,7 @@ if CLIENT then
 
 	function ENT:DrawCPointHelpers()
 
-		if self.ParticleInfo then
+		if self.ParticleInfo and !IsValid(self:GetSpecialEffectParent()) then
 			local window = IsValid(self.PartCtrlWindow) and g_ContextMenu:IsVisible()
 			local ptab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]
 			for k, v in pairs (self.ParticleInfo) do
@@ -515,7 +518,10 @@ if CLIENT then
 	function ENT:BeginNewParticle()
 
 		self:RemoveParticle()
-		self:StartParticle()
+		local sfxpar = self:GetSpecialEffectParent()
+		if !IsValid(sfxpar) or !sfxpar.DisableChildAutoplay then
+			self:StartParticle()
+		end
 		if !self.utilfx and !self.particle and PartCtrl_AddParticles_CrashCheck_PreventingCrash then
 			self.particle = partctrl_wait	//ordinarily, ENT:Think won't try to recreate the particle if self.particle is nil, which is what we want. however, if crash prevention
 		end					//prevented us from creating our effect here, then make this value non-nil so ENT:Think will try to create it once crash prevention is over.
