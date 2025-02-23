@@ -187,7 +187,7 @@ if CLIENT then
 
 			//Just set the entity values on the child fx, and let them do the rest of the work themselves
 			for child, _ in pairs (self.SpecialEffectChildren) do
-				if child.PartCtrl_Ent then
+				if child.PartCtrl_Ent and child.ParticleInfo then
 					local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
 					for k, v in pairs (child.ParticleInfo) do
 						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
@@ -203,6 +203,17 @@ if CLIENT then
 				end
 			end
 
+		end
+
+	end
+
+	function ENT:SpecialEffectRefresh()
+
+		self:SpecialEffectThink() //update the children's ParticleInfo first
+		if self.SpecialEffectChildren then
+			for child, _ in pairs (self.SpecialEffectChildren) do
+				child:BeginNewParticle()
+			end
 		end
 
 	end
