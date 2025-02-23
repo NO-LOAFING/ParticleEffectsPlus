@@ -8,20 +8,15 @@ TOOL.ClientConVar["drawhalo"] = "1"
 
 TOOL.Information = {
 	{name = "left0", stage = 0, icon = "gui/lmb.png"},
-	{name = "leftuse0", stage = 0, icon = "gui/lmb.png", icon2 = "gui/e.png"},
-	{name = "middle0", stage = 0, icon = "gui/mmb.png"},
-
 	{name = "left1", stage = 1, icon = "gui/lmb.png"},
-	{name = "leftuse1", stage = 1, icon = "gui/lmb.png", icon2 = "gui/e.png"},
-	{name = "middle1", stage = 1, icon = "gui/mmb.png"},
-	{name = "reload1", stage = 1, icon = "gui/r.png"},
-
 	{name = "left2", stage = 2, icon = "gui/lmb.png"},
-	{name = "middle2", stage = 2, icon = "gui/mmb.png"},
-	{name = "reload2", stage = 2, icon = "gui/r.png"},
-
-	{name = "info3", stage = 3, icon = "gui/info.png"},
 	{name = "left3", stage = 3, icon = "gui/lmb.png"},
+	{name = "leftuse0", stage = 0, icon = "gui/lmb.png", icon2 = "gui/e.png"},
+	{name = "leftuse1", stage = 1, icon = "gui/lmb.png", icon2 = "gui/e.png"},
+	{name = "leftuse3", stage = 3, icon = "gui/lmb.png", icon2 = "gui/e.png"},
+	{name = "middle", icon = "gui/mmb.png"},
+	{name = "reload1", stage = 1, icon = "gui/r.png"},
+	{name = "reload2", stage = 2, icon = "gui/r.png"},
 	{name = "reload3", stage = 3, icon = "gui/r.png"},
 }
 
@@ -30,21 +25,20 @@ if CLIENT then
 	language.Add("tool.partctrl_attacher.desc", "Attach particle effects to models")
 	language.Add("tool.partctrl_attacher.help", "Particles are used for all sorts of different special effects. You can spawn them from the spawn menu, and then attach them to models with this tool.")
 
+	language.Add("tool.partctrl_attacher.middle", "Scroll through a model's attachments")
+
 	language.Add("tool.partctrl_attacher.left0", "Select a particle effect to attach, or select a model to attach a particle effect to")
 	language.Add("tool.partctrl_attacher.leftuse0", "Select yourself")
-	language.Add("tool.partctrl_attacher.middle0", "Scroll through a model's attachments")
 
-	language.Add("tool.partctrl_attacher.left1", "Now select a model to attach the particle effect to")
-	language.Add("tool.partctrl_attacher.leftuse1", "Select yourself")
-	language.Add("tool.partctrl_attacher.middle1", "Scroll through a model's attachments") //have to duplicate this one just so we don't have it for stage 3, argh
+	language.Add("tool.partctrl_attacher.left1", "Now select a model or special effect to attach the particle effect to")
+	language.Add("tool.partctrl_attacher.leftuse1", "Select yourself") //have to duplicate this one just so we don't have it for stage 2, argh
 	language.Add("tool.partctrl_attacher.reload1", "Deselect particle effect and cancel")
 
 	language.Add("tool.partctrl_attacher.left2", "Now select a particle effect to attach to the model")
-	language.Add("tool.partctrl_attacher.middle2", "Scroll through a model's attachments") //^
 	language.Add("tool.partctrl_attacher.reload2", "Deselect model and cancel")
 
-	language.Add("tool.partctrl_attacher.info3", "Tool is adding a particle effect to a special effect; reload or holster to cancel")
-	language.Add("tool.partctrl_attacher.left3", "Select a particle effect to add")
+	language.Add("tool.partctrl_attacher.left3", "Now select a model to attach the special effect to, or select a particle effect to attach to the special effect")
+	language.Add("tool.partctrl_attacher.leftuse3", "Select yourself") //^
 	language.Add("tool.partctrl_attacher.reload3", "Deselect special effect and cancel")
 
 	language.Add("undone_PartCtrl_Ent", "Undone Attach Particle Effect")
@@ -89,7 +83,7 @@ function TOOL:LeftClick(trace)
 						local tab = constraint.FindConstraint(ent, "PartCtrl_SpecialEffect")
 						if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_SpecialEffect then
 							self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", tab.Ent1)
-							self:SetStage(1)
+							self:SetStage(3)
 							return true
 						end
 					end
@@ -103,169 +97,157 @@ function TOOL:LeftClick(trace)
 			end
 		end
 
-	elseif stage != 3 then
+	else
 
 		//Attach selected thing to other thing
 
 		local ent = nil
 		local p = nil
 		local k = 0
-		if stage == 1 then //Stage 1: selected a particle, then clicked on a model
-			ent = trace.Entity
-			if trace.Entity.PartCtrl_Grip then return false end
-			p = self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")
-			if !p.PartCtrl_SpecialEffect then
-				k = self:GetWeapon():GetNWInt("PartCtrl_Attacher_CPoint")
-			end
-		elseif stage == 2 then //Stage 2: selected a model, then clicked on a particle
+		if trace.Entity.PartCtrl_Grip then
+			//Clicked on a particle effect - only proceed if the previously selected ent is a model or a special effect
+			//or clicked on a special effect - only proceed if the previously selected ent is a model or a particle effect
 			ent = self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")
-			if !trace.Entity.PartCtrl_Grip then return false end
 			if CLIENT then
 				local tab = trace.Entity.PartCtrl_ParticleEnts
 				if istable(tab) then
 					for k2, _ in pairs (tab) do //a grip point entity should only have a single associated particle
 						if IsValid(k2) and (k2.PartCtrl_Ent or k2.PartCtrl_SpecialEffect) then
 							p = k2
+							if (ent.PartCtrl_Ent and p.PartCtrl_Ent) or (ent.PartCtrl_SpecialEffect and p.PartCtrl_SpecialEffect) then return false end
 							//don't worry about k for clients
 						end
 					end
 				end
 			else
 				local tab = constraint.FindConstraint(trace.Entity, "PartCtrl_Ent")
-				if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_Ent then
+				if !ent.PartCtrl_Ent and istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_Ent then
 					p = tab.Ent1
 					k = tab.CPoint
-				else
+				elseif !ent.PartCtrl_SpecialEffect then //don't try to attach a special effect to another special effect
 					local tab = constraint.FindConstraint(trace.Entity, "PartCtrl_SpecialEffect")
 					if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_SpecialEffect then
-						p = tab.Ent1
+						if !ent.PartCtrl_Ent then
+							p = tab.Ent1
+						else
+							//we selected a particle and then a special effect, so swap them and make ent the special effect
+							p = ent
+							ent = tab.Ent1
+						end
 					else
 						return false
 					end
 				end
 			end
-		end
-	
-		if !IsValid(ent) or !IsValid(p) or (!p.PartCtrl_SpecialEffect and (!istable(p.ParticleInfo) or !istable(p.ParticleInfo[k]) or PartCtrl_ProcessedPCFs[p:GetPCF()][p:GetParticleName()].cpoints[k].mode != PARTCTRL_CPOINT_MODE_POSITION)) then return false end
-		if CLIENT then return true end
-	
-		local oldent = nil
-		local oldconst = nil
-		local doparent = false
-		if !p.PartCtrl_SpecialEffect then
-			oldent = p.ParticleInfo[k].ent
-			local tab = constraint.FindConstraint(oldent, "PartCtrl_Ent")
-			if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_Ent then
-				oldconst = tab.Constraint
-				doparent = tab.DoParent
-			else
-				return false
-			end
 		else
-			oldent = p:GetParent()
-			local tab = constraint.FindConstraint(oldent, "PartCtrl_SpecialEffect")
-			if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_SpecialEffect then
-				oldconst = tab.Constraint
-			else
-				return false
-			end
-		end
-	
-		//p.ParticleInfo[k].ent = ent //the constraint function already does this
-		local attach = self:GetClientNumber("attachnum", 0)
-		//don't let us set attach to an attachment that the model doesn't have
-		if IsValid(ent.AttachedEntity) then
-			if !istable(ent.AttachedEntity:GetAttachment(attach)) then attach = 0 end 
-		else
-			if !istable(ent:GetAttachment(attach)) then attach = 0 end
-		end
-		if !p.PartCtrl_SpecialEffect then
-			p.ParticleInfo[k].attach = attach
-		else
-			p:SetAttachmentID(attach)
-		end
-	
-		oldent:DontDeleteOnRemove(p)
-		p:DontDeleteOnRemove(oldent)
-		oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
-		oldconst:Remove()
-		oldent:Remove()
-		local const = nil
-		if !p.PartCtrl_SpecialEffect then
-			const = constraint.PartCtrl_Ent(p, ent, k, doparent, self:GetOwner())
-		else
-			const = constraint.PartCtrl_SpecialEffect(p, ent, self:GetOwner())
+			//Clicked on a model - only proceed if the previously selected ent is a particle/special effect
+			ent = trace.Entity
+			p = self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")
+			if !p.PartCtrl_Ent and !p.PartCtrl_SpecialEffect then return false end
+			k = self:GetWeapon():GetNWInt("PartCtrl_Attacher_CPoint")
 		end
 
-		//Add an undo entry
-		undo.Create("PartCtrl_Ent")
-			undo.AddEntity(const)  //the constraint entity will unmerge newent upon being removed
-			undo.SetPlayer(self:GetOwner())
-		local str = p.PrintName
-		if p.GetParticleName then str = p:GetParticleName() end
-		undo.Finish("Attach Particle Effect " .. str .. " to "  .. tostring(ent:GetModel()))
+
+		if !ent.PartCtrl_SpecialEffect then
+
+			//Attach a particle effect to a model
 	
+			if !IsValid(ent) or !IsValid(p) or (!p.PartCtrl_SpecialEffect and (!istable(p.ParticleInfo) or !istable(p.ParticleInfo[k]) or PartCtrl_ProcessedPCFs[p:GetPCF()][p:GetParticleName()].cpoints[k].mode != PARTCTRL_CPOINT_MODE_POSITION)) then return false end
+			if CLIENT then return true end
+		
+			local oldent = nil
+			local oldconst = nil
+			local doparent = false
+			if !p.PartCtrl_SpecialEffect then
+				oldent = p.ParticleInfo[k].ent
+				local tab = constraint.FindConstraint(oldent, "PartCtrl_Ent")
+				if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_Ent then
+					oldconst = tab.Constraint
+					doparent = tab.DoParent
+				else
+					return false
+				end
+			else
+				oldent = p:GetParent()
+				local tab = constraint.FindConstraint(oldent, "PartCtrl_SpecialEffect")
+				if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_SpecialEffect then
+					oldconst = tab.Constraint
+				else
+					return false
+				end
+			end
+		
+			local attach = self:GetClientNumber("attachnum", 0)
+			//don't let us set attach to an attachment that the model doesn't have
+			if IsValid(ent.AttachedEntity) then
+				if !istable(ent.AttachedEntity:GetAttachment(attach)) then attach = 0 end 
+			else
+				if !istable(ent:GetAttachment(attach)) then attach = 0 end
+			end
+			if !p.PartCtrl_SpecialEffect then
+				//p.ParticleInfo[k].ent = ent //the constraint function already does this
+				p.ParticleInfo[k].attach = attach
+			else
+				p:SetAttachmentID(attach)
+			end
+		
+			//Detach the corresponding cpoint of the particle effect from the grip point we clicked on, then attach that cpoint to the new parent
+			oldent:DontDeleteOnRemove(p)
+			p:DontDeleteOnRemove(oldent)
+			oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
+			oldconst:Remove()
+			oldent:Remove()
+			local const = nil
+			if !p.PartCtrl_SpecialEffect then
+				const = constraint.PartCtrl_Ent(p, ent, k, doparent, self:GetOwner())
+			else
+				const = constraint.PartCtrl_SpecialEffect(p, ent, self:GetOwner())
+			end
+
+			//Add an undo entry
+			undo.Create("PartCtrl_Ent")
+				undo.AddEntity(const)  //the constraint entity will unmerge newent upon being removed
+				undo.SetPlayer(self:GetOwner())
+			local str = p.PrintName
+			if p.GetParticleName then str = p:GetParticleName() end
+			undo.Finish("Attach Particle Effect " .. str .. " to "  .. tostring(ent:GetModel()))
+
+		else
+			
+			//Attach a particle effect to a special effect
+
+			if !IsValid(ent) or !IsValid(p) or !istable(p.ParticleInfo) then return false end
+			if CLIENT then return true end
+
+			//Detach ALL of the particle's cpoints and delete any corresponding grip points, then attach it to the special effect
+			constraint.PartCtrl_SpecialEffect(ent, p, self:GetOwner())
+			constraint.RemoveConstraints(p, "PartCtrl_Ent")
+			local cpointtab = PartCtrl_ProcessedPCFs[p:GetPCF()][p:GetParticleName()].cpoints
+			local cpoints_for_defaults = {}
+			for k, v in pairs (p.ParticleInfo) do
+				if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+					if v.ent.PartCtrl_Grip then
+						v.ent:DontDeleteOnRemove(p)
+						v.ent:Remove()
+					end
+					p.ParticleInfo[k].ent = nil //this will be replaced clientside by the special effect
+					p.ParticleInfo[k].attach = 0
+					table.insert(cpoints_for_defaults, k)
+				end
+			end
+			for k, v in pairs (ent:SpecialEffectDefaultRoles(cpoints_for_defaults)) do
+				p.ParticleInfo[k].sfx_role = v
+			end
+
+			//TODO: undo; this will be more complicated than running DetachFromModel because it needs to spawn new grips for *every* position control
+
+		end
+
 		//Tell clients to retrieve the updated info table
 		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
 			net.WriteEntity(p)
 		net.Broadcast()
 	
-		self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", NULL)
-		self:SetStage(0)
-	
-		return true
-
-	else
-		
-		//Parent a particle effect to a special effect
-
-		local ent = self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")
-		local p = nil
-		if !trace.Entity.PartCtrl_Grip then return false end
-		if CLIENT then
-			local tab = trace.Entity.PartCtrl_ParticleEnts
-			if istable(tab) then
-				for k2, _ in pairs (tab) do //a grip point entity should only have a single associated particle
-					if IsValid(k2) and k2.PartCtrl_Ent then
-						p = k2
-					end
-				end
-			end
-		else
-			local tab = constraint.FindConstraint(trace.Entity, "PartCtrl_Ent")
-			if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_Ent then
-				p = tab.Ent1
-			end
-		end
-
-		if !IsValid(ent) or !IsValid(p) or !istable(p.ParticleInfo) then return false end
-		if CLIENT then return true end
-
-		constraint.PartCtrl_SpecialEffect(ent, p, self:GetOwner())
-		constraint.RemoveConstraints(p, "PartCtrl_Ent")
-		local cpointtab = PartCtrl_ProcessedPCFs[p:GetPCF()][p:GetParticleName()].cpoints
-		local cpoints_for_defaults = {}
-		for k, v in pairs (p.ParticleInfo) do
-			if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
-				if v.ent.PartCtrl_Grip then
-					v.ent:DontDeleteOnRemove(p)
-					v.ent:Remove()
-				end
-				p.ParticleInfo[k].ent = nil //this will be replaced clientside by the special effect
-				p.ParticleInfo[k].attach = 0
-				table.insert(cpoints_for_defaults, k)
-			end
-		end
-		for k, v in pairs (ent:SpecialEffectDefaultRoles(cpoints_for_defaults)) do
-			p.ParticleInfo[k].sfx_role = v
-		end
-
-		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
-			net.WriteEntity(p)
-		net.Broadcast()
-
-		//TODO: undo; this will be more complicated than running DetachFromModel because it needs to spawn new grips for *every* position control
-
 		self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", NULL)
 		self:SetStage(0)
 	
