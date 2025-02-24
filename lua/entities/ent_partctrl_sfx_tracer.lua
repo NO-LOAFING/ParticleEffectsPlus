@@ -1,12 +1,12 @@
 AddCSLuaFile()
 
 ENT.Base 			= "ent_partctrl_sfx"
-ENT.PrintName			= "Tracer Effect"
+ENT.PrintName			= "Bullet Effect"
 ENT.Category			= "Particle Controller" //TODO: this name sucks, improve it eventually
 
 ENT.Spawnable			= true
 
-ENT.PartCtrl_ShortName		= "Tracer"
+ENT.PartCtrl_ShortName		= "Bullet"
 ENT.SpecialEffectRoles		= {
 	[0] = "Start point",
 	[1] = "Hit point",
@@ -95,7 +95,7 @@ if CLIENT then
 		local betweenitems = window.betweenitems
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("Tracer Settings")
+		cat:SetLabel("Bullet Settings")
 		cat:DockMargin(3,1,-2,3) //-2 right for divider
 		cat:Dock(FILL)
 		container:AddItem(cat)
@@ -109,7 +109,7 @@ if CLIENT then
 
 
 		local slider = vgui.Create("DNumSlider", rpnl)
-		slider:SetText("Tracer Spread (in degrees)")
+		slider:SetText("Bullet Spread (in degrees)")
 		slider:SetMinMax(0, 360)
 		slider:SetDefaultValue(10)
 		slider:SetDark(true)
@@ -124,7 +124,7 @@ if CLIENT then
 
 
 		local slider = vgui.Create("DNumSlider", rpnl)
-		slider:SetText("Tracer Count")
+		slider:SetText("Bullet Count")
 		slider:SetDecimals(0)
 		slider:SetMinMax(1, 10)
 		slider:SetDefaultValue(1)
@@ -149,7 +149,7 @@ if CLIENT then
 		
 		drop.Label = vgui.Create("DLabel", drop)
 		drop.Label:SetDark(true)
-		drop.Label:SetText("Tracer Direction")
+		drop.Label:SetText("Bullet Direction")
 		drop.Label:Dock(LEFT)
 
 		drop.Combo = vgui.Create("DComboBox", drop)

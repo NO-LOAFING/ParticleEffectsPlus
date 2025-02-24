@@ -1,12 +1,12 @@
 AddCSLuaFile()
 
 ENT.Base 			= "ent_partctrl_sfx"
-ENT.PrintName			= "Beam Effect"
+ENT.PrintName			= "Pointer Effect"
 ENT.Category			= "Particle Controller" //TODO: this name sucks, improve it eventually
 
 ENT.Spawnable			= true
 
-ENT.PartCtrl_ShortName		= "Beam"
+ENT.PartCtrl_ShortName		= "Pointer"
 ENT.SpecialEffectRoles		= {
 	[0] = "Start point",
 	[1] = "Hit point",
@@ -71,7 +71,7 @@ if CLIENT then
 		local padding = window.padding
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("Beam Settings")
+		cat:SetLabel("Pointer Settings")
 		cat:DockMargin(3,1,-2,3) //-2 right for divider
 		cat:Dock(FILL)
 		container:AddItem(cat)
@@ -93,7 +93,7 @@ if CLIENT then
 		
 		drop.Label = vgui.Create("DLabel", drop)
 		drop.Label:SetDark(true)
-		drop.Label:SetText("Beam Direction")
+		drop.Label:SetText("Pointer Direction")
 		drop.Label:Dock(LEFT)
 
 		drop.Combo = vgui.Create("DComboBox", drop)
