@@ -206,7 +206,7 @@ function TOOL:LeftClick(trace)
 
 			//Add an undo entry
 			undo.Create("PartCtrl_Ent")
-				undo.AddEntity(const)  //the constraint entity will unmerge newent upon being removed
+				undo.AddEntity(const)  //the constraint entity will detach p upon being removed
 				undo.SetPlayer(self:GetOwner())
 			local str = p.PrintName
 			if p.GetParticleName then str = p:GetParticleName() end
@@ -220,7 +220,7 @@ function TOOL:LeftClick(trace)
 			if CLIENT then return true end
 
 			//Detach ALL of the particle's cpoints and delete any corresponding grip points, then attach it to the special effect
-			constraint.PartCtrl_SpecialEffect(ent, p, self:GetOwner())
+			local const = constraint.PartCtrl_SpecialEffect(ent, p, self:GetOwner())
 			constraint.RemoveConstraints(p, "PartCtrl_Ent")
 			local cpointtab = PartCtrl_ProcessedPCFs[p:GetPCF()][p:GetParticleName()].cpoints
 			local cpoints_for_defaults = {}
@@ -239,7 +239,11 @@ function TOOL:LeftClick(trace)
 				p.ParticleInfo[k].sfx_role = v
 			end
 
-			//TODO: undo; this will be more complicated than running DetachFromModel because it needs to spawn new grips for *every* position control
+			//Add an undo entry
+			undo.Create("PartCtrl_Ent")
+				undo.AddEntity(const)  //the constraint entity will detach p upon being removed
+				undo.SetPlayer(self:GetOwner())
+			undo.Finish("Attach Particle Effect " .. p:GetParticleName() .. " to "  .. ent.PrintName)
 
 		end
 

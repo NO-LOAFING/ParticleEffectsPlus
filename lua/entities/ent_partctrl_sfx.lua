@@ -294,11 +294,22 @@ if SERVER then
 			Ent2:SetParent(Ent1)
 			Ent2:SetSpecialEffectParent(Ent1)
 
+			//If the constraint is removed by an Undo, unmerge the second entity - this shouldn't do anything if the constraint's removed some other way i.e. one of the ents is removed
+			timer.Simple(0.1, function()  //CallOnRemove won't do anything if we try to run it now instead of on a timer
+				if const:GetTable() then  //CallOnRemove can error if this table doesn't exist - this can happen if the constraint is removed at the same time it's created for some reason
+					const:CallOnRemove("PartCtrl_Ent_UnmergeOnUndo", function(const,Ent2,ply)
+						//MsgN("PartCtrl_Ent_UnmergeOnUndo called by constraint ", const, ", ents ", Ent1, " ", Ent2)
+						//NOTE: if we use the remover tool to get rid of ent1, it'll still be valid for a second, so we need to look for the NoDraw and MoveType that the tool sets the ent to instead.
+						//this might have a few false positives, but i don't think that many people will be attaching stuff to invisible, intangible ents a whole lot anyway so it's not a huge deal
+						if !IsValid(const) or !IsValid(Ent1) or Ent1:IsMarkedForDeletion() or (Ent1:GetNoDraw() == true and Ent1:GetMoveType() == MOVETYPE_NONE) or !IsValid(Ent2) or Ent2:IsMarkedForDeletion() or !IsValid(ply) or !Ent2.DetachFromSpecialEffect then return end
+						Ent2:DetachFromSpecialEffect(ply)
+					end, Ent2, ply)
+				end
+			end)
+
 			Ent1:DeleteOnRemove(Ent2)
 
 		end
-
-
 
 		constraint.AddConstraintTable(Ent1, const, Ent2)
 		
@@ -438,14 +449,18 @@ else
 		
 		elseif input == "child_detach" then
 
-			//TODO: currently we just delete it as placeholder functionality; eventually we want to spawn new grips for all of its
-			//position controls and reattach them all, like a more complicated ent:DetachFromEntity()
-
 			local child = net.ReadEntity()
 			if IsValid(child) and child.PartCtrl_Ent and child:GetSpecialEffectParent() == self then
-				child:Remove()
-				ply:SendLua("GAMEMODE:AddNotify('#undone_PartCtrl_Ent', NOTIFY_UNDO, 2)")
-				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
+				//Send a notification to the player saying whether or not we managed to detach the particle
+				local detach = child:DetachFromSpecialEffect(ply)
+				if detach == true then
+					ply:SendLua("GAMEMODE:AddNotify('#undone_PartCtrl_Ent', NOTIFY_UNDO, 2)")
+					ply:SendLua("surface.PlaySound('buttons/button15.wav')")
+				elseif detach == false then
+					ply:SendLua("GAMEMODE:AddNotify('Failed to detach particle', NOTIFY_ERROR, 5)")
+					ply:SendLua("surface.PlaySound('buttons/button11.wav')")
+				end
+				//don't refresh table, DetachFromSpecialEffect handles this
 			end
 
 		end

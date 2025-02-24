@@ -334,8 +334,8 @@ if CLIENT then
 			//MsgN(self, " sfx parent changed from ", old, " to ", new)
 			if IsValid(old) and old.SpecialEffectChildren then
 				old.SpecialEffectChildren[self] = nil
-				self.MaxOldParticlesOverride = nil //TODO: make sure this updates properly after detaching from a special effect, once we implement that
-				//Restart the effect (TODO: make sure this works once we implement detaching fx)
+				self.MaxOldParticlesOverride = nil
+				//Restart the effect
 				if old.SpecialEffectRefresh then old:SpecialEffectRefresh() end
 			end
 			if IsValid(new) then
@@ -745,6 +745,8 @@ if SERVER then
 	numpad.Register("PartCtrl_Numpad", PartCtrlNumpadFunction)
 
 	function ENT:DetachFromEntity(k, ply)
+
+		//Detaches a single cpoint from its parent entity, and spawns a new grip for the cpoint to attach to instead
 	
 		if !istable(self.ParticleInfo[k]) then return false end
 		local ent = self.ParticleInfo[k].ent
@@ -799,9 +801,6 @@ if SERVER then
 		g:SetPos(Vector(pos.x, pos.y, height))
 		g:SetAngles(ang)
 
-		//self.ParticleInfo[k].ent = g //the constraint function already does this
-		self.ParticleInfo[k].attach = 0
-
 		oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
 		oldconst:Remove()
 		//Check if we want to clear DeleteOnRemove or not - if the same particle has another cpoint attached to the same entity, then we want to maintain
@@ -819,6 +818,7 @@ if SERVER then
 		if clear then
 			ent:DontDeleteOnRemove(self)
 		end
+		self.ParticleInfo[k].attach = 0
 		constraint.PartCtrl_Ent(self, g, k, doparent, ply)
 
 
@@ -829,6 +829,68 @@ if SERVER then
 
 
 		return true
+
+	end
+
+	function ENT:DetachFromSpecialEffect(ply)
+
+			//Detaches EVERY cpoint from the special effect parent, and spawns new grips for all of them to attach to instead
+
+			if !istable(self.ParticleInfo) then return false end
+			local ptab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]
+			if !ptab then return end
+			local parentent = self:GetSpecialEffectParent()
+			if !IsValid(parentent) then return false end
+			local parentmodel = parentent:GetSpecialEffectParent()
+			if !IsValid(parentmodel) then return false end
+
+
+			local tab = constraint.FindConstraints(self, "PartCtrl_SpecialEffect")
+			if istable(tab) then
+				for k2, v2 in pairs (tab) do
+					if v2.Ent2 == self and v2.Ent1 == parentent then
+						oldconst = v2.Constraint
+					end
+				end
+			end
+			if !IsValid(oldconst) then return false end
+			oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
+			oldconst:Remove()
+			parentent:DontDeleteOnRemove(self)
+
+
+			local pos = parentmodel:GetPos()
+			local _, bboxtop1 = parentmodel:GetRotatedAABB(parentmodel:GetCollisionBounds())
+			local height = bboxtop1.z + 3 + pos.z //3 is a stupid hard-coded grip point radius
+			pos = Vector(pos.x, pos.y, height)
+
+
+			local grips = {}
+			for k, v in pairs (ptab.cpoints) do
+				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+					grips[k] = true
+					self.ParticleInfo[k].sfx_role = 0
+					self.ParticleInfo[k].attach = 0
+				end
+			end
+			local multigrip_length = ptab.min_length or 100
+
+			local parent = nil
+			grips, parent = PartCtrl_SpawnParticleGripPoints(pos, multigrip_length, grips)
+
+			self:SetSpecialEffectParent(nil)
+			for k, v in pairs (grips) do
+				constraint.PartCtrl_Ent(self, v, k, parent == v, ply)
+			end
+
+
+			//Tell clients to retrieve the updated info table
+			net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+				net.WriteEntity(self)
+			net.Broadcast()
+	
+	
+			return true
 
 	end
 
@@ -1413,6 +1475,39 @@ end, "Data")
 
 if SERVER then
 
+	local grip_radius = 6/2
+
+	function PartCtrl_SpawnParticleGripPoints(spawnpos, length, grips)
+
+		local igrips = {}
+		for k, v in pairs (grips) do
+			table.insert(igrips, k)
+		end
+		local parent = nil
+		for i, k in ipairs (igrips) do
+			local pos = 0
+			if i > 1 then
+				pos = ((i-1)/(#igrips-1))*length
+			end
+			if #igrips > 1 then
+				pos = spawnpos - Vector((length/2)-pos, 0, 0)
+			else
+				pos = spawnpos
+			end
+
+			local g = ents.Create("ent_partctrl_grip")
+			if !IsValid(g) then return end
+			g:SetPos(pos)
+			g:Spawn()
+			grips[k] = g
+			//tab[k].ent = g //no longer valid now that the grip spawning was moved out of SpawnParticle - i think the constraint should handle this anyway
+			if !IsValid(parent) then parent = g end
+		end
+
+		return grips, parent
+
+	end
+
 	function PartCtrl_SpawnParticle(ply, name, pcf)
 
 		if !name or !pcf then 
@@ -1462,7 +1557,8 @@ if SERVER then
 				end
 			end
 		end
-		local grip_radius = 6/2
+		//Handle position cpoints by placing them all in a line 100 units long, with the cpoints distributed evenly from one end of the line to another
+		//(note: this would take dozens of grips on one single effect for them to start spawning inside each other, and no official fx get anywhere close, so don't worry about this)
 		local multigrip_length = PartCtrl_ProcessedPCFs[pcf][name].min_length or 100
 		local maxs = Vector(grip_radius, grip_radius, grip_radius)
 		if table.Count(grips) > 1 then
@@ -1476,32 +1572,8 @@ if SERVER then
 			mins = -maxs
 		})
 
-		//Handle position cpoints by placing them all in a line 50 units long, with the cpoints distributed evenly from one end of the line to another
-		//(note: this would take 18 or more grips on one single effect for them to start spawning inside each other, and no official fx get anywhere close, so don't worry about this)
-		local igrips = {}
-		for k, v in pairs (grips) do
-			table.insert(igrips, k)
-		end
 		local parent = nil
-		for i, k in ipairs (igrips) do
-			local pos = 0
-			if i > 1 then
-				pos = ((i-1)/(#igrips-1))*multigrip_length
-			end
-			if #igrips > 1 then
-				pos = tr.HitPos - Vector((multigrip_length/2)-pos, 0, 0)
-			else
-				pos = tr.HitPos
-			end
-
-			local g = ents.Create("ent_partctrl_grip")
-			if !IsValid(g) then return end
-			g:SetPos(pos)
-			g:Spawn()
-			grips[k] = g
-			tab[k].ent = g
-			if !IsValid(parent) then parent = g end
-		end
+		grips, parent = PartCtrl_SpawnParticleGripPoints(tr.HitPos, multigrip_length, grips)
 
 		local p = ents.Create("ent_partctrl")
 		if !IsValid(p) then return end
