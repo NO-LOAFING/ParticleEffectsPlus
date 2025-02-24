@@ -2,7 +2,8 @@ AddCSLuaFile()
 
 ENT.Base 			= "ent_partctrl_sfx"
 ENT.PrintName			= "Pointer Effect"
-ENT.Category			= "Particle Controller" //TODO: this name sucks, improve it eventually
+ENT.Category			= "Particle Effects"
+ENT.Information			= "Makes particle effects work like a laser pointer, with one end where the \"beam\" starts, and the other continuously moving to where it's pointing."
 
 ENT.Spawnable			= true
 

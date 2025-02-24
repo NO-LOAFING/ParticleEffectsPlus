@@ -187,7 +187,6 @@ function PANEL:RebuildControls()
 	
 			local pnl = vgui.Create("DSizeToContents", container)
 			pnl:SetSizeX(false)
-			pnl:DockMargin(3,3,3,3)
 			pnl:Dock(FILL)
 			container:AddItem(pnl)
 			pnl.Paint = function(self, w, h) 
@@ -199,7 +198,7 @@ function PANEL:RebuildControls()
 				surface.DrawTexturedRect(padding,(h/2)-8,16,16)
 			end
 			pnl:DockPadding(16+padding,0,0,padding) //extra left to make room for the info icon; DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-			pnl:DockMargin(3,3,3,3-2) //-2 because there's too much space between this and the next category otherwise
+			pnl:DockMargin(3,3,3,3-2) //-2 bottom because there's too much space between this and the next category otherwise
 	
 			local text = vgui.Create("DLabel", pnl)
 			text:SetDark(true)
@@ -935,6 +934,38 @@ function PANEL:RebuildControls()
 		//divider:SetLeftMin()
 		//divider:SetRightMin()
 		divider:SetLeftWidth(352)
+
+
+		//category for info; no header for this one
+		local info = ent.Information
+		if info then
+	
+			local pnl = vgui.Create("DSizeToContents", lcontainer)
+			pnl:SetSizeX(false)
+			pnl:Dock(FILL)
+			lcontainer:AddItem(pnl)
+			pnl.Paint = function(self, w, h) 
+				draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
+				//draw info icon
+				surface.SetDrawColor(255,255,255,255)
+				surface.SetMaterial(icon_info)
+				//surface.DrawTexturedRect(padding,betweenitems,16,16)
+				surface.DrawTexturedRect(padding,(h/2)-8,16,16)
+			end
+			pnl:DockPadding(16+padding,0,0,padding) //extra left to make room for the info icon; DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+			pnl:DockMargin(3,3,-2,3-2) //-2 bottom because there's too much space between this and the next category otherwise; -2 right for divider
+	
+			local text = vgui.Create("DLabel", pnl)
+			text:SetDark(true)
+			text:SetWrap(true)
+			text:SetTextInset(0, 0)
+			text:SetText(info)
+			text:SetContentAlignment(5)
+			text:SetAutoStretchVertical(true)
+			text:DockMargin(padding,padding-1,padding,0) //padding-1 for top is trial and error, results in nice 16px spacing on both top and bottom of text
+			text:Dock(TOP)
+	
+		end
 
 
 		//Category for attaching this effect

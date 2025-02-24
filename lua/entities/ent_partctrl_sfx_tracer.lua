@@ -2,7 +2,8 @@ AddCSLuaFile()
 
 ENT.Base 			= "ent_partctrl_sfx"
 ENT.PrintName			= "Bullet Effect"
-ENT.Category			= "Particle Controller" //TODO: this name sucks, improve it eventually
+ENT.Category			= "Particle Effects"
+ENT.Information			= "Fires out particle effects like bullets, with one end where each \"bullet\" starts, and the other where it hits something."
 
 ENT.Spawnable			= true
 
