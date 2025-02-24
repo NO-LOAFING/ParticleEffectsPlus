@@ -1287,6 +1287,7 @@ else
 		self.ParticleInfo_FirstPos = nil
 		self:BeginNewParticle()
 
+		local sfxpar = self:GetSpecialEffectParent()
 		if istable(oldtab) then
 			local window = IsValid(self.PartCtrlWindow) and istable(self.PartCtrlWindow.CPointCategories) and istable(self.PartCtrlWindow.CPointCategories[self])
 			for k, v in pairs (oldtab) do
@@ -1308,7 +1309,6 @@ else
 				end
 			end
 			//Also, if we're a child of a special effect, update its control window
-			local sfxpar = self:GetSpecialEffectParent()
 			local parwindow
 			if IsValid(sfxpar) then
 				if sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
@@ -1331,15 +1331,17 @@ else
 				end
 			end
 		end
-		for k, v in pairs (self.ParticleInfo) do
-			if IsValid(v.ent) then
-				//Store us in a list on the cpoint ent (used by properties)
-				v.ent.PartCtrl_ParticleEnts = v.ent.PartCtrl_ParticleEnts or {}
-				v.ent.PartCtrl_ParticleEnts[self] = true
-				//Refresh attacher tool effect list if this effect was added to the list
-				local panel = controlpanel.Get("partctrl_attacher")
-				if panel and panel.effectlist and panel.CurEntity == v.ent then
-					panel.effectlist.PopulateEffectList(panel.CurEntity)
+		if !IsValid(sfxpar) then //don't do this if we're a special effect child, otherwise we'll get added to the PartCtrl_ParticleEnts list on the special effect's grip/model
+			for k, v in pairs (self.ParticleInfo) do
+				if IsValid(v.ent) then
+					//Store us in a list on the cpoint ent (used by properties)
+					v.ent.PartCtrl_ParticleEnts = v.ent.PartCtrl_ParticleEnts or {}
+					v.ent.PartCtrl_ParticleEnts[self] = true
+					//Refresh attacher tool effect list if this effect was added to the list
+					local panel = controlpanel.Get("partctrl_attacher")
+					if panel and panel.effectlist and panel.CurEntity == v.ent then
+						panel.effectlist.PopulateEffectList(panel.CurEntity)
+					end
 				end
 			end
 		end
