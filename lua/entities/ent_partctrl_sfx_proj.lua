@@ -209,7 +209,6 @@ end
 function ENT:SpecialEffectInitialize()
 
 	if SERVER then
-
 		//do numpad stuff; just reuse the numpad funcs from the standard ent_partctrl
 
 		self:SetNumpadState(false) //Numpad state should always start off as false
@@ -221,7 +220,8 @@ function ENT:SpecialEffectInitialize()
 		local key = self:GetNumpad()
 		self.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", self, true)
 		self.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", self, false)
-
+	else
+		self.SpecialEffectChildrenSorted = self.SpecialEffectChildrenSorted or {[true] = {}, [false] = {}}
 	end
 
 	//list of projectile entities we've created; we use this to clean them up
@@ -403,7 +403,44 @@ if CLIENT then
 			proj:SetColor(Color(255,128,0,255))
 		end
 
-		//TODO
+		local ent = self:GetSpecialEffectParent()
+		if !IsValid(ent) then return end
+
+		local hit
+		if !first then
+			//TODO: expire effect; creates the hit target
+		end
+
+		for child, _ in pairs (self.SpecialEffectChildrenSorted[first]) do
+			if child.PartCtrl_Ent then
+				local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
+				local addtotarget = false
+				for k, v in pairs (child.ParticleInfo) do
+					if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+						if v.sfx_role == 0 then
+							child.ParticleInfo[k].ent = ent
+							child.ParticleInfo[k].attach = self:GetAttachmentID()
+						elseif v.sfx_role == 1 then
+							child.ParticleInfo[k].ent = proj
+							//child.ParticleInfo[k].attach should already be set
+						else
+							child.ParticleInfo[k].ent = hit
+							child.ParticleInfo[k].attach = 0
+							addtotarget = true
+						end
+						
+					end
+				end
+				if child.particle and child.particle.IsValid and child.particle:IsValid() then
+					//child.particle:StopEmission() //interacts poorly with fx that players would actually want to repeat quickly like explosions, so commented it out; unfortunately this means we get stupid effect pileups with fx that last forever like flamethrowers, but there's no legitimate reason to repeat those anyway so we'll just have to trust people here
+					table.insert(child.OldParticles, child.particle)
+				end
+				child:StartParticle()
+				if addtotarget then
+					table.insert(hit.Particles, child.particle)
+				end
+			end
+		end
 
 	end
 
@@ -416,19 +453,47 @@ function ENT:SpecialEffectRefresh()
 
 	if CLIENT then
 		if self.SpecialEffectChildren then
+			self.SpecialEffectChildrenSorted = {[true] = {}, [false] = {}}
+
 			for child, _ in pairs (self.SpecialEffectChildren) do
 				child:BeginNewParticle()
+
+				//Sort our particle effects by when they should play; do this here because we have to be sure the client has received the particleinfo for the fx first
+				if child.ParticleInfo then
+					local attach_to_proj = false
+					local attach_to_expire = false
+					local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
+					for k, v in pairs (child.ParticleInfo) do
+						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+							if v.sfx_role == 1 then
+								attach_to_proj = true
+							elseif v.sfx_role == 2 then
+								attach_to_expire = true
+							end	
+						end
+					end
+					//If the particle doesn't attach to the projectile OR the expire effect (i.e. muzzleflashes),
+					//or the particle attaches to the projectile but not the expire effect,
+					//then play it when the projectile initializes.
+					if (!attach_to_proj and !attach_to_expire) or (attach_to_proj and !attach_to_expire) then
+						self.SpecialEffectChildrenSorted[true][child] = true
+					//If the particle doesn't attach to the projectile, but instead the expire effect,
+					//then play it when the projectile expires.
+					elseif (!attach_to_proj and attach_to_expire) then
+						self.SpecialEffectChildrenSorted[false][child] = true
+					end
+					//If a particle wants to attach to both the projectile AND the expire effect,
+					//then don't play it, because those two roles can't exist at the same time.
+				end
 			end
 		end
 	end
 
 	//reset projectile ents and numpad on both server and client
-
 	for _, proj in pairs (self.ProjectileEnts) do
 		if IsValid(proj) then proj:Remove() end
 	end
 	self.ProjectileEnts = {}
-
 	self.LastLoop = nil
 
 end

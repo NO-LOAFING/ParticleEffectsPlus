@@ -89,7 +89,6 @@ function ENT:Initialize()
 		AllPartCtrlEnts = AllPartCtrlEnts or {}
 		AllPartCtrlEnts[self] = true
 		self.LastDrawn = 0
-		
 	end
 
 end
@@ -330,6 +329,7 @@ end
 if CLIENT then
 
 	function ENT:OnSpecialEffectParentChanged(_,old,new)
+
 		if old != new then
 			//MsgN(self, " sfx parent changed from ", old, " to ", new)
 			if IsValid(old) and old.SpecialEffectChildren then
@@ -345,6 +345,7 @@ if CLIENT then
 				if new.SpecialEffectRefresh then new:SpecialEffectRefresh() end
 			end
 		end
+
 	end
 
 	local PartCtrl_IsSkyboxDrawing = false
