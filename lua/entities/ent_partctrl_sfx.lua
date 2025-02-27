@@ -13,7 +13,12 @@ ENT.PartCtrl_SpecialEffect	= true
 
 function ENT:Initialize()
 
+	//self:SetNoDraw(true)
+	self:DrawShadow(false) //make sure the ent's shadow doesn't render, just in case RENDERGROUP_NONE/SetNoDraw don't work and we have to rely on the blank draw function
+	self:SetCollisionBounds(vector_origin,vector_origin) //stop this ent from bloating up duplicator bounds
+
 	if SERVER then
+		self:SetModel("models/props_junk/watermelon01.mdl") //dummy model to prevent addons that look for the error model from affecting this entity, should this be something smaller? do this serverside only so that effect funcs can override it.
 		if !self.DoneFirstSpawn then
 			local g = ents.Create("ent_partctrl_grip")
 			if !IsValid(g) then return end
@@ -25,11 +30,6 @@ function ENT:Initialize()
 			self.DoneFirstSpawn = true
 		end
 	end
-
-	//self:SetNoDraw(true)
-	self:SetModel("models/props_junk/watermelon01.mdl") //dummy model to prevent addons that look for the error model from affecting this entity, should this be something smaller?
-	self:DrawShadow(false) //make sure the ent's shadow doesn't render, just in case RENDERGROUP_NONE/SetNoDraw don't work and we have to rely on the blank draw function
-	self:SetCollisionBounds(vector_origin,vector_origin) //stop this ent from bloating up duplicator bounds
 
 	if CLIENT then
 		//Handle special effect parenting hierarchy ourselves instead of using the standard Set/GetParent funcs, because those can start erroneously returning NULL clientside
@@ -54,7 +54,7 @@ end
 function ENT:Think()
 
 	//Do effect-specific think
-	if self.SpecialEffectThink then self:SpecialEffectThink() end
+	if self.SpecialEffectThink then return self:SpecialEffectThink() end
 
 end
 
@@ -151,8 +151,14 @@ if CLIENT then
 
 	end
 
-	function ENT:OnRemove()
+end
 
+
+
+
+function ENT:OnRemove()
+
+	if CLIENT then
 		//Remove us from the list of particles on our parent (used by properties)
 		local ent = self:GetSpecialEffectParent()
 		if IsValid(ent) and istable(ent.PartCtrl_ParticleEnts) then
@@ -168,8 +174,9 @@ if CLIENT then
 		if istable(AllPartCtrlEnts) then
 			AllPartCtrlEnts[self] = nil
 		end
-
 	end
+
+	if self.SpecialEffectOnRemove then self:SpecialEffectOnRemove() end
 
 end
 
@@ -470,6 +477,8 @@ else
 		end
 
 		if refreshtable then
+			//Refresh special effect on server
+			if self.SpecialEffectRefresh then self:SpecialEffectRefresh() end
 			//Tell clients to refresh the special effect
 			net.Start("PartCtrl_SpecialEffect_Refresh_SendToCl")
 				net.WriteEntity(self)

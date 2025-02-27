@@ -129,13 +129,6 @@ if CLIENT then
 
 	end
 
-end
-
-
-
-
-if CLIENT then
-
 	function ENT:SpecialEffectThink()
 
 		if self.SpecialEffectChildren and table.Count(self.SpecialEffectChildren) > 0 then

@@ -214,7 +214,7 @@ function ENT:Think()
 		while #self.OldParticles > max do
 			local v = self.OldParticles[1]
 			//MsgN(#self.OldParticles, " is too many particles, removing oldest ", v)
-			v:StopEmissionAndDestroyImmediately()
+			if IsValid(v) then v:StopEmissionAndDestroyImmediately() end
 			if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][v] then
 				//Remove now-invalid particles from the crashcheck list
 				PartCtrl_AddParticles_CrashCheck[pcf][v] = nil

@@ -1,20 +1,21 @@
 AddCSLuaFile()
 
 ENT.Base 			= "ent_partctrl_sfx"
-ENT.PrintName			= "Bullet Effect"
+ENT.PrintName			= "Projectile Effect"
 ENT.Category			= "Particle Effects"
-ENT.Information			= "Fires out particle effects like bullets, with one end where each \"bullet\" starts, and the other where it hits something."
+ENT.Information			= "TODO"
 
 ENT.Spawnable			= true
 
-ENT.PartCtrl_ShortName		= "Bullet"
+ENT.PartCtrl_ShortName		= "Projectile"
 ENT.SpecialEffectRoles		= {
 	[0] = "Start point",
-	[1] = "Hit point",
+	[1] = "Projectile model",
+	[2] = "Hit point",
 }
 ENT.DisableChildAutoplay	= true
 
-ENT.DefaultLoopTime = 0.1
+ENT.DefaultLoopTime = 0.8
 
 
 
@@ -37,9 +38,10 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Bool", 3, "NumpadStartOn")
 	self:NetworkVar("Bool", 4, "NumpadState")
 
-	self:NetworkVar("Float", 1, "TracerSpread")
-	self:NetworkVar("Int", 2, "TracerCount")
-	self:NetworkVar("Int", 3, "TracerDir")
+	self:NetworkVar("Bool", 5, "ProjServerside")
+	self:NetworkVar("Float", 1, "ProjSpread")
+	self:NetworkVar("Int", 2, "ProjCount")
+	self:NetworkVar("Int", 3, "ProjDir")
 
 end
 
@@ -58,9 +60,12 @@ function ENT:SetNWVarDefaults()
 	self:SetNumpadToggle(true)
 	self:SetNumpadStartOn(true)
 
-	self:SetTracerSpread(10)
-	self:SetTracerCount(1)
-	self:SetTracerDir(0)
+	self:SetProjServerside(false)
+	self:SetProjSpread(0)
+	self:SetProjCount(1)
+	self:SetProjDir(0)
+
+	self:SetModel("models/weapons/w_models/w_rocket.mdl") //do this here too //TODO: use an hl2 model as default eventually
 
 end
 
@@ -69,16 +74,11 @@ end
 
 function ENT:SpecialEffectDefaultRoles(cpoints)
 
-	//First half of the cpoints default to the start, second half of the cpoints default to the end.
-	//This means fx with 2 cpoints will automatically connect the first to the start, and the second to the end,
-	//and fx with only 1 cpoint will automatically connect to the end to better demonstrate the effect.
+	//Attach cpoints to the projectile model by default; there's no good way to guess if something is meant to be an effect on the projectile 
+	//or an explosion or what have you, so just attach it somewhere it'll be immediately visible and demonstrating the effect.
 	local results = {}
 	for k, cpoint in pairs (cpoints) do
-		if k > (#cpoints/2) then
-			results[cpoint] = 1
-		else
-			results[cpoint] = 0
-		end
+		results[cpoint] = 1
 	end
 	return results
 
@@ -89,6 +89,9 @@ end
 
 if CLIENT then
 
+	//TODO: currently this is just a clone of the bullet effect settings; once this effect is done it'll have a LOT more settings than the
+	//others, so we'll probably want to organize this into multiple categories
+
 	function ENT:SpecialEffectAddControls(window, container)
 
 		local ent = self
@@ -96,7 +99,7 @@ if CLIENT then
 		local betweenitems = window.betweenitems
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("Bullet Settings")
+		cat:SetLabel("Projectile Settings")
 		cat:DockMargin(3,1,-2,3) //-2 right for divider
 		cat:Dock(FILL)
 		container:AddItem(cat)
@@ -109,23 +112,36 @@ if CLIENT then
 		rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
 
 
-		local slider = vgui.Create("DNumSlider", rpnl)
-		slider:SetText("Bullet Spread (in degrees)")
-		slider:SetMinMax(0, 360)
-		slider:SetDefaultValue(10)
-		slider:SetDark(true)
-		slider:SetHeight(18)
-		slider:Dock(TOP)
-		slider:DockMargin(padding,padding-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+		local check = vgui.Create( "DCheckBoxLabel", rpnl)
+		check:SetText("Serverside projectiles")
+		check:SetDark(true)
+		check:SetHeight(15)
+		check:Dock(TOP)
+		check:DockMargin(padding,padding,0,0)
 
-		slider:SetValue(ent:GetTracerSpread() or 0.00)
-		function slider.OnValueChanged(_, val)
-			ent:DoInput("tracer_spread", val)
+		check:SetValue(ent:GetProjServerside())
+		check.OnChange = function(_, val)
+			ent:DoInput("proj_serverside", val)
 		end
 
 
 		local slider = vgui.Create("DNumSlider", rpnl)
-		slider:SetText("Bullet Count")
+		slider:SetText("Projectile Spread (in degrees)")
+		slider:SetMinMax(0, 360)
+		slider:SetDefaultValue(0)
+		slider:SetDark(true)
+		slider:SetHeight(18)
+		slider:Dock(TOP)
+		slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+
+		slider:SetValue(ent:GetProjSpread() or 0.00)
+		function slider.OnValueChanged(_, val)
+			ent:DoInput("proj_spread", val)
+		end
+
+
+		local slider = vgui.Create("DNumSlider", rpnl)
+		slider:SetText("Projectile Count")
 		slider:SetDecimals(0)
 		slider:SetMinMax(1, 8)
 		slider:SetDefaultValue(1)
@@ -134,14 +150,14 @@ if CLIENT then
 		slider:Dock(TOP)
 		slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
 
-		local val = ent:GetTracerCount() or 0
+		local val = ent:GetProjCount() or 0
 		slider:SetValue(val)
 		slider.Val = val
 		function slider.OnValueChanged(_, val) //only send updates on whole numbers
 			val = math.Round(val)
 			if val != slider.Val then
 				slider.Val = val
-				ent:DoInput("tracer_count", val)
+				ent:DoInput("proj_count", val)
 			end
 		end
 
@@ -150,7 +166,7 @@ if CLIENT then
 		
 		drop.Label = vgui.Create("DLabel", drop)
 		drop.Label:SetDark(true)
-		drop.Label:SetText("Bullet Direction")
+		drop.Label:SetText("Projectile Direction")
 		drop.Label:Dock(LEFT)
 
 		drop.Combo = vgui.Create("DComboBox", drop)
@@ -160,7 +176,7 @@ if CLIENT then
 		local dir0 = "Forward"
 		local dir1 = "Right"
 		local dir2 = "Up"
-		local val = ent:GetTracerDir() or 0
+		local val = ent:GetProjDir() or 0
 		if val == 0 then
 			drop.Combo:SetValue(dir0)
 		elseif val == 1 then
@@ -172,7 +188,7 @@ if CLIENT then
 		drop.Combo:AddChoice(dir1, 1)
 		drop.Combo:AddChoice(dir2, 2)
 		function drop.Combo.OnSelect(_, index, value, data)
-			ent:DoInput("tracer_dir", data)
+			ent:DoInput("proj_dir", data)
 		end
 
 		drop:SetHeight(25)
@@ -190,9 +206,9 @@ end
 
 
 
-if SERVER then
+function ENT:SpecialEffectInitialize()
 
-	function ENT:SpecialEffectInitialize()
+	if SERVER then
 
 		//do numpad stuff; just reuse the numpad funcs from the standard ent_partctrl
 
@@ -208,6 +224,169 @@ if SERVER then
 
 	end
 
+	//list of projectile entities we've created; we use this to clean them up
+	self.ProjectileEnts = {}
+
+end
+
+
+
+
+function ENT:SpecialEffectThink()
+
+	//if CLIENT and (PartCtrl_AddParticles_CrashCheck_PreventingCrash or !self.SpecialEffectChildren or table.Count(self.SpecialEffectChildren) == 0) then return end
+
+	//TODO: we'll probably want to implement loop safety differently for proj fx, because we have to clean up projectiles too
+	--[[local max = nil
+	if self:GetLoopSafety() then
+		max = math.max(0, self:GetTracerCount() - 1)
+	end]]
+
+	local numpadisdisabling = self:GetNumpadState()
+	if !self:GetNumpadStartOn() then
+		numpadisdisabling = !numpadisdisabling
+	end
+	if !numpadisdisabling then
+		local svproj = self:GetProjServerside()
+		if (!svproj and CLIENT) or (svproj and SERVER) then
+			local loop = self:GetLoop()
+			local time = CurTime()
+			if loop or self.LastLoop == nil then //loop mode 2: repeat every X seconds
+				if self.LastLoop == nil or (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
+					local wait = false
+					if CLIENT then
+						for child, _ in pairs (self.SpecialEffectChildren) do
+							//child.MaxOldParticlesOverride = max
+							if !child.ParticleInfo then
+								wait = true
+								break
+							end
+						end
+					end
+					if !wait then
+						self:CreateProjectile()
+						self.LastLoop = time
+						//MsgN(time, ": set last loop to ", self.LastLoop)
+					end
+				end
+			end
+		end
+	elseif CLIENT then
+		//if max != nil then max = 0 end
+		for child, _ in pairs (self.SpecialEffectChildren) do
+			if child.particle and child.particle != partctrl_wait then
+				//child.MaxOldParticlesOverride = max
+				if child.particle.IsValid and child.particle:IsValid() then
+					//Stop any existing particles and throw them into the OldParticles table to get cleaned up
+					//child.particle:StopEmission() //doesn't interact well with tracer count; because all the tracers except the last one are already in OldParticles, only the last one gets cut off while the rest keep playing, which looks odd
+					table.insert(child.OldParticles, child.particle)
+				end
+				child.particle = partctrl_wait
+			end
+		end
+		self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
+	end
+
+	//Limit the number of spawned projectiles, just like ent_partctrl does with particles
+	local max = 32 //TODO: set this up with loop safety once we implement that
+	while #self.ProjectileEnts > max do
+		local v = self.ProjectileEnts[1]
+		if IsValid(v) then v:Remove() end
+		table.remove(self.ProjectileEnts, 1)
+	end
+
+	//If loop mode is set to minimum, ensure we run next frame (for consistency with standard fx)
+	if self:GetLoop() and (self:GetLoopDelay() == 0 or SERVER) then
+		self:NextThink(CurTime())
+		return true
+	end
+
+end
+
+
+
+
+function ENT:CreateProjectile()
+
+	local ent = self:GetSpecialEffectParent()
+	if !IsValid(ent) then return end
+
+	local pos = nil
+	local ang = nil
+	if IsValid(ent.AttachedEntity) then
+		pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
+	else
+		pos = ent:GetAttachment(self:GetAttachmentID())
+	end
+	if istable(pos) then
+		ang = pos.Ang
+		pos = pos.Pos
+	else
+		ang = ent:GetAngles()
+		pos = ent:GetPos()
+	end
+	local dir = self:GetProjDir()
+	if dir == 1 then
+		ang = ang:Right():Angle()
+	elseif dir == 2 then
+		ang = ang:Up():Angle()
+	end
+
+	for i = 1, self:GetProjCount() do
+
+		//emulation of valve spread code https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/basecombatweapon_shared.h#L103, https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shot_manipulator.h#L59
+		//this doesn't go beyond 90 degrees unfortunately
+		//local spread = math.sin(math.rad(self:GetTracerSpread()*2)/2)
+		//local fwd = ang:Forward() + (math.Rand(-0.5,0.5)+math.Rand(-0.5,0.5)) * spread * ang:Right() + (math.Rand(-0.5,0.5)+math.Rand(-0.5,0.5)) * spread * ang:Up()
+	
+		//old adv particle controller spread code - this is nonsense but it does everything we need it to do
+		local spread = self:GetProjSpread()/90
+		local fwd = Angle(ang)
+		local randang = AngleRand()
+		fwd:RotateAroundAxis(fwd:Forward(), randang.r)
+		fwd:RotateAroundAxis(fwd:Right(), randang.p * (spread / 2))
+		fwd:RotateAroundAxis(fwd:Up(), randang.y * (spread / 4))
+		//now de-randomize the roll so the prop still spawns upright
+		fwd:RotateAroundAxis(fwd:Forward(), -randang.r)
+
+		local proj
+		if CLIENT then
+			proj = ClientsideModel(self:GetModel()) //TODO: make setting
+		else
+			proj = ents.Create("ent_partctrl_proj")
+			proj:SetModel(self:GetModel())
+			proj:SetOwnerEntity(self) //reference to the effect ent on the projectile; it uses this to run StartParticles on clients
+		end
+		proj:SetOwner(ent) //don't collide with the prop that the effect ent is parented to
+		proj:SetPos(pos)
+		proj:SetAngles(fwd)
+
+		proj:SetCollisionGroup(COLLISION_GROUP_INTERACTIVE_DEBRIS) //don't collide with other projectiles
+		if !util.IsValidProp(proj:GetModel()) then
+			proj:PhysicsInitBox(proj:GetModelBounds())
+		else
+			proj:PhysicsInit(SOLID_VPHYSICS)
+		end
+
+		//TODO: projectile visuals
+
+		proj:Spawn()
+		table.insert(self.ProjectileEnts, proj)
+		if CLIENT then
+			self:StartParticle(proj, true)
+		end
+
+		local phys = proj:GetPhysicsObject()
+		if IsValid(phys) then
+			phys:Wake()
+			phys:SetVelocity(fwd:Forward() * 800) //TODO: make setting
+			phys:EnableGravity(false) //TODO: make setting
+			phys:SetMaterial("gmod_silent")
+		end
+
+		//TODO: expire code
+
+	end
 end
 
 
@@ -215,165 +394,53 @@ end
 
 if CLIENT then
 
-	function ENT:SpecialEffectThink()
+	function ENT:StartParticle(proj, first)
 
-		if PartCtrl_AddParticles_CrashCheck_PreventingCrash or !self.SpecialEffectChildren or table.Count(self.SpecialEffectChildren) == 0 then return end
-
-		local max = nil
-		if self:GetLoopSafety() then
-			max = math.max(0, self:GetTracerCount() - 1)
-		end
-
-		local numpadisdisabling = self:GetNumpadState()
-		if !self:GetNumpadStartOn() then
-			numpadisdisabling = !numpadisdisabling
-		end
-		if !numpadisdisabling then
-			local loop = self:GetLoop()
-			local time = CurTime()
-			if loop or self.LastLoop == nil then //loop mode 2: repeat every X seconds
-				if self.LastLoop == nil or (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
-					local wait = false
-					for child, _ in pairs (self.SpecialEffectChildren) do
-						child.MaxOldParticlesOverride = max
-						if !child.ParticleInfo then
-							wait = true
-							break
-						end
-					end
-					if !wait then
-						self:StartParticle()
-						self.LastLoop = time
-						//MsgN(time, ": set last loop to ", self.LastLoop)
-					end
-				end
-			end
+		//test: make client and server projectiles clearly distinguishable
+		if proj:GetClass() == "ent_partctrl_proj" then
+			proj:SetColor(Color(0,128,255,255))
 		else
-			if max != nil then max = 0 end
-			for child, _ in pairs (self.SpecialEffectChildren) do
-				if child.particle and child.particle != partctrl_wait then
-					child.MaxOldParticlesOverride = max
-					if child.particle.IsValid and child.particle:IsValid() then
-						//Stop any existing particles and throw them into the OldParticles table to get cleaned up
-						//child.particle:StopEmission() //doesn't interact well with tracer count; because all the tracers except the last one are already in OldParticles, only the last one gets cut off while the rest keep playing, which looks odd
-						table.insert(child.OldParticles, child.particle)
-					end
-					child.particle = partctrl_wait
-				end
-			end
-			self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
+			proj:SetColor(Color(255,128,0,255))
 		end
 
-		//If loop mode is set to minimum, ensure we run next frame (for consistency with standard fx)
-		if self:GetLoop() and self:GetLoopDelay() == 0 then
-			self:NextThink(CurTime())
-			return true
-		end
-
-	end
-	
-	function ENT:StartParticle()
-
-		local ent = self:GetSpecialEffectParent()
-		if !IsValid(ent) then return end
-
-		local pos = nil
-		local ang = nil
-		if IsValid(ent.AttachedEntity) then
-			pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
-		else
-			pos = ent:GetAttachment(self:GetAttachmentID())
-		end
-		if istable(pos) then
-			ang = pos.Ang
-			pos = pos.Pos
-		else
-			ang = ent:GetAngles()
-			pos = ent:GetPos()
-		end
-		local dir = self:GetTracerDir()
-		if dir == 1 then
-			ang = ang:Right():Angle()
-		elseif dir == 2 then
-			ang = ang:Up():Angle()
-		end
-
-		for i = 1, self:GetTracerCount() do
-
-			//emulation of valve spread code https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/basecombatweapon_shared.h#L103, https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shot_manipulator.h#L59
-			//this doesn't go beyond 90 degrees unfortunately
-			//local spread = math.sin(math.rad(self:GetTracerSpread()*2)/2)
-			//local fwd = ang:Forward() + (math.Rand(-0.5,0.5)+math.Rand(-0.5,0.5)) * spread * ang:Right() + (math.Rand(-0.5,0.5)+math.Rand(-0.5,0.5)) * spread * ang:Up()
-		
-			//old adv particle controller spread code - this is nonsense but it does everything we need it to do
-			local spread = self:GetTracerSpread()/90
-			local fwd = Angle(ang)
-			local randang = AngleRand()
-			fwd:RotateAroundAxis(fwd:Forward(), randang.r)
-			fwd:RotateAroundAxis(fwd:Right(), randang.p * (spread / 2))
-			fwd:RotateAroundAxis(fwd:Up(), randang.y * (spread / 4))
-			fwd = fwd:Forward()
-
-			local tr = {}
-			tr.start = pos
-			tr.endpos = pos+(fwd*30000)
-			tr.filter = ent
-			tr = util.TraceLine(tr)
-
-			local hit = ents.CreateClientside("ent_partctrl_sfxtarget")
-			hit:SetPos(tr.HitPos)
-			hit:SetAngles(tr.HitNormal:Angle())
-			hit:Spawn()
-			hit.OwnerEntity = self
-			hit.Particles = {}
-			//store values used by impact utilfx
-			hit.PartCtrl_TraceHit = tr.Entity
-			hit.PartCtrl_SurfaceProp = tr.SurfaceProps
-
-			for child, _ in pairs (self.SpecialEffectChildren) do
-				if child.PartCtrl_Ent then
-					local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
-					local addtotarget = false
-					for k, v in pairs (child.ParticleInfo) do
-						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
-							if v.sfx_role == 0 then
-								child.ParticleInfo[k].ent = ent
-								child.ParticleInfo[k].attach = self:GetAttachmentID()
-							else
-								child.ParticleInfo[k].ent = hit
-								child.ParticleInfo[k].attach = 0
-								addtotarget = true
-							end
-							
-						end
-					end
-					if child.particle and child.particle.IsValid and child.particle:IsValid() then
-						//child.particle:StopEmission() //interacts poorly with fx that players would actually want to repeat quickly like explosions, so commented it out; unfortunately this means we get stupid effect pileups with fx that last forever like flamethrowers, but there's no legitimate reason to repeat those anyway so we'll just have to trust people here
-						table.insert(child.OldParticles, child.particle)
-					end
-					child:StartParticle()
-					if addtotarget then
-						table.insert(hit.Particles, child.particle)
-					end
-				end
-			end
-
-		end
+		//TODO
 
 	end
 
-	function ENT:SpecialEffectRefresh()
+end
 
+
+
+
+function ENT:SpecialEffectRefresh()
+
+	if CLIENT then
 		if self.SpecialEffectChildren then
 			for child, _ in pairs (self.SpecialEffectChildren) do
 				child:BeginNewParticle()
 			end
 		end
-
-		self.LastLoop = nil
-
 	end
 
+	//reset projectile ents and numpad on both server and client
+
+	for _, proj in pairs (self.ProjectileEnts) do
+		if IsValid(proj) then proj:Remove() end
+	end
+	self.ProjectileEnts = {}
+
+	self.LastLoop = nil
+
+end
+
+
+
+
+function ENT:SpecialEffectOnRemove()
+	for _, proj in pairs (self.ProjectileEnts) do
+		if IsValid(proj) then proj:Remove() end
+	end
+	self.ProjectileEnts = {}
 end
 
 
@@ -394,9 +461,10 @@ local EditMenuInputs = {
 	"numpad_num",
 	"numpad_toggle",
 	"numpad_starton",
-	"tracer_spread",
-	"tracer_count",
-	"tracer_dir",
+	"proj_serverside",
+	"proj_spread",
+	"proj_count",
+	"proj_dir",
 }
 ENT.EditMenuInputs_bits = 4 //max 15
 ENT.EditMenuInputs = table.Flip(EditMenuInputs)
@@ -429,15 +497,19 @@ if CLIENT then
 
 			net.WriteBool(args[1])
 
-		elseif input == "tracer_spread" then
+		elseif input == "proj_serverside" then
+			
+			net.WriteBool(args[1])
+
+		elseif input == "proj_spread" then
 			
 			net.WriteFloat(args[1]) //new spread
 
-		elseif input == "tracer_count" then 
+		elseif input == "proj_count" then 
 
 			net.WriteUInt(args[1], 5) //new count; generous max of 31
 
-		elseif input == "tracer_dir" then
+		elseif input == "proj_dir" then
 			
 			net.WriteUInt(args[1], 2) //new dir (0/1/2)
 
@@ -503,20 +575,25 @@ else
 
 			self:SetNumpadStartOn(net.ReadBool())
 
-		elseif input == "tracer_spread" then
-
-			self:SetTracerSpread(net.ReadFloat())
+		elseif input == "proj_serverside" then
+			
+			self:SetProjServerside(net.ReadBool())
 			refreshtable = true
 
-		elseif input == "tracer_count" then
+		elseif input == "proj_spread" then
 
-			self:SetTracerCount(net.ReadUInt(5))
+			self:SetProjSpread(net.ReadFloat())
 			refreshtable = true
 
-		elseif input == "tracer_dir" then
+		elseif input == "proj_count" then
+
+			self:SetProjCount(net.ReadUInt(5))
+			refreshtable = true
+
+		elseif input == "proj_dir" then
 			
 			local new = math.min(net.ReadUInt(2), 2)
-			self:SetTracerDir(new)
+			self:SetProjDir(new)
 			refreshtable = true
 
 		end
@@ -540,6 +617,9 @@ if SERVER then
 			data.DT["SpecialEffectParent"] = nil
 		end
 
+		//Don't store this either
+		data.ProjectileEnts = nil
+
 	end
 
 end
@@ -547,9 +627,9 @@ end
 
 
 
-duplicator.RegisterEntityClass("ent_partctrl_sfx_tracer", function(ply, data)
+duplicator.RegisterEntityClass("ent_partctrl_sfx_proj", function(ply, data)
 
-	local ent = ents.Create("ent_partctrl_sfx_tracer")
+	local ent = ents.Create("ent_partctrl_sfx_proj")
 	if !ent:IsValid() then return false end
 
 	//duplicator.GenericDuplicatorFunction(ply, data)
@@ -560,6 +640,8 @@ duplicator.RegisterEntityClass("ent_partctrl_sfx_tracer", function(ply, data)
 	ent:SetPlayer(ply) //NOTE: this still works if ply doesn't exist
 
 	ent:Spawn()
+
+	ent:SetModel(data.Model) //override the model set in initialize with our duplicated model
 
 	return ent
 
