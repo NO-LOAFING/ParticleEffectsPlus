@@ -25,9 +25,7 @@ function ENT:SetupDataTables()
 	//all special fx must have these ones
 	self:NetworkVar("Int", 0, "AttachmentID")
 	self:NetworkVar("Entity", 0, "SpecialEffectParent")
-	if CLIENT then
-		self:NetworkVarNotify("SpecialEffectParent", self.OnSpecialEffectParentChanged)
-	end
+	self:NetworkVarNotify("SpecialEffectParent", self.OnSpecialEffectParentChanged)
 
 	self:NetworkVar("Bool", 0, "Loop") //because special fx can't use loop mode 1 (loop when effect is finished), just make this a bool instead
 	self:NetworkVar("Float", 0, "LoopDelay")
@@ -574,12 +572,13 @@ function ENT:SpecialEffectRefresh()
 		end
 	end
 
-	MsgN("hough")
 	//reset projectile ents and numpad on both server and client
-	for _, proj in pairs (self.ProjectileEnts) do
-		if IsValid(proj) then proj:Remove() end
+	if self.ProjectileEnts then
+		for _, proj in pairs (self.ProjectileEnts) do
+			if IsValid(proj) then proj:Remove() end
+		end
+		self.ProjectileEnts = {}
 	end
-	self.ProjectileEnts = {}
 	self.LastLoop = nil
 
 end
@@ -588,10 +587,14 @@ end
 
 
 function ENT:SpecialEffectOnRemove()
-	for _, proj in pairs (self.ProjectileEnts) do
-		if IsValid(proj) then proj:Remove() end
+
+	if self.ProjectileEnts then
+		for _, proj in pairs (self.ProjectileEnts) do
+			if IsValid(proj) then proj:Remove() end
+		end
+		self.ProjectileEnts = {}
 	end
-	self.ProjectileEnts = {}
+	
 end
 
 

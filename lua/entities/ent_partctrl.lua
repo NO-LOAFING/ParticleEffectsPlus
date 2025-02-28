@@ -34,9 +34,7 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Bool", 3, "NumpadState")
 
 	self:NetworkVar("Entity", 0, "SpecialEffectParent")
-	if CLIENT then
-		self:NetworkVarNotify("SpecialEffectParent", self.OnSpecialEffectParentChanged)
-	end
+	self:NetworkVarNotify("SpecialEffectParent", self.OnSpecialEffectParentChanged)
 
 end
 
@@ -326,27 +324,34 @@ end
 
 
 
-if CLIENT then
+function ENT:OnSpecialEffectParentChanged(_,old,new)
 
-	function ENT:OnSpecialEffectParentChanged(_,old,new)
-
-		if old != new then
-			//MsgN(self, " sfx parent changed from ", old, " to ", new)
-			if IsValid(old) and old.SpecialEffectChildren then
+	if old != new then
+		//MsgN(self, " sfx parent changed from ", old, " to ", new)
+		if IsValid(old) then
+			if CLIENT and old.SpecialEffectChildren then
 				old.SpecialEffectChildren[self] = nil
 				self.MaxOldParticlesOverride = nil
-				//Restart the effect
-				if old.SpecialEffectRefresh then old:SpecialEffectRefresh() end
 			end
-			if IsValid(new) then
+			//Restart the effect
+			if old.SpecialEffectRefresh then old:SpecialEffectRefresh() end
+		end
+		if IsValid(new) then
+			if CLIENT then
 				new.SpecialEffectChildren = new.SpecialEffectChildren or {}
 				new.SpecialEffectChildren[self] = true
-				//Restart the effect
-				if new.SpecialEffectRefresh then new:SpecialEffectRefresh() end
 			end
+			//Restart the effect
+			if new.SpecialEffectRefresh then new:SpecialEffectRefresh() end
 		end
-
 	end
+
+end
+
+
+
+
+if CLIENT then
 
 	local PartCtrl_IsSkyboxDrawing = false
 
@@ -665,11 +670,14 @@ if CLIENT then
 
 	end
 
+end
 
 
 
-	function ENT:OnRemove()
 
+function ENT:OnRemove()
+
+	if CLIENT then
 		self:RemoveParticle()
 
 		//Remove us from the list of particles on each cpoint ent (used by properties)
@@ -686,23 +694,24 @@ if CLIENT then
 			end
 		end
 
-		local sfxpar = self:GetSpecialEffectParent()
-		if IsValid(sfxpar) then
+		//For PostDrawTranslucentRenderables hook
+		if istable(AllPartCtrlEnts) then
+			AllPartCtrlEnts[self] = nil
+		end
+	end
+
+	local sfxpar = self:GetSpecialEffectParent()
+	if IsValid(sfxpar) then
+		if CLIENT then
 			if sfxpar.SpecialEffectChildren then
-				sfxpar.SpecialEffectChildren[self] = nil
-				if sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
+				sfxpar.SpecialEffectChildren[self] = nil	
 			end
 			//If we're a child of a special effect, remove us from its control window
 			if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
 				self.PartCtrlWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
 			end
 		end
-
-		//For PostDrawTranslucentRenderables hook
-		if istable(AllPartCtrlEnts) then
-			AllPartCtrlEnts[self] = nil
-		end
-
+		if sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
 	end
 
 end
@@ -1163,6 +1172,9 @@ else
 		end
 
 		if refreshtable then
+			//Refresh special effect parent on server
+			local sfxpar = self:GetSpecialEffectParent()
+			if IsValid(sfxpar) and sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
 			//Tell clients to retrieve the updated info table
 			net.Start("PartCtrl_InfoTableUpdate_SendToCl")
 				net.WriteEntity(self)

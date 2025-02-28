@@ -61,9 +61,9 @@ end
 
 
 
-if CLIENT then
+function ENT:OnSpecialEffectParentChanged(_, old, new)
 
-	function ENT:OnSpecialEffectParentChanged(_, old, new)
+	if CLIENT then
 
 		//Both this timer and the lines below it are needed to fix an issue with advbonemerge - if we advbonemerge a model with an attached special effect, this value will change before
 		//the ent_advbonemerge becomes valid on the client, meaning it'll be a null entity here and we won't be able to do anything with it, like give it a PartCtrl_ParticleEnts list.
@@ -99,7 +99,19 @@ if CLIENT then
 			if self.SpecialEffectRefresh then self:SpecialEffectRefresh() end
 		end)
 
+	else
+
+		//Restart the effect
+		if self.SpecialEffectRefresh then self:SpecialEffectRefresh() end
+		
 	end
+
+end
+
+
+
+
+if CLIENT then
 
 	function ENT:Draw()
 
