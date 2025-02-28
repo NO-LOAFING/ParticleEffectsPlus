@@ -1290,26 +1290,7 @@ else
 
 		local sfxpar = self:GetSpecialEffectParent()
 		if istable(oldtab) then
-			local window = IsValid(self.PartCtrlWindow) and istable(self.PartCtrlWindow.CPointCategories) and istable(self.PartCtrlWindow.CPointCategories[self])
-			for k, v in pairs (oldtab) do
-				if self.ParticleInfo[k].ent != oldtab[k].ent then
-					local oldent = oldtab[k].ent
-					//Remove us from the list of particles on the old ent
-					if oldent.PartCtrl_ParticleEnts then
-						oldent.PartCtrl_ParticleEnts[self] = nil
-					end
-					//Refresh attacher tool effect list if this effect was removed from the list
-					local panel = controlpanel.Get("partctrl_attacher")
-					if panel and panel.effectlist and panel.CurEntity == oldent then
-						panel.effectlist.PopulateEffectList(panel.CurEntity)
-					end
-				end
-				//Refresh control window if we changed something that requires the controls to be rebuilt
-				if window and (self.ParticleInfo[k].ent != oldtab[k].ent) then
-					self.PartCtrlWindow.CPointCategories[self][k].RebuildContents(self.ParticleInfo[k])
-				end
-			end
-			//Also, if we're a child of a special effect, update its control window
+			//If we're a child of a special effect, update its control window
 			local parwindow
 			if IsValid(sfxpar) then
 				if sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
@@ -1329,6 +1310,25 @@ else
 				//If we're no longer parented, then stop being assigned to its control window
 				if !parwindow then
 					self.PartCtrlWindow = nil
+				end
+			end
+			local window = IsValid(self.PartCtrlWindow) and istable(self.PartCtrlWindow.CPointCategories) and istable(self.PartCtrlWindow.CPointCategories[self])
+			for k, v in pairs (oldtab) do
+				if self.ParticleInfo[k].ent != oldtab[k].ent then
+					local oldent = oldtab[k].ent
+					//Remove us from the list of particles on the old ent
+					if oldent.PartCtrl_ParticleEnts then
+						oldent.PartCtrl_ParticleEnts[self] = nil
+					end
+					//Refresh attacher tool effect list if this effect was removed from the list
+					local panel = controlpanel.Get("partctrl_attacher")
+					if panel and panel.effectlist and panel.CurEntity == oldent then
+						panel.effectlist.PopulateEffectList(panel.CurEntity)
+					end
+				end
+				//Refresh control window if we changed something that requires the controls to be rebuilt
+				if window and (self.ParticleInfo[k].ent != oldtab[k].ent) or IsValid(sfxpar) then
+					self.PartCtrlWindow.CPointCategories[self][k].RebuildContents(self.ParticleInfo[k])
 				end
 			end
 		end

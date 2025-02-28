@@ -658,6 +658,8 @@ function PANEL:RebuildControls()
 						function drop.PerformLayout(_, w, h)
 							drop.Label:SetWide(w / 2.4)
 						end
+
+						if ent.SpecialEffectAddRoleControls then ent:SpecialEffectAddRoleControls(self, pnl, k, v2, ent2) end
 					end
 				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
 					local tab = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].cpoints[k]

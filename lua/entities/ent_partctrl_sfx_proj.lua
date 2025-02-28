@@ -11,7 +11,7 @@ ENT.PartCtrl_ShortName		= "Projectile"
 ENT.SpecialEffectRoles		= {
 	[0] = "Start point",
 	[1] = "Projectile model",
-	[2] = "Hit point",
+	[2] = "Projectile expire",
 }
 ENT.DisableChildAutoplay	= true
 
@@ -132,7 +132,8 @@ if CLIENT then
 		slider:SetDark(true)
 		slider:SetHeight(18)
 		slider:Dock(TOP)
-		slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+		//slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+		slider:DockMargin(padding,padding-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
 
 		slider:SetValue(ent:GetProjSpread() or 0.00)
 		function slider.OnValueChanged(_, val)
@@ -201,6 +202,82 @@ if CLIENT then
 
 	end
 
+	local icon_error = Material("icon16/exclamation.png")
+
+	function ENT:SpecialEffectAddRoleControls(window, pnl, k, v2, ent2)
+
+		local padding = window.padding
+		local betweenitems = window.betweenitems
+
+		if v2.sfx_role == 1 then
+			local attachcount = 0
+			local tab = self:GetAttachments()
+			if istable(tab) then attachcount = table.Count(tab) end
+
+			if attachcount > 0 then
+				local slider = vgui.Create("DNumSlider", pnl)
+				slider:SetText("Attachment")
+				slider:SetDecimals(0)
+				slider:SetMinMax(0, attachcount)
+				slider:SetDefaultValue(0)
+				slider:SetDark(true)
+				slider:SetHeight(18)
+				slider:Dock(TOP)
+				slider:DockMargin(padding,betweenitems,0,3)
+		
+				slider:SetValue(v2.attach)
+				function slider.OnValueChanged(_, val)
+					val = math.Round(val)
+					if val != slider.PartCtrl_AttachSlider.attach then //only send updates on whole numbers
+						surface.PlaySound("weapons/pistol/pistol_empty.wav")
+						slider.PartCtrl_AttachSlider.attach = val
+						ent2:DoInput("cpoint_position_attach", k, val)
+					end
+				end
+
+				//Let the HUDPaint hook in autorun detect that the player is hovering over this slider
+				//This doesn't look all that great, but it lets the player see the attachments, which is better than nothing
+				slider.PartCtrl_AttachSlider = {ent = self, attach = v2.attach}
+				slider.Slider.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider
+				slider.Slider.Knob.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+				slider.TextArea.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+				slider.Label.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+				slider.Scratch.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+			end
+		end
+
+		if self.SpecialEffectChildrenSorted["bad"][ent2] and self.SpecialEffectChildrenSorted["bad"][ent2][k] then
+			local pnl2 = vgui.Create("DSizeToContents", pnl)
+			pnl2:SetSizeX(false)
+			pnl2:Dock(TOP)
+			pnl2.Paint = function(self, w, h) 
+				draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
+				//draw info icon
+				surface.SetDrawColor(255,255,255,255)
+				surface.SetMaterial(icon_error)
+				//surface.DrawTexturedRect(padding,betweenitems,16,16)
+				surface.DrawTexturedRect(padding,(h/2)-8,16,16)
+			end
+			pnl2:DockPadding(16+padding,0,0,padding) //extra left to make room for the info icon; DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+			pnl2:DockMargin(4,padding,4,1000)
+			pnl:DockPadding(0,0,0,4) //fit the warning message snugly at the bottom of the panel
+
+	
+			local text = vgui.Create("DLabel", pnl2)
+			text:SetDark(true)
+			text:SetWrap(true)
+			text:SetTextInset(0, 0)
+			text:SetText("Can't attach an effect to both the projectile model and projectile expire at the same time!") //TODO: this sucks
+			text:SetContentAlignment(5)
+			text:SetAutoStretchVertical(true)
+			text:DockMargin(padding,padding-1,padding,0) //padding-1 for top is trial and error, results in nice 16px spacing on both top and bottom of text
+			text:Dock(TOP)
+		else
+			pnl:DockPadding(0,0,0,padding) //undo padding change from warning message
+		end
+
+	end
+
 end
 
 
@@ -221,7 +298,7 @@ function ENT:SpecialEffectInitialize()
 		self.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", self, true)
 		self.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", self, false)
 	else
-		self.SpecialEffectChildrenSorted = self.SpecialEffectChildrenSorted or {[true] = {}, [false] = {}}
+		self.SpecialEffectChildrenSorted = self.SpecialEffectChildrenSorted or {[true] = {}, [false] = {}, ["bad"] = {}}
 	end
 
 	//list of projectile entities we've created; we use this to clean them up
@@ -453,22 +530,24 @@ function ENT:SpecialEffectRefresh()
 
 	if CLIENT then
 		if self.SpecialEffectChildren then
-			self.SpecialEffectChildrenSorted = {[true] = {}, [false] = {}}
+			self.SpecialEffectChildrenSorted = {[true] = {}, [false] = {}, ["bad"] = {}}
 
 			for child, _ in pairs (self.SpecialEffectChildren) do
 				child:BeginNewParticle()
 
 				//Sort our particle effects by when they should play; do this here because we have to be sure the client has received the particleinfo for the fx first
 				if child.ParticleInfo then
-					local attach_to_proj = false
-					local attach_to_expire = false
+					local attach_to_proj = nil
+					local attach_to_expire = nil
 					local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
 					for k, v in pairs (child.ParticleInfo) do
 						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
 							if v.sfx_role == 1 then
-								attach_to_proj = true
+								attach_to_proj = attach_to_proj or {}
+								attach_to_proj[k] = true
 							elseif v.sfx_role == 2 then
-								attach_to_expire = true
+								attach_to_expire = attach_to_expire or {}
+								attach_to_expire[k] = true
 							end	
 						end
 					end
@@ -481,14 +560,21 @@ function ENT:SpecialEffectRefresh()
 					//then play it when the projectile expires.
 					elseif (!attach_to_proj and attach_to_expire) then
 						self.SpecialEffectChildrenSorted[false][child] = true
-					end
 					//If a particle wants to attach to both the projectile AND the expire effect,
 					//then don't play it, because those two roles can't exist at the same time.
+					elseif (attach_to_proj and attach_to_expire) then
+						//Keep a list of all the offending cpoints so that we can add warnings to them in the controls
+						local tab = {}
+						table.Merge(tab, attach_to_proj)
+						table.Merge(tab, attach_to_expire)
+						self.SpecialEffectChildrenSorted["bad"][child] = tab
+					end
 				end
 			end
 		end
 	end
 
+	MsgN("hough")
 	//reset projectile ents and numpad on both server and client
 	for _, proj in pairs (self.ProjectileEnts) do
 		if IsValid(proj) then proj:Remove() end
