@@ -296,7 +296,7 @@ function ENT:SpecialEffectInitialize()
 		self.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", self, true)
 		self.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", self, false)
 	else
-		self.SpecialEffectChildrenSorted = self.SpecialEffectChildrenSorted or {[true] = {}, [false] = {}, ["bad"] = {}}
+		self.SpecialEffectChildrenSorted = self.SpecialEffectChildrenSorted or {[false] = {}, [true] = {}, ["bad"] = {}}
 	end
 
 	//list of projectile entities we've created; we use this to clean them up
@@ -443,12 +443,42 @@ function ENT:CreateProjectile()
 			proj:PhysicsInit(SOLID_VPHYSICS)
 		end
 
-		//TODO: projectile visuals
+		//TODO: projectile visual settings
+
+		local lifetime_prehit = 10 //TODO: make setting
+		local lifetime_posthit = 0 //TODO: make setting
+		if CLIENT then
+			timer.Simple(lifetime_prehit, function()
+				if IsValid(proj) and IsValid(self) then
+					self:StartParticle(proj, true)
+					proj:Remove()
+				end
+			end)
+			proj:AddCallback("PhysicsCollide", function(proj, data)
+				if proj.HasHitSomething then return end //there's no reason to call this more than once
+				proj.HasHitSomething = true
+			
+				timer.Simple(lifetime_posthit, function() //even if lifetime_posthit is 0, we still need to use a timer, because directly removing the ent in a PhysicsCollide callback crashes the game
+					if IsValid(proj) and IsValid(self) then
+						if lifetime_posthit == 0 then
+							self:StartParticle(proj, data.HitPos, -data.HitNormal:Angle())
+						else
+							self:StartParticle(proj, true)
+						end
+						proj:Remove()
+					end
+				end)
+			end)
+		else
+			//serverside projectile ent handles this in its code
+			proj.lifetime_prehit = lifetime_prehit
+			proj.lifetime_posthit = lifetime_posthit
+		end
 
 		proj:Spawn()
 		table.insert(self.ProjectileEnts, proj)
 		if CLIENT then
-			self:StartParticle(proj, true)
+			self:StartParticle(proj)
 		end
 
 		local phys = proj:GetPhysicsObject()
@@ -459,8 +489,6 @@ function ENT:CreateProjectile()
 			phys:SetMaterial("gmod_silent")
 		end
 
-		//TODO: expire code
-
 	end
 end
 
@@ -469,24 +497,30 @@ end
 
 if CLIENT then
 
-	function ENT:StartParticle(proj, first)
-
-		//test: make client and server projectiles clearly distinguishable
-		if proj:GetClass() == "ent_partctrl_proj" then
-			proj:SetColor(Color(0,128,255,255))
-		else
-			proj:SetColor(Color(255,128,0,255))
-		end
+	function ENT:StartParticle(proj, hitpos, hitang)
 
 		local ent = self:GetSpecialEffectParent()
 		if !IsValid(ent) then return end
 
+		//If hitpos is available, then do expire effect
 		local hit
-		if !first then
-			//TODO: expire effect; creates the hit target
+		if hitpos then
+			//Unless the projectile hit a surface, use a generic pos/ang
+			if isbool(hitpos) then
+				//if !IsValid(proj) then return end
+				hitpos = proj:GetPos()
+				hitang = proj:GetAngles() //TODO: make setting for angle
+			end
+
+			hit = ents.CreateClientside("ent_partctrl_sfxtarget")
+			hit:SetPos(hitpos)
+			hit:SetAngles(hitang)
+			hit:Spawn()
+			hit.OwnerEntity = self
+			hit.Particles = {}
 		end
 
-		for child, _ in pairs (self.SpecialEffectChildrenSorted[first]) do
+		for child, _ in pairs (self.SpecialEffectChildrenSorted[tobool(hitpos)]) do
 			if child.PartCtrl_Ent then
 				local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
 				local addtotarget = false
@@ -528,7 +562,7 @@ function ENT:SpecialEffectRefresh()
 
 	if CLIENT then
 		if self.SpecialEffectChildren then
-			self.SpecialEffectChildrenSorted = {[true] = {}, [false] = {}, ["bad"] = {}}
+			self.SpecialEffectChildrenSorted = {[false] = {}, [true] = {}, ["bad"] = {}}
 
 			for child, _ in pairs (self.SpecialEffectChildren) do
 				child:BeginNewParticle()
@@ -553,11 +587,11 @@ function ENT:SpecialEffectRefresh()
 					//or the particle attaches to the projectile but not the expire effect,
 					//then play it when the projectile initializes.
 					if (!attach_to_proj and !attach_to_expire) or (attach_to_proj and !attach_to_expire) then
-						self.SpecialEffectChildrenSorted[true][child] = true
+						self.SpecialEffectChildrenSorted[false][child] = true
 					//If the particle doesn't attach to the projectile, but instead the expire effect,
 					//then play it when the projectile expires.
 					elseif (!attach_to_proj and attach_to_expire) then
-						self.SpecialEffectChildrenSorted[false][child] = true
+						self.SpecialEffectChildrenSorted[true][child] = true
 					//If a particle wants to attach to both the projectile AND the expire effect,
 					//then don't play it, because those two roles can't exist at the same time.
 					elseif (attach_to_proj and attach_to_expire) then
