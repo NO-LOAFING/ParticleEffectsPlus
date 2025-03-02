@@ -3,7 +3,7 @@ AddCSLuaFile()
 ENT.Base 			= "ent_partctrl_sfx"
 ENT.PrintName			= "Projectile Effect"
 ENT.Category			= "Particle Effects"
-ENT.Information			= "TODO"
+ENT.Information			= "Launches props which can have particle effects attached to them, and can play more particle effects when they expire, either on impact or on a timer."
 
 ENT.Spawnable			= true
 
@@ -63,7 +63,7 @@ function ENT:SetNWVarDefaults()
 	self:SetProjCount(1)
 	self:SetProjDir(0)
 
-	self:SetModel("models/weapons/w_models/w_rocket.mdl") //do this here too //TODO: use an hl2 model as default eventually
+	self:SetModel("models/weapons/w_missile.mdl")
 
 end
 
@@ -97,7 +97,7 @@ if CLIENT then
 		local betweenitems = window.betweenitems
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("Projectile Settings")
+		cat:SetLabel("Projectile Effect Settings")
 		cat:DockMargin(3,1,-2,3) //-2 right for divider
 		cat:Dock(FILL)
 		container:AddItem(cat)
@@ -109,95 +109,179 @@ if CLIENT then
 		rpnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 		rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
 
+			local check = vgui.Create( "DCheckBoxLabel", rpnl)
+			check:SetText("Serverside projectiles")
+			check:SetDark(true)
+			check:SetHeight(15)
+			check:Dock(TOP)
+			check:DockMargin(padding,padding,0,0)
 
-		local check = vgui.Create( "DCheckBoxLabel", rpnl)
-		check:SetText("Serverside projectiles")
-		check:SetDark(true)
-		check:SetHeight(15)
-		check:Dock(TOP)
-		check:DockMargin(padding,padding,0,0)
-
-		check:SetValue(ent:GetProjServerside())
-		check.OnChange = function(_, val)
-			ent:DoInput("proj_serverside", val)
-		end
-
-
-		local slider = vgui.Create("DNumSlider", rpnl)
-		slider:SetText("Projectile Spread (in degrees)")
-		slider:SetMinMax(0, 360)
-		slider:SetDefaultValue(0)
-		slider:SetDark(true)
-		slider:SetHeight(18)
-		slider:Dock(TOP)
-		//slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
-		slider:DockMargin(padding,padding-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
-
-		slider:SetValue(ent:GetProjSpread() or 0.00)
-		function slider.OnValueChanged(_, val)
-			ent:DoInput("proj_spread", val)
-		end
-
-
-		local slider = vgui.Create("DNumSlider", rpnl)
-		slider:SetText("Projectile Count")
-		slider:SetDecimals(0)
-		slider:SetMinMax(1, 8)
-		slider:SetDefaultValue(1)
-		slider:SetDark(true)
-		slider:SetHeight(18)
-		slider:Dock(TOP)
-		slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
-
-		local val = ent:GetProjCount() or 0
-		slider:SetValue(val)
-		slider.Val = val
-		function slider.OnValueChanged(_, val) //only send updates on whole numbers
-			val = math.Round(val)
-			if val != slider.Val then
-				slider.Val = val
-				ent:DoInput("proj_count", val)
+			check:SetValue(ent:GetProjServerside())
+			check.OnChange = function(_, val)
+				ent:DoInput("proj_serverside", val)
 			end
-		end
 
 
-		local drop = vgui.Create("Panel", rpnl)
+			local slider = vgui.Create("DNumSlider", rpnl)
+			slider:SetText("Projectile Spread (degrees)")
+			slider:SetMinMax(0, 360)
+			slider:SetDefaultValue(0)
+			slider:SetDark(true)
+			slider:SetHeight(18)
+			slider:Dock(TOP)
+			//slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+			slider:DockMargin(padding,padding-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+
+			slider:SetValue(ent:GetProjSpread() or 0.00)
+			function slider.OnValueChanged(_, val)
+				ent:DoInput("proj_spread", val)
+			end
+
+
+			local slider = vgui.Create("DNumSlider", rpnl)
+			slider:SetText("Projectile Count")
+			slider:SetDecimals(0)
+			slider:SetMinMax(1, 8)
+			slider:SetDefaultValue(1)
+			slider:SetDark(true)
+			slider:SetHeight(18)
+			slider:Dock(TOP)
+			slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+
+			local val = ent:GetProjCount() or 0
+			slider:SetValue(val)
+			slider.Val = val
+			function slider.OnValueChanged(_, val) //only send updates on whole numbers
+				val = math.Round(val)
+				if val != slider.Val then
+					slider.Val = val
+					ent:DoInput("proj_count", val)
+				end
+			end
+
+
+			local drop = vgui.Create("Panel", rpnl)
+			
+			drop.Label = vgui.Create("DLabel", drop)
+			drop.Label:SetDark(true)
+			drop.Label:SetText("Projectile Direction")
+			drop.Label:Dock(LEFT)
+
+			drop.Combo = vgui.Create("DComboBox", drop)
+			drop.Combo:SetHeight(25)
+			drop.Combo:Dock(FILL)
+
+			local dir0 = "Forward"
+			local dir1 = "Right"
+			local dir2 = "Up"
+			local val = ent:GetProjDir() or 0
+			if val == 0 then
+				drop.Combo:SetValue(dir0)
+			elseif val == 1 then
+				drop.Combo:SetValue(dir1)
+			elseif val == 2 then
+				drop.Combo:SetValue(dir2)
+			end
+			drop.Combo:AddChoice(dir0, 0)
+			drop.Combo:AddChoice(dir1, 1)
+			drop.Combo:AddChoice(dir2, 2)
+			function drop.Combo.OnSelect(_, index, value, data)
+				ent:DoInput("proj_dir", data)
+			end
+
+			drop:SetHeight(25)
+			drop:Dock(TOP)
+			drop:DockMargin(padding,betweenitems,padding,0)
+			//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
+			function drop.PerformLayout(_, w, h)
+				drop.Label:SetWide(w / 2.4)
+			end
+
+		local cat = vgui.Create("DCollapsibleCategory", container)
+		cat:SetLabel("Projectile Visuals")
+		cat:DockMargin(3,1,-2,3) //-2 right for divider
+		cat:Dock(FILL)
+		container:AddItem(cat)
+
+		local rpnl = vgui.Create("DSizeToContents", cat) //call this one rpnl and not pnl, just so we don't have to rewrite the numpad stuff copied from animprop that already has a panel with that name
+		rpnl:Dock(FILL)
+		cat:SetContents(rpnl)
+		rpnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
+		rpnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+		rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
+
+			local entrypnl = vgui.Create("Panel", rpnl)
+			entrypnl:SetHeight(20)
+			entrypnl:Dock(TOP)
+			entrypnl:DockMargin(padding,padding,padding,0)
+
+			local label = vgui.Create("DLabel", entrypnl)
+			label:SetDark(true)
+			label:SetText("Model")
+			label:Dock(LEFT)
+
+			local entry = vgui.Create("DTextEntry", entrypnl)
+			entry:SetHeight(20)
+			entry:Dock(FILL)
+			//entry:SetPlaceholderText("Enter a model path")
+			entry:SetText(ent:GetModel())
+
+			entry.OnEnter = function()
+				ent:DoInput("projvis_model", entry:GetText())
+			end
+			entry.OnFocusChanged = function(_, b) 
+				if !b then entry:OnEnter() end
+			end
+
+			function entrypnl.PerformLayout(_, w, h)
+				local w2, h2 = label:GetTextSize()
+				label:SetWide(w2 + padding*2)
+			end
+
+
+			//local skincount = ent:SkinCount()
+			//if skincount > 1 then
+				local slider = vgui.Create("DNumSlider", rpnl)
+				slider:SetText("Skin")
+				slider:SetDecimals(0)
+				//slider:SetMinMax(0, skincount-1)
+				slider:SetDefaultValue(0)
+				slider:SetDark(true)
+				//slider:SetHeight(18)
+				slider:Dock(TOP)
+				//slider:DockMargin(padding,betweenitems,0,3)
 		
-		drop.Label = vgui.Create("DLabel", drop)
-		drop.Label:SetDark(true)
-		drop.Label:SetText("Projectile Direction")
-		drop.Label:Dock(LEFT)
+				local val = ent:GetSkin()
+				slider:SetValue(val)
+				slider.Val = val
+				function slider.OnValueChanged(_, val) //only send updates on whole numbers
+					val = math.Round(val)
+					if val != slider.Val then
+						slider.Val = val
+						ent:DoInput("projvis_skin", val)
+					end
+				end
 
-		drop.Combo = vgui.Create("DComboBox", drop)
-		drop.Combo:SetHeight(25)
-		drop.Combo:Dock(FILL)
-
-		local dir0 = "Forward"
-		local dir1 = "Right"
-		local dir2 = "Up"
-		local val = ent:GetProjDir() or 0
-		if val == 0 then
-			drop.Combo:SetValue(dir0)
-		elseif val == 1 then
-			drop.Combo:SetValue(dir1)
-		elseif val == 2 then
-			drop.Combo:SetValue(dir2)
-		end
-		drop.Combo:AddChoice(dir0, 0)
-		drop.Combo:AddChoice(dir1, 1)
-		drop.Combo:AddChoice(dir2, 2)
-		function drop.Combo.OnSelect(_, index, value, data)
-			ent:DoInput("proj_dir", data)
-		end
-
-		drop:SetHeight(25)
-		drop:Dock(TOP)
-		drop:DockMargin(padding,betweenitems,padding,0)
-		//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
-		function drop.PerformLayout(_, w, h)
-			drop.Label:SetWide(w / 2.4)
-		end
-
+				//local oldThink = slider.Think //slider actually has no think func by default, turns out
+				slider.Think = function(...)
+					//instead of adding special handling somewhere on the entity to check for a model change and recreate this panel,
+					//just make the slider automatically resize itself depending on the skin count
+					local skincount = ent:SkinCount()
+					if slider.OldSkinCount != skincount then
+						slider.OldSkinCount = skincount
+						if skincount > 1 then
+							slider:SetHeight(18)
+							slider:DockMargin(padding,betweenitems,0,3)
+							slider:SetMinMax(0, skincount-1)
+						else
+							slider:SetHeight(0)
+							slider:DockMargin(0,0,0,0)
+						end
+					end
+					//oldThink(...)
+				end
+			//end
+	
 	end
 
 	local icon_error = Material("icon16/exclamation.png")
@@ -444,6 +528,7 @@ function ENT:CreateProjectile()
 		end
 
 		//TODO: projectile visual settings
+		proj:SetSkin(self:GetSkin())
 
 		local lifetime_prehit = 10 //TODO: make setting
 		local lifetime_posthit = 0 //TODO: make setting
@@ -653,8 +738,10 @@ local EditMenuInputs = {
 	"proj_spread",
 	"proj_count",
 	"proj_dir",
+	"projvis_model",
+	"projvis_skin",
 }
-ENT.EditMenuInputs_bits = 4 //max 15
+ENT.EditMenuInputs_bits = 5 //max 31
 ENT.EditMenuInputs = table.Flip(EditMenuInputs)
 
 if CLIENT then
@@ -700,6 +787,14 @@ if CLIENT then
 		elseif input == "proj_dir" then
 			
 			net.WriteUInt(args[1], 2) //new dir (0/1/2)
+
+		elseif input == "projvis_model" then
+
+			net.WriteString(args[1])
+
+		elseif input == "projvis_skin" then 
+
+			net.WriteUInt(args[1], 6) //new skin; i think the max number of skins is 32
 
 		end
 
@@ -780,8 +875,17 @@ else
 
 		elseif input == "proj_dir" then
 			
-			local new = math.min(net.ReadUInt(2), 2)
-			self:SetProjDir(new)
+			self:SetProjDir(math.min(net.ReadUInt(2), 2))
+			refreshtable = true
+
+		elseif input == "projvis_model" then
+
+			self:SetModel(net.ReadString())
+			refreshtable = true
+
+		elseif input == "projvis_skin" then
+
+			self:SetSkin(net.ReadUInt(6))
 			refreshtable = true
 
 		end

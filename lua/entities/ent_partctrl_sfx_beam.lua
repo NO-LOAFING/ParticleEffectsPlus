@@ -3,7 +3,7 @@ AddCSLuaFile()
 ENT.Base 			= "ent_partctrl_sfx"
 ENT.PrintName			= "Pointer Effect"
 ENT.Category			= "Particle Effects"
-ENT.Information			= "Makes particle effects work like a laser pointer, with one end where the \"beam\" starts, and the other continuously moving to where it's pointing."
+ENT.Information			= "Makes particle effects work like a laser pointer, with one end where the \"beam\" starts, and the other end continuously moving to where it's pointing."
 
 ENT.Spawnable			= true
 
@@ -72,7 +72,7 @@ if CLIENT then
 		local padding = window.padding
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("Pointer Settings")
+		cat:SetLabel("Pointer Effect Settings")
 		cat:DockMargin(3,1,-2,3) //-2 right for divider
 		cat:Dock(FILL)
 		container:AddItem(cat)
@@ -251,8 +251,7 @@ else
 
 		if input == "beam_dir" then
 			
-			local new = math.min(net.ReadUInt(2), 2)
-			self:SetBeamDir(new)
+			self:SetBeamDir(math.min(net.ReadUInt(2), 2))
 			refreshtable = true
 
 		end

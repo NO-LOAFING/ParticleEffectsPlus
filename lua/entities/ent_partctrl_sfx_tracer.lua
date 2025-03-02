@@ -96,7 +96,7 @@ if CLIENT then
 		local betweenitems = window.betweenitems
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("Bullet Settings")
+		cat:SetLabel("Bullet Effect Settings")
 		cat:DockMargin(3,1,-2,3) //-2 right for divider
 		cat:Dock(FILL)
 		container:AddItem(cat)
@@ -110,7 +110,7 @@ if CLIENT then
 
 
 		local slider = vgui.Create("DNumSlider", rpnl)
-		slider:SetText("Bullet Spread (in degrees)")
+		slider:SetText("Bullet Spread (degrees)")
 		slider:SetMinMax(0, 360)
 		slider:SetDefaultValue(10)
 		slider:SetDark(true)
@@ -515,8 +515,7 @@ else
 
 		elseif input == "tracer_dir" then
 			
-			local new = math.min(net.ReadUInt(2), 2)
-			self:SetTracerDir(new)
+			self:SetTracerDir(math.min(net.ReadUInt(2), 2))
 			refreshtable = true
 
 		end
