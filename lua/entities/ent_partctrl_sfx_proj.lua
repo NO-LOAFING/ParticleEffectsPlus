@@ -369,6 +369,52 @@ if CLIENT then
 					end
 				end
 			//end
+
+
+			local entrypnl = vgui.Create("Panel", rpnl)
+			entrypnl:SetHeight(20)
+			entrypnl:Dock(TOP)
+			entrypnl:DockMargin(padding,betweencategories,padding,0)
+
+			local label = vgui.Create("DLabel", entrypnl)
+			label:SetDark(true)
+			label:SetText("Material")
+			label:Dock(LEFT)
+
+			local entry = vgui.Create("DTextEntry", entrypnl)
+			entry:SetHeight(20)
+			entry:Dock(FILL)
+			entry:SetText(ent:GetMaterial())
+
+			entry.OnEnter = function()
+				ent:DoInput("projvis_material", entry:GetText())
+			end
+			entry.OnFocusChanged = function(_, b) 
+				if !b then entry:OnEnter() end
+			end
+
+			function entrypnl.PerformLayout(_, w, h)
+				local w2, h2 = label:GetTextSize()
+				label:SetWide(w2 + padding*2)
+			end
+
+
+			local col = vgui.Create("DColorMixer", rpnl)
+			col:SetAlphaBar(true)
+			col:Dock(TOP)
+			col:DockMargin(padding,padding,padding,0)
+
+			function col.PerformLayout(self, x, y)
+				//Modified version of CtrlColor:PerformLayout (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/spawnmenu/controls/ctrlcolor.lua#L13)
+				//Only does palette button sizes, doesn't clamp their sizes and resizes them more smoothly
+				local ColorRows = #self.Palette:GetChildren() / 3
+				self.Palette:SetButtonSize(self:GetWide() / ColorRows)
+			end
+
+			col:SetColor(ent:GetColor())
+			function col.ValueChanged(_, val)
+				ent:DoInput("projvis_color", Color(val.r,val.g,val.b,val.a))
+			end
 	
 	end
 
@@ -615,8 +661,13 @@ function ENT:CreateProjectile()
 			proj:PhysicsInit(SOLID_VPHYSICS)
 		end
 
-		//TODO: projectile visual settings
 		proj:SetSkin(self:GetSkin())
+		proj:SetMaterial(self:GetMaterial())
+		local col = self:GetColor()
+		proj:SetColor(col)
+		if col.a < 255 then
+			proj:SetRenderMode(RENDERMODE_TRANSCOLOR)
+		end
 
 		local lifetime_prehit = self:GetProjLifetimePre()
 		local lifetime_posthit = self:GetProjLifetimePost()
@@ -693,8 +744,6 @@ if CLIENT then
 				tr.collisiongroup = COLLISION_GROUP_INTERACTIVE_DEBRIS //don't hit other projectiles
 				tr = util.TraceLine(tr)
 				if tr.Entity != nil and tr.Fraction < 1 then //tr.Fraction check stops this from returning a bad angle when stuck in a wall
-					PrintTable(tr)
-					MsgN("")
 					hitang = tr.HitNormal:Angle() //use the floor's angle
 				else
 					hitang = vector_up:Angle() //use the same angle as a flat floor if we explode mid-air, for consistency
@@ -848,6 +897,8 @@ local EditMenuInputs = {
 	"proj_serverside",
 	"projvis_model",
 	"projvis_skin",
+	"projvis_material",
+	"projvis_color",
 }
 ENT.EditMenuInputs_bits = 5 //max 31
 ENT.EditMenuInputs = table.Flip(EditMenuInputs)
@@ -919,6 +970,14 @@ if CLIENT then
 		elseif input == "projvis_skin" then 
 
 			net.WriteUInt(args[1], 6) //new skin; i think the max number of skins is 32
+
+		elseif input == "projvis_material" then
+			
+			net.WriteString(args[1]) //new material
+
+		elseif input == "projvis_color" then
+			
+			net.WriteColor(args[1], true) //new color
 
 		end
 
@@ -1031,6 +1090,27 @@ else
 
 			self:SetSkin(net.ReadUInt(6))
 			refreshtable = true
+
+		elseif input == "projvis_material" then
+
+			local Data = {["MaterialOverride"] = net.ReadString()}
+			
+			//duplicate of SetMaterial from the material stool, this is dumb but it gets the job done
+			--
+			-- Make sure this is in the 'allowed' list in multiplayer - to stop people using exploits
+			--
+			if ( !game.SinglePlayer() && !list.Contains( "OverrideMaterials", Data.MaterialOverride ) && Data.MaterialOverride != "" ) then return end
+
+			self:SetMaterial( Data.MaterialOverride )
+			duplicator.StoreEntityModifier( self, "material", Data )
+
+		elseif input == "projvis_color" then
+			
+			local Data = {["Color"] = net.ReadColor()}
+
+			self:SetColor(Data.Color)
+
+			duplicator.StoreEntityModifier( self, "colour", Data )
 
 		end
 
