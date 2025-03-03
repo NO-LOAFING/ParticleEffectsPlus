@@ -765,28 +765,20 @@ function ENT:CreateProjectile()
 		local projang = Angle(fwd) //create a copy of the firing direction to use for the prop angle, so we can rotate the prop without rotating the firing direction
 		local projang_ = self:GetProjAngle()
 		if projang_ == 0 then
-			//proj:SetAngles(fwd)
 			spinang = ang_fwd
 		elseif projang_ == 1 then
-			//proj:SetAngles(-fwd)
 			projang:RotateAroundAxis(fwd:Up(), 180)
 			spinang = ang_back
 		elseif projang_ == 2 then
-			//local fwd2 = -fwd:Right()
-			//proj:SetAngles(fwd2:Angle())
 			projang:RotateAroundAxis(fwd:Up(), 90)
 			spinang = ang_left
 		elseif projang_ == 3 then
-			//proj:SetAngles(fwd:Right():Angle())
 			projang:RotateAroundAxis(fwd:Up(), -90)
 			spinang = ang_right
 		elseif projang_ == 4 then
-			//proj:SetAngles(fwd:Up():Angle())
 			projang:RotateAroundAxis(fwd:Right(), 90)
 			spinang = ang_up
 		else
-			//local fwd2 = -fwd:Up()
-			//proj:SetAngles(fwd2:Angle())
 			projang:RotateAroundAxis(fwd:Right(), -90)
 			spinang = ang_down
 		end
@@ -853,7 +845,6 @@ function ENT:CreateProjectile()
 				local spinaxis = self:GetProjSpin()
 				if spinaxis == 0 then
 					//random tumble, emulates tf2 grenade tumble code since that's what the random setting was originally made for (https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/shared/tf/tf_weaponbase_gun.cpp#L694)
-					//phys:SetAngleVelocity(Vector(spinvel,math.Rand(-spinvel*2,spinvel*2),0))
 					phys:SetAngleVelocity((spinang:Forward()*spinvel) + (spinang:Right()*math.Rand(-spinvel*2,spinvel*2)))
 				elseif spinaxis == 1 then
 					//random axis
@@ -863,15 +854,12 @@ function ENT:CreateProjectile()
 					phys:SetAngleVelocity(ang * spinvel)
 				elseif spinaxis == 2 then
 					//pitch
-					//phys:SetAngleVelocity(Vector(0,spinvel,0))
 					phys:SetAngleVelocity(spinang:Right()*-spinvel )
 				elseif spinaxis == 3 then
 					//yaw
-					//phys:SetAngleVelocity(Vector(0,0,spinvel))
 					phys:SetAngleVelocity(spinang:Up()*spinvel )
 				else
 					//roll
-					//phys:SetAngleVelocity(Vector(spinvel,0,0))
 					phys:SetAngleVelocity(spinang:Forward()*spinvel )
 				end
 			end
