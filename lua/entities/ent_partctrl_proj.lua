@@ -56,7 +56,8 @@ if SERVER then
 		timer.Simple(self.lifetime_posthit, function() //even if lifetime_posthit is 0, we still need to use a timer, because directly removing the ent in a PhysicsCollide callback crashes the game
 			if IsValid(self) then
 				if self.lifetime_posthit == 0 then
-					self:DoExpire(data.HitPos, -data.HitNormal:Angle())
+					local norm = -data.HitNormal
+					self:DoExpire(data.HitPos, norm:Angle())
 				else
 					self:DoExpire()
 				end
@@ -72,7 +73,10 @@ if SERVER then
 		net.Start("PartCtrl_ProjEffectExpire_SendToCl", true)
 			net.WriteEntity(self:GetOwnerEntity())
 			net.WriteVector(pos or self:GetPos())
-			net.WriteAngle(ang or self:GetAngles())
+			net.WriteBool(tobool(ang))
+			if ang then
+				net.WriteAngle(ang)
+			end
 		net.Broadcast()
 
 		self:Remove()
@@ -85,7 +89,10 @@ else
 
 		local sfx = net.ReadEntity()
 		local pos = net.ReadVector()
-		local ang = net.ReadAngle()
+		local ang
+		if net.ReadBool() then
+			ang = net.ReadAngle()
+		end
 
 		if !IsValid(sfx) or !sfx.PartCtrl_SpecialEffect or !sfx:GetClass() == "ent_partctrl_sfx_proj" then return end
 		sfx:StartParticle(nil, pos, ang)

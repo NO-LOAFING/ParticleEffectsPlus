@@ -63,7 +63,6 @@ function ENT:SetNWVarDefaults()
 	self:SetNumpadToggle(true)
 	self:SetNumpadStartOn(true)
 
-	self:SetProjServerside(false)
 	self:SetProjSpread(0)
 	self:SetProjCount(1)
 	self:SetProjDir(0)
@@ -72,6 +71,7 @@ function ENT:SetNWVarDefaults()
 	self:SetProjGravity(false)
 	self:SetProjLifetimePre(10)
 	self:SetProjLifetimePost(0)
+	self:SetProjServerside(false)
 
 	self:SetModel("models/weapons/w_missile.mdl")
 
@@ -121,19 +121,6 @@ if CLIENT then
 		rpnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
 		rpnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 		rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
-
-			local check = vgui.Create( "DCheckBoxLabel", rpnl)
-			check:SetText("Serverside projectiles")
-			check:SetDark(true)
-			check:SetHeight(15)
-			check:Dock(TOP)
-			check:DockMargin(padding,padding,0,0)
-
-			check:SetValue(ent:GetProjServerside())
-			check.OnChange = function(_, val)
-				ent:DoInput("proj_serverside", val)
-			end
-
 
 			local slider = vgui.Create("DNumSlider", rpnl)
 			slider:SetText("Projectile spread (degrees)")
@@ -284,6 +271,19 @@ if CLIENT then
 			slider.Val = val
 			function slider.OnValueChanged(_, val)
 				ent:DoInput("proj_lifetime_post", val)
+			end
+
+
+			local check = vgui.Create( "DCheckBoxLabel", rpnl)
+			check:SetText("Serverside projectiles")
+			check:SetDark(true)
+			check:SetHeight(15)
+			check:Dock(TOP)
+			check:DockMargin(padding,betweencategories,0,0)
+
+			check:SetValue(ent:GetProjServerside())
+			check.OnChange = function(_, val)
+				ent:DoInput("proj_serverside", val)
 			end
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
@@ -634,7 +634,8 @@ function ENT:CreateProjectile()
 				timer.Simple(lifetime_posthit, function() //even if lifetime_posthit is 0, we still need to use a timer, because directly removing the ent in a PhysicsCollide callback crashes the game
 					if IsValid(proj) and IsValid(self) then
 						if lifetime_posthit == 0 then
-							self:StartParticle(proj, data.HitPos, -data.HitNormal:Angle())
+							local norm = -data.HitNormal
+							self:StartParticle(proj, data.HitPos, norm:Angle())
 						else
 							self:StartParticle(proj, true)
 						end
@@ -682,7 +683,22 @@ if CLIENT then
 			if isbool(hitpos) then
 				//if !IsValid(proj) then return end
 				hitpos = proj:GetPos()
-				hitang = proj:GetAngles() //TODO: make setting for angle
+			end
+			if !hitang then
+				//TODO: make alternate settings for angle
+				local tr = {}
+				tr.start = hitpos
+				tr.endpos = hitpos + Vector(0,0,-32) //trace downward to find the floor we're sitting on; matches tf2 grenade code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/shared/tf/tf_weaponbase_grenadeproj.cpp#L468)
+				tr.filter = proj
+				tr.collisiongroup = COLLISION_GROUP_INTERACTIVE_DEBRIS //don't hit other projectiles
+				tr = util.TraceLine(tr)
+				if tr.Entity != nil and tr.Fraction < 1 then //tr.Fraction check stops this from returning a bad angle when stuck in a wall
+					PrintTable(tr)
+					MsgN("")
+					hitang = tr.HitNormal:Angle() //use the floor's angle
+				else
+					hitang = vector_up:Angle() //use the same angle as a flat floor if we explode mid-air, for consistency
+				end
 			end
 
 			hit = ents.CreateClientside("ent_partctrl_sfxtarget")
@@ -822,7 +838,6 @@ local EditMenuInputs = {
 	"numpad_num",
 	"numpad_toggle",
 	"numpad_starton",
-	"proj_serverside",
 	"proj_spread",
 	"proj_count",
 	"proj_dir",
@@ -830,6 +845,7 @@ local EditMenuInputs = {
 	"proj_gravity",
 	"proj_lifetime_pre",
 	"proj_lifetime_post",
+	"proj_serverside",
 	"projvis_model",
 	"projvis_skin",
 }
@@ -864,10 +880,6 @@ if CLIENT then
 
 			net.WriteBool(args[1])
 
-		elseif input == "proj_serverside" then
-			
-			net.WriteBool(args[1])
-
 		elseif input == "proj_spread" then
 			
 			net.WriteFloat(args[1]) //new spread
@@ -895,6 +907,10 @@ if CLIENT then
 		elseif input == "proj_lifetime_post" then
 			
 			net.WriteFloat(args[1]) //new lifetime (post-hit)
+
+		elseif input == "proj_serverside" then
+			
+			net.WriteBool(args[1])
 
 		elseif input == "projvis_model" then
 
@@ -966,11 +982,6 @@ else
 
 			self:SetNumpadStartOn(net.ReadBool())
 
-		elseif input == "proj_serverside" then
-			
-			self:SetProjServerside(net.ReadBool())
-			refreshtable = true
-
 		elseif input == "proj_spread" then
 
 			self:SetProjSpread(net.ReadFloat())
@@ -1004,6 +1015,11 @@ else
 		elseif input == "proj_lifetime_post" then
 			
 			self:SetProjLifetimePost(net.ReadFloat())
+			refreshtable = true
+
+		elseif input == "proj_serverside" then
+			
+			self:SetProjServerside(net.ReadBool())
 			refreshtable = true
 
 		elseif input == "projvis_model" then
