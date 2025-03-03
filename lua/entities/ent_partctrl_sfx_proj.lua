@@ -46,6 +46,10 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Float", 3, "ProjLifetimePre")
 	self:NetworkVar("Float", 4, "ProjLifetimePost")
 
+	self:NetworkVar("Int", 4, "ProjAngle")
+	self:NetworkVar("Int", 5, "ProjSpin")
+	self:NetworkVar("Float", 5, "ProjSpinVelocity")
+
 end
 
 
@@ -67,13 +71,16 @@ function ENT:SetNWVarDefaults()
 	self:SetProjCount(1)
 	self:SetProjDir(0)
 
-	self:SetProjVelocity(800)
+	self:SetProjVelocity(1000)
 	self:SetProjGravity(false)
 	self:SetProjLifetimePre(10)
 	self:SetProjLifetimePost(0)
 	self:SetProjServerside(false)
 
 	self:SetModel("models/weapons/w_missile.mdl")
+	self:SetProjAngle(0)
+	self:SetProjSpin(0)
+	self:SetProjSpinVelocity(0)
 
 end
 
@@ -204,7 +211,7 @@ if CLIENT then
 			local slider = vgui.Create("DNumSlider", rpnl)
 			slider:SetText("Velocity")
 			slider:SetMinMax(0, 3000)
-			slider:SetDefaultValue(800)
+			slider:SetDefaultValue(1000)
 			slider:SetDark(true)
 			slider:SetHeight(18)
 			slider:Dock(TOP)
@@ -369,6 +376,99 @@ if CLIENT then
 					end
 				end
 			//end
+
+
+			local drop = vgui.Create("Panel", rpnl)
+			
+			drop.Label = vgui.Create("DLabel", drop)
+			drop.Label:SetDark(true)
+			drop.Label:SetText("Projectile angle")
+			drop.Label:Dock(LEFT)
+
+			drop.Combo = vgui.Create("DComboBox", drop)
+			drop.Combo:SetHeight(25)
+			drop.Combo:Dock(FILL)
+
+			local dirs = {
+				[0] = "Forward",
+				[1] = "Back",
+				[2] = "Left",
+				[3] = "Right",
+				[4] = "Up",
+				[5] = "Down"
+			}
+			local val = ent:GetProjAngle() or 0
+			drop.Combo:SetValue(dirs[val])
+			for k, v in pairs (dirs) do
+				drop.Combo:AddChoice(v, k)
+			end
+			function drop.Combo.OnSelect(_, index, value, data)
+				ent:DoInput("projvis_angle", data)
+			end
+
+			drop:SetHeight(25)
+			drop:Dock(TOP)
+			drop:DockMargin(padding,betweencategories,padding,0)
+			//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
+			function drop.PerformLayout(_, w, h)
+				drop.Label:SetWide(w / 2.4)
+			end
+
+
+			local drop = vgui.Create("Panel", rpnl)
+			
+			drop.Label = vgui.Create("DLabel", drop)
+			drop.Label:SetDark(true)
+			drop.Label:SetText("Spin axis")
+			drop.Label:Dock(LEFT)
+
+			drop.Combo = vgui.Create("DComboBox", drop)
+			drop.Combo:SetHeight(25)
+			drop.Combo:Dock(FILL)
+
+			local dirs = {
+				[0] = "Random pitch+yaw (pill tumble)",
+				[1] = "Random axis",
+				[2] = "Pitch",
+				[3] = "Yaw",
+				[4] = "Roll",
+			}
+			local val = ent:GetProjSpin() or 0
+			drop.Combo:SetValue(dirs[val])
+			for k, v in pairs (dirs) do
+				drop.Combo:AddChoice(v, k)
+			end
+			function drop.Combo.OnSelect(_, index, value, data)
+				ent:DoInput("projvis_spin", data)
+			end
+
+			drop:SetHeight(25)
+			drop:Dock(TOP)
+			drop:DockMargin(padding,betweenitems,padding,0)
+			//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
+			function drop.PerformLayout(_, w, h)
+				drop.Label:SetWide(w / 2.4)
+			end
+
+
+			local slider = vgui.Create("DNumSlider", rpnl)
+			slider:SetText("Spin velocity")
+			slider:SetMinMax(-1500,1500)
+			slider:SetDefaultValue(0)
+			slider:SetDark(true)
+			slider:SetHeight(18)
+			slider:Dock(TOP)
+			slider:DockMargin(padding,betweenitems,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+
+			slider.ValueChanged = SliderValueChangedUnclampedMax
+			slider.SetValue = SliderSetValueUnclampedMax
+
+			local val = ent:GetProjSpinVelocity() or 0
+			slider:SetValue(val)
+			slider.Val = val
+			function slider.OnValueChanged(_, val)
+				ent:DoInput("projvis_spin_velocity", val)
+			end
 
 
 			local entrypnl = vgui.Create("Panel", rpnl)
@@ -599,6 +699,13 @@ end
 
 
 
+local ang_fwd = Angle(0,0,0)
+local ang_back = Angle(0,180,0)
+local ang_left = Angle(0,-90,0)
+local ang_right = Angle(0,90,0)
+local ang_up = Angle(90,0,0)
+local ang_down = Angle(-90,0,0)
+
 function ENT:CreateProjectile()
 
 	local ent = self:GetSpecialEffectParent()
@@ -636,11 +743,13 @@ function ENT:CreateProjectile()
 		local spread = self:GetProjSpread()/90
 		local fwd = Angle(ang)
 		local randang = AngleRand()
-		fwd:RotateAroundAxis(fwd:Forward(), randang.r)
-		fwd:RotateAroundAxis(fwd:Right(), randang.p * (spread / 2))
-		fwd:RotateAroundAxis(fwd:Up(), randang.y * (spread / 4))
-		//now de-randomize the roll so the prop still spawns upright
-		fwd:RotateAroundAxis(fwd:Forward(), -randang.r)
+		if spread > 0 then
+			fwd:RotateAroundAxis(fwd:Forward(), randang.r)
+			fwd:RotateAroundAxis(fwd:Right(), randang.p * (spread / 2))
+			fwd:RotateAroundAxis(fwd:Up(), randang.y * (spread / 4))
+			//now de-randomize the roll so the prop still spawns upright
+			fwd:RotateAroundAxis(fwd:Forward(), -randang.r)
+		end
 
 		local proj
 		if CLIENT then
@@ -652,7 +761,36 @@ function ENT:CreateProjectile()
 		end
 		proj:SetOwner(ent) //don't collide with the prop that the effect ent is parented to
 		proj:SetPos(pos)
-		proj:SetAngles(fwd)
+		local spinang
+		local projang = Angle(fwd) //create a copy of the firing direction to use for the prop angle, so we can rotate the prop without rotating the firing direction
+		local projang_ = self:GetProjAngle()
+		if projang_ == 0 then
+			//proj:SetAngles(fwd)
+			spinang = ang_fwd
+		elseif projang_ == 1 then
+			//proj:SetAngles(-fwd)
+			projang:RotateAroundAxis(fwd:Up(), 180)
+			spinang = ang_back
+		elseif projang_ == 2 then
+			//local fwd2 = -fwd:Right()
+			//proj:SetAngles(fwd2:Angle())
+			projang:RotateAroundAxis(fwd:Up(), 90)
+			spinang = ang_left
+		elseif projang_ == 3 then
+			//proj:SetAngles(fwd:Right():Angle())
+			projang:RotateAroundAxis(fwd:Up(), -90)
+			spinang = ang_right
+		elseif projang_ == 4 then
+			//proj:SetAngles(fwd:Up():Angle())
+			projang:RotateAroundAxis(fwd:Right(), 90)
+			spinang = ang_up
+		else
+			//local fwd2 = -fwd:Up()
+			//proj:SetAngles(fwd2:Angle())
+			projang:RotateAroundAxis(fwd:Right(), -90)
+			spinang = ang_down
+		end
+		proj:SetAngles(projang)
 
 		proj:SetCollisionGroup(COLLISION_GROUP_INTERACTIVE_DEBRIS) //don't collide with other projectiles
 		if !util.IsValidProp(proj:GetModel()) then
@@ -710,6 +848,33 @@ function ENT:CreateProjectile()
 		if IsValid(phys) then
 			phys:Wake()
 			phys:SetVelocity(fwd:Forward() * self:GetProjVelocity()) //note: client projs have a max speed of 2000, and server projs have a max speed of 4000. don't know if there's a way to bypass either of these.
+			local spinvel = self:GetProjSpinVelocity()
+			if spinvel != 0 then
+				local spinaxis = self:GetProjSpin()
+				if spinaxis == 0 then
+					//random tumble, emulates tf2 grenade tumble code since that's what the random setting was originally made for (https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/shared/tf/tf_weaponbase_gun.cpp#L694)
+					//phys:SetAngleVelocity(Vector(spinvel,math.Rand(-spinvel*2,spinvel*2),0))
+					phys:SetAngleVelocity((spinang:Forward()*spinvel) + (spinang:Right()*math.Rand(-spinvel*2,spinvel*2)))
+				elseif spinaxis == 1 then
+					//random axis
+					local ang = Angle()
+					ang:Random()
+					ang = ang:Forward()
+					phys:SetAngleVelocity(ang * spinvel)
+				elseif spinaxis == 2 then
+					//pitch
+					//phys:SetAngleVelocity(Vector(0,spinvel,0))
+					phys:SetAngleVelocity(spinang:Right()*-spinvel )
+				elseif spinaxis == 3 then
+					//yaw
+					//phys:SetAngleVelocity(Vector(0,0,spinvel))
+					phys:SetAngleVelocity(spinang:Up()*spinvel )
+				else
+					//roll
+					//phys:SetAngleVelocity(Vector(spinvel,0,0))
+					phys:SetAngleVelocity(spinang:Forward()*spinvel )
+				end
+			end
 			phys:EnableGravity(self:GetProjGravity()) //would like to use proj:SetGravity() instead for more fine-tuned control, but that doesn't work on vphysics ents 
 			phys:SetMaterial("gmod_silent")
 		end
@@ -897,6 +1062,9 @@ local EditMenuInputs = {
 	"proj_serverside",
 	"projvis_model",
 	"projvis_skin",
+	"projvis_angle",
+	"projvis_spin",
+	"projvis_spin_velocity",
 	"projvis_material",
 	"projvis_color",
 }
@@ -970,6 +1138,18 @@ if CLIENT then
 		elseif input == "projvis_skin" then 
 
 			net.WriteUInt(args[1], 6) //new skin; i think the max number of skins is 32
+
+		elseif input == "projvis_angle" then
+			
+			net.WriteUInt(args[1], 3) //new dir (0-5)
+
+		elseif input == "projvis_spin" then
+			
+			net.WriteUInt(args[1], 3) //new spin angle (0-4)
+
+		elseif input == "projvis_spin_velocity" then
+			
+			net.WriteFloat(args[1]) //new velocity
 
 		elseif input == "projvis_material" then
 			
@@ -1089,6 +1269,21 @@ else
 		elseif input == "projvis_skin" then
 
 			self:SetSkin(net.ReadUInt(6))
+			refreshtable = true
+
+		elseif input == "projvis_angle" then
+			
+			self:SetProjAngle(math.min(net.ReadUInt(3), 5))
+			refreshtable = true
+
+		elseif input == "projvis_spin" then
+			
+			self:SetProjSpin(math.min(net.ReadUInt(3), 4))
+			refreshtable = true
+
+		elseif input == "projvis_spin_velocity" then
+			
+			self:SetProjSpinVelocity(net.ReadFloat())
 			refreshtable = true
 
 		elseif input == "projvis_material" then
