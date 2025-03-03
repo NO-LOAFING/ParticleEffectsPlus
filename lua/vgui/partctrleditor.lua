@@ -131,6 +131,7 @@ function PANEL:RebuildControls()
 	local betweencategories = 28 //space between categories in lists
 	self.padding = padding
 	self.betweenitems = betweenitems
+	self.betweencategories = betweencategories
 
 	local padding_help = 22 //bigger padding for help text
 	local betweenitems_help = 5 //smaller betweenitems for help text

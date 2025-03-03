@@ -41,6 +41,11 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Int", 2, "ProjCount")
 	self:NetworkVar("Int", 3, "ProjDir")
 
+	self:NetworkVar("Float", 2, "ProjVelocity")
+	self:NetworkVar("Bool", 6, "ProjGravity")
+	self:NetworkVar("Float", 3, "ProjLifetimePre")
+	self:NetworkVar("Float", 4, "ProjLifetimePost")
+
 end
 
 
@@ -62,6 +67,11 @@ function ENT:SetNWVarDefaults()
 	self:SetProjSpread(0)
 	self:SetProjCount(1)
 	self:SetProjDir(0)
+
+	self:SetProjVelocity(800)
+	self:SetProjGravity(false)
+	self:SetProjLifetimePre(10)
+	self:SetProjLifetimePost(0)
 
 	self:SetModel("models/weapons/w_missile.mdl")
 
@@ -95,6 +105,9 @@ if CLIENT then
 		local ent = self
 		local padding = window.padding
 		local betweenitems = window.betweenitems
+		local betweencategories = window.betweencategories
+		local SliderValueChangedUnclampedMax = window.SliderValueChangedUnclampedMax
+		local SliderSetValueUnclampedMax = window.SliderSetValueUnclampedMax
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
 		cat:SetLabel("Projectile Effect Settings")
@@ -123,7 +136,7 @@ if CLIENT then
 
 
 			local slider = vgui.Create("DNumSlider", rpnl)
-			slider:SetText("Projectile Spread (degrees)")
+			slider:SetText("Projectile spread (degrees)")
 			slider:SetMinMax(0, 360)
 			slider:SetDefaultValue(0)
 			slider:SetDark(true)
@@ -139,7 +152,7 @@ if CLIENT then
 
 
 			local slider = vgui.Create("DNumSlider", rpnl)
-			slider:SetText("Projectile Count")
+			slider:SetText("Projectiles per shot")
 			slider:SetDecimals(0)
 			slider:SetMinMax(1, 8)
 			slider:SetDefaultValue(1)
@@ -164,7 +177,7 @@ if CLIENT then
 			
 			drop.Label = vgui.Create("DLabel", drop)
 			drop.Label:SetDark(true)
-			drop.Label:SetText("Projectile Direction")
+			drop.Label:SetText("Firing direction")
 			drop.Label:Dock(LEFT)
 
 			drop.Combo = vgui.Create("DComboBox", drop)
@@ -195,6 +208,82 @@ if CLIENT then
 			//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
 			function drop.PerformLayout(_, w, h)
 				drop.Label:SetWide(w / 2.4)
+			end
+
+
+			//should these ones be in a different category?
+
+
+			local slider = vgui.Create("DNumSlider", rpnl)
+			slider:SetText("Velocity")
+			slider:SetMinMax(0, 3000)
+			slider:SetDefaultValue(800)
+			slider:SetDark(true)
+			slider:SetHeight(18)
+			slider:Dock(TOP)
+			slider:DockMargin(padding,betweencategories-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+
+			slider.ValueChanged = SliderValueChangedUnclampedMax
+			slider.SetValue = SliderSetValueUnclampedMax
+
+			local val = ent:GetProjVelocity() or 0
+			slider:SetValue(val)
+			slider.Val = val
+			function slider.OnValueChanged(_, val)
+				ent:DoInput("proj_velocity", val)
+			end
+
+
+			local check = vgui.Create( "DCheckBoxLabel", rpnl)
+			check:SetText("Gravity")
+			check:SetDark(true)
+			check:SetHeight(15)
+			check:Dock(TOP)
+			check:DockMargin(padding,betweenitems,0,0)
+
+			check:SetValue(ent:GetProjGravity())
+			check.OnChange = function(_, val)
+				ent:DoInput("proj_gravity", val)
+			end
+
+
+			local slider = vgui.Create("DNumSlider", rpnl)
+			slider:SetText("Lifetime")
+			slider:SetMinMax(0, 10)
+			slider:SetDefaultValue(10)
+			slider:SetDark(true)
+			slider:SetHeight(18)
+			slider:Dock(TOP)
+			slider:DockMargin(padding,betweencategories-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+
+			slider.ValueChanged = SliderValueChangedUnclampedMax
+			slider.SetValue = SliderSetValueUnclampedMax
+
+			local val = ent:GetProjLifetimePre() or 0
+			slider:SetValue(val)
+			slider.Val = val
+			function slider.OnValueChanged(_, val)
+				ent:DoInput("proj_lifetime_pre", val)
+			end
+
+
+			local slider = vgui.Create("DNumSlider", rpnl)
+			slider:SetText("Lifetime (after impact)")
+			slider:SetMinMax(0, 10)
+			slider:SetDefaultValue(0)
+			slider:SetDark(true)
+			slider:SetHeight(18)
+			slider:Dock(TOP)
+			slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+
+			slider.ValueChanged = SliderValueChangedUnclampedMax
+			slider.SetValue = SliderSetValueUnclampedMax
+
+			local val = ent:GetProjLifetimePost() or 0
+			slider:SetValue(val)
+			slider.Val = val
+			function slider.OnValueChanged(_, val)
+				ent:DoInput("proj_lifetime_post", val)
 			end
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
@@ -262,8 +351,8 @@ if CLIENT then
 					end
 				end
 
-				//local oldThink = slider.Think //slider actually has no think func by default, turns out
-				slider.Think = function(...)
+				function slider:Think()
+					if !IsValid(ent) then return end
 					//instead of adding special handling somewhere on the entity to check for a model change and recreate this panel,
 					//just make the slider automatically resize itself depending on the skin count
 					local skincount = ent:SkinCount()
@@ -278,7 +367,6 @@ if CLIENT then
 							slider:DockMargin(0,0,0,0)
 						end
 					end
-					//oldThink(...)
 				end
 			//end
 	
@@ -530,8 +618,8 @@ function ENT:CreateProjectile()
 		//TODO: projectile visual settings
 		proj:SetSkin(self:GetSkin())
 
-		local lifetime_prehit = 10 //TODO: make setting
-		local lifetime_posthit = 0 //TODO: make setting
+		local lifetime_prehit = self:GetProjLifetimePre()
+		local lifetime_posthit = self:GetProjLifetimePost()
 		if CLIENT then
 			timer.Simple(lifetime_prehit, function()
 				if IsValid(proj) and IsValid(self) then
@@ -569,8 +657,8 @@ function ENT:CreateProjectile()
 		local phys = proj:GetPhysicsObject()
 		if IsValid(phys) then
 			phys:Wake()
-			phys:SetVelocity(fwd:Forward() * 800) //TODO: make setting
-			phys:EnableGravity(false) //TODO: make setting
+			phys:SetVelocity(fwd:Forward() * self:GetProjVelocity()) //note: client projs have a max speed of 2000, and server projs have a max speed of 4000. don't know if there's a way to bypass either of these.
+			phys:EnableGravity(self:GetProjGravity()) //would like to use proj:SetGravity() instead for more fine-tuned control, but that doesn't work on vphysics ents 
 			phys:SetMaterial("gmod_silent")
 		end
 
@@ -738,6 +826,10 @@ local EditMenuInputs = {
 	"proj_spread",
 	"proj_count",
 	"proj_dir",
+	"proj_velocity",
+	"proj_gravity",
+	"proj_lifetime_pre",
+	"proj_lifetime_post",
 	"projvis_model",
 	"projvis_skin",
 }
@@ -787,6 +879,22 @@ if CLIENT then
 		elseif input == "proj_dir" then
 			
 			net.WriteUInt(args[1], 2) //new dir (0/1/2)
+
+		elseif input == "proj_velocity" then
+			
+			net.WriteFloat(args[1]) //new velocity
+
+		elseif input == "proj_gravity" then
+			
+			net.WriteBool(args[1]) //new gravity toggle
+
+		elseif input == "proj_lifetime_pre" then
+			
+			net.WriteFloat(args[1]) //new lifetime (pre-hit)
+
+		elseif input == "proj_lifetime_post" then
+			
+			net.WriteFloat(args[1]) //new lifetime (post-hit)
 
 		elseif input == "projvis_model" then
 
@@ -876,6 +984,26 @@ else
 		elseif input == "proj_dir" then
 			
 			self:SetProjDir(math.min(net.ReadUInt(2), 2))
+			refreshtable = true
+
+		elseif input == "proj_velocity" then
+			
+			self:SetProjVelocity(net.ReadFloat())
+			refreshtable = true
+
+		elseif input == "proj_gravity" then
+
+			self:SetProjGravity(net.ReadBool())
+			refreshtable = true
+
+		elseif input == "proj_lifetime_pre" then
+			
+			self:SetProjLifetimePre(net.ReadFloat())
+			refreshtable = true
+
+		elseif input == "proj_lifetime_post" then
+			
+			self:SetProjLifetimePost(net.ReadFloat())
 			refreshtable = true
 
 		elseif input == "projvis_model" then

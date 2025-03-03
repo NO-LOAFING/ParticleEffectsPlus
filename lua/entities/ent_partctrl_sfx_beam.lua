@@ -94,7 +94,7 @@ if CLIENT then
 		
 		drop.Label = vgui.Create("DLabel", drop)
 		drop.Label:SetDark(true)
-		drop.Label:SetText("Pointer Direction")
+		drop.Label:SetText("Firing direction")
 		drop.Label:Dock(LEFT)
 
 		drop.Combo = vgui.Create("DComboBox", drop)

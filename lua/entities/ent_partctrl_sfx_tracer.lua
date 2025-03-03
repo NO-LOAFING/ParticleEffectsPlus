@@ -110,7 +110,7 @@ if CLIENT then
 
 
 		local slider = vgui.Create("DNumSlider", rpnl)
-		slider:SetText("Bullet Spread (degrees)")
+		slider:SetText("Bullet spread (degrees)")
 		slider:SetMinMax(0, 360)
 		slider:SetDefaultValue(10)
 		slider:SetDark(true)
@@ -125,7 +125,7 @@ if CLIENT then
 
 
 		local slider = vgui.Create("DNumSlider", rpnl)
-		slider:SetText("Bullet Count")
+		slider:SetText("Bullets per shot")
 		slider:SetDecimals(0)
 		slider:SetMinMax(1, 8)
 		slider:SetDefaultValue(1)
@@ -150,7 +150,7 @@ if CLIENT then
 		
 		drop.Label = vgui.Create("DLabel", drop)
 		drop.Label:SetDark(true)
-		drop.Label:SetText("Bullet Direction")
+		drop.Label:SetText("Firing direction")
 		drop.Label:Dock(LEFT)
 
 		drop.Combo = vgui.Create("DComboBox", drop)
