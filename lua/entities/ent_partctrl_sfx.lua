@@ -94,17 +94,12 @@ function ENT:OnSpecialEffectParentChanged(_, old, new)
 				new.PartCtrl_ParticleEnts = new.PartCtrl_ParticleEnts or {}
 				new.PartCtrl_ParticleEnts[self] = true
 			end
-
-			//Restart the effect
-			if self.SpecialEffectRefresh then self:SpecialEffectRefresh() end
 		end)
 
-	else
-
-		//Restart the effect
-		if self.SpecialEffectRefresh then self:SpecialEffectRefresh() end
-		
 	end
+
+	//Restart the effect
+	if self.SpecialEffectRefresh then self:SpecialEffectRefresh() end
 
 end
 

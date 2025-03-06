@@ -1301,29 +1301,29 @@ else
 		self:BeginNewParticle()
 
 		local sfxpar = self:GetSpecialEffectParent()
+		//If we're a child of a special effect, update its control window
+		local parwindow
+		if IsValid(sfxpar) then
+			if sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
+			parwindow = sfxpar.PartCtrlWindow
+			if IsValid(parwindow) then
+				//If we were just parented, and still have our own control window from back when we were unparented, close it
+				if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow != parwindow then
+					self.PartCtrlWindow:OnEntityLost()
+				end
+				//Assign ourself to the parent's control window, so that info table updates and such will update those controls
+				self.PartCtrlWindow = parwindow
+			end
+		end
+		if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
+			//Update the list of children to add or remove us
+			self.PartCtrlWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
+			//If we're no longer parented, then stop being assigned to its control window
+			if !parwindow then
+				self.PartCtrlWindow = nil
+			end
+		end
 		if istable(oldtab) then
-			//If we're a child of a special effect, update its control window
-			local parwindow
-			if IsValid(sfxpar) then
-				if sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
-				parwindow = sfxpar.PartCtrlWindow
-				if IsValid(parwindow) then
-					//If we were just parented, and still have our own control window from back when we were unparented, close it
-					if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow != parwindow then
-						self.PartCtrlWindow:OnEntityLost()
-					end
-					//Assign ourself to the parent's control window, so that info table updates and such will update those controls
-					self.PartCtrlWindow = parwindow
-				end
-			end
-			if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
-				//Update the list of children to add or remove us
-				self.PartCtrlWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
-				//If we're no longer parented, then stop being assigned to its control window
-				if !parwindow then
-					self.PartCtrlWindow = nil
-				end
-			end
 			local window = IsValid(self.PartCtrlWindow) and istable(self.PartCtrlWindow.CPointCategories) and istable(self.PartCtrlWindow.CPointCategories[self])
 			for k, v in pairs (oldtab) do
 				if self.ParticleInfo[k].ent != oldtab[k].ent then
