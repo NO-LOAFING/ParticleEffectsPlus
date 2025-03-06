@@ -178,20 +178,19 @@ if CLIENT then
 			drop.Combo:SetHeight(25)
 			drop.Combo:Dock(FILL)
 
-			local dir0 = "Forward"
-			local dir1 = "Right"
-			local dir2 = "Up"
+			local dirs = {
+				[0] = "Forward",
+				[1] = "Back",
+				[2] = "Left",
+				[3] = "Right",
+				[4] = "Up",
+				[5] = "Down"
+			}
 			local val = ent:GetProjDir() or 0
-			if val == 0 then
-				drop.Combo:SetValue(dir0)
-			elseif val == 1 then
-				drop.Combo:SetValue(dir1)
-			elseif val == 2 then
-				drop.Combo:SetValue(dir2)
+			drop.Combo:SetValue(dirs[val])
+			for k, v in pairs (dirs) do
+				drop.Combo:AddChoice(v, k)
 			end
-			drop.Combo:AddChoice(dir0, 0)
-			drop.Combo:AddChoice(dir1, 1)
-			drop.Combo:AddChoice(dir2, 2)
 			function drop.Combo.OnSelect(_, index, value, data)
 				ent:DoInput("proj_dir", data)
 			end
@@ -746,9 +745,23 @@ function ENT:CreateProjectile()
 		pos = ent:GetPos()
 	end
 	local dir = self:GetProjDir()
+		//forward is default
 	if dir == 1 then
-		ang = ang:Right():Angle()
+		//back
+		ang:RotateAroundAxis(ang:Up(), 180)
 	elseif dir == 2 then
+		//left
+		ang:RotateAroundAxis(ang:Up(), 180)
+		ang = ang:Right():Angle()
+	elseif dir == 3 then
+		//right
+		ang = ang:Right():Angle()
+	elseif dir == 4 then
+		//up
+		ang = ang:Up():Angle()
+	elseif dir == 5 then
+		//down
+		ang:RotateAroundAxis(ang:Right(), 180)
 		ang = ang:Up():Angle()
 	end
 
@@ -1117,7 +1130,7 @@ if CLIENT then
 
 		elseif input == "proj_dir" then
 			
-			net.WriteUInt(args[1], 2) //new dir (0/1/2)
+			net.WriteUInt(args[1], 3) //new dir (0-5)
 
 		elseif input == "proj_velocity" then
 			
@@ -1241,7 +1254,7 @@ else
 
 		elseif input == "proj_dir" then
 			
-			self:SetProjDir(math.min(net.ReadUInt(2), 2))
+			self:SetProjDir(math.min(net.ReadUInt(3), 5))
 			refreshtable = true
 
 		elseif input == "proj_velocity" then
