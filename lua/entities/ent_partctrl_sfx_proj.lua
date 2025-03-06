@@ -620,6 +620,8 @@ function ENT:SpecialEffectInitialize()
 	//list of projectile entities we've created; we use this to clean them up
 	self.ProjectileEnts = {}
 
+	self.LastLoop = partctrl_wait
+
 end
 
 
@@ -629,46 +631,57 @@ function ENT:SpecialEffectThink()
 
 	//if CLIENT and (PartCtrl_AddParticles_CrashCheck_PreventingCrash or !self.SpecialEffectChildren or table.Count(self.SpecialEffectChildren) == 0) then return end
 
-	//TODO: we'll probably want to implement loop safety differently for proj fx, because we have to clean up projectiles too
-	--[[local max = nil
+	local max = nil
 	if self:GetLoopSafety() then
-		max = math.max(0, self:GetTracerCount() - 1)
-	end]]
+		max = math.max(0, self:GetProjCount() - 1)
+		//note: safety code is mostly copied from tracer - projectiles have a key difference from tracers, in that some projectiles might not have hit and played their impact fx yet 
+		//upon the start of the next loop, meaning the max won't get rid of them all uniformly like it does with the other fx. this is still acceptable because it fulfills the *safety*
+		//purpose of this feature, preventing too many fx from being created at once.
+	end
 
 	local numpadisdisabling = self:GetNumpadState()
 	if !self:GetNumpadStartOn() then
 		numpadisdisabling = !numpadisdisabling
 	end
 	if !numpadisdisabling then
-		local svproj = self:GetProjServerside()
-		if (!svproj and CLIENT) or (svproj and SERVER) then
-			local loop = self:GetLoop()
-			local time = CurTime()
-			if loop or self.LastLoop == nil then //loop mode 2: repeat every X seconds
-				if self.LastLoop == nil or (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
-					local wait = false
-					if CLIENT then
-						for child, _ in pairs (self.SpecialEffectChildren) do
-							//child.MaxOldParticlesOverride = max
-							if !child.ParticleInfo then
-								wait = true
-								break
+		if self.LastLoop == partctrl_wait then
+			//Wait a frame after initialize or refresh
+			self.LastLoop = nil
+		else
+			local svproj = self:GetProjServerside()
+			if CLIENT then
+				for child, _ in pairs (self.SpecialEffectChildren) do
+					child.MaxOldParticlesOverride = max
+				end
+			end
+			if (!svproj and CLIENT) or (svproj and SERVER) then
+				local loop = self:GetLoop()
+				local time = CurTime()
+				if loop or self.LastLoop == nil then //loop mode 2: repeat every X seconds
+					if self.LastLoop == nil or (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
+						local wait = false
+						if CLIENT then
+							for child, _ in pairs (self.SpecialEffectChildren) do
+								if !child.ParticleInfo then
+									wait = true
+									break
+								end
 							end
 						end
-					end
-					if !wait then
-						self:CreateProjectile()
-						self.LastLoop = time
-						//MsgN(time, ": set last loop to ", self.LastLoop)
+						if !wait then
+							self:CreateProjectile()
+							self.LastLoop = time
+							//MsgN(time, ": set last loop to ", self.LastLoop)
+						end
 					end
 				end
 			end
 		end
 	elseif CLIENT then
-		//if max != nil then max = 0 end
+		if max != nil then max = 0 end
 		for child, _ in pairs (self.SpecialEffectChildren) do
 			if child.particle and child.particle != partctrl_wait then
-				//child.MaxOldParticlesOverride = max
+				child.MaxOldParticlesOverride = max
 				if child.particle.IsValid and child.particle:IsValid() then
 					//Stop any existing particles and throw them into the OldParticles table to get cleaned up
 					//child.particle:StopEmission() //doesn't interact well with tracer count; because all the tracers except the last one are already in OldParticles, only the last one gets cut off while the rest keep playing, which looks odd
@@ -681,8 +694,15 @@ function ENT:SpecialEffectThink()
 	end
 
 	//Limit the number of spawned projectiles, just like ent_partctrl does with particles
-	local max = 32 //TODO: set this up with loop safety once we implement that
-	while #self.ProjectileEnts > max do
+	local max2 = 32
+	if max != nil then
+		if !numpadisdisabling then
+			max2 = self:GetProjCount()
+		else
+			max2 = 0
+		end
+	end
+	while #self.ProjectileEnts > max2 do
 		local v = self.ProjectileEnts[1]
 		if IsValid(v) then v:Remove() end
 		table.remove(self.ProjectileEnts, 1)
@@ -809,8 +829,8 @@ function ENT:CreateProjectile()
 				end
 			end)
 			proj:AddCallback("PhysicsCollide", function(proj, data)
-				if proj.HasHitSomething then return end //there's no reason to call this more than once
-				proj.HasHitSomething = true
+				if proj.Hit then return end //there's no reason to call this more than once
+				proj.Hit = true
 			
 				timer.Simple(lifetime_posthit, function() //even if lifetime_posthit is 0, we still need to use a timer, because directly removing the ent in a PhysicsCollide callback crashes the game
 					if IsValid(proj) and IsValid(self) then
@@ -1004,7 +1024,7 @@ function ENT:SpecialEffectRefresh()
 		end
 		self.ProjectileEnts = {}
 	end
-	self.LastLoop = nil
+	self.LastLoop = partctrl_wait
 
 end
 

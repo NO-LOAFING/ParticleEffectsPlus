@@ -50,8 +50,8 @@ if SERVER then
 
 	function ENT:PhysicsCollide(data)
 
-		if self.HasHitSomething then return end //there's no reason to call this more than once
-		self.HasHitSomething = true
+		if self.Hit then return end //there's no reason to call this more than once
+		self.Hit = true
 
 		timer.Simple(self.lifetime_posthit, function() //even if lifetime_posthit is 0, we still need to use a timer, because directly removing the ent in a PhysicsCollide callback crashes the game
 			if IsValid(self) then
