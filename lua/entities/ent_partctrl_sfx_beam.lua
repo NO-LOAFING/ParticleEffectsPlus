@@ -233,6 +233,7 @@ if CLIENT then
 				hit = self.HitTarget
 				hit.OwnerEntity = self
 				hit:Spawn()
+				hit:SetAngles(ang_back) //immediately pointing exactly forward causes the angle to break for some reason, but this fixes it
 			end
 			hit:SetPos(tr.HitPos)
 			local hitdir = self:GetBeamHitDir()
@@ -250,7 +251,6 @@ if CLIENT then
 				hit:SetAngles((-tr.Normal):Angle())
 			elseif hitdir == 4 then
 				//forward
-				hit:SetAngles(ang_back) //immediately pointing exactly forward causes the angle to break for some reason, but this fixes it
 				hit:SetAngles(ang_fwd)
 			elseif hitdir == 5 then
 				//back

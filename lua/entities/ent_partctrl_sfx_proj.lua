@@ -3,7 +3,7 @@ AddCSLuaFile()
 ENT.Base 			= "ent_partctrl_sfx"
 ENT.PrintName			= "Projectile Effect"
 ENT.Category			= "Particle Effects"
-ENT.Information			= "Launches props which can have particle effects attached to them, and can play more particle effects when they expire, either on impact or on a timer."
+ENT.Information			= "Launches props that can have particle effects attached to them, and can play more particle effects when they expire, either on hit or on a timer."
 
 ENT.Spawnable			= true
 
@@ -11,7 +11,7 @@ ENT.PartCtrl_ShortName		= "Projectile"
 ENT.SpecialEffectRoles		= {
 	[0] = "Start point",
 	[1] = "Projectile model",
-	[2] = "Projectile expire",
+	[2] = "Hit/expire point",
 }
 ENT.DisableChildAutoplay	= true
 
@@ -40,14 +40,15 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Float", 1, "ProjSpread")
 	self:NetworkVar("Int", 2, "ProjCount")
 	self:NetworkVar("Int", 3, "ProjDir")
+	self:NetworkVar("Int", 4, "ProjHitDir")
 
 	self:NetworkVar("Float", 2, "ProjVelocity")
 	self:NetworkVar("Bool", 6, "ProjGravity")
 	self:NetworkVar("Float", 3, "ProjLifetimePre")
 	self:NetworkVar("Float", 4, "ProjLifetimePost")
 
-	self:NetworkVar("Int", 4, "ProjAngle")
-	self:NetworkVar("Int", 5, "ProjSpin")
+	self:NetworkVar("Int", 5, "ProjAngle")
+	self:NetworkVar("Int", 6, "ProjSpin")
 	self:NetworkVar("Float", 5, "ProjSpinVelocity")
 
 end
@@ -70,6 +71,7 @@ function ENT:SetNWVarDefaults()
 	self:SetProjSpread(0)
 	self:SetProjCount(1)
 	self:SetProjDir(0)
+	self:SetProjHitDir(0)
 
 	self:SetProjVelocity(1000)
 	self:SetProjGravity(false)
@@ -103,9 +105,6 @@ end
 
 
 if CLIENT then
-
-	//TODO: currently this is just a clone of the bullet effect settings; once this effect is done it'll have a LOT more settings than the
-	//others, so we'll probably want to organize this into multiple categories
 
 	function ENT:SpecialEffectAddControls(window, container)
 
@@ -204,6 +203,47 @@ if CLIENT then
 			end
 
 
+			local drop = vgui.Create("Panel", rpnl)
+		
+			drop.Label = vgui.Create("DLabel", drop)
+			drop.Label:SetDark(true)
+			drop.Label:SetText("Hit/expire point angle")
+			drop.Label:Dock(LEFT)
+	
+			drop.Combo = vgui.Create("DComboBox", drop)
+			drop.Combo:SetHeight(25)
+			drop.Combo:Dock(FILL)
+	
+			local dirs = {
+				[0] = "0: Away from surface",
+				[1] = "1: Toward surface",
+				[2] = "2: Away from start point",
+				[3] = "3: Toward start point",
+				[4] = "4: Forward",
+				[5] = "5: Back",
+				[6] = "6: Left",
+				[7] = "7: Right",
+				[8] = "8: Up",
+				[9] = "9: Down"
+			}
+			local val = ent:GetProjHitDir() or 0
+			drop.Combo:SetValue(dirs[val])
+			for k, v in pairs (dirs) do
+				drop.Combo:AddChoice(v, k)
+			end
+			function drop.Combo.OnSelect(_, index, value, data)
+				ent:DoInput("proj_hitdir", data)
+			end
+	
+			drop:SetHeight(25)
+			drop:Dock(TOP)
+			drop:DockMargin(padding,betweenitems,padding,0)
+			//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
+			function drop.PerformLayout(_, w, h)
+				drop.Label:SetWide(w / 2.4)
+			end
+
+
 			//should these ones be in a different category?
 
 
@@ -261,7 +301,7 @@ if CLIENT then
 
 
 			local slider = vgui.Create("DNumSlider", rpnl)
-			slider:SetText("Lifetime (after impact)")
+			slider:SetText("Lifetime (after hit)")
 			slider:SetMinMax(0, 10)
 			slider:SetDefaultValue(0)
 			slider:SetDark(true)
@@ -582,7 +622,7 @@ if CLIENT then
 			text:SetDark(true)
 			text:SetWrap(true)
 			text:SetTextInset(0, 0)
-			text:SetText("Can't attach an effect to both the projectile model and projectile expire at the same time!") //TODO: this sucks
+			text:SetText("Can't attach an effect to both the projectile model and expire point at the same time!")
 			text:SetContentAlignment(5)
 			text:SetAutoStretchVertical(true)
 			text:DockMargin(padding,padding-1,padding,0) //padding-1 for top is trial and error, results in nice 16px spacing on both top and bottom of text
@@ -786,7 +826,7 @@ function ENT:CreateProjectile()
 
 		local proj
 		if CLIENT then
-			proj = ClientsideModel(self:GetModel()) //TODO: make setting
+			proj = ClientsideModel(self:GetModel())
 		else
 			proj = ents.Create("ent_partctrl_proj")
 			proj:SetModel(self:GetModel())
@@ -848,8 +888,7 @@ function ENT:CreateProjectile()
 				timer.Simple(lifetime_posthit, function() //even if lifetime_posthit is 0, we still need to use a timer, because directly removing the ent in a PhysicsCollide callback crashes the game
 					if IsValid(proj) and IsValid(self) then
 						if lifetime_posthit == 0 then
-							local norm = -data.HitNormal
-							self:StartParticle(proj, data.HitPos, norm:Angle())
+							self:StartParticle(proj, data.HitPos, -data.HitNormal)
 						else
 							self:StartParticle(proj, true)
 						end
@@ -908,7 +947,7 @@ end
 
 if CLIENT then
 
-	function ENT:StartParticle(proj, hitpos, hitang)
+	function ENT:StartParticle(proj, hitpos, hitnorm)
 
 		local ent = self:GetSpecialEffectParent()
 		if !IsValid(ent) then return end
@@ -921,24 +960,71 @@ if CLIENT then
 				//if !IsValid(proj) then return end
 				hitpos = proj:GetPos()
 			end
-			if !hitang then
-				//TODO: make alternate settings for angle
-				local tr = {}
-				tr.start = hitpos
-				tr.endpos = hitpos + Vector(0,0,-32) //trace downward to find the floor we're sitting on; matches tf2 grenade code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/shared/tf/tf_weaponbase_grenadeproj.cpp#L468)
-				tr.filter = proj
-				tr.collisiongroup = COLLISION_GROUP_INTERACTIVE_DEBRIS //don't hit other projectiles
-				tr = util.TraceLine(tr)
-				if tr.Entity != nil and tr.Fraction < 1 then //tr.Fraction check stops this from returning a bad angle when stuck in a wall
-					hitang = tr.HitNormal:Angle() //use the floor's angle
-				else
-					hitang = vector_up:Angle() //use the same angle as a flat floor if we explode mid-air, for consistency
+			local ang = nil
+			local hitdir = self:GetProjHitDir()
+			if hitdir < 2 then
+				//surface normal
+				if !hitnorm then
+					local tr = {}
+					tr.start = hitpos
+					tr.endpos = hitpos + Vector(0,0,-32) //trace downward to find the floor we're sitting on; matches tf2 grenade code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/shared/tf/tf_weaponbase_grenadeproj.cpp#L468)
+					tr.filter = proj
+					tr.collisiongroup = COLLISION_GROUP_INTERACTIVE_DEBRIS //don't hit other projectiles
+					tr = util.TraceLine(tr)
+					if tr.Entity != nil and tr.Fraction < 1 then //tr.Fraction check stops this from returning a bad angle when stuck in a wall
+						hitnorm = tr.HitNormal //use the floor's angle
+					else
+						hitnorm = -tr.Normal //use the same angle as a flat floor if we explode mid-air, for consistency
+					end
 				end
+				if hitdir == 1 then
+					//inverted surface normal
+					hitnorm = -hitnorm
+				end
+				ang = hitnorm:Angle()
+			elseif hitdir < 4 then
+				//toward start point
+				local pos = nil
+				if IsValid(ent.AttachedEntity) then
+					pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
+				else
+					pos = ent:GetAttachment(self:GetAttachmentID())
+				end
+				if istable(pos) then
+					pos = pos.Pos
+				else
+					pos = ent:GetPos()
+				end
+				local hitnorm = (hitpos-pos):GetNormalized()
+				//away from start point
+				if hitdir == 3 then
+					hitnorm = -hitnorm
+				end
+				ang = hitnorm:Angle()
+			elseif hitdir == 4 then
+				//forward
+				ang = ang_fwd
+			elseif hitdir == 5 then
+				//back
+				ang = ang_back
+			elseif hitdir == 6 then
+				//left
+				ang = ang_left
+			elseif hitdir == 7 then
+				//right
+				ang = ang_right
+			elseif hitdir == 8 then
+				//up
+				ang = ang_up
+			else
+				//down
+				ang = ang_down
 			end
 
 			hit = ents.CreateClientside("ent_partctrl_sfxtarget")
 			hit:SetPos(hitpos)
-			hit:SetAngles(hitang)
+			hit:SetAngles(ang_back) //immediately pointing exactly forward causes the angle to break for some reason, but this fixes it
+			hit:SetAngles(ang)
 			hit:Spawn()
 			hit.OwnerEntity = self
 			hit.Particles = {}
@@ -1076,6 +1162,7 @@ local EditMenuInputs = {
 	"proj_spread",
 	"proj_count",
 	"proj_dir",
+	"proj_hitdir",
 	"proj_velocity",
 	"proj_gravity",
 	"proj_lifetime_pre",
@@ -1131,6 +1218,10 @@ if CLIENT then
 		elseif input == "proj_dir" then
 			
 			net.WriteUInt(args[1], 3) //new dir (0-5)
+
+		elseif input == "proj_hitdir" then
+
+			net.WriteUInt(args[1], 4) //new dir (0-9)
 
 		elseif input == "proj_velocity" then
 			
@@ -1255,6 +1346,11 @@ else
 		elseif input == "proj_dir" then
 			
 			self:SetProjDir(math.min(net.ReadUInt(3), 5))
+			refreshtable = true
+
+		elseif input == "proj_hitdir" then
+
+			self:SetProjHitDir(math.min(net.ReadUInt(4), 9))
 			refreshtable = true
 
 		elseif input == "proj_velocity" then
