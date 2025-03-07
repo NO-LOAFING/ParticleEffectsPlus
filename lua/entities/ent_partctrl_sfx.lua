@@ -1,3 +1,11 @@
+//Base entity for particle "special effects" like tracer and projectile effects.
+//
+//To avoid duplicate code (for particle/utilfx spawning, particleinfo tables, control window inputs, crash prevention, etc.), a special effect is simply a *manager* entity that makes use of 
+//ordinary ent_partctrls parented to it, and manually commands them to start particles - those particles are still handled by ent_partctrl using the code it already has.
+//
+//For example, a tracer effect works by 1: performing a trace, 2: creating a point entity at the endpoint, 3: setting ent_partctrl.ParticleInfo[x].ent to the endpoint where applicable, 
+//and then 4: running ent_partctrl:StartParticle.
+
 AddCSLuaFile()
 
 ENT.Base 			= "base_gmodentity"
