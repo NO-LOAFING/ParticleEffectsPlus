@@ -158,12 +158,12 @@ if CLIENT then
 		drop.Combo:Dock(FILL)
 
 		local dirs = {
-			[0] = "Forward",
-			[1] = "Back",
-			[2] = "Left",
-			[3] = "Right",
-			[4] = "Up",
-			[5] = "Down"
+			[0] = "0: Forward",
+			[1] = "1: Back",
+			[2] = "2: Left",
+			[3] = "3: Right",
+			[4] = "4: Up",
+			[5] = "5: Down"
 		}
 		local val = ent:GetTracerDir() or 0
 		drop.Combo:SetValue(dirs[val])

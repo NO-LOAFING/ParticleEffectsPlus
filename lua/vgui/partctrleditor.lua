@@ -631,7 +631,7 @@ function PANEL:RebuildControls()
 							end
 						end
 					else
-						//This is a child effect, so show special effect options instead
+						//This is a child of a special effect, so show special effect options instead
 
 						local drop = vgui.Create("Panel", pnl)
 	
