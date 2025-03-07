@@ -27,6 +27,7 @@ function ENT:SetupDataTables()
 	end
 
 	self:NetworkVar("Int", 1, "BeamDir")
+	self:NetworkVar("Int", 2, "BeamHitDir")
 
 end
 
@@ -38,6 +39,7 @@ function ENT:SetNWVarDefaults()
 	self:SetAttachmentID(0) //all special fx must have this one
 
 	self:SetBeamDir(0)
+	self:SetBeamHitDir(0)
 
 end
 
@@ -70,6 +72,7 @@ if CLIENT then
 
 		local ent = self
 		local padding = window.padding
+		local betweenitems = window.betweenitems
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
 		cat:SetLabel("Pointer Effect Settings")
@@ -126,7 +129,55 @@ if CLIENT then
 			drop.Label:SetWide(w / 2.4)
 		end
 
+
+		local drop = vgui.Create("Panel", rpnl)
+		
+		drop.Label = vgui.Create("DLabel", drop)
+		drop.Label:SetDark(true)
+		drop.Label:SetText("Hit point angle")
+		drop.Label:Dock(LEFT)
+
+		drop.Combo = vgui.Create("DComboBox", drop)
+		drop.Combo:SetHeight(25)
+		drop.Combo:Dock(FILL)
+
+		local dirs = {
+			[0] = "0: Away from surface",
+			[1] = "1: Toward surface",
+			[2] = "2: Away from start point",
+			[3] = "3: Toward start point",
+			[4] = "4: Forward",
+			[5] = "5: Back",
+			[6] = "6: Left",
+			[7] = "7: Right",
+			[8] = "8: Up",
+			[9] = "9: Down"
+		}
+		local val = ent:GetBeamHitDir() or 0
+		drop.Combo:SetValue(dirs[val])
+		for k, v in pairs (dirs) do
+			drop.Combo:AddChoice(v, k)
+		end
+		function drop.Combo.OnSelect(_, index, value, data)
+			ent:DoInput("beam_hitdir", data)
+		end
+
+		drop:SetHeight(25)
+		drop:Dock(TOP)
+		drop:DockMargin(padding,betweenitems,padding,0)
+		//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
+		function drop.PerformLayout(_, w, h)
+			drop.Label:SetWide(w / 2.4)
+		end
+
 	end
+
+	local ang_fwd = Angle(0,0,0)
+	local ang_back = Angle(0,180,0)
+	local ang_left = Angle(0,90,0)
+	local ang_right = Angle(0,-90,0)
+	local ang_up = Angle(-90,0,0)
+	local ang_down = Angle(90,0,0)
 
 	function ENT:SpecialEffectThink()
 
@@ -184,7 +235,39 @@ if CLIENT then
 				hit:Spawn()
 			end
 			hit:SetPos(tr.HitPos)
-			hit:SetAngles(tr.HitNormal:Angle())
+			local hitdir = self:GetBeamHitDir()
+			if hitdir == 0 then
+				//surface normal
+				hit:SetAngles(tr.HitNormal:Angle())
+			elseif hitdir == 1 then
+				//inverted surface normal
+				hit:SetAngles((-tr.HitNormal):Angle())
+			elseif hitdir == 2 then
+				//away from start point
+				hit:SetAngles(tr.Normal:Angle())
+			elseif hitdir == 3 then
+				//toward start point
+				hit:SetAngles((-tr.Normal):Angle())
+			elseif hitdir == 4 then
+				//forward
+				hit:SetAngles(ang_back) //immediately pointing exactly forward causes the angle to break for some reason, but this fixes it
+				hit:SetAngles(ang_fwd)
+			elseif hitdir == 5 then
+				//back
+				hit:SetAngles(ang_back)
+			elseif hitdir == 6 then
+				//left
+				hit:SetAngles(ang_left)
+			elseif hitdir == 7 then
+				//right
+				hit:SetAngles(ang_right)
+			elseif hitdir == 8 then
+				//up
+				hit:SetAngles(ang_up)
+			else
+				//down
+				hit:SetAngles(ang_down)
+			end
 			
 			//store values used by impact utilfx
 			hit.PartCtrl_TraceHit = tr.Entity
@@ -238,6 +321,7 @@ local EditMenuInputs = {
 	"child_detach",
 	//Entity-specific inputs
 	"beam_dir",
+	"beam_hitdir",
 }
 ENT.EditMenuInputs_bits = 3 //max 7
 ENT.EditMenuInputs = table.Flip(EditMenuInputs)
@@ -249,6 +333,10 @@ if CLIENT then
 		if input == "beam_dir" then
 			
 			net.WriteUInt(args[1], 3) //new dir (0-5)
+
+		elseif input == "beam_hitdir" then
+			
+			net.WriteUInt(args[1], 4) //new dir (0-9)
 
 		end
 
@@ -263,6 +351,11 @@ else
 		if input == "beam_dir" then
 			
 			self:SetBeamDir(math.min(net.ReadUInt(3), 5))
+			refreshtable = true
+
+		elseif input == "beam_hitdir" then
+
+			self:SetBeamHitDir(math.min(net.ReadUInt(4), 9))
 			refreshtable = true
 
 		end

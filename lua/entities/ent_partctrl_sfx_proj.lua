@@ -720,10 +720,10 @@ end
 
 local ang_fwd = Angle(0,0,0)
 local ang_back = Angle(0,180,0)
-local ang_left = Angle(0,-90,0)
-local ang_right = Angle(0,90,0)
-local ang_up = Angle(90,0,0)
-local ang_down = Angle(-90,0,0)
+local ang_left = Angle(0,90,0)
+local ang_right = Angle(0,-90,0)
+local ang_up = Angle(-90,0,0)
+local ang_down = Angle(90,0,0)
 
 function ENT:CreateProjectile()
 
@@ -804,16 +804,16 @@ function ENT:CreateProjectile()
 			spinang = ang_back
 		elseif projang_ == 2 then
 			projang:RotateAroundAxis(fwd:Up(), 90)
-			spinang = ang_left
+			spinang = ang_right //yes, this is inverted
 		elseif projang_ == 3 then
 			projang:RotateAroundAxis(fwd:Up(), -90)
-			spinang = ang_right
+			spinang = ang_left //^
 		elseif projang_ == 4 then
 			projang:RotateAroundAxis(fwd:Right(), 90)
-			spinang = ang_up
+			spinang = ang_down //^
 		else
 			projang:RotateAroundAxis(fwd:Right(), -90)
-			spinang = ang_down
+			spinang = ang_up //^
 		end
 		proj:SetAngles(projang)
 

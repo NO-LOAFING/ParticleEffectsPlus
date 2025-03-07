@@ -40,6 +40,7 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Float", 1, "TracerSpread")
 	self:NetworkVar("Int", 2, "TracerCount")
 	self:NetworkVar("Int", 3, "TracerDir")
+	self:NetworkVar("Int", 4, "TracerHitDir")
 
 end
 
@@ -61,6 +62,7 @@ function ENT:SetNWVarDefaults()
 	self:SetTracerSpread(10)
 	self:SetTracerCount(1)
 	self:SetTracerDir(0)
+	self:SetTracerHitDir(0)
 
 end
 
@@ -182,6 +184,47 @@ if CLIENT then
 			drop.Label:SetWide(w / 2.4)
 		end
 
+
+		local drop = vgui.Create("Panel", rpnl)
+		
+		drop.Label = vgui.Create("DLabel", drop)
+		drop.Label:SetDark(true)
+		drop.Label:SetText("Hit point angle")
+		drop.Label:Dock(LEFT)
+
+		drop.Combo = vgui.Create("DComboBox", drop)
+		drop.Combo:SetHeight(25)
+		drop.Combo:Dock(FILL)
+
+		local dirs = {
+			[0] = "0: Away from surface",
+			[1] = "1: Toward surface",
+			[2] = "2: Away from start point",
+			[3] = "3: Toward start point",
+			[4] = "4: Forward",
+			[5] = "5: Back",
+			[6] = "6: Left",
+			[7] = "7: Right",
+			[8] = "8: Up",
+			[9] = "9: Down"
+		}
+		local val = ent:GetTracerHitDir() or 0
+		drop.Combo:SetValue(dirs[val])
+		for k, v in pairs (dirs) do
+			drop.Combo:AddChoice(v, k)
+		end
+		function drop.Combo.OnSelect(_, index, value, data)
+			ent:DoInput("tracer_hitdir", data)
+		end
+
+		drop:SetHeight(25)
+		drop:Dock(TOP)
+		drop:DockMargin(padding,betweenitems,padding,0)
+		//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
+		function drop.PerformLayout(_, w, h)
+			drop.Label:SetWide(w / 2.4)
+		end
+
 	end
 
 end
@@ -270,6 +313,13 @@ if CLIENT then
 		end
 
 	end
+
+	local ang_fwd = Angle(0,0,0)
+	local ang_back = Angle(0,180,0)
+	local ang_left = Angle(0,90,0)
+	local ang_right = Angle(0,-90,0)
+	local ang_up = Angle(-90,0,0)
+	local ang_down = Angle(90,0,0)
 	
 	function ENT:StartParticle()
 
@@ -335,7 +385,39 @@ if CLIENT then
 
 			local hit = ents.CreateClientside("ent_partctrl_sfxtarget")
 			hit:SetPos(tr.HitPos)
-			hit:SetAngles(tr.HitNormal:Angle())
+			local hitdir = self:GetTracerHitDir()
+			if hitdir == 0 then
+				//surface normal
+				hit:SetAngles(tr.HitNormal:Angle())
+			elseif hitdir == 1 then
+				//inverted surface normal
+				hit:SetAngles((-tr.HitNormal):Angle())
+			elseif hitdir == 2 then
+				//away from start point
+				hit:SetAngles(tr.Normal:Angle())
+			elseif hitdir == 3 then
+				//toward start point
+				hit:SetAngles((-tr.Normal):Angle())
+			elseif hitdir == 4 then
+				//forward
+				hit:SetAngles(ang_back) //immediately pointing exactly forward causes the angle to break for some reason, but this fixes it
+				hit:SetAngles(ang_fwd)
+			elseif hitdir == 5 then
+				//back
+				hit:SetAngles(ang_back)
+			elseif hitdir == 6 then
+				//left
+				hit:SetAngles(ang_left)
+			elseif hitdir == 7 then
+				//right
+				hit:SetAngles(ang_right)
+			elseif hitdir == 8 then
+				//up
+				hit:SetAngles(ang_up)
+			else
+				//down
+				hit:SetAngles(ang_down)
+			end
 			hit:Spawn()
 			hit.OwnerEntity = self
 			hit.Particles = {}
@@ -410,6 +492,7 @@ local EditMenuInputs = {
 	"tracer_spread",
 	"tracer_count",
 	"tracer_dir",
+	"tracer_hitdir",
 }
 ENT.EditMenuInputs_bits = 4 //max 15
 ENT.EditMenuInputs = table.Flip(EditMenuInputs)
@@ -453,6 +536,10 @@ if CLIENT then
 		elseif input == "tracer_dir" then
 			
 			net.WriteUInt(args[1], 3) //new dir (0-5)
+
+		elseif input == "tracer_hitdir" then
+			
+			net.WriteUInt(args[1], 4) //new dir (0-9)
 
 		end
 
@@ -529,6 +616,11 @@ else
 		elseif input == "tracer_dir" then
 			
 			self:SetTracerDir(math.min(net.ReadUInt(3), 5))
+			refreshtable = true
+
+		elseif input == "tracer_hitdir" then
+
+			self:SetTracerHitDir(math.min(net.ReadUInt(4), 9))
 			refreshtable = true
 
 		end
