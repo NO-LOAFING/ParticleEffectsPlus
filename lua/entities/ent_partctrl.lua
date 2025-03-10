@@ -94,6 +94,11 @@ end
 
 
 
+local cv_max
+if CLIENT then 
+	cv_max = GetConVar("sv_partctrl_particlesperent")
+end
+
 function ENT:Think()
 
 	if CLIENT then
@@ -202,7 +207,7 @@ function ENT:Think()
 			end
 		end
 		//If there are too many old particles, remove the oldest one
-		local max = 32 //TODO: make this a server convar so admins can control how many particles a player can create this way
+		local max = cv_max:GetInt() - 1
 		if self.MaxOldParticlesOverride then
 			max = self.MaxOldParticlesOverride //used by special fx
 		elseif self:GetLoopSafety() then 

@@ -666,13 +666,15 @@ end
 
 
 
+local cv_max = GetConVar("sv_partctrl_particlesperent")
+
 function ENT:SpecialEffectThink()
 
 	//if CLIENT and (PartCtrl_AddParticles_CrashCheck_PreventingCrash or !self.SpecialEffectChildren or table.Count(self.SpecialEffectChildren) == 0) then return end
 
 	local max = nil
 	if self:GetLoopSafety() then
-		max = math.max(0, self:GetProjCount() - 1)
+		max = math.max(0, math.min(self:GetProjCount(), cv_max:GetInt()) - 1)
 		//note: safety code is mostly copied from tracer - projectiles have a key difference from tracers, in that some projectiles might not have hit and played their impact fx yet 
 		//upon the start of the next loop, meaning the max won't get rid of them all uniformly like it does with the other fx. this is still acceptable because it fulfills the *safety*
 		//purpose of this feature, preventing too many fx from being created at once.
@@ -733,7 +735,7 @@ function ENT:SpecialEffectThink()
 	end
 
 	//Limit the number of spawned projectiles, just like ent_partctrl does with particles
-	local max2 = 32
+	local max2 = cv_max:GetInt()
 	if max != nil then
 		if !numpadisdisabling then
 			max2 = self:GetProjCount()

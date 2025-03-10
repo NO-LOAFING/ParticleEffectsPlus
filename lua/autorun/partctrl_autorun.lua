@@ -1,3 +1,18 @@
+//Convars:
+
+if SERVER then
+	CreateConVar("sv_partctrl_particlesperent", 32, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Max number of effect instances (or projectiles) that a single particle effect entity can have active at once.", 1)
+end
+
+
+
+
+
+
+
+
+
+
 //Blacklist bad .pcf files and effects from being loaded by the addon
 
 //The actual .pcf loading is done inside of ent_partctrl.lua, because entity code always runs after autorun code -

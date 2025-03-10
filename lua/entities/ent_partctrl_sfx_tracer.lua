@@ -257,13 +257,15 @@ end
 
 if CLIENT then
 
+	local cv_max = GetConVar("sv_partctrl_particlesperent")
+
 	function ENT:SpecialEffectThink()
 
 		if PartCtrl_AddParticles_CrashCheck_PreventingCrash or !self.SpecialEffectChildren or table.Count(self.SpecialEffectChildren) == 0 then return end
 
 		local max = nil
 		if self:GetLoopSafety() then
-			max = math.max(0, self:GetTracerCount() - 1)
+			max = math.max(0, math.min(self:GetTracerCount(), cv_max:GetInt()) - 1)
 		end
 
 		local numpadisdisabling = self:GetNumpadState()
