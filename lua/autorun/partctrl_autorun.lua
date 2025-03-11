@@ -40,11 +40,12 @@ local tf2_unusual_wep_pcfs = {
 	["particles/weapon_unusual_hot.pcf"] = true,
 	["particles/weapon_unusual_isotope.pcf"] = true
 }
+local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all dupes with conflicting names,\nwhich slow the game down with unnecessary PCF reloads every time\nyou search for a TF2 weapon."
 hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
 	if tf2_unusual_wep_pcfs[filename] then
 		for k, v in pairs (tab) do
 			if string.StartsWith(k, "_unusual_parent_") then
-				tab[k].shouldcull = "Blacklisted: _unusual_parent_ fx are all dupes with conflicting names,\nwhich slow the game down with unnecessary PCF reloads every time\nyou search for a TF2 weapon."
+				tab[k].shouldcull = tf2_unusual_wep_blacklist_text
 			end
 		end
 	end
@@ -2857,10 +2858,27 @@ local processfuncs = {
 			//update: found code for this, still can't find any practical use for it (https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L9390)
 		end,
 		["remap distance between two control points to scalar"] = function(processed, attrib)
-			//this uses all the same scalars as remap control point to scalar, but actually uses the distance between two positions to get the value, so use position controls
-			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
-			cpoint_from_attrib_value(processed, attrib, "starting control point", nil, {["label"] = pattrib})
-			cpoint_from_attrib_value(processed, attrib, "ending control point", nil, {["label"] = pattrib})
+			//this uses all the same scalars as remap control point to scalar, but actually uses the distance between two positions to get the value
+			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum
+			local inMin = attrib["distance minimum"] or 0
+			local inMax = attrib["distance maximum"] or 1
+			local outMin = attrib["output minimum"] or 0
+			local outMax = attrib["output maximum"] or 1
+			local default = 0
+			if pattrib == "Radius" then default = 16 end //special handling so we don't default to having 0 radius and being invisible
+			default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax)) //make sure the default value of the slider in the edit window isn't outside its range (see tf2 speech_mediccall)
+			local relative_to_cpoint = attrib["starting control point"] or 0 //?
+			cpoint_from_attrib_value(processed, attrib, "ending control point", "axis", {
+				["axis"] = 0, //arbitrary; any axis will work for this, but ent_partctrl:StartParticle checks which_0 for relative_to_cpoint
+				["label"] = pattrib,
+				["inMin"] = inMin,
+				["inMax"] = inMax,
+				["outMin"] = outMin,
+				["outMax"] = outMax,
+				["default"] = default,
+				["relative_to_cpoint"] = relative_to_cpoint
+			})
+			cpoint_from_attrib_value(processed, attrib, "starting control point", "position_combine") //this is iffy; we assume the start cpoint might be attached to something while the end point isn't, which *is* the case with all existing fx, but doesn't necessarily have to be
 		end,
 		["remap distance to control point to scalar"] = function(processed, attrib)
 			//like the above but uses the distance between a single cpoint's position and the particle (sprite?) itself (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Remap_Distance_to_Control_Point_to_Scalar)

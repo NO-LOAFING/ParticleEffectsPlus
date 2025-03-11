@@ -619,6 +619,7 @@ if CLIENT then
 					pattach = PATTACH_ABSORIGIN_FOLLOW
 				end
 				self.particle = CreateParticleSystem(ent, self:GetParticleName(), pattach, attach)
+				//self.particle = CreateParticleSystem(ent, "medicgun_beam_red", pattach, attach) //test
 				//if self.particle and self.particle:IsValid() then
 				//	self.particle:SetIsViewModelEffect(false) //thought this would fix the position issues on viewmodel effects, but it doesn't change anything
 				//end
@@ -638,32 +639,76 @@ if CLIENT then
 
 		if self.particle and self.particle.IsValid and self.particle:IsValid() then
 			//Do other cpoints
-			for k, v in pairs (self.ParticleInfo) do
+			for k, v in pairs (ptab.cpoints) do
 				if k != ignore then
 				//if k >= 0 then //don't do this for -1 because it's not a real cpoint
 					local mode = ptab.cpoints[k].mode
 					if mode == PARTCTRL_CPOINT_MODE_POSITION or mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
-						local tab = v
+						local tab = self.ParticleInfo[k]
 						if mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
 							//"combine" this cpoint with the first position cpoint by having it follow all the same parameters as that one
 							tab = self.ParticleInfo[firstcpoint]
 						end
-						local ent = tab.ent
-						if IsValid(ent) then
-							if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
-							//unlike CreateParticleSystem, the attachment id arg for this function actually needs to be a string
-							local attachstr = ent:GetAttachments()
-							local pattach = PATTACH_POINT_FOLLOW
-							if attachstr[tab.attach] and attachstr[tab.attach].name then
-								attachstr = attachstr[tab.attach].name
-							else
-								attachstr = nil
-								pattach = PATTACH_ABSORIGIN_FOLLOW
+						if tab then
+							local ent = tab.ent
+							if IsValid(ent) then
+								if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+								//unlike CreateParticleSystem, the attachment id arg for this function actually needs to be a string
+								local attachstr = ent:GetAttachments()
+								local pattach = PATTACH_POINT_FOLLOW
+								if attachstr[tab.attach] and attachstr[tab.attach].name then
+									attachstr = attachstr[tab.attach].name
+								else
+									attachstr = nil
+									pattach = PATTACH_ABSORIGIN_FOLLOW
+								end
+								self.particle:AddControlPoint(k, ent, pattach, attachstr)
 							end
-							self.particle:AddControlPoint(k, ent, pattach, attachstr)
 						end
 					elseif mode == PARTCTRL_CPOINT_MODE_VECTOR or mode == PARTCTRL_CPOINT_MODE_AXIS then
-						self.particle:SetControlPoint(k, v.val)
+						local rel = nil
+						local axistab = ptab.cpoints[k].axis[ptab.cpoints[k]["which_0"]]
+						if istable(axistab) then
+							rel = axistab.relative_to_cpoint
+						end
+
+						if rel != nil and ptab.cpoints[rel] != nil then
+							//If this cpoint is relative to another cpoint, then move it to that cpoint's position + this cpoint's value
+							local mode2 = ptab.cpoints[rel].mode
+							if mode2 == PARTCTRL_CPOINT_MODE_POSITION or mode2 == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+								local tab = self.ParticleInfo[rel]
+								if mode2 == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+									tab = self.ParticleInfo[firstcpoint]
+								end
+								if tab then
+									local ent = tab.ent
+									if IsValid(ent) then
+										if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+										//unlike CreateParticleSystem, the attachment id arg for this function actually needs to be a string
+										local attachstr = ent:GetAttachments()
+										local pattach = PATTACH_POINT_FOLLOW
+										if attachstr[tab.attach] and attachstr[tab.attach].name then
+											attachstr = attachstr[tab.attach].name
+										else
+											attachstr = nil
+											pattach = PATTACH_ABSORIGIN_FOLLOW
+										end
+										if self.ParticleInfo[k] then
+											self.particle:AddControlPoint(k, ent, pattach, attachstr, self.ParticleInfo[k].val) //TODO: this probably won't work at all if the cpoint is using an attachment point; whatever, this is niche functionality
+										end
+									end
+								end
+							elseif mode2 == PARTCTRL_CPOINT_MODE_VECTOR or mode2 == PARTCTRL_CPOINT_MODE_AXIS then
+								if self.ParticleInfo[k] and self.ParticleInfo[rel] then
+									self.particle:SetControlPoint(k, self.ParticleInfo[k].val + self.ParticleInfo[rel].val)
+								end
+							end
+						else
+							//Otherwise, just set this cpoint to its value
+							if self.ParticleInfo[k] then
+								self.particle:SetControlPoint(k, self.ParticleInfo[k].val)
+							end
+						end
 					end
 				end
 			end
