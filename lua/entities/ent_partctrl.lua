@@ -1389,7 +1389,7 @@ else
 					end
 				end
 				//Refresh control window if we changed something that requires the controls to be rebuilt
-				if window and (self.ParticleInfo[k].ent != oldtab[k].ent or IsValid(sfxpar)) then
+				if window and ((!IsValid(sfxpar) and self.ParticleInfo[k].ent != oldtab[k].ent) or self.ParticleInfo[k].sfx_role != oldtab[k].sfx_role) then
 					self.PartCtrlWindow.CPointCategories[self][k].RebuildContents(self.ParticleInfo[k])
 				end
 			end

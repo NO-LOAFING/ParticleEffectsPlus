@@ -492,7 +492,7 @@ function PANEL:RebuildControls()
 		
 				if !IsValid(ent2) or !ent2.utilfx then //this option doesn't do anything for utilfx, so don't show it
 					local check = vgui.Create( "DCheckBoxLabel", rpnl)
-					check:SetText("Clean up particles when disabled or repeated")
+					check:SetText("Clean up particles when repeated or disabled")
 					check:SetDark(true)
 					check:SetHeight(15)
 					check:Dock(TOP)
@@ -502,29 +502,20 @@ function PANEL:RebuildControls()
 					check.OnChange = function(_, val)
 						ent2:DoInput("loop_safety", val)
 					end
-					--[[check.Think = function()
-						if !IsValid(ent2) then return end
-						if ent2.utilfx then
-							check:SetDisabled(true)
-							check:SetTooltip("Option not available for scripted effects") //never mind, tooltips don't work on disabled checkboxes
-						else
-							check:SetDisabled(false)
-							//check:SetTooltip("")
-						end
-					end]]
-				end
 		
-				--[[local help = vgui.Create("DLabel", rpnl)
-				help:SetDark(true)
-				help:SetWrap(true)
-				help:SetTextInset(0, 0)
-				help:SetText("If checked, cleans up all particles when the effect is disabled or repeated.")
-				//help:SetContentAlignment(5)
-				help:SetAutoStretchVertical(true)
-				//help:DockMargin(32,0,32,8)
-				help:DockMargin(padding_help,betweenitems_help,padding_help,0)
-				help:Dock(TOP)
-				help:SetTextColor(color_helpdark)]]
+					local help = vgui.Create("DLabel", rpnl)
+					help:SetDark(true)
+					help:SetWrap(true)
+					help:SetTextInset(0, 0)
+					help:SetText("If checked, all existing particles are removed when the effect repeats, or when it's disabled by pressing the key.")
+					//help:SetContentAlignment(5)
+					help:SetAutoStretchVertical(true)
+					//help:DockMargin(32,0,32,8)
+					help:DockMargin(padding_help,betweenitems_help,padding_help,0)
+					help:Dock(TOP)
+					help:SetTextColor(color_helpdark)
+
+				end
 
 		end
 	
@@ -1332,6 +1323,18 @@ function PANEL:RebuildControls()
 				check.OnChange = function(_, val)
 					ent:DoInput("loop_safety", val)
 				end
+
+				local help = vgui.Create("DLabel", rpnl)
+				help:SetDark(true)
+				help:SetWrap(true)
+				help:SetTextInset(0, 0)
+				help:SetText("If checked, all existing particles are removed when the effect repeats, or when it's disabled by pressing the key.")
+				//help:SetContentAlignment(5)
+				help:SetAutoStretchVertical(true)
+				//help:DockMargin(32,0,32,8)
+				help:DockMargin(padding_help,betweenitems_help,padding_help,0)
+				help:Dock(TOP)
+				help:SetTextColor(color_helpdark)
 
 		end
 

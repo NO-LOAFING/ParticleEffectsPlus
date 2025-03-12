@@ -248,7 +248,7 @@ if CLIENT then
 
 
 			local slider = vgui.Create("DNumSlider", rpnl)
-			slider:SetText("Velocity")
+			slider:SetText("Projectile velocity")
 			slider:SetMinMax(0, 3000)
 			slider:SetDefaultValue(1000)
 			slider:SetDark(true)
@@ -268,7 +268,7 @@ if CLIENT then
 
 
 			local check = vgui.Create( "DCheckBoxLabel", rpnl)
-			check:SetText("Gravity")
+			check:SetText("Projectile gravity")
 			check:SetDark(true)
 			check:SetHeight(15)
 			check:Dock(TOP)
@@ -601,36 +601,53 @@ if CLIENT then
 			end
 		end
 
-		if self.SpecialEffectChildrenSorted["bad"][ent2] and self.SpecialEffectChildrenSorted["bad"][ent2][k] then
-			local pnl2 = vgui.Create("DSizeToContents", pnl)
-			pnl2:SetSizeX(false)
-			pnl2:Dock(TOP)
-			pnl2.Paint = function(self, w, h) 
-				draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
-				//draw info icon
-				surface.SetDrawColor(255,255,255,255)
-				surface.SetMaterial(icon_error)
-				//surface.DrawTexturedRect(padding,betweenitems,16,16)
-				surface.DrawTexturedRect(padding,(h/2)-8,16,16)
-			end
-			pnl2:DockPadding(16+padding,0,0,padding) //extra left to make room for the info icon; DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-			pnl2:DockMargin(4,padding,4,1000)
-			pnl:DockPadding(0,0,0,4) //fit the warning message snugly at the bottom of the panel
+		
+		//Warning message for incompatible sfx roles
+		//Automatically show and hide this in its own think func, so we don't have to update every cpoint's controls when a role changes
 
-	
-			local text = vgui.Create("DLabel", pnl2)
-			text:SetDark(true)
-			text:SetWrap(true)
-			text:SetTextInset(0, 0)
-			text:SetText("Can't attach an effect to both the projectile model and expire point at the same time!")
-			text:SetContentAlignment(5)
-			text:SetAutoStretchVertical(true)
-			text:DockMargin(padding,padding-1,padding,0) //padding-1 for top is trial and error, results in nice 16px spacing on both top and bottom of text
-			text:Dock(TOP)
-		else
-			pnl:DockPadding(0,0,0,padding) //undo padding change from warning message
+		local pnl2 = vgui.Create("DSizeToContents", pnl)
+		pnl2:SetSizeX(false)
+		pnl2:Dock(TOP)
+		pnl2.Paint = function(self, w, h) 
+			draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
+			//draw info icon
+			surface.SetDrawColor(255,255,255,255)
+			surface.SetMaterial(icon_error)
+			//surface.DrawTexturedRect(padding,betweenitems,16,16)
+			surface.DrawTexturedRect(padding,(h/2)-8,16,16)
 		end
 
+		local text = vgui.Create("DLabel", pnl2)
+		text:SetDark(true)
+		text:SetWrap(true)
+		text:SetTextInset(0, 0)
+		text:SetText("Can't attach an effect to both the projectile model and expire point at the same time!")
+		text:SetContentAlignment(5)
+		text:SetAutoStretchVertical(true)
+		text:DockMargin(padding,padding-1,padding,0) //padding-1 for top is trial and error, results in nice 16px spacing on both top and bottom of text
+		text:Dock(TOP)
+
+		//pnl2.oldThink = pnl2.Think
+		pnl2.Think = function(...)
+			pnl2.ShouldShow = pnl2.ShouldShow or false
+			local new_shouldshow = self.SpecialEffectChildrenSorted["bad"][ent2] and self.SpecialEffectChildrenSorted["bad"][ent2][k]
+			if pnl2.ShouldShow != new_shouldshow then
+				if new_shouldshow then
+					pnl2:DockPadding(16+padding,0,0,padding) //extra left to make room for the info icon; DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+					pnl2:DockMargin(4,padding,4,1000)
+					pnl2:SetSizeY(true)
+					pnl:DockPadding(0,0,0,4) //fit the warning message snugly at the bottom of the panel
+				else
+					pnl2:DockPadding(0,0,0,0)
+					pnl2:DockMargin(0,0,0,0)
+					pnl2:SetSizeY(false)
+					pnl2:SetHeight(0)
+					pnl:DockPadding(0,0,0,padding) //undo padding change from warning message
+				end
+				pnl2.ShouldShow = new_shouldshow
+			end
+			//pnl2.oldThink(...)
+		end
 	end
 
 end
