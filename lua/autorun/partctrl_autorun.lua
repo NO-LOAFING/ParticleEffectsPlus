@@ -3958,6 +3958,8 @@ PartCtrl_ReadAndProcessPCFs_StartupIsOver = PartCtrl_ReadAndProcessPCFs_StartupI
 
 function PartCtrl_ReadAndProcessPCFs()
 
+	//MsgN("starting PartCtrl_ReadAndProcessPCFs at time ", SysTime())
+
 	PartCtrl_AllPCFPaths = {}
 	local function PartCtrl_FindAllPCFPaths(dir)
 		local files, dirs = file.Find(dir .. "*", "GAME")
@@ -3986,6 +3988,8 @@ function PartCtrl_ReadAndProcessPCFs()
 	PartCtrl_ProcessUtilFx()
 
 	PartCtrl_ReadAndProcessPCFs_StartupHasRun = true
+
+	//MsgN("ending PartCtrl_ReadAndProcessPCFs at time ", SysTime())
 
 end
 

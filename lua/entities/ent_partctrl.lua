@@ -1357,15 +1357,13 @@ else
 		local parwindow
 		if IsValid(sfxpar) then
 			if sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
-			parwindow = sfxpar.PartCtrlWindow
-			if IsValid(parwindow) then
-				//If we were just parented, and still have our own control window from back when we were unparented, close it
-				if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow != parwindow then
-					self.PartCtrlWindow:OnEntityLost()
-				end
-				//Assign ourself to the parent's control window, so that info table updates and such will update those controls
-				self.PartCtrlWindow = parwindow
+			parwindow = sfxpar.PartCtrlWindow //don't check if this is valid; we want to do all this even if the parent's window isn't open, to clear our old window
+			//If we were just parented, and still have our own control window from back when we were unparented, close it
+			if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow != parwindow then
+				self.PartCtrlWindow:OnEntityLost()
 			end
+			//Assign ourself to the parent's control window, so that info table updates and such will update those controls
+			self.PartCtrlWindow = parwindow
 		end
 		if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
 			//Update the list of children to add or remove us
@@ -1396,7 +1394,7 @@ else
 				end
 			end
 		end
-		if !IsValid(sfxpar) then //don't do this if we're a special effect child, otherwise we'll get added to the PartCtrl_ParticleEnts list on the special effect's grip/model
+		if !IsValid(sfxpar) then //don't do this if we're a special effect's child, otherwise we'll get added to the PartCtrl_ParticleEnts list on the special effect's parent
 			for k, v in pairs (self.ParticleInfo) do
 				if IsValid(v.ent) then
 					//Store us in a list on the cpoint ent (used by properties)
