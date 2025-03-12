@@ -297,12 +297,14 @@ if CLIENT then
 
 	function ENT:SpecialEffectRefresh()
 
-		self:SpecialEffectThink() //update the children's ParticleInfo first
-		if self.SpecialEffectChildren then
-			for child, _ in pairs (self.SpecialEffectChildren) do
-				child:BeginNewParticle()
+		timer.Simple(0, function() //wait a frame, otherwise SpecialEffectThink will retrieve an out-of-date SpecialEffectParent on this ent
+			self:SpecialEffectThink() //update the children's ParticleInfo first
+			if self.SpecialEffectChildren then
+				for child, _ in pairs (self.SpecialEffectChildren) do
+					child:BeginNewParticle()
+				end
 			end
-		end
+		end)
 
 	end
 
