@@ -896,63 +896,63 @@ if SERVER then
 
 	function ENT:DetachFromSpecialEffect(ply)
 
-			//Detaches EVERY cpoint from the special effect parent, and spawns new grips for all of them to attach to instead
+		//Detaches EVERY cpoint from the special effect parent, and spawns new grips for all of them to attach to instead
 
-			if !istable(self.ParticleInfo) then return false end
-			local ptab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]
-			if !ptab then return end
-			local parentent = self:GetSpecialEffectParent()
-			if !IsValid(parentent) then return false end
-			local parentmodel = parentent:GetSpecialEffectParent()
-			if !IsValid(parentmodel) then return false end
+		if !istable(self.ParticleInfo) then return false end
+		local ptab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]
+		if !ptab then return end
+		local parentent = self:GetSpecialEffectParent()
+		if !IsValid(parentent) then return false end
+		local parentmodel = parentent:GetSpecialEffectParent()
+		if !IsValid(parentmodel) then return false end
 
 
-			local tab = constraint.FindConstraints(self, "PartCtrl_SpecialEffect")
-			if istable(tab) then
-				for k2, v2 in pairs (tab) do
-					if v2.Ent2 == self and v2.Ent1 == parentent then
-						oldconst = v2.Constraint
-					end
+		local tab = constraint.FindConstraints(self, "PartCtrl_SpecialEffect")
+		if istable(tab) then
+			for k2, v2 in pairs (tab) do
+				if v2.Ent2 == self and v2.Ent1 == parentent then
+					oldconst = v2.Constraint
 				end
 			end
-			if !IsValid(oldconst) then return false end
-			oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
-			oldconst:Remove()
-			parentent:DontDeleteOnRemove(self)
+		end
+		if !IsValid(oldconst) then return false end
+		oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
+		oldconst:Remove()
+		parentent:DontDeleteOnRemove(self)
 
 
-			local pos = parentmodel:GetPos()
-			local _, bboxtop1 = parentmodel:GetRotatedAABB(parentmodel:GetCollisionBounds())
-			local height = bboxtop1.z + 3 + pos.z //3 is a stupid hard-coded grip point radius
-			pos = Vector(pos.x, pos.y, height)
+		local pos = parentmodel:GetPos()
+		local _, bboxtop1 = parentmodel:GetRotatedAABB(parentmodel:GetCollisionBounds())
+		local height = bboxtop1.z + 3 + pos.z //3 is a stupid hard-coded grip point radius
+		pos = Vector(pos.x, pos.y, height)
 
 
-			local grips = {}
-			for k, v in pairs (ptab.cpoints) do
-				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
-					grips[k] = true
-					self.ParticleInfo[k].sfx_role = 0
-					self.ParticleInfo[k].attach = 0
-				end
+		local grips = {}
+		for k, v in pairs (ptab.cpoints) do
+			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+				grips[k] = true
+				self.ParticleInfo[k].sfx_role = 0
+				self.ParticleInfo[k].attach = 0
 			end
-			local multigrip_length = ptab.min_length or 100
+		end
+		local multigrip_length = ptab.min_length or 100
 
-			local parent = nil
-			grips, parent = PartCtrl_SpawnParticleGripPoints(pos, multigrip_length, grips)
+		local parent = nil
+		grips, parent = PartCtrl_SpawnParticleGripPoints(pos, multigrip_length, grips)
 
-			self:SetSpecialEffectParent(nil)
-			for k, v in pairs (grips) do
-				constraint.PartCtrl_Ent(self, v, k, parent == v, ply)
-			end
+		self:SetSpecialEffectParent(nil)
+		for k, v in pairs (grips) do
+			constraint.PartCtrl_Ent(self, v, k, parent == v, ply)
+		end
 
 
-			//Tell clients to retrieve the updated info table
-			net.Start("PartCtrl_InfoTableUpdate_SendToCl")
-				net.WriteEntity(self)
-			net.Broadcast()
-	
-	
-			return true
+		//Tell clients to retrieve the updated info table
+		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+			net.WriteEntity(self)
+		net.Broadcast()
+
+
+		return true
 
 	end
 
@@ -1509,6 +1509,59 @@ if SERVER then
 		end
 
 	end
+
+
+
+
+	//When NPCs die and create a serverside ragdoll, then transfer over the particle to the ragdoll
+	//TODO: can we do a clientside version of this for clientside ragdolls?
+	hook.Add("CreateEntityRagdoll", "PartCtrl_CreateEntityRagdoll", function(oldent, rag)
+		local oldentconsts = constraint.GetTable(oldent)
+		for k, const in pairs (oldentconsts) do
+			if const.Entity then
+				if const.Type == "PartCtrl_Ent" or const.Type == "PartCtrl_SpecialEffect" then
+					//Clear DeleteOnRemoves and transfer over parents
+					local oldconst = const.Constraint
+					oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
+					const.Ent1:DontDeleteOnRemove(const.Ent2)
+					const.Ent2:DontDeleteOnRemove(const.Ent1)
+					if const.Ent1:GetParent() == oldent then const.Ent1:SetParent(rag) end
+					if const.Ent2:GetParent() == oldent then const.Ent2:SetParent(rag) end
+					oldconst:Remove()
+
+					//If any of the values in the constraint table are oldent, switch them over to the ragdoll
+					for key, val in pairs (const) do
+						if val == oldent then 
+							const[key] = rag
+						end
+					end
+
+					local entstab = {}
+
+					//Also switch over any instances of oldent to rag inside the entity subtable
+					for tabnum, tab in pairs (const.Entity) do
+						if tab.Entity then
+							if tab.Entity == oldent then 
+								const.Entity[tabnum].Entity = rag
+								const.Entity[tabnum].Index = rag:EntIndex()
+							end
+						end
+						entstab[const.Entity[tabnum].Index] = const.Entity[tabnum].Entity
+					end
+
+					//Now copy the constraint over to the ragdoll
+					duplicator.CreateConstraintFromTable(const, entstab)
+
+					//Tell clients to retrieve the updated info table from the constraint func
+					if const.Ent1 and const.Ent1.PartCtrl_Ent then
+						net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+							net.WriteEntity(const.Ent1)
+						net.Broadcast()
+					end
+				end
+			end
+		end
+	end)
 
 end
 
