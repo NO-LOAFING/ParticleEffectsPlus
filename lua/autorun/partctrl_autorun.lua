@@ -2906,6 +2906,11 @@ local processfuncs = {
 		["movement maintain position along path"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "start control point number", nil, {["sets_particle_pos"] = true})
 			cpoint_from_attrib_value(processed, attrib, "end control point number", nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
+			//if there's no way for other cpoint attribs (like the ones that initialize in a box/sphere) to influence the particles because this attrib forces them onto a very specific path, then don't make position controls for those cpoints
+			//this functionality was intended for constraints, but this operator does the same thing
+			if attrib["maximum distance"] < 1 then
+				processed["constraint_does_override"] = true //global value on the effect, not cpoint-specific
+			end
 		end,
 		["movement match particle velocities"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point to Broadcast Speed and Direction To", "output") end, //pet doesn't add control for this; sets all 3 axes of the cpoint's position vector to the speed, and sets the cpoint's angle to face the direction (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_ops.cpp#L3788)
 		["movement rotate particle around axis"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point") end,

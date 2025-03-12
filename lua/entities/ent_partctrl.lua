@@ -667,9 +667,11 @@ if CLIENT then
 						end
 					elseif mode == PARTCTRL_CPOINT_MODE_VECTOR or mode == PARTCTRL_CPOINT_MODE_AXIS then
 						local rel = nil
-						local axistab = ptab.cpoints[k].axis[ptab.cpoints[k]["which_0"]]
-						if istable(axistab) then
-							rel = axistab.relative_to_cpoint
+						if ptab.cpoints[k].axis then
+							local axistab = ptab.cpoints[k].axis[ptab.cpoints[k]["which_0"]]
+							if istable(axistab) then
+								rel = axistab.relative_to_cpoint
+							end
 						end
 
 						if rel != nil and ptab.cpoints[rel] != nil then
