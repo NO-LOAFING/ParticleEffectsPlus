@@ -28,6 +28,7 @@ function ENT:Initialize()
 	if SERVER then
 		self:SetModel("models/props_junk/watermelon01.mdl") //dummy model to prevent addons that look for the error model from affecting this entity, should this be something smaller? do this serverside only so that effect funcs can override it.
 		if !self.DoneFirstSpawn then
+			self:SetPlayer(self:GetCreator())
 			local g = ents.Create("ent_partctrl_grip")
 			if !IsValid(g) then return end
 			g:SetPos(self:GetPos())

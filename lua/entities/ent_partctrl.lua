@@ -806,6 +806,48 @@ if SERVER then
 
 	numpad.Register("PartCtrl_Numpad", PartCtrlNumpadFunction)
 
+	function ENT:AttachToSpecialEffect(ent, ply, addundo)
+
+		//Detach ALL of the particle's cpoints and delete any corresponding grip points, then attach it to the special effect
+
+		if !IsValid(ent) or !ent.PartCtrl_SpecialEffect or !istable(self.ParticleInfo) then return false end
+
+		local const = constraint.PartCtrl_SpecialEffect(ent, self, ply)
+		constraint.RemoveConstraints(self, "PartCtrl_Ent")
+		local cpointtab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()].cpoints
+		local cpoints_for_defaults = {}
+		for k, v in pairs (self.ParticleInfo) do
+			if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+				if v.ent.PartCtrl_Grip then
+					v.ent:DontDeleteOnRemove(self)
+					v.ent:Remove()
+				end
+				self.ParticleInfo[k].ent = nil //this will be replaced clientside by the special effect
+				self.ParticleInfo[k].attach = 0
+				table.insert(cpoints_for_defaults, k)
+			end
+		end
+		for k, v in pairs (ent:SpecialEffectDefaultRoles(cpoints_for_defaults)) do
+			self.ParticleInfo[k].sfx_role = v
+		end
+
+		if addundo then
+			//Add an undo entry
+			undo.Create("PartCtrl_Ent")
+				undo.AddEntity(const)  //the constraint entity will detach p upon being removed
+				undo.SetPlayer(self:GetOwner())
+			undo.Finish("Attach Particle Effect " .. self:GetParticleName() .. " to "  .. ent.PrintName)
+		end
+
+		//Tell clients to retrieve the updated info table
+		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+			net.WriteEntity(self)
+		net.Broadcast()
+
+		return const
+
+	end
+
 	function ENT:DetachFromEntity(k, ply)
 
 		//Detaches a single cpoint from its parent entity, and spawns a new grip for the cpoint to attach to instead

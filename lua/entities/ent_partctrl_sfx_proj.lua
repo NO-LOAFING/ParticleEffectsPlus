@@ -81,10 +81,44 @@ function ENT:SetSpecialEffectDefaults()
 	self:SetProjLifetimePost(0)
 	self:SetProjServerside(false)
 
-	self:SetModel("models/weapons/w_missile.mdl")
+	
 	self:SetProjAngle(0)
 	self:SetProjSpin(0)
 	self:SetProjSpinVelocity(0)
+
+	if IsMounted("tf") then
+		self:SetModel("models/weapons/w_models/w_rocket.mdl")
+
+		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "rockettrail", "particles/rockettrail.pcf")
+		if IsValid(p) then
+			p:AttachToSpecialEffect(self, self:GetPlayer(), true)
+			p.ParticleInfo[0].attach = 1
+			p.ParticleInfo[0].sfx_role = 1
+		end
+
+		//TODO: this should be ExplosionCore_Wall from tf2's particles/explosion.pcf, but that's currently overridden by HL2 anniversary pcf of the same name
+		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "ExplosionCore_MidAir", "particles/bigboom.pcf")
+		if IsValid(p) then
+			p:AttachToSpecialEffect(self, self:GetPlayer(), true)
+			p.ParticleInfo[0].sfx_role = 2
+		end
+	else
+		//fallback HL2 fx; these trails in particular are pretty bad but they're the best we've got
+		self:SetModel("models/weapons/w_missile.mdl")
+
+		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Rocket_Smoke", "particles/rocket_fx.pcf")
+		if IsValid(p) then
+			p:AttachToSpecialEffect(self, self:GetPlayer(), true)
+			p.ParticleInfo[0].attach = 1
+			p.ParticleInfo[0].sfx_role = 1
+		end
+
+		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Explosion", "UtilFx")
+		if IsValid(p) then
+			p:AttachToSpecialEffect(self, self:GetPlayer(), true)
+			p.ParticleInfo[0].sfx_role = 2
+		end
+	end
 
 end
 

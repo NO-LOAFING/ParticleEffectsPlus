@@ -212,6 +212,11 @@ function TOOL:LeftClick(trace)
 			if p.GetParticleName then str = p:GetParticleName() end
 			undo.Finish("Attach Particle Effect " .. str .. " to "  .. tostring(ent:GetModel()))
 
+			//Tell clients to retrieve the updated info table
+			net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+				net.WriteEntity(p)
+			net.Broadcast()
+
 		else
 			
 			//Attach a particle effect to a special effect
@@ -219,38 +224,10 @@ function TOOL:LeftClick(trace)
 			if !IsValid(ent) or !IsValid(p) or !istable(p.ParticleInfo) then return false end
 			if CLIENT then return true end
 
-			//Detach ALL of the particle's cpoints and delete any corresponding grip points, then attach it to the special effect
-			local const = constraint.PartCtrl_SpecialEffect(ent, p, self:GetOwner())
-			constraint.RemoveConstraints(p, "PartCtrl_Ent")
-			local cpointtab = PartCtrl_ProcessedPCFs[p:GetPCF()][p:GetParticleName()].cpoints
-			local cpoints_for_defaults = {}
-			for k, v in pairs (p.ParticleInfo) do
-				if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
-					if v.ent.PartCtrl_Grip then
-						v.ent:DontDeleteOnRemove(p)
-						v.ent:Remove()
-					end
-					p.ParticleInfo[k].ent = nil //this will be replaced clientside by the special effect
-					p.ParticleInfo[k].attach = 0
-					table.insert(cpoints_for_defaults, k)
-				end
-			end
-			for k, v in pairs (ent:SpecialEffectDefaultRoles(cpoints_for_defaults)) do
-				p.ParticleInfo[k].sfx_role = v
-			end
-
-			//Add an undo entry
-			undo.Create("PartCtrl_Ent")
-				undo.AddEntity(const)  //the constraint entity will detach p upon being removed
-				undo.SetPlayer(self:GetOwner())
-			undo.Finish("Attach Particle Effect " .. p:GetParticleName() .. " to "  .. ent.PrintName)
+			local const = p:AttachToSpecialEffect(ent, self:GetOwner(), true)
+			if !IsValid(const) then return false end
 
 		end
-
-		//Tell clients to retrieve the updated info table
-		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
-			net.WriteEntity(p)
-		net.Broadcast()
 	
 		self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", NULL)
 		self:SetStage(0)

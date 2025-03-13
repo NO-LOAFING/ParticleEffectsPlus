@@ -64,6 +64,16 @@ function ENT:SetSpecialEffectDefaults()
 	self:SetTracerDir(0)
 	self:SetTracerHitDir(0)
 
+	local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Tracer", "UtilFx")
+	if IsValid(p) then
+		p:AttachToSpecialEffect(self, self:GetPlayer(), true)
+	end
+
+	local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Impact_GMOD", "UtilFx")
+	if IsValid(p) then
+		p:AttachToSpecialEffect(self, self:GetPlayer(), true)
+	end
+
 end
 
 
