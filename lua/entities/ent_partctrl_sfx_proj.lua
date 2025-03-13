@@ -17,6 +17,8 @@ ENT.DisableChildAutoplay	= true
 
 ENT.DefaultLoopTime = 0.8
 
+local svproj_enabled = GetConVar("sv_partctrl_allowserverprojectiles")
+
 
 
 
@@ -112,6 +114,9 @@ if CLIENT then
 		local padding = window.padding
 		local betweenitems = window.betweenitems
 		local betweencategories = window.betweencategories
+		local padding_help = window.padding_help
+		local betweenitems_help = window.betweenitems_help
+		local color_helpdark = window.color_helpdark
 		local SliderValueChangedUnclampedMax = window.SliderValueChangedUnclampedMax
 		local SliderSetValueUnclampedMax = window.SliderSetValueUnclampedMax
 
@@ -202,6 +207,18 @@ if CLIENT then
 				drop.Label:SetWide(w / 2.4)
 			end
 
+			local help = vgui.Create("DLabel", rpnl)
+			help:SetDark(true)
+			help:SetWrap(true)
+			help:SetTextInset(0, 0)
+			help:SetText("Sets which direction to fire projectiles. Useful for attachments that don't point forward.")
+			//help:SetContentAlignment(5)
+			help:SetAutoStretchVertical(true)
+			//help:DockMargin(32,0,32,8)
+			help:DockMargin(padding_help,betweenitems_help,padding_help,0)
+			help:Dock(TOP)
+			help:SetTextColor(color_helpdark)
+
 
 			local drop = vgui.Create("Panel", rpnl)
 		
@@ -215,8 +232,8 @@ if CLIENT then
 			drop.Combo:Dock(FILL)
 	
 			local dirs = {
-				[0] = "0: Away from surface",
-				[1] = "1: Toward surface",
+				[0] = "0: Away from hit surface",
+				[1] = "1: Toward hit surface",
 				[2] = "2: Away from start point",
 				[3] = "3: Toward start point",
 				[4] = "4: Forward",
@@ -242,6 +259,18 @@ if CLIENT then
 			function drop.PerformLayout(_, w, h)
 				drop.Label:SetWide(w / 2.4)
 			end
+
+			local help = vgui.Create("DLabel", rpnl)
+			help:SetDark(true)
+			help:SetWrap(true)
+			help:SetTextInset(0, 0)
+			help:SetText("Sets the orientation of effects attached to a hit point.")
+			//help:SetContentAlignment(5)
+			help:SetAutoStretchVertical(true)
+			//help:DockMargin(32,0,32,8)
+			help:DockMargin(padding_help,betweenitems_help,padding_help,0)
+			help:Dock(TOP)
+			help:SetTextColor(color_helpdark)
 
 
 			//should these ones be in a different category?
@@ -299,6 +328,18 @@ if CLIENT then
 				ent:DoInput("proj_lifetime_pre", val)
 			end
 
+			local help = vgui.Create("DLabel", rpnl)
+			help:SetDark(true)
+			help:SetWrap(true)
+			help:SetTextInset(0, 0)
+			help:SetText("How long projectiles last after being fired.")
+			//help:SetContentAlignment(5)
+			help:SetAutoStretchVertical(true)
+			//help:DockMargin(32,0,32,8)
+			help:DockMargin(padding_help,betweenitems_help,padding_help,0)
+			help:Dock(TOP)
+			help:SetTextColor(color_helpdark)
+
 
 			local slider = vgui.Create("DNumSlider", rpnl)
 			slider:SetText("Lifetime (after hit)")
@@ -307,7 +348,8 @@ if CLIENT then
 			slider:SetDark(true)
 			slider:SetHeight(18)
 			slider:Dock(TOP)
-			slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+			//slider:DockMargin(padding,betweenitems-5,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+			slider:DockMargin(padding,betweenitems,0,3) //actually use a normal amount of up, because otherwise the help text above is too close
 
 			slider.ValueChanged = SliderValueChangedUnclampedMax
 			slider.SetValue = SliderSetValueUnclampedMax
@@ -318,6 +360,18 @@ if CLIENT then
 			function slider.OnValueChanged(_, val)
 				ent:DoInput("proj_lifetime_post", val)
 			end
+
+			local help = vgui.Create("DLabel", rpnl)
+			help:SetDark(true)
+			help:SetWrap(true)
+			help:SetTextInset(0, 0)
+			help:SetText("How long projectiles last after hitting something. Set to 0 to expire on impact.")
+			//help:SetContentAlignment(5)
+			help:SetAutoStretchVertical(true)
+			//help:DockMargin(32,0,32,8)
+			help:DockMargin(padding_help,betweenitems_help,padding_help,0)
+			help:Dock(TOP)
+			help:SetTextColor(color_helpdark)
 
 
 			local check = vgui.Create( "DCheckBoxLabel", rpnl)
@@ -332,8 +386,35 @@ if CLIENT then
 				ent:DoInput("proj_serverside", val)
 			end
 
+			local help = vgui.Create("DLabel", rpnl)
+			help:SetDark(true)
+			help:SetWrap(true)
+			help:SetTextInset(0, 0)
+			//help:SetText("")
+			//help:SetContentAlignment(5)
+			help:SetAutoStretchVertical(true)
+			//help:DockMargin(32,0,32,8)
+			help:DockMargin(padding_help,betweenitems_help,padding_help,0)
+			help:Dock(TOP)
+			help:SetTextColor(color_helpdark)
+
+			check.Think = function()
+				help.ShouldShow = help.ShouldShow or nil
+				local new_shouldshow = svproj_enabled:GetBool()
+				if new_shouldshow != help.shouldshow then
+					if new_shouldshow then
+						check:SetDisabled(false)
+						help:SetText("If checked, uses serverside props for projectiles. These will collide properly with everything instead of passing through, but they'll also put more stress on the game (especially in multiplayer), and can show up in the wrong spot if bonemerged. Only turn this on if you need it!")
+					else
+						check:SetDisabled(true)
+						help:SetText("(disabled by sv_partctrl_allowserverprojectiles)")
+					end
+				end
+			end
+
+		//separate category for projectile visuals
 		local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("Projectile Visuals")
+		cat:SetLabel("Projectile Appearance")
 		cat:DockMargin(3,1,-2,3) //-2 right for divider
 		cat:Dock(FILL)
 		container:AddItem(cat)
@@ -542,6 +623,7 @@ if CLIENT then
 			col:SetAlphaBar(true)
 			col:Dock(TOP)
 			col:DockMargin(padding,padding,padding,0)
+			col:SetLabel("Color")
 
 			function col.PerformLayout(self, x, y)
 				//Modified version of CtrlColor:PerformLayout (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/spawnmenu/controls/ctrlcolor.lua#L13)
@@ -601,7 +683,7 @@ if CLIENT then
 			end
 		end
 
-		
+
 		//Warning message for incompatible sfx roles
 		//Automatically show and hide this in its own think func, so we don't have to update every cpoint's controls when a role changes
 
@@ -629,7 +711,7 @@ if CLIENT then
 
 		//pnl2.oldThink = pnl2.Think
 		pnl2.Think = function(...)
-			pnl2.ShouldShow = pnl2.ShouldShow or false
+			pnl2.ShouldShow = pnl2.ShouldShow or nil
 			local new_shouldshow = self.SpecialEffectChildrenSorted["bad"][ent2] and self.SpecialEffectChildrenSorted["bad"][ent2][k]
 			if pnl2.ShouldShow != new_shouldshow then
 				if new_shouldshow then
@@ -706,7 +788,7 @@ function ENT:SpecialEffectThink()
 			//Wait a frame after initialize or refresh
 			self.LastLoop = nil
 		else
-			local svproj = self:GetProjServerside()
+			local svproj = self:GetProjServerside() and svproj_enabled:GetBool()
 			if CLIENT then
 				for child, _ in pairs (self.SpecialEffectChildren) do
 					child.MaxOldParticlesOverride = max

@@ -136,6 +136,8 @@ function PANEL:RebuildControls()
 	local padding_help = 22 //bigger padding for help text
 	local betweenitems_help = 5 //smaller betweenitems for help text
 	local betweenitems_help2 = 3 //even smaller betweenitems for second help text paragraphs
+	self.padding_help = padding_help
+	self.betweenitems_help = betweenitems_help
 
 	local icon_info = Material("icon16/information.png")
 
@@ -668,7 +670,8 @@ function PANEL:RebuildControls()
 							local col = vgui.Create("DColorMixer", pnl)
 							col:SetAlphaBar(false)
 							col:Dock(TOP)
-							col:DockMargin(padding,padding,padding,0)
+							col:DockMargin(padding,betweenitems,padding,0)
+							col:SetLabel(tab.label)
 	
 							function col.PerformLayout(self, x, y)
 								//Modified version of CtrlColor:PerformLayout (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/spawnmenu/controls/ctrlcolor.lua#L13)
@@ -927,7 +930,14 @@ function PANEL:RebuildControls()
 		divider:SetDividerWidth(4)//(8)
 		//divider:SetLeftMin()
 		//divider:SetRightMin()
-		divider:SetLeftWidth(352)
+		//stupid hack: bullet sfx controls are exactly the right size to make the divider confused as to whether it should add a slider or not,
+		//so resolve this by making it wider at first to settle it down and resolve it.
+		divider:SetLeftWidth(360)
+		timer.Simple(math.max(0.06, FrameTime()*2), function()
+			if IsValid(divider) then
+				divider:SetLeftWidth(352)
+			end
+		end)
 
 
 		//category for info; no header for this one

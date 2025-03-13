@@ -96,6 +96,9 @@ if CLIENT then
 		local ent = self
 		local padding = window.padding
 		local betweenitems = window.betweenitems
+		local padding_help = window.padding_help
+		local betweenitems_help = window.betweenitems_help
+		local color_helpdark = window.color_helpdark
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
 		cat:SetLabel("Bullet Effect Settings")
@@ -184,6 +187,18 @@ if CLIENT then
 			drop.Label:SetWide(w / 2.4)
 		end
 
+		local help = vgui.Create("DLabel", rpnl)
+		help:SetDark(true)
+		help:SetWrap(true)
+		help:SetTextInset(0, 0)
+		help:SetText("Sets which direction to fire bullets. Useful for attachments that don't point forward.")
+		//help:SetContentAlignment(5)
+		help:SetAutoStretchVertical(true)
+		//help:DockMargin(32,0,32,8)
+		help:DockMargin(padding_help,betweenitems_help,padding_help,0)
+		help:Dock(TOP)
+		help:SetTextColor(color_helpdark)
+
 
 		local drop = vgui.Create("Panel", rpnl)
 		
@@ -197,8 +212,8 @@ if CLIENT then
 		drop.Combo:Dock(FILL)
 
 		local dirs = {
-			[0] = "0: Away from surface",
-			[1] = "1: Toward surface",
+			[0] = "0: Away from hit surface",
+			[1] = "1: Toward hit surface",
 			[2] = "2: Away from start point",
 			[3] = "3: Toward start point",
 			[4] = "4: Forward",
@@ -224,6 +239,18 @@ if CLIENT then
 		function drop.PerformLayout(_, w, h)
 			drop.Label:SetWide(w / 2.4)
 		end
+
+		local help = vgui.Create("DLabel", rpnl)
+		help:SetDark(true)
+		help:SetWrap(true)
+		help:SetTextInset(0, 0)
+		help:SetText("Sets the orientation of effects attached to a hit point.")
+		//help:SetContentAlignment(5)
+		help:SetAutoStretchVertical(true)
+		//help:DockMargin(32,0,32,8)
+		help:DockMargin(padding_help,betweenitems_help,padding_help,0)
+		help:Dock(TOP)
+		help:SetTextColor(color_helpdark)
 
 	end
 

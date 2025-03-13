@@ -1,7 +1,14 @@
 //Convars:
 
 if SERVER then
-	CreateConVar("sv_partctrl_particlesperent", 32, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Max number of effect instances (or projectiles) that a single particle effect entity can have active at once.", 1)
+	CreateConVar("sv_partctrl_particlesperent", 32, FCVAR_REPLICATED, "Max number of effect instances (or projectiles) that a single particle effect entity can have active at once.", 1)
+	local int_singleplayer
+	if game.SinglePlayer() then
+		int_sp = 1
+	else
+		int_sp = 0
+	end
+	CreateConVar("sv_partctrl_allowserverprojectiles", int_sp, FCVAR_REPLICATED, "If 0, disables the serverside projectiles option on projectile effects.", 0, 1)
 end
 
 
