@@ -34,12 +34,17 @@ end
 
 
 
-function ENT:SetNWVarDefaults()
+function ENT:SetSpecialEffectDefaults()
 
 	self:SetAttachmentID(0) //all special fx must have this one
 
 	self:SetBeamDir(0)
 	self:SetBeamHitDir(0)
+
+	local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "partctrl_pointer_laser", "particles/partctrl_sfx.pcf")
+	if IsValid(p) then
+		//TODO: need to move particle attach funcs out of the tool code so we can use them here
+	end
 
 end
 

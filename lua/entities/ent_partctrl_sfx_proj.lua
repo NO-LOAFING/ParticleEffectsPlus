@@ -58,7 +58,7 @@ end
 
 
 
-function ENT:SetNWVarDefaults()
+function ENT:SetSpecialEffectDefaults()
 
 	self:SetAttachmentID(0) //all special fx must have this one
 

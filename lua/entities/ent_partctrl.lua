@@ -1626,7 +1626,12 @@ if SERVER then
 
 	end
 
-	function PartCtrl_SpawnParticle(ply, name, pcf)
+	function PartCtrl_SpawnParticle(ply, pos, name, pcf)
+
+		if !IsValid(ply) and pos == nil then
+			MsgN("PartCtrl_SpawnParticle has no player or position, can't get spawn location")
+			return
+		end
 
 		if !name or !pcf then 
 			MsgN("partctrl_spawnparticle: failed, missing name or pcf (first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf)")
@@ -1682,16 +1687,21 @@ if SERVER then
 		if table.Count(grips) > 1 then
 			maxs.x = multigrip_length/2 + grip_radius //add grip_radius so that grips won't spawn half-embedded in a wall
 		end
-		local tr = util.TraceHull({
-			start = ply:GetShootPos(),
-			endpos = ply:GetShootPos() + (ply:GetAimVector() * 2048),
-			filter = ply,
-			maxs = maxs,
-			mins = -maxs
-		})
+		if IsValid(ply) then
+			local tr = util.TraceHull({
+				start = ply:GetShootPos(),
+				endpos = ply:GetShootPos() + (ply:GetAimVector() * 2048),
+				filter = ply,
+				maxs = maxs,
+				mins = -maxs
+			})
+			if pos == nil then
+				pos = tr.HitPos
+			end
+		end
 
 		local parent = nil
-		grips, parent = PartCtrl_SpawnParticleGripPoints(tr.HitPos, multigrip_length, grips)
+		grips, parent = PartCtrl_SpawnParticleGripPoints(pos, multigrip_length, grips)
 
 		local p = ents.Create("ent_partctrl")
 		if !IsValid(p) then return end
@@ -1726,13 +1736,15 @@ if SERVER then
 
 		if IsValid(ply) then
 			gamemode.Call("PlayerSpawnedParticle", ply, name, pcf, p)
+
+			undo.Create("PartCtrl")
+				undo.SetPlayer(ply)
+				undo.AddEntity(p)
+			undo.Finish("Particle Effect (" .. tostring(name) .. " (" .. tostring(pcf) .. "))")
+			ply:AddCleanup("partctrl", p)
 		end
 
-		undo.Create("PartCtrl")
-			undo.SetPlayer(ply)
-			undo.AddEntity(p)
-		undo.Finish("Particle Effect (" .. tostring(name) .. " (" .. tostring(pcf) .. "))")
-		ply:AddCleanup("partctrl", p)
+		return p
 
 	end
 
@@ -1740,8 +1752,8 @@ end
 
 concommand.Add("partctrl_spawnparticle", function(ply, cmd, args)
 	//Note: this callback function runs on the SERVER only
-	PartCtrl_SpawnParticle(ply, args[1], args[2])
-end, nil, "Spawns a particle effect; first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf")
+	PartCtrl_SpawnParticle(ply, nil, args[2], args[1])
+end, nil, "Spawns a particle effect; first arg is pcf file path starting with particles/ and ending with .pcf, second arg is effect name")
 
 if SERVER then
 
@@ -1812,8 +1824,6 @@ if SERVER then
 			else //don't actually run the normal SetColor on grips, it could cause unwanted behavior when loading the color from dupes
 				return old_SetColor(self, color, ...)
 			end
-
-			//TODO: color children of special fx
 			
 		end
 

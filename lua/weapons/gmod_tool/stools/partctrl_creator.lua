@@ -18,7 +18,7 @@ function TOOL:LeftClick()
 		local pcf = self:GetClientInfo("pcf")
 		local name = self:GetClientInfo("name")
 
-		PartCtrl_SpawnParticle(self:GetOwner(), name, pcf)
+		PartCtrl_SpawnParticle(self:GetOwner(), nil, name, pcf)
 	end
 
 	return true
