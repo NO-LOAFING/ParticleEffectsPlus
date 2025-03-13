@@ -711,7 +711,7 @@ if CLIENT then
 
 		//pnl2.oldThink = pnl2.Think
 		pnl2.Think = function(...)
-			pnl2.ShouldShow = pnl2.ShouldShow or nil
+			pnl2.ShouldShow = pnl2.ShouldShow or false
 			local new_shouldshow = self.SpecialEffectChildrenSorted["bad"][ent2] and self.SpecialEffectChildrenSorted["bad"][ent2][k]
 			if pnl2.ShouldShow != new_shouldshow then
 				if new_shouldshow then

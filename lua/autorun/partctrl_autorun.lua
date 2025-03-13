@@ -4596,6 +4596,8 @@ end
 
 if CLIENT then
 
+	partctrlwindows = {}
+
 	function OpenPartCtrlEditor(ent)
 
 		if IsValid(ent.PartCtrlWindow) then return end
@@ -4612,16 +4614,24 @@ if CLIENT then
 		//window:SetMinHeight(h_min)
 		//window:SetMinWidth(w_min)
 
+		//When opening multiple edit windows, move the default position slightly for each window open so they don't get completely hidden by each other until the player moves them
+		local x, y = window:GetPos()
+		local xmax, ymax = g_ContextMenu:GetSize()
+		window:SetPos(math.min(x + (#partctrlwindows * 25), xmax - 25), math.min(y + (#partctrlwindows * 25), ymax - 25))
+
 		local control = window:Add("PartCtrlEditor")
 		window.Control = control
 		control:SetEntity(ent)
 		control:Dock(FILL)
 
-		PartCtrlEditors = PartCtrlEditors or {}
-		table.insert(PartCtrlEditors, control)
+		table.insert(partctrlwindows, window)
 
 		control.OnEntityLost = function()
 			window:Remove()
+		end
+
+		window.OnRemove = function()
+			table.remove(partctrlwindows, table.KeyFromValue(partctrlwindows, window))
 		end
 
 		//Fix: If the control window is created while the context menu is closed (by opening a control window with the attacher tool while holding Q) then it'll be unclickable
