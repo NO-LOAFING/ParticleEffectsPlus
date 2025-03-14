@@ -545,6 +545,44 @@ function PANEL:OpenMenu()
 		RunConsoleCommand("partctrl_creator_pcf", self.pcf)
 		RunConsoleCommand("partctrl_creator_name", self.name)
 	end):SetIcon("icon16/brick_add.png")
+
+	//List all parents and children of this effect recursively; this means we don't have to clutter up the spawnlists with children
+	if istable(PartCtrl_ProcessedPCFs[self.pcf]) and istable(PartCtrl_ProcessedPCFs[self.pcf][self.name]) then
+		local function ListChildFx(submenu, name2, tabname)
+			for _, child in pairs (PartCtrl_ProcessedPCFs[self.pcf][name2][tabname]) do
+				if PartCtrl_ProcessedPCFs[self.pcf][child] then
+					local OnClick = function()
+						RunConsoleCommand("partctrl_spawnparticle", child, self.pcf)
+						surface.PlaySound("ui/buttonclickrelease.wav")
+					end
+					local submenu2
+					local option2
+					if PartCtrl_ProcessedPCFs[self.pcf][child][tabname] and table.Count(PartCtrl_ProcessedPCFs[self.pcf][child][tabname]) > 0 then
+						submenu2, option2 = submenu:AddSubMenu(child, OnClick)
+						ListChildFx(submenu2, child, tabname)
+					else
+						option2 = submenu:AddOption(child, OnClick)
+					end
+					if PartCtrl_ProcessedPCFs[self.pcf][child].shouldcull then //in developer mode, add warnings to culled fx
+						option2:SetImage("icon16/error.png")
+						//duplicate of text string from this panel's setup func, whatever
+						option2:SetTooltip("ERROR: This effect will not be loaded outside of developer mode.\n\n" .. tostring(PartCtrl_ProcessedPCFs[self.pcf][child].shouldcull))
+					end
+				end
+			end
+		end
+		local ptab = PartCtrl_ProcessedPCFs[self.pcf][self.name]
+		if ptab.parents and table.Count(ptab.parents) > 0 then
+			local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn parent effect (".. table.Count(ptab.parents) ..")")
+			base_submenuoption:SetImage("icon16/bricks.png") //not the best icon, but there's not really anything good to represent the concept of the effect hierarchy
+			ListChildFx(base_submenu, self.name, "parents")
+		end
+		if ptab.children and table.Count(ptab.children) > 0 then
+			local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn child effect (".. table.Count(ptab.children) ..")")
+			base_submenuoption:SetImage("icon16/bricks.png") //^
+			ListChildFx(base_submenu, self.name, "children")
+		end
+	end
 	
 	if !(IsValid(self:GetParent()) and self:GetParent().GetReadOnly and self:GetParent():GetReadOnly()) then
 		menu:AddSpacer()
@@ -557,6 +595,8 @@ function PANEL:OpenMenu()
 
 	//developer control to reload a .pcf file manually
 	if GetConVarNumber("developer") >= 1 then
+		menu:AddSpacer()
+
 		local text = "Reload .pcf file"
 		if self.utilfx then text = "Reload PartCtrl_UtilFx" end
 		menu:AddOption(text, function()

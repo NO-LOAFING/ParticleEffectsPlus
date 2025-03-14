@@ -3399,6 +3399,7 @@ function PartCtrl_ProcessPCF(filename)
 			local processed = {
 				["cpoints"] = {},
 				["children"] = t[particle].children,
+				["parents"] = {},
 			}
 			//Go through all of the effects's operators (initializers, operators, renderers, etc. are all called "operators" internally, it's confusing) 
 			//and use the corresponding functions in processfuncs to "process" them (populate the table above with all their relevant cpoint info). 
@@ -3461,50 +3462,48 @@ function PartCtrl_ProcessPCF(filename)
 					MsgN(filename, " ", particle2, " child ", child, " cpoints_from_child_fx has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
 					return cpoints
 				end
-				if istable(t[particle2].children) then
-					for _, child in pairs (t[particle2].children) do
-						if t2[child] then
-							local cpoints2 = table.Copy(t2[child].cpoints)
-							//make sure the child has also inherited cpoints from its own children
-							if istable(t[child].children) then
-								//if dodebug and #t[child].children > 0 then MsgN("children of ", child, ":") PrintTable(t[child].children) end
-								for _, child2 in pairs (t[child].children) do
-									if t2[child2] then
-										local cpoints3 = cpoints_from_child_fx(table.Copy(t2[child2].cpoints), child2, depth)
-										for i, tab in pairs (cpoints3) do
-											cpoints2[i] = cpoints2[i] or {}
-											for processedk, processedv in pairs (tab) do
-												for k, v in pairs (processedv) do
-													//mark attribs as being inherited from a child
-													if v["name"] then
-														processedv[k]["name"] = "child " .. child2 .. " | " .. processedv[k]["name"]
-													end
+				for _, child in pairs (t[particle2].children) do
+					if t2[child] then
+						local cpoints2 = table.Copy(t2[child].cpoints)
+						//make sure the child has also inherited cpoints from its own children
+						if istable(t[child].children) then
+							//if dodebug and #t[child].children > 0 then MsgN("children of ", child, ":") PrintTable(t[child].children) end
+							for _, child2 in pairs (t[child].children) do
+								if t2[child2] then
+									local cpoints3 = cpoints_from_child_fx(table.Copy(t2[child2].cpoints), child2, depth)
+									for i, tab in pairs (cpoints3) do
+										cpoints2[i] = cpoints2[i] or {}
+										for processedk, processedv in pairs (tab) do
+											for k, v in pairs (processedv) do
+												//mark attribs as being inherited from a child
+												if v["name"] then
+													processedv[k]["name"] = "child " .. child2 .. " | " .. processedv[k]["name"]
 												end
-												if istable(cpoints2[i][processedk]) then
-													table.Add(cpoints2[i][processedk], processedv)
-												else
-													cpoints2[i][processedk] = processedv
-												end
+											end
+											if istable(cpoints2[i][processedk]) then
+												table.Add(cpoints2[i][processedk], processedv)
+											else
+												cpoints2[i][processedk] = processedv
 											end
 										end
 									end
 								end
 							end
-							//inherit cpoints from the child
-							for i, tab in pairs (cpoints2) do
-								cpoints[i] = cpoints[i] or {}
-								for processedk, processedv in pairs (tab) do
-									for k, v in pairs (processedv) do
-										//mark attribs as being inherited from a child
-										if v["name"] then
-											processedv[k]["name"] = "child " .. child .. " | " .. processedv[k]["name"]
-										end
+						end
+						//inherit cpoints from the child
+						for i, tab in pairs (cpoints2) do
+							cpoints[i] = cpoints[i] or {}
+							for processedk, processedv in pairs (tab) do
+								for k, v in pairs (processedv) do
+									//mark attribs as being inherited from a child
+									if v["name"] then
+										processedv[k]["name"] = "child " .. child .. " | " .. processedv[k]["name"]
 									end
-									if istable(cpoints[i][processedk]) then
-										table.Add(cpoints[i][processedk], processedv)
-									else
-										cpoints[i][processedk] = processedv
-									end
+								end
+								if istable(cpoints[i][processedk]) then
+									table.Add(cpoints[i][processedk], processedv)
+								else
+									cpoints[i][processedk] = processedv
 								end
 							end
 						end
@@ -3821,6 +3820,16 @@ function PartCtrl_ProcessPCF(filename)
 				//(do this last so we don't conflict with particles that have been culled)
 				PartCtrl_PCFsByParticleName[particle] = PartCtrl_PCFsByParticleName[particle] or {}
 				PartCtrl_PCFsByParticleName[particle][filename] = true
+			end
+		end
+		//Remove culled children from child lists, add parents to parent lists
+		for particle, _ in pairs (t2) do
+			for k, child in pairs (t2[particle].children) do
+				if !t2[child] then 
+					table.remove(t2[particle].children, k)
+				else
+					table.insert(t2[child].parents, particle)
+				end
 			end
 		end
 		
