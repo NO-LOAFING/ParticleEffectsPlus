@@ -150,72 +150,13 @@ function TOOL:LeftClick(trace)
 
 		if !ent.PartCtrl_SpecialEffect then
 
-			//Attach a particle effect to a model
+			//Attach a particle effect or special effect to a model
 	
 			if !IsValid(ent) or !IsValid(p) or (!p.PartCtrl_SpecialEffect and (!istable(p.ParticleInfo) or !istable(p.ParticleInfo[k]) or PartCtrl_ProcessedPCFs[p:GetPCF()][p:GetParticleName()].cpoints[k].mode != PARTCTRL_CPOINT_MODE_POSITION)) then return false end
 			if CLIENT then return true end
-		
-			local oldent = nil
-			local oldconst = nil
-			local doparent = false
-			if !p.PartCtrl_SpecialEffect then
-				oldent = p.ParticleInfo[k].ent
-				local tab = constraint.FindConstraint(oldent, "PartCtrl_Ent")
-				if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_Ent then
-					oldconst = tab.Constraint
-					doparent = tab.DoParent
-				else
-					return false
-				end
-			else
-				oldent = p:GetParent()
-				local tab = constraint.FindConstraint(oldent, "PartCtrl_SpecialEffect")
-				if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_SpecialEffect then
-					oldconst = tab.Constraint
-				else
-					return false
-				end
-			end
-		
-			local attach = self:GetClientNumber("attachnum", 0)
-			//don't let us set attach to an attachment that the model doesn't have
-			if IsValid(ent.AttachedEntity) then
-				if !istable(ent.AttachedEntity:GetAttachment(attach)) then attach = 0 end 
-			else
-				if !istable(ent:GetAttachment(attach)) then attach = 0 end
-			end
-			if !p.PartCtrl_SpecialEffect then
-				//p.ParticleInfo[k].ent = ent //the constraint function already does this
-				p.ParticleInfo[k].attach = attach
-			else
-				p:SetAttachmentID(attach)
-			end
-		
-			//Detach the corresponding cpoint of the particle effect from the grip point we clicked on, then attach that cpoint to the new parent
-			oldent:DontDeleteOnRemove(p)
-			p:DontDeleteOnRemove(oldent)
-			oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
-			oldconst:Remove()
-			oldent:Remove()
-			local const = nil
-			if !p.PartCtrl_SpecialEffect then
-				const = constraint.PartCtrl_Ent(p, ent, k, doparent, self:GetOwner())
-			else
-				const = constraint.PartCtrl_SpecialEffect(p, ent, self:GetOwner())
-			end
 
-			//Add an undo entry
-			undo.Create("PartCtrl_Ent")
-				undo.AddEntity(const)  //the constraint entity will detach p upon being removed
-				undo.SetPlayer(self:GetOwner())
-			local str = p.PrintName
-			if p.GetParticleName then str = p:GetParticleName() end
-			undo.Finish("Attach Particle Effect " .. str .. " to "  .. tostring(ent:GetModel()))
-
-			//Tell clients to retrieve the updated info table
-			net.Start("PartCtrl_InfoTableUpdate_SendToCl")
-				net.WriteEntity(p)
-			net.Broadcast()
+			local const = p:AttachToEntity(ent, k, self:GetClientNumber("attachnum", 0), self:GetOwner(), true)
+			if !IsValid(const) then return false end
 
 		else
 			

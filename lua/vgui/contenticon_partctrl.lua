@@ -528,7 +528,7 @@ end
 
 function PANEL:DoClick()
 
-	RunConsoleCommand("partctrl_spawnparticle", self.pcf, self.name)
+	RunConsoleCommand("partctrl_spawnparticle", self.name, self.pcf)
 	surface.PlaySound("ui/buttonclickrelease.wav")
 
 end

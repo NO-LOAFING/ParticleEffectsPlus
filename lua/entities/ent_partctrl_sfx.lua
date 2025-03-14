@@ -207,6 +207,54 @@ if SERVER then
 
 	end
 
+	function ENT:AttachToEntity(ent, k, attach, ply, addundo) //k arg does nothing, but matches ent_partctrl
+
+		if !IsValid(ent) then return false end
+
+		local oldent = self:GetSpecialEffectParent()
+		if !IsValid(oldent) then return false end
+		local oldconst = nil
+		local tab = constraint.FindConstraint(oldent, "PartCtrl_SpecialEffect")
+		if istable(tab) and tab.Ent1 == self then
+			oldconst = tab.Constraint
+		else
+			return false
+		end
+	
+		//don't let us set attach to an attachment that the model doesn't have
+		if IsValid(ent.AttachedEntity) then
+			if !istable(ent.AttachedEntity:GetAttachment(attach)) then attach = 0 end 
+		else
+			if !istable(ent:GetAttachment(attach)) then attach = 0 end
+		end
+		self:SetAttachmentID(attach)
+
+	
+		//Detach the corresponding cpoint of the particle effect from the grip point we clicked on, then attach that cpoint to the new parent
+		oldent:DontDeleteOnRemove(self)
+		self:DontDeleteOnRemove(oldent)
+		oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
+		oldconst:Remove()
+		oldent:Remove()
+		local const = constraint.PartCtrl_SpecialEffect(self, ent, ply)
+
+		if addundo then
+			//Add an undo entry
+			undo.Create("PartCtrl_Ent")
+				undo.AddEntity(const)  //the constraint entity will detach us upon being removed
+				undo.SetPlayer(ply)
+			undo.Finish("Attach " .. self.PrintName .. " to "  .. string.GetFileFromFilename(tostring(ent:GetModel())))
+		end
+
+		//Tell clients to retrieve the updated info table
+		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+			net.WriteEntity(self)
+		net.Broadcast()
+
+		return const
+
+	end
+
 	function ENT:DetachFromEntity(ply)
 	
 		local ent = self:GetSpecialEffectParent()

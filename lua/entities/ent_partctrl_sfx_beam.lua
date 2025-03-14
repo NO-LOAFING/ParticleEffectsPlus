@@ -44,13 +44,13 @@ function ENT:SetSpecialEffectDefaults()
 	if IsMounted("tf") then
 		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "laser_sight_beam", "particles/class_fx.pcf")
 		if IsValid(p) then
-			p:AttachToSpecialEffect(self, self:GetPlayer(), true)
+			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 		end
 	else
 		//goofy recolored wrangler beam because there are no suitable default fx included with gmod at all
 		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "partctrl_pointer_laser", "particles/partctrl_sfx.pcf")
 		if IsValid(p) then
-			p:AttachToSpecialEffect(self, self:GetPlayer(), true)
+			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 		end
 	end
 

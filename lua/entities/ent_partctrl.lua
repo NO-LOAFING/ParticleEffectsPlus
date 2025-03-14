@@ -806,6 +806,57 @@ if SERVER then
 
 	numpad.Register("PartCtrl_Numpad", PartCtrlNumpadFunction)
 
+	function ENT:AttachToEntity(ent, k, attach, ply, addundo)
+
+		if !IsValid(ent) or !istable(self.ParticleInfo) then return false end
+
+		local oldent = self.ParticleInfo[k].ent
+		if !IsValid(oldent) then return false end
+		local oldconst = nil
+		local doparent = false
+		local tab = constraint.FindConstraint(oldent, "PartCtrl_Ent")
+		if istable(tab) and tab.Ent1 == self then
+			oldconst = tab.Constraint
+			doparent = tab.DoParent
+		else
+			return false
+		end
+	
+		//don't let us set attach to an attachment that the model doesn't have
+		if IsValid(ent.AttachedEntity) then
+			if !istable(ent.AttachedEntity:GetAttachment(attach)) then attach = 0 end 
+		else
+			if !istable(ent:GetAttachment(attach)) then attach = 0 end
+		end
+		//self.ParticleInfo[k].ent = ent //the constraint function already does this
+		self.ParticleInfo[k].attach = attach
+	
+		//Detach the corresponding cpoint of the particle effect from the grip point we clicked on, then attach that cpoint to the new parent
+		oldent:DontDeleteOnRemove(self)
+		self:DontDeleteOnRemove(oldent)
+		oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
+		oldconst:Remove()
+		oldent:Remove()
+		local const = constraint.PartCtrl_Ent(self, ent, k, doparent, ply)
+
+		
+		if addundo then
+			//Add an undo entry
+			undo.Create("PartCtrl_Ent")
+				undo.AddEntity(const)  //the constraint entity will detach us upon being removed
+				undo.SetPlayer(ply)
+			undo.Finish("Attach Particle Effect " ..self:GetParticleName() .. " to "  .. string.GetFileFromFilename(tostring(ent:GetModel())))
+		end
+
+		//Tell clients to retrieve the updated info table
+		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+			net.WriteEntity(self)
+		net.Broadcast()
+
+		return const
+
+	end
+
 	function ENT:AttachToSpecialEffect(ent, ply, addundo)
 
 		//Detach ALL of the particle's cpoints and delete any corresponding grip points, then attach it to the special effect
@@ -834,8 +885,8 @@ if SERVER then
 		if addundo then
 			//Add an undo entry
 			undo.Create("PartCtrl_Ent")
-				undo.AddEntity(const)  //the constraint entity will detach p upon being removed
-				undo.SetPlayer(self:GetOwner())
+				undo.AddEntity(const)  //the constraint entity will detach us upon being removed
+				undo.SetPlayer(ply)
 			undo.Finish("Attach Particle Effect " .. self:GetParticleName() .. " to "  .. ent.PrintName)
 		end
 
@@ -1794,8 +1845,8 @@ end
 
 concommand.Add("partctrl_spawnparticle", function(ply, cmd, args)
 	//Note: this callback function runs on the SERVER only
-	PartCtrl_SpawnParticle(ply, nil, args[2], args[1])
-end, nil, "Spawns a particle effect; first arg is pcf file path starting with particles/ and ending with .pcf, second arg is effect name")
+	PartCtrl_SpawnParticle(ply, nil, args[1], args[2])
+end, nil, "Spawns a particle effect; first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf")
 
 if SERVER then
 

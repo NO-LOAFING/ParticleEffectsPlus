@@ -91,7 +91,7 @@ function ENT:SetSpecialEffectDefaults()
 
 		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "rockettrail", "particles/rockettrail.pcf")
 		if IsValid(p) then
-			p:AttachToSpecialEffect(self, self:GetPlayer(), true)
+			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 			p.ParticleInfo[0].attach = 1
 			p.ParticleInfo[0].sfx_role = 1
 		end
@@ -99,7 +99,7 @@ function ENT:SetSpecialEffectDefaults()
 		//TODO: this should be ExplosionCore_Wall from tf2's particles/explosion.pcf, but that's currently overridden by HL2 anniversary pcf of the same name
 		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "ExplosionCore_MidAir", "particles/bigboom.pcf")
 		if IsValid(p) then
-			p:AttachToSpecialEffect(self, self:GetPlayer(), true)
+			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 			p.ParticleInfo[0].sfx_role = 2
 		end
 	else
@@ -108,14 +108,14 @@ function ENT:SetSpecialEffectDefaults()
 
 		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Rocket_Smoke", "particles/rocket_fx.pcf")
 		if IsValid(p) then
-			p:AttachToSpecialEffect(self, self:GetPlayer(), true)
+			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 			p.ParticleInfo[0].attach = 1
 			p.ParticleInfo[0].sfx_role = 1
 		end
 
 		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Explosion", "UtilFx")
 		if IsValid(p) then
-			p:AttachToSpecialEffect(self, self:GetPlayer(), true)
+			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 			p.ParticleInfo[0].sfx_role = 2
 		end
 	end
@@ -746,6 +746,7 @@ if CLIENT then
 		//pnl2.oldThink = pnl2.Think
 		pnl2.Think = function(...)
 			pnl2.ShouldShow = pnl2.ShouldShow or false
+			if !IsValid(self) then return end
 			local new_shouldshow = self.SpecialEffectChildrenSorted["bad"][ent2] and self.SpecialEffectChildrenSorted["bad"][ent2][k]
 			if pnl2.ShouldShow != new_shouldshow then
 				if new_shouldshow then
