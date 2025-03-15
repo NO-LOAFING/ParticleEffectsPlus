@@ -9,6 +9,13 @@ if SERVER then
 		int_sp = 0
 	end
 	CreateConVar("sv_partctrl_allowserverprojectiles", int_sp, FCVAR_REPLICATED, "If 0, disables the serverside projectiles option on projectile effects.", 0, 1)
+else
+	//Some convars to separate child fx from others; in practice, this doesn't work well because there are 
+	//A: lots of normal fx that are also used as children, and would be excluded (i.e. eye_powerup_green_lvl_3, rocket_explosion_classic, rocket_trail_classic_crit_red, many more) 
+	//and B: lots of unused child fx that were removed from their parents, and so end up cluttering up the parent fx lists anyway (too many to list), 
+	//so these features are disabled by default.
+	CreateClientConVar("cl_partctrl_childfx_in_autospawnlists", 2, false, false, "Sets how child particle effects appear in auto-generated .pcf spawnlists.\n0: Child effects are hidden\n1: Child effects are sorted into a separate category\n2: Child effects are listed alongside parent effects", 0, 2)
+	CreateClientConVar("cl_partctrl_childfx_in_search", 1, false, false, "If 0, prevents child particle effects from being shown in search results.", 0, 1)
 end
 
 
@@ -3824,12 +3831,17 @@ function PartCtrl_ProcessPCF(filename)
 		end
 		//Remove culled children from child lists, add parents to parent lists
 		for particle, _ in pairs (t2) do
+			local shouldclean = false
 			for k, child in pairs (t2[particle].children) do
 				if !t2[child] then 
-					table.remove(t2[particle].children, k)
+					t2[particle].children[k] = nil
+					shouldclean = true
 				else
 					table.insert(t2[child].parents, particle)
 				end
+			end
+			if shouldclean then
+				t2[particle].children = table.ClearKeys(t2[particle].children)
 			end
 		end
 		
@@ -4057,6 +4069,8 @@ local RefreshGameParticles
 	
 if CLIENT then
 
+	local cv_childfx_spawnlist = GetConVar("cl_partctrl_childfx_in_autospawnlists")
+
 	local function OnParticleNodeSelected(pcf, ViewPanel, pnlContent)
 
 		ViewPanel:Clear(true)
@@ -4064,8 +4078,35 @@ if CLIENT then
 		if !istable(PartCtrl_ProcessedPCFs[pcf]) then
 			MsgN("OnParticleNodeSelected tried to make spawnlist for invalid pcf ", pcf)
 		else
-			for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do //use SortedPairs to sort them in alphabetical order
-				spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+			local dochildfx = cv_childfx_spawnlist:GetInt()
+			if dochildfx == 0 then
+				//No child fx
+				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do //use SortedPairs to sort them in alphabetical order
+					if !PartCtrl_ProcessedPCFs[pcf][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf][particle].parents) < 1 then
+						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+					end
+				end
+			elseif dochildfx == 1 then
+				local tab = {}
+				//Separate child fx
+				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do //use SortedPairs to sort them in alphabetical order
+					if !PartCtrl_ProcessedPCFs[pcf][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf][particle].parents) < 1 then
+						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+					else
+						table.insert(tab, particle)
+					end
+				end
+				if table.Count(tab) > 0 then
+					spawnmenu.CreateContentIcon("header", ViewPanel, {["text"] = "Child effects"})
+					for k, particle in pairs (tab) do
+						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+					end
+				end
+			else
+				//All fx sorted alphabetically
+				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do //use SortedPairs to sort them in alphabetical order
+					spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+				end
 			end
 		end
 
@@ -4095,8 +4136,34 @@ if CLIENT then
 	function PartCtrl_CreateCustomSpawnlist(tab, name, icon) //globally available so we can use it to make arbitrary spawnlists for testing
 
 		local tab2 = {}
-		for k, v in pairs (tab) do
-			tab2[k] = {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle}
+
+		local dochildfx = cv_childfx_spawnlist:GetInt()
+		if dochildfx == 0 then
+			//No child fx
+			for k, v in pairs (tab) do
+				if !PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents) < 1 then
+					table.insert(tab2, {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle})
+				end
+			end
+		elseif dochildfx == 1 then
+			//Separate child fx
+			local tab3 = {}
+			for k, v in pairs (tab) do
+				if !PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents) < 1 then
+					table.insert(tab2, {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle})
+				else
+					table.insert(tab3, {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle})
+				end
+			end
+			if table.Count(tab3) > 0 then
+				table.insert(tab2, {["type"] = "header", ["text"] = "Child effects"})
+				table.Add(tab2, tab3)
+			end
+		else
+			//All fx sorted alphabetically
+			for k, v in pairs (tab) do
+				tab2[k] = {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle}
+			end
 		end
 
 		AddPropsOfParent(g_SpawnMenu.CustomizableSpawnlistNode.SMContentPanel, g_SpawnMenu.CustomizableSpawnlistNode, 0, {[name] = {
@@ -4332,6 +4399,8 @@ if CLIENT then
 
 	end) end)
 
+	local cv_childfx_search = GetConVar("cl_partctrl_childfx_in_search")
+
 	search.AddProvider(function(str)
 
 		local searchTerms = string.Explode(" ", str)
@@ -4348,18 +4417,20 @@ if CLIENT then
 		local results = {}
 
 		for k, v in ipairs (searchParticles) do
-			for k2, v2 in ipairs (searchTerms) do
-				if !(v.name_lower:find(v2, nil, true) or v.pcf:find(v2, nil, true)) then
-					break
-				elseif k2 == #searchTerms then
-					local entry = {
-						text = v.name,
-						icon = spawnmenu.CreateContentIcon("partctrl", g_SpawnMenu.SearchPropPanel, {["spawnname"] = v.pcf, ["nicename"] = v.name}),
-						words = {v.name}
-					}
-					table.insert(results, entry)
-					//entry.icon.IsInSearch = true //used by spawnicon code; TODO: stops working when the search is refreshed by the model search
-					//MsgN("according to addprovider, g_SpawnMenu.SearchPropPanel is ", g_SpawnMenu.SearchPropPanel, " and icon is ", entry.icon)
+			if cv_childfx_search:GetBool() or !PartCtrl_ProcessedPCFs[v.pcf][v.name].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.name].parents) < 1 then
+				for k2, v2 in ipairs (searchTerms) do
+					if !(v.name_lower:find(v2, nil, true) or v.pcf:find(v2, nil, true)) then
+						break
+					elseif k2 == #searchTerms then
+						local entry = {
+							text = v.name,
+							icon = spawnmenu.CreateContentIcon("partctrl", g_SpawnMenu.SearchPropPanel, {["spawnname"] = v.pcf, ["nicename"] = v.name}),
+							words = {v.name}
+						}
+						table.insert(results, entry)
+						//entry.icon.IsInSearch = true //used by spawnicon code; TODO: stops working when the search is refreshed by the model search
+						//MsgN("according to addprovider, g_SpawnMenu.SearchPropPanel is ", g_SpawnMenu.SearchPropPanel, " and icon is ", entry.icon)
+					end
 				end
 			end
 			if #results >= GetConVarNumber("sbox_search_maxresults") / 2 then break end
