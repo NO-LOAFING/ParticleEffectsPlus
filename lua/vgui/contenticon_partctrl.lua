@@ -15,12 +15,12 @@ local icon_utilfx = Material("icon16/cog.png")
 local icon_info = Material("icon16/information.png")
 
 if system.IsLinux() then
-	surface.CreateFont("PartCtrl_DermaDefaultSmall", {
+	--[[surface.CreateFont("PartCtrl_DermaDefaultSmall", {
 		font		= "DejaVu Sans",
 		size		= 12, //don't have this font, so just have to trust that this is right (1pt larger than the tahoma, like in https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/derma/init.lua#L6C1-L45C4)
 		weight		= 500,
 		extended	= true
-	})
+	})]]
 	surface.CreateFont("PartCtrl_DermaDefaultSmallOutlined", {
 		font		= "DejaVu Sans",
 		size		= 12, //don't have this font, so just have to trust that this is right (1pt larger than the tahoma, like in https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/derma/init.lua#L6C1-L45C4)
@@ -29,12 +29,12 @@ if system.IsLinux() then
 		outline		= true
 	})
 else
-	surface.CreateFont("PartCtrl_DermaDefaultSmall", {
+	--[[surface.CreateFont("PartCtrl_DermaDefaultSmall", {
 		font		= "Tahoma",
 		size		= 11, //not too happy with this, 10pt is just a bit too small to be easily readable, but 11pt is still too big for a lot of particle names
 		weight		= 500,
 		extended	= true
-	})
+	})]]
 	surface.CreateFont("PartCtrl_DermaDefaultSmallOutlined", {
 		font		= "Tahoma",
 		size		= 11, //not too happy with this, 10pt is just a bit too small to be easily readable, but 11pt is still too big for a lot of particle names
@@ -62,7 +62,7 @@ function PANEL:Setup(pcf, name)
 	//self.Label:SetContentAlignment(5) //doesn't work when SetWrap is set to true
 	//we can't make multiline text look good, try small text
 	//self.Label:SetFont("HudHintTextSmall") //too blurry
-	self.Label:SetFont("PartCtrl_DermaDefaultSmall")
+	//self.Label:SetFont("PartCtrl_DermaDefaultSmall") //as of 3/26/25 update, this doesn't work either; in the implementation of label text scrolling, the label is now hard-coded in the paint function instead of being a separate object, so we can't change its font easily, though it's not as necessary to do so any more (https://github.com/Facepunch/garrysmod/commit/57ab57d524376c15a95b4072d1dc7d81070f0ee5)
 
 	local tooltip = name
 	self.icons = {}
@@ -574,17 +574,25 @@ function PANEL:OpenMenu()
 		local ptab = PartCtrl_ProcessedPCFs[self.pcf][self.name]
 		if ptab.parents and table.Count(ptab.parents) > 0 then
 			local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn parent effect (".. table.Count(ptab.parents) ..")")
-			base_submenuoption:SetImage("icon16/bricks.png") //not the best icon, but there's not really anything good to represent the concept of the effect hierarchy
+			base_submenuoption:SetImage("icon16/shape_group.png")
 			ListChildFx(base_submenu, self.name, "parents")
 		end
 		if ptab.children and table.Count(ptab.children) > 0 then
 			local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn child effect (".. table.Count(ptab.children) ..")")
-			base_submenuoption:SetImage("icon16/bricks.png") //^
+			base_submenuoption:SetImage("icon16/shape_ungroup.png")
 			ListChildFx(base_submenu, self.name, "children")
 		end
 	end
+
+	//not implemented on this icon type, but included to match the others (model icon also includes this despite not having OpenMenuExtra, i think)
+	if isfunction(self.OpenMenuExtra) then
+		self:OpenMenuExtra(menu)
+	end
+
+	hook.Run("SpawnmenuIconMenuOpen", menu, self, "partctrl")
 	
-	if !(IsValid(self:GetParent()) and self:GetParent().GetReadOnly and self:GetParent():GetReadOnly()) then
+	//Do not allow removal from read only panels
+	if !IsValid(self:GetParent()) or !self:GetParent().GetReadOnly or !self:GetParent():GetReadOnly() then
 		menu:AddSpacer()
 
 		menu:AddOption("#spawnmenu.menu.delete", function()
