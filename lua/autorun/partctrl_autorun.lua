@@ -2714,7 +2714,7 @@ function PartCtrl_GetUnhandledOperators()
 							if fixes[name] then name = fixes[name] end
 							
 							if !default_attribs[name] then
-								allproperties[category][name] = allproperties[category][name] or { ["count"] = 0, ["paths"] = {} }e
+								allproperties[category][name] = allproperties[category][name] or { ["count"] = 0, ["paths"] = {} }
 								allproperties[category][name].count = allproperties[category][name].count + 1
 								table.insert(allproperties[category][name].paths, filename .. " " .. particle)
 							end
