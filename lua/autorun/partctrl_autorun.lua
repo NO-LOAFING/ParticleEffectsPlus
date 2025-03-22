@@ -2577,7 +2577,7 @@ fixes2 = nil
 
 
 //manually copied from gmod's own particle editor 5/13/24, necessary for development but not finished addon
---[[local default_attribs = {
+local default_attribs = {
 	//Renderer
 	"Render models", 
 	"render_animated_sprites", 
@@ -2693,47 +2693,42 @@ for _, k in pairs (default_attribs) do
 end
 default_attribs = default_attribs2
 default_attribs2 = nil
-local allproperties = {
-	["renderers"] = {},
-	["operators"] = {},
-	["initializers"] = {},
-	["emitters"] = {},
-	["forces"] = {}, //forcegenerator
-	["constraints"] = {},
-}
-for _, filename in pairs (PartCtrl_AllPCFPaths) do
-	local tab = PartCtrl_ReadPCF(filename)
-	if tab then
-		for particle, ptab in pairs (tab) do
-			for category, _ in pairs (allproperties) do
-				if ptab[category] then
-					for _, attribute in pairs (ptab[category]) do
-						local name = string.lower(attribute.functionName)
-						if fixes[name] then name = fixes[name] end
-						
-						local result = allproperties[category][name] or { ["count"] = 0 }
-						result.path = result.path or filename .. " " .. particle
-						result.count = result.count + 1
-						if !default_attribs[name] then result.NOT_DEFAULT_MAKE_THIS_NOTICEABLE = true end
-						allproperties[category][name] = result
+
+function PartCtrl_GetUnhandledOperators()
+	local allproperties = {
+		["renderers"] = {},
+		["operators"] = {},
+		["initializers"] = {},
+		["emitters"] = {},
+		["forces"] = {}, //forcegenerator
+		["constraints"] = {},
+	}
+	for _, filename in pairs (PartCtrl_AllPCFPaths) do
+		local tab = PartCtrl_ReadPCF(filename)
+		if tab then
+			for particle, ptab in pairs (tab) do
+				for category, _ in pairs (allproperties) do
+					if ptab[category] then
+						for _, attribute in pairs (ptab[category]) do
+							local name = string.lower(attribute.functionName)
+							if fixes[name] then name = fixes[name] end
+							
+							if !default_attribs[name] then
+								allproperties[category][name] = allproperties[category][name] or { ["count"] = 0, ["paths"] = {} }e
+								allproperties[category][name].count = allproperties[category][name].count + 1
+								table.insert(allproperties[category][name].paths, filename .. " " .. particle)
+							end
+						end
+					else
+						MsgN(filename, ": ", particle, " has no attribute category ", category)
 					end
-				else
-					MsgN(filename, ": ", particle, " has no attribute category ", category)
 				end
 			end
 		end
 	end
+
+	PrintTable(allproperties)
 end
-//PrintTable(allproperties)
-for category, attribs in pairs (allproperties) do
-	for k, v in pairs (attribs) do
-		if default_attribs[k] then default_attribs[k] = nil end
-		if !v.NOT_DEFAULT_MAKE_THIS_NOTICEABLE then allproperties[category][k] = nil end
-	end
-end
-PrintTable(allproperties)
-MsgN("unused default attribs:")
-PrintTable(default_attribs)]]
 
 
 //For testing purposes, lists all fx using a certain attribute, and optionally prints the attribute's values
