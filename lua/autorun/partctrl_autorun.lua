@@ -32,11 +32,8 @@ end
 //The actual .pcf loading is done inside of ent_partctrl.lua, because entity code always runs after autorun code -
 //we want to be sure every addon that wants to add to the blacklist has the chance to do so before the .pcf files actually get read.
 
-//Loading pcfs packed into compressed TF2 map files has a ton of problems; we can't detect if the map we're on specifically is compressed, so to be safe, don't load pcfs from any map.
-//See comments in the PartCtrl_ReadPCF function for more details on what we're trying to avoid here - the short version is that file reading starts returning garbage partway through the file 
-//without any warning, printing a "Warning! LZMA compression header is invalid! Extraction failed! particles\_.pcf ( ERR: 1 )" error in console - and causing the game to hang for nearly a minute 
-//every time this happens. pd_watergate takes over 5 minutes to load without this check.
-//Even if we manage to get enough info out of it before it fails, effects from these pcfs can cause crashes every time we try to spawn them, even in spawnicons. (i.e. pl_snowycoast_fx.pcf packed into pl_snowycoast)
+//Reading pcfs packed into compressed TF2 map files causes the game to hang for an extremely long time; we can't detect if the map we're on specifically is compressed, so to be safe, 
+//don't load pcfs from any map. pd_watergate adds *10 whole minutes* to the map load time without this check! (compare 1.5 mins with this check, or if the map is decompressed with bspzip)
 hook.Add("PartCtrl_PreProcessPCF", "discard_bsp_particles", function(filename)
 	if file.Exists(filename, "BSP") then
 		MsgN(filename, " is packed into the current BSP file, ignoring")
@@ -2268,7 +2265,7 @@ function PartCtrl_ReadPCF(filename)
 	local header = ReadUntilNull(f)
 	//MsgN(header)
 	if header != "<!-- dmx encoding binary 2 format pcf 1 -->\n" and header != "<!-- dmx encoding binary 2 format dmx 1 -->\n" then MsgN(filename, " has unsupported pcf format ", string.TrimRight(header, "\n"), ", ignoring") return end //note: binary 2 format dmx 1 (only used by css's fire_medium_01.pcf) appears to be identical to orangebox's binary 2 format pcf 1
-	//TODO: a recent-ish update made gmod able to read other pcf formats; we'll need to test multiple other games on this list to make sure we can read and process their pcfs properly (https://developer.valvesoftware.com/wiki/PCF#File_Format)
+	//TODO 3/22/25: the most recent update made gmod able to read other pcf formats; we'll need to test multiple other games on this list to make sure we can read and process their pcfs properly (https://developer.valvesoftware.com/wiki/PCF#File_Format)
 	//this will require this function to be fundamentally restructured and have different processing funcs for each dmx format
 
 
@@ -2306,7 +2303,7 @@ function PartCtrl_ReadPCF(filename)
 		local name = f:ReadUShort() //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
 		//MsgN("name = ", StringDict[name])
 		tab.Name = StringDict[name]
-		if !tab.Name then return tab end //if we returned a bad attribute (i.e. reading a pcf file packed into a compressed tf2 map), bail out immediately so that we don't try to read more info from the file, because every time we try to read data from a bad file this way and it prints a "Warning! LZMA compression header is invalid! Extraction failed! particles\_.pcf ( ERR: 1 )" error in console, it causes the game to hang for a fairly substantial amount of time (pd_watergate can take over 5 minutes to load, just from the sheer number of compressed pcf errors, even with this check)
+		if !tab.Name then return tab end //if we returned a bad attribute, bail out immediately; NOTE 3/22/25: this and all the file-reading checks with error messages below were to address a bug with PCFs packed into compressed map files, which would start returning garbage with a "Warning! LZMA compression header is invalid! Extraction failed! particles\_.pcf ( ERR: 1 )" error in console after an arbitrary point; this bug was fixed by the most recent gmod update, so this may no longer be necessary
 		//local at = math.BinToInt(f:Read(1)) or 0 //returns nil
 		//local at = math.BinToInt(ReadUntilNull(f)) or 0
 		local at = f:ReadByte()
@@ -2381,11 +2378,6 @@ function PartCtrl_ReadPCF(filename)
 		//PrintTable(body)
 	end
 	//test: version of the above that doesn't quit file reading upon encountering a bad attribute.
-	//bad idea, we want to throw the whole file out, don't just stop reading here and use what we have if any of the checks above say we started returning bad info. this is because not all, but 
-	//*some* packed pcf files that fail to read this way (i.e. pl_snowycoast_fx.pcf packed into pl_snowycoast) will cause an immediate crash if we try to spawn effects from them, 
-	//even in spawnicons or from dupes. this crash won't have a chance to happen if we don't have a ProcessedPCFs entry for this pcf. (haven't narrowed down which function causes the crash, but
-	//it doesn't happen when loading or spawning particles from a renamed copy of the same pcf, *only* with the one loaded directly from within the map file, so it doesn't seem to be related to
-	//the conflicting particle name issue that can also cause crashes.)
 	--[[for i = 1, nElements do
 		//MsgN("Element ", i, " = ")
 		local body = {}
@@ -2484,6 +2476,7 @@ function PartCtrl_ReadPCF(filename)
 								MsgN(filename, " DmeParticleChild has no child value")
 							else
 								//store particle children as strings (names of the corresponding fx) to keep the table simple and avoid recursive nonsense
+								//i think the child effect delay is stored here too and gets discarded, but we currently don't do any processing with that
 								for et2_k, et2_i in pairs (ElementsUnsorted[et_i].v.child.ElementTable) do
 									if !ElementsUnsorted[et2_i] then
 										MsgN(filename, " DmeParticleChild tried to get nil element ", et2_i)
