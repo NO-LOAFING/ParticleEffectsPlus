@@ -32,19 +32,6 @@ end
 //The actual .pcf loading is done inside of ent_partctrl.lua, because entity code always runs after autorun code -
 //we want to be sure every addon that wants to add to the blacklist has the chance to do so before the .pcf files actually get read.
 
-//Reading pcfs packed into compressed TF2 map files causes the game to hang for an extremely long time; we can't detect if the map we're on specifically is compressed, so to be safe, 
-//don't load pcfs from any map. pd_watergate adds *10 whole minutes* to the map load time without this check! (compare 1.5 mins with this check, or if the map is decompressed with bspzip)
-hook.Add("PartCtrl_PreProcessPCF", "discard_bsp_particles", function(filename)
-	if file.Exists(filename, "BSP") then
-		MsgN(filename, " is packed into the current BSP file, ignoring")
-		return false
-	end
-	//test
-	//if filename == "particles/ac_animations/sdk/explosion/generic_cinematic_explosion.pcf" or filename == "particles/maps/de_aztec.pcf" then
-	//	return false
-	//end
-end)
-
 local tf2_unusual_wep_pcfs = {
 	["particles/weapon_unusual_cool.pcf"] = true,
 	["particles/weapon_unusual_energyorb.pcf"] = true,
@@ -2259,8 +2246,23 @@ table.insert(a, "ATTRIBUTE_MATRIX_ARRAY")
 function PartCtrl_ReadPCF(filename)
 
 	local f = file.Open(filename, "rb", "GAME")
-	if !f then MsgN(filename, " can't be found") return end
+	if !f then MsgN(filename, " can't be read, report this bug!") return end
 
+	//If the pcf is packed into the current map, then write a copy of it into the data folder and read that instead.
+	//This is necessary because performing read operations on packed files takes a very long time (only if the map file is compressed, but we don't have 
+	//a way to check for that); pd_watergate's *7* packed pcfs add *10 whole minutes* to the load time if we don't cache them like this!
+	if file.Exists(filename, "BSP") then
+		MsgN(filename, " is packed into the current BSP file, caching")
+		if file.Write("temp_partctrl_readpcfcache.txt", f:Read()) then
+			f = file.Open("temp_partctrl_readpcfcache.txt", "rb", "DATA")
+			if !f then MsgN(filename, " cache was written, but can't be read; report this bug!") return end
+		else
+			MsgN(filename, " was unable to be cached; report this bug!")
+			return
+		end
+	end
+	//we *could* run file.Delete("temp_partctrl_readpcfcache.txt", "DATA") after we're done with it, but that doesn't seem necessary; 
+	//there's only ever one of these files at a time and they're not that big, it'd just be another write operation on the user's HD for no benefit
 
 	local header = ReadUntilNull(f)
 	//MsgN(header)
@@ -2326,7 +2328,7 @@ function PartCtrl_ReadPCF(filename)
 				local count = f:ReadULong()
 				return f:Read(count)
 			elseif at == "ATTRIBUTE_TIME" then
-				return f:ReadLong() / 10000 //according to https://developer.valvesoftware.com/wiki/PCF; TODO: should this be unsigned?
+				return f:ReadLong() / 10000 //according to https://developer.valvesoftware.com/wiki/PCF; TODO: should this be unsigned? can't find anything that uses this to check
 			elseif at == "ATTRIBUTE_COLOR" then
 				return Color(string.byte(f:Read(1)), string.byte(f:Read(1)), string.byte(f:Read(1)), string.byte(f:Read(1)))
 			elseif at == "ATTRIBUTE_VECTOR2" then
@@ -2345,9 +2347,9 @@ function PartCtrl_ReadPCF(filename)
 			elseif string.EndsWith(at, "_ARRAY") then
 				at = string.Replace(at, "_ARRAY", "")
 				local tab2 = {}
-				local arraysize = f:ReadULong()
+				local arraysize = f:ReadULong() //int, is ReadULong the right way to interpret this?
 				if arraysize > 1000 then MsgN(filename, " got crazy array size ", arraysize, " - we screwed up file reading somewhere, report this bug!") return end
-				for i = 1, arraysize do //int, is ReadLong the right way to interpret this?
+				for i = 1, arraysize do
 					table.insert(tab2, DoAttribute())
 				end
 				return tab2
@@ -2358,48 +2360,22 @@ function PartCtrl_ReadPCF(filename)
 		return tab
 	end
 	local ElementBodies = {}
-	//local halt = false
 	for i = 1, nElements do
-		//if halt then MsgN("halting") return end//break end //if DmAttribute returned bad results and stopped, then 
 		//MsgN("Element ", i, " = ")
 		local body = {}
-		local attributecount = f:ReadULong()
+		local attributecount = f:ReadULong() //int, is ReadULong the right way to interpret this?
 		//MsgN("attributecount = ", attributecount)
-		if !attributecount then MsgN(filename, " got no attribute count - we screwed up file reading somewhere, report this bug!") return end//break end
-		if attributecount > 100 then MsgN(filename, " got crazy attribute count ", attributecount, " - we screwed up file reading somewhere, report this bug!") return end//break end
-		for i = 1, attributecount do //int, is ReadLong the right way to interpret this?
+		if !attributecount then MsgN(filename, " got no attribute count - we screwed up file reading somewhere, report this bug!") return end
+		if attributecount > 100 then MsgN(filename, " got crazy attribute count ", attributecount, " - we screwed up file reading somewhere, report this bug!") return end
+		for i = 1, attributecount do
 			local attrib = DmAttribute()
-			if !attrib.Name then MsgN(filename, " attribute ", i, " has no name value - we screwed up file reading somewhere, report this bug!") return end//halt = true break end
+			if !attrib.Name then MsgN(filename, " attribute ", i, " has no name value - we screwed up file reading somewhere, report this bug!") return end
 			table.insert(body, attrib)
 		end
-		//if halt then break end
 		ElementBodies[i-1] = body
 		//MsgN("nElement ", i, " body:")
 		//PrintTable(body)
 	end
-	//test: version of the above that doesn't quit file reading upon encountering a bad attribute.
-	--[[for i = 1, nElements do
-		//MsgN("Element ", i, " = ")
-		local body = {}
-		local attributecount = f:ReadULong() //int, is ReadLong the right way to interpret this?
-		//MsgN("attributecount = ", attributecount)
-		if !attributecount then MsgN(filename, " got no attribute count - we screwed up file reading somewhere, report this bug!")
-		elseif attributecount > 100 then MsgN(filename, " got crazy attribute count ", attributecount, " - we screwed up file reading somewhere, report this bug!") end
-		if attributecount and attributecount <= 100 then
-			for i = 1, attributecount do 
-				local attrib = DmAttribute()
-				//if !attrib.Name then MsgN(filename, " attribute ", i, " has no name value - we screwed up file reading somewhere, report this bug!") end
-				if attrib.Name then
-					table.insert(body, attrib)
-				end
-			end
-		end
-		ElementBodies[i-1] = body
-		//MsgN("nElement ", i, " body:")
-		//PrintTable(body)
-	end]]
-	//PrintTable(ElementBodies)
-	//MsgN("end of file = ", f:EndOfFile()) //actually returns false for ep2's blob.pcf, which doesn't matter since that one is unusable, but maybe other stuff too?
 	f:Close()
 
 
@@ -2408,35 +2384,31 @@ function PartCtrl_ReadPCF(filename)
 	//PrintTable(ElementBodies)
 	local ElementsUnsorted = {}
 	for i, index in pairs (ElementIndex) do
-		//if istable(index) then
-			local tab = {}
-			//tab["k"] = index["Type"] .. " " .. index["Name"]
-			tab["k"] = index
+		local tab = {}
+		//tab["k"] = index["Type"] .. " " .. index["Name"]
+		tab["k"] = index
 
-			local v = {}
-			if !ElementBodies[i] then
-				MsgN(filename, " element index ", i, " has no body - we screwed up file reading somewhere, report this bug!")
-				break //note: in all the cases where this bug has happened (reading pcfs packed into compressed tf2 maps) every element after the first one with this bug will also be empty, so stop here
-			else
-				for i, attrib in pairs (ElementBodies[i]) do
-					if attrib.AttributeType == "ATTRIBUTE_ELEMENT_ARRAY" then
-						v[attrib.Name] = {
-							["ElementTable"] = attrib.Value
-						}
-					elseif attrib.AttributeType == "ATTRIBUTE_ELEMENT" then
-						v[attrib.Name] = {
-							["ElementTable"] = {attrib.Value}
-						}
-					else
-						v[attrib.Name] = attrib.Value
-					end
+		local v = {}
+		if !ElementBodies[i] then
+			MsgN(filename, " element index ", i, " has no body - we screwed up file reading somewhere, report this bug!")
+			break //note: in all the cases where this bug has happened (reading pcfs packed into compressed tf2 maps before 3/26/25 update) every element after the first one with this bug will also be empty, so stop here
+		else
+			for i, attrib in pairs (ElementBodies[i]) do
+				if attrib.AttributeType == "ATTRIBUTE_ELEMENT_ARRAY" then
+					v[attrib.Name] = {
+						["ElementTable"] = attrib.Value
+					}
+				elseif attrib.AttributeType == "ATTRIBUTE_ELEMENT" then
+					v[attrib.Name] = {
+						["ElementTable"] = {attrib.Value}
+					}
+				else
+					v[attrib.Name] = attrib.Value
 				end
-				tab["v"] = v
-				ElementsUnsorted[i] = tab
 			end
-		//else
-		//	ElementsUnsorted[i] = "nil index for some reason?"
-		//end
+			tab["v"] = v
+			ElementsUnsorted[i] = tab
+		end
 	end
 	//PrintTable(ElementsUnsorted)
 
