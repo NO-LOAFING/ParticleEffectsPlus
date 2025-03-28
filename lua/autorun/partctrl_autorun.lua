@@ -2551,35 +2551,74 @@ local default_attribs = {
 	"render_sprite_trail", 
 	//Operator
 	"Alpha Fade and Decay", 
+	"Alpha Fade and Decay for Tracers", //NEW 3/26/25
 	"Alpha Fade In Random", 
+	"Alpha Fade In Simple", //NEW 3/26/25
 	"Alpha Fade Out Random", 
+	"Alpha Fade Out Simple", //NEW 3/26/25
+	"Clamp Scalar", //NEW 3/26/25
+	"Clamp Vector", //NEW 3/26/25
 	"Color Fade", 
 	"Color Light from Control Point", 
 	"Cull Random", 
 	"Cull relative to model", 
 	"Cull when crossing plane", 
+	"Cull when crossing sphere", //NEW 3/26/25
+	"Inherit Attribute From Parent Particle", //NEW 3/26/25
+	"Lerp EndCap Scalar", //NEW 3/26/25
+	"Lerp EndCap Vector", //NEW 3/26/25
+	"Lerp Initial Scalar", //NEW 3/26/25
+	"Lerp Initial Vector", //NEW 3/26/25
 	"Lifespan Decay", 
+	"Lifespan Maintain Count Decay", //NEW 3/26/25
+	"Lifespan Minimum Alpha Decay", //NEW 3/26/25
+	"Lifespan Minimum Radius Decay", //NEW 3/26/25
 	"Lifespan Minimum Velocity Decay", 
 	"Movement Basic", 
 	"Movement Dampen Relative to Control Point", 
+	"Movement Lag Compensation", //NEW 3/26/25
 	"Movement Lock to Bone", 
 	"Movement Lock to Control Point", 
+	"Movement Lock to Saved Position Along Path", //NEW 3/26/25
+	"Movement Maintain Offset", //NEW 3/26/25
 	"Movement Maintain Position Along Path", 
 	"Movement Match Particle Velocities", 
 	"Movement Max Velocity", 
+	"Movement Place On Ground", //NEW 3/26/25
 	"Movement Rotate Particle Around Axis", 
 	"Noise Scalar", 
 	"Noise Vector", 
+	"Normal Lock to Control Point", //NEW 3/26/25
+	"Normalize Vector", //NEW 3/26/25
 	"Oscillate Scalar", 
+	"Oscillate Scalar Simple", //NEW 3/26/25
 	"Oscillate Vector", 
+	"Oscillate Vector Simple", //NEW 3/26/25
 	"Radius Scale", 
+	"Ramp Scalar Linear Random", //NEW 3/26/25
+	"Ramp Scalar Linear Simple", //NEW 3/26/25
+	"Ramp Scalar Spline Random", //NEW 3/26/25
+	"Ramp Scalar Spline Simple", //NEW 3/26/25
+	"Remap Average Scalar Value to CP", //NEW 3/26/25
+	"Remap Control Point Direction to Vector", //NEW 3/26/25
 	"Remap Control Point to Scalar", 
+	"Remap Control Point to Vector", //NEW 3/26/25
 	"Remap CP Speed to CP", 
+	"Remap CP Velocity to Vector", //NEW 3/26/25
+	"Remap Difference of Sequential Particle Vector to Scalar", //NEW 3/26/25
 	"Remap Direction to CP to Vector", 
+	"Remap Distance Between Two Control Points to CP", //NEW 3/26/25
 	"Remap Distance Between Two Control Points to Scalar", 
 	"Remap Distance to Control Point to Scalar", 
 	"Remap Dot Product to Scalar", 
+	"Remap Particle BBox Volume to CP", //NEW 3/26/25
+	"Remap Percentage Between Two Control Points to Scalar", //NEW 3/26/25
+	"Remap Percentage Between Two Control Points to Vector", //NEW 3/26/25
 	"Remap Scalar", 
+	"Remap Speed to Scalar", //NEW 3/26/25
+	"Remap Velocity to Vector", //NEW 3/26/25
+	"Restart Effect after Duration", //NEW 3/26/25
+	"Rotate Vector Random", //NEW 3/26/25
 	"Rotation Basic", 
 	"Rotation Orient Relative to CP", 
 	"Rotation Orient to 2D Direction", 
@@ -2587,17 +2626,30 @@ local default_attribs = {
 	"Rotation Spin Yaw", 
 	"Set child control points from particle positions", 
 	"Set Control Point Positions", 
+	"Set Control Point Rotation", //NEW 3/26/25
+	"Set Control Point to Impact Point", //NEW 3/26/25
 	"Set Control Point To Particles' Center", 
 	"Set Control Point To Player", 
+	"Set control points from particle positions", //NEW 3/26/25
+	"Set CP Offset to CP Percentage Between Two Control Points", //NEW 3/26/25
+	"Set CP Orientation to CP Direction", //NEW 3/26/25
+	"Set per child control point from particle positions", //NEW 3/26/25
+	"Stop Effect after Duration", //NEW 3/26/25
 	//Initializer
 	"Alpha Random", 
 	"Color Lit Per Particle", 
 	"Color Random", 
+	"Cull relative to model", //NEW 3/26/25
+	"Cull relative to Ray Trace Environment", //NEW 3/26/25
+	"Inherit Initial Value From Parent Particle", //NEW 3/26/25
 	"Lifetime From Sequence", 
 	"Lifetime from Time to Impact", 
 	"Lifetime Pre-Age Noise", 
 	"Lifetime Random", 
 	"Move Particles Between 2 Control Points", 
+	"Normal Align to CP", //NEW 3/26/25
+	"Normal Modify Offset Random", //NEW 3/26/25
+	"Offset Vector to Vector", //NEW 3/26/25
 	"Position Along Epitrochoid", 
 	"Position Along Path Random", 
 	"Position Along Path Sequential", 
@@ -2615,16 +2667,20 @@ local default_attribs = {
 	"Radius Random", 
 	"Remap Control Point to Scalar", 
 	"Remap Control Point to Vector", 
+	"Remap CP Orientation to Rotation", //NEW 3/26/25
+	"Remap Initial Direction to CP to Vector", //NEW 3/26/25
 	"Remap Initial Distance to Control Point to Scalar", 
 	"Remap Initial Scalar",
 	"Remap Noise to Scalar", 
 	"Remap Particle Count to Scalar", 
 	"Remap Scalar to Vector", 
+	"Remap Speed to Scalar", //NEW 3/26/25
 	"Rotation Random", 
 	"Rotation Speed Random", 
 	"Rotation Yaw Flip Random", 
 	"Rotation Yaw Random", 
 	"Scalar Random", 
+	"Sequence From Control Point", //NEW 3/26/25
 	"Sequence Random", 
 	"Sequence Two Random", 
 	"Set Hitbox Position on Model", 
@@ -2639,16 +2695,22 @@ local default_attribs = {
 	"Velocity Set from Control Point", 
 	//Emitter
 	"emit noise", 
+	"emit to maintain count", //NEW 3/26/25
 	"emit_continuously", 
 	"emit_instantaneously", 
 	//ForceGenerator
+	"Create vortices from parent particles", //NEW 3/26/25
+	"Force based on distance from plane", //NEW 3/26/25
 	"Pull towards control point", 
 	"random force", 
+	"time varying force", //NEW 3/26/25
+	"turbulent force", //NEW 3/26/25
 	"twist around axis", 
 	//Constraint
 	"Collision via traces", 
 	"Constrain distance to control point", 
 	"Constrain distance to path between two control points", 
+	"Constrain particles to a box", //NEW 3/26/25
 	"Prevent passing through a plane", 
 	"Prevent passing through static part of world", 
 }
