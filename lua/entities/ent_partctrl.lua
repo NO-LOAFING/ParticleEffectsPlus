@@ -1896,11 +1896,11 @@ if SERVER then
 						for k, v in pairs (ent.ParticleInfo) do
 							if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_VECTOR then
 								local tab = ptab.cpoints[k].vector[ptab.cpoints[k].which]
-								if istable(tab) and tab.label == "Color" then
+								if istable(tab) and tab.colorpicker then
 									local vec = Vector()
-									vec.x = math.Remap(color.r/255, tab.outMin.x, tab.outMax.x, tab.inMin.x, tab.inMax.x)
-									vec.y = math.Remap(color.g/255, tab.outMin.y, tab.outMax.y, tab.inMin.y, tab.inMax.y)
-									vec.z = math.Remap(color.b/255, tab.outMin.z, tab.outMax.z, tab.inMin.z, tab.inMax.z)
+									vec.x = math.Remap(color.r/255, tab.outMin2.x, tab.outMax2.x, tab.inMin.x, tab.inMax.x)
+									vec.y = math.Remap(color.g/255, tab.outMin2.y, tab.outMax2.y, tab.inMin.y, tab.inMax.y)
+									vec.z = math.Remap(color.b/255, tab.outMin2.z, tab.outMax2.z, tab.inMin.z, tab.inMax.z)
 									ent.ParticleInfo[k].val = vec
 									refreshtable = true
 								end

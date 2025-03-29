@@ -679,17 +679,17 @@ function PANEL:RebuildControls()
 								local ColorRows = #self.Palette:GetChildren() / 3
 								self.Palette:SetButtonSize(self:GetWide() / ColorRows)
 							end
-	
+
 							local vec = Vector(v2.val)
-							vec.x = math.Remap(vec.x, tab.inMin.x, tab.inMax.x, tab.outMin.x, tab.outMax.x)
-							vec.y = math.Remap(vec.y, tab.inMin.y, tab.inMax.y, tab.outMin.y, tab.outMax.y)
-							vec.z = math.Remap(vec.z, tab.inMin.z, tab.inMax.z, tab.outMin.z, tab.outMax.z)
+							vec.x = math.Remap(vec.x, tab.inMin.x, tab.inMax.x, tab.outMin2.x, tab.outMax2.x)
+							vec.y = math.Remap(vec.y, tab.inMin.y, tab.inMax.y, tab.outMin2.y, tab.outMax2.y)
+							vec.z = math.Remap(vec.z, tab.inMin.z, tab.inMax.z, tab.outMin2.z, tab.outMax2.z)
 							col:SetVector(vec)
 							function col.ValueChanged(_, val)
 								local vec = Vector()
-								vec.x = math.Remap(val.r/255, tab.outMin.x, tab.outMax.x, tab.inMin.x, tab.inMax.x)
-								vec.y = math.Remap(val.g/255, tab.outMin.y, tab.outMax.y, tab.inMin.y, tab.inMax.y)
-								vec.z = math.Remap(val.b/255, tab.outMin.z, tab.outMax.z, tab.inMin.z, tab.inMax.z)
+								vec.x = math.Remap(val.r/255, tab.outMin2.x, tab.outMax2.x, tab.inMin.x, tab.inMax.x)
+								vec.y = math.Remap(val.g/255, tab.outMin2.y, tab.outMax2.y, tab.inMin.y, tab.inMax.y)
+								vec.z = math.Remap(val.b/255, tab.outMin2.z, tab.outMax2.z, tab.inMin.z, tab.inMax.z)
 								ent2:DoInput("cpoint_vector_val_all", k, vec)
 							end
 						else

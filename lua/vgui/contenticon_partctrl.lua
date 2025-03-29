@@ -114,7 +114,7 @@ function PANEL:Setup(pcf, name)
 		for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
 			if v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
 				if !v.vector or !v.vector[v.which] then MsgN(pcf, ": ", name, " - this effect is trying to get a vector value that it doesn't have, some dumb inheritance problem, go report this!") end
-				if v.vector[v.which].label == "Color" then
+				if v.vector[v.which].colorpicker then
 					self.ColorCPoints[k] = v.vector[v.which]
 				else
 					self.EditCPoints[k] = v.vector[v.which].default or vector_origin
@@ -363,14 +363,14 @@ function PANEL:DoColorCPoints()
 	local speed = 50
 	for i, k in pairs (self.iColorCPoints) do
 		local offset = (360/#self.iColorCPoints)*(i-1) //if there are multiple color cpoints, try to make them distinct from each other
-		//How this works: HSVToColor generates a 0-255 color, we convert this to the desired 0-1 color (outMin/outMax, the particle's internal color value, is always in 0-1 scale),
-		//and then we convert that to whatever scale inMin/inMax uses, which could be anything (the particle then receives this and internally converts it to 0-1 scale)
+		//How this works: HSVToColor generates a 0-255 color, we convert this to the desired 0-1 color, and then we convert that to 
+		//whatever scale inMin/inMax uses, which could be anything (the particle then receives this and internally converts it to 0-1 scale)
 		local col = HSVToColor(((CurTime() * speed) + offset) % 360, 1, 1)
 		col = Vector(col.r/255, col.g/255, col.b/255)
 		local tab = self.ColorCPoints[k]
-		col.x = math.Remap(col.x, tab.outMin.x, tab.outMax.x, tab.inMin.x, tab.inMax.x)
-		col.y = math.Remap(col.y, tab.outMin.y, tab.outMax.y, tab.inMin.y, tab.inMax.y)
-		col.z = math.Remap(col.z, tab.outMin.z, tab.outMax.z, tab.inMin.z, tab.inMax.z)
+		col.x = math.Remap(col.x, tab.outMin2.x, tab.outMax2.x, tab.inMin.x, tab.inMax.x)
+		col.y = math.Remap(col.y, tab.outMin2.y, tab.outMax2.y, tab.inMin.y, tab.inMax.y)
+		col.z = math.Remap(col.z, tab.outMin2.z, tab.outMax2.z, tab.inMin.z, tab.inMax.z)
 		self.particle:SetControlPoint(k, col)
 	end
 

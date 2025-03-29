@@ -2931,6 +2931,21 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 			processedv.outMin = min
 			processedv.outMax = max
 			processedv.decimals = 0
+		elseif processedv.colorpicker then
+			//the color picker only supports colors from 0-255, which correspond to vectors from 0-1.
+			//this means the picker only lets us access the entire color range if outMin/outMax are 0-1, which isn't ideal for color scalars
+			//with a max above 1, like the ones on a bunch of alien swarm fx. so, for the color picker, rescale it all into a new 0-1 value space.
+			//cache these here because a bunch of stuff uses this (color picker, color tool setcolor, spawnicons)
+			processedv.outMin2 = Vector(
+				math.Remap(processedv.outMin.x, processedv.outMin.x, processedv.outMax.x, 0, 1),
+				math.Remap(processedv.outMin.y, processedv.outMin.y, processedv.outMax.y, 0, 1),
+				math.Remap(processedv.outMin.z, processedv.outMin.z, processedv.outMax.z, 0, 1)
+			)
+			processedv.outMax2 = Vector(
+				math.Remap(processedv.outMax.x, processedv.outMin.x, processedv.outMax.x, 0, 1),
+				math.Remap(processedv.outMax.y, processedv.outMin.y, processedv.outMax.y, 0, 1),
+				math.Remap(processedv.outMax.z, processedv.outMin.z, processedv.outMax.z, 0, 1)
+			)
 		end
 	end
 	processedv["name"] = name
@@ -3042,6 +3057,44 @@ local processfuncs = {
 					["default"] = default,
 				})
 			end
+		end,
+		["remap control point to vector"] = function(processed, attrib)
+			//Similar to above, use all 3 axes of the cpoint to set Position, Roll, or Color
+			//TF2/episodes/HL2 pcfs only have use cases for Color, so the others required some testing.
+			local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_XYZ //PARTICLE_ATTRIBUTE_x enum //assume the default is Position because that's what shows in pet by default, just like Radius is for scalars; can't find any v5 fx to test with that omit this value
+			local label = ParticleAttributeNames[field]
+			local inMin = attrib["input minimum"] or Vector()
+			local inMax = attrib["input maximum"] or Vector()
+			local outMin = attrib["output minimum"] or Vector()
+			local outMax = attrib["output maximum"] or Vector()
+			local is_multiplier = attrib["output is scalar of initial random range"] or attrib["output is scalar of current value"]
+			local default = nil
+			local colorpicker = nil
+			if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB or is_multiplier then
+				//Color should default to the equivalent of 1,1,1 (white),
+				//and multipliers should default to 100%
+				default = Vector(math.Remap(1, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(1, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(1, outMin.z, outMax.z, inMin.z, inMax.z))
+				if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB then
+					colorpicker = true
+				end
+			else
+				//default to 0
+				default = Vector(math.Remap(0, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(0, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(0, outMin.z, outMax.z, inMin.z, inMax.z))
+			end
+			if is_multiplier then
+				label = label .. " Scale"
+			end
+			cpoint_from_attrib_value(processed, attrib, "input control point number", 0, "vector", {
+				["label"] = label,
+				["inMin"] = inMin,
+				["inMax"] = inMax,
+				["outMin"] = outMin,
+				["outMax"] = outMax,
+				["default"] = default,
+				["colorpicker"] = colorpicker,
+			})
+			cpoint_from_attrib_value(processed, attrib, "local space CP", -1, "position_combine") //uses the cpoint's angles to rotate the output in some odd way, can be used to make a position sort-of-rotate with the cpoint, or make colors change as it spins
+			processed["test"] = true
 		end,
 		["remap cp speed to cp"] = function(processed, attrib)
 			local axis = attrib["Output field 0-2 X/Y/Z"] or 0
@@ -3328,9 +3381,8 @@ local processfuncs = {
 			end
 		end,
 		["remap control point to vector"] = function(processed, attrib)
+			//same as operator of the same name; actually, orangebox only has the initializer version of this, the operator is new from pcf v5
 			//Similar to above, use all 3 axes of the cpoint to set Position, Roll, or Color
-			//TF2/episodes/HL2 pcfs only have use cases for Color, so the others required some testing.
-			//Make sure we have values for everything, just in case; use default values from pet otherwise
 			local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_XYZ //PARTICLE_ATTRIBUTE_x enum //assume the default is Position because that's what shows in pet by default, just like Radius is for scalars; can't find any v5 fx to test with that omit this value
 			local label = ParticleAttributeNames[field]
 			local inMin = attrib["input minimum"] or Vector()
@@ -3344,7 +3396,9 @@ local processfuncs = {
 				//Color should default to the equivalent of 1,1,1 (white),
 				//and multipliers should default to 100%
 				default = Vector(math.Remap(1, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(1, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(1, outMin.z, outMax.z, inMin.z, inMax.z))
-				if !is_multiplier then colorpicker = true end //i don't think color multiplier even works at all? whatever
+				if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB then
+					colorpicker = true
+				end
 			else
 				//default to 0
 				default = Vector(math.Remap(0, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(0, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(0, outMin.z, outMax.z, inMin.z, inMax.z))
