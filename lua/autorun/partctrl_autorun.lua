@@ -39,6 +39,15 @@ local tf2_unusual_wep_pcfs = {
 	["particles/weapon_unusual_isotope.pcf"] = true
 }
 local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all dupes with conflicting names,\nwhich slow the game down with unnecessary PCF reloads every time\nyou search for a TF2 weapon."
+local crash_blacklist_text = "Blacklisted: causes crash when spawned"
+local default_blacklist = {
+	//Portal 2
+	["particles/chicken.pcf"] = {
+		feathers_large = crash_blacklist_text,
+		feathers_single = crash_blacklist_text,
+		feathers_small = crash_blacklist_text,
+	},
+}
 hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
 	if tf2_unusual_wep_pcfs[filename] then
 		for k, v in pairs (tab) do
@@ -47,10 +56,13 @@ hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
 			end
 		end
 	end
-	//test
-	--[[if filename == "particles/partctrl_test.pcf" then
-		tab["test_allerrors"].shouldcull = false
-	end]]
+	if default_blacklist[filename] then
+		for k, v in pairs (tab) do
+			if default_blacklist[filename][k] then
+				tab[k].shouldcull = default_blacklist[filename][k]
+			end
+		end
+	end
 end)
 
 
@@ -2852,7 +2864,7 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 		if (processedk == "output" or processedk == "output_axis" or processedk == "output_children")
 		and !string.StartsWith(name, "initializer") then //the operator fadein/out values exist on the only initializer output (initializer Velocity Repulse from World), but don't seem to work, so ignore them
 			for bad, v in pairs (badoutputattribs) do
-				if attrib[bad] != nil and attrib[bad] > v then
+				if (attrib[bad] or 0) > v then //yes, they all default to 0
 					//MsgN(name, " output doesn't always override cpoint because ", bad, " ", attrib[bad], " > ", v, ", rejecting") //no way to get the name of the particle with the output we're rejecting, argh
 					//PrintTable(attrib)
 					return
@@ -2926,10 +2938,9 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 
 	table.insert(processed.cpoints[k][processedk], processedv)
 end
-local function cpoint_from_attrib_value(processed, attrib, value, processedk, processedv)
-	if attrib[value] != nil and attrib[value] > -1 then
-
-		local k = attrib[value]
+local function cpoint_from_attrib_value(processed, attrib, value, default_k, processedk, processedv)
+	local k = attrib[value] or default_k
+	if k > -1 then
 		local name = value
 		if attrib.functionName then
 			name = attrib.functionName .. ": " .. name
@@ -2946,69 +2957,69 @@ local processfuncs = {
 		["render_rope"] = function(processed, attrib) processed["has_renderer"] = true end,
 		["render_sprite_trail"] = function(processed, attrib) processed["has_renderer"] = true end,
 		["render_animated_sprites"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "orientation control point", "position_combine")
+			cpoint_from_attrib_value(processed, attrib, "orientation control point", -1, "position_combine")
 			processed["has_renderer"] = true //global value on the effect, not cpoint-specfic
 		end, //TODO: limit this to "orientation_type" cases where the orientation is actually used for something? this is sort of dependent on the VMT to work actually
-		["_generic"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Visibility Proxy Input Control Point Number", "position_combine") end, //pet doesn't add cpoint control for this; all renderers except render_rope have this; uses this position for visiblilty testing, which can then scale particle alpha/size based on how visible the area around the point is (https://developer.valvesoftware.com/wiki/Generic_Render_Operator_Visibility_Options)
+		["_generic"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Visibility Proxy Input Control Point Number", -1, "position_combine") end, //pet doesn't add cpoint control for this; all renderers except render_rope have this; uses this position for visiblilty testing, which can then scale particle alpha/size based on how visible the area around the point is (https://developer.valvesoftware.com/wiki/Generic_Render_Operator_Visibility_Options)
 	},
 	["operators"]= {
 		["color light from control point"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "Light 1 Control Point", "position_combine")
-			cpoint_from_attrib_value(processed, attrib, "Light 2 Control Point", "position_combine")
-			cpoint_from_attrib_value(processed, attrib, "Light 3 Control Point", "position_combine")
-			cpoint_from_attrib_value(processed, attrib, "Light 4 Control Point", "position_combine")
+			cpoint_from_attrib_value(processed, attrib, "Light 1 Control Point", 0, "position_combine")
+			cpoint_from_attrib_value(processed, attrib, "Light 2 Control Point", 0, "position_combine")
+			cpoint_from_attrib_value(processed, attrib, "Light 3 Control Point", 0, "position_combine")
+			cpoint_from_attrib_value(processed, attrib, "Light 4 Control Point", 0, "position_combine")
 		end,
-		["cull relative to model"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", nil, { //TODO: should this be a position_combine? can't actually find any fx that use this.
+		["cull relative to model"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, { //TODO: should this be a position_combine? can't actually find any fx that use this.
 			["ignore_outputs"] = true, //this cpoint sets an associated model, not a position, so outputs don't override it
 		}) end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Cull_relative_to_model, yeah it's on the wrong page); pet doesn't add a control for this
-		["cull when crossing plane"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point for point on plane") end,
+		["cull when crossing plane"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point for point on plane", 0) end,
 		["movement basic"] = function(processed, attrib)
 			//stupid handling for one effect that has a cpoint with just a force "move towards control point", but also maximum drag on its movement basic that makes the force not work (particles/taunt_fx.pcf taunt_yeti_fistslam_whirlwind)
-			local drag = attrib["drag"] or 0
-			if drag >= 0.98 then
+			if (attrib["drag"] or 0) >= 0.98 then
 				processed["drag_does_override"] = true //global value on the effect, not cpoint-specific
 			end
 		end,
 		["movement dampen relative to control point"] = function(processed, attrib) 
 			if attrib["falloff range"] >= 5 then //don't process if this value is too small to do anything (lots of ep2 electrical fx have extra useless cpoints with only these for whatever reason)
-				cpoint_from_attrib_value(processed, attrib, "control_point_number")
+				cpoint_from_attrib_value(processed, attrib, "control_point_number", 0)
 			end
 		end,
 		["movement lock to bone"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "control_point_number", "position_combine", {["ignore_outputs"] = true}) //this cpoint sets an associated model, not a position, so outputs don't override it
+			cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, "position_combine", {["ignore_outputs"] = true}) //this cpoint sets an associated model, not a position, so outputs don't override it
 			processed["movement_lock"] = processed["movement_lock"] or {}
 			processed["movement_lock"][attrib["control_point_number"] or 0] = true
 		end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Movement_Lock_to_Bone)
 		["movement lock to control point"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "control_point_number", "position_combine")
+			cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, "position_combine")
 			processed["movement_lock"] = processed["movement_lock"] or {}
 			processed["movement_lock"][attrib["control_point_number"] or 0] = true
 		end,
 		["movement maintain position along path"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "start control point number", nil, {["sets_particle_pos"] = true})
-			cpoint_from_attrib_value(processed, attrib, "end control point number", nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
+			cpoint_from_attrib_value(processed, attrib, "start control point number", 0, nil, {["sets_particle_pos"] = true})
+			cpoint_from_attrib_value(processed, attrib, "end control point number", 0, nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
 			//if there's no way for other cpoint attribs (like the ones that initialize in a box/sphere) to influence the particles because this attrib forces them onto a very specific path, then don't make position controls for those cpoints
 			//this functionality was intended for constraints, but this operator does the same thing
 			if (attrib["maximum distance"] or 0) < 1 then
 				processed["constraint_does_override"] = true //global value on the effect, not cpoint-specific
 			end
 		end,
-		["movement match particle velocities"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point to Broadcast Speed and Direction To", "output") end, //pet doesn't add control for this; sets all 3 axes of the cpoint's position vector to the speed, and sets the cpoint's angle to face the direction (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_ops.cpp#L3788)
-		["movement rotate particle around axis"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point") end,
+		["movement match particle velocities"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point to Broadcast Speed and Direction To", -1, "output") end, //pet doesn't add control for this; sets all 3 axes of the cpoint's position vector to the speed, and sets the cpoint's angle to face the direction (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_ops.cpp#L3788)
+		["movement rotate particle around axis"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point", 0) end,
 		["remap control point to scalar"] = function(processed, attrib)
 			//controls a whole bunch of stuff (lifetime, radius, alpha, etc.) with the value of a single axis of the cpoint, definitely not a position control
 			local axis = attrib["input field 0-2 X/Y/Z"] or 0
 			if axis > -1 then
 				//Make sure we have values for everything, just in case; use default values from pet otherwise
-				local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum
+				local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //TODO: radius is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
 				local inMin = attrib["input minimum"] or 0
 				local inMax = attrib["input maximum"] or 1
 				local outMin = attrib["output minimum"] or 0
 				local outMax = attrib["output maximum"] or 1
 				local default = 0
-				if pattrib == "Radius" then default = 16 end //special handling so we don't default to having 0 radius and being invisible
+				if pattrib == "Radius" then default = 16 //special handling so we don't default to having 0 radius and being invisible
+				elseif pattrib == "Alpha" or pattrib == "Alpha Alternate" then default = inMax end //alpha should default to max visibility
 				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax)) //make sure the default value of the slider in the edit window isn't outside its range (see tf2 speech_mediccall)
-				cpoint_from_attrib_value(processed, attrib, "input control point number", "axis", {
+				cpoint_from_attrib_value(processed, attrib, "input control point number", 0, "axis", {
 					["axis"] = axis,
 					["label"] = pattrib,
 					["inMin"] = inMin,
@@ -3021,16 +3032,16 @@ local processfuncs = {
 		end,
 		["remap cp speed to cp"] = function(processed, attrib)
 			local axis = attrib["Output field 0-2 X/Y/Z"] or 0
-			if axis > -1 and attrib["output control point"] != -1 then
-				cpoint_from_attrib_value(processed, attrib, "input control point", "position_combine") //only used if the output is defined (https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L2383)
-				cpoint_from_attrib_value(processed, attrib, "output control point", "output_axis", {["axis"] = axis})
+			if axis > -1 and (attrib["output control point"] or -1) != -1 then
+				cpoint_from_attrib_value(processed, attrib, "input control point", 0, "position_combine") //only used if the output is defined (https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L2383)
+				cpoint_from_attrib_value(processed, attrib, "output control point", -1, "output_axis", {["axis"] = axis})
 			end
 		end,
 		["remap direction to cp to vector"] = function(processed, attrib)
 			//is this what the wiki calls "Remap Control Point Direction to Vector"? (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Remap_Control_Point_Direction_to_Vector)
 			//if so, then it uses the angle of the cpoint to set the particle's Position, Roll, or Color value, so i guess this should either use a position control to set the angle with,
 			//or a manual angle input?
-			cpoint_from_attrib_value(processed, attrib, "control point")
+			cpoint_from_attrib_value(processed, attrib, "control point", 0)
 			//this doesn't exist in any of the hl2/episodes/tf2 pcfs, so i don't know of any existing effects we need to accomodate. i'm not even sure what this would be used for; after 
 			//testing, the only potential uses i could find for this were setting the particle position to one based on the angle (output field Roll, normalize 1), or making the color 
 			//change based on the angle (ourput field Color, normalize 1). neither of these seems practical, and everything with normalize 0 seems glitchy and generates random noise. 
@@ -3041,16 +3052,17 @@ local processfuncs = {
 		end,
 		["remap distance between two control points to scalar"] = function(processed, attrib)
 			//this uses all the same scalars as remap control point to scalar, but actually uses the distance between two positions to get the value
-			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum
+			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //TODO: radius is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
 			local inMin = attrib["distance minimum"] or 0
 			local inMax = attrib["distance maximum"] or 1
 			local outMin = attrib["output minimum"] or 0
 			local outMax = attrib["output maximum"] or 1
 			local default = 0
-			if pattrib == "Radius" then default = 16 end //special handling so we don't default to having 0 radius and being invisible
+			if pattrib == "Radius" then default = 16 //special handling so we don't default to having 0 radius and being invisible
+			elseif pattrib == "Alpha" or pattrib == "Alpha Alternate" then default = inMax end //alpha should default to max visibility
 			default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax)) //make sure the default value of the slider in the edit window isn't outside its range (see tf2 speech_mediccall)
 			local relative_to_cpoint = attrib["starting control point"] or 0 //?
-			cpoint_from_attrib_value(processed, attrib, "ending control point", "axis", {
+			cpoint_from_attrib_value(processed, attrib, "ending control point", 1, "axis", {
 				["axis"] = 0, //arbitrary; any axis will work for this, but ent_partctrl:StartParticle checks which_0 for relative_to_cpoint
 				["label"] = pattrib,
 				["inMin"] = inMin,
@@ -3060,12 +3072,12 @@ local processfuncs = {
 				["default"] = default,
 				["relative_to_cpoint"] = relative_to_cpoint
 			})
-			cpoint_from_attrib_value(processed, attrib, "starting control point", "position_combine") //this is iffy; we assume the start cpoint might be attached to something while the end point isn't, which *is* the case with all existing fx, but doesn't necessarily have to be
+			cpoint_from_attrib_value(processed, attrib, "starting control point", 0, "position_combine") //this is iffy; we assume the start cpoint might be attached to something while the end point isn't, which *is* the case with all existing fx, but doesn't necessarily have to be
 		end,
 		["remap distance to control point to scalar"] = function(processed, attrib)
 			//like the above but uses the distance between a single cpoint's position and the particle (sprite?) itself (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Remap_Distance_to_Control_Point_to_Scalar)
-			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
-			cpoint_from_attrib_value(processed, attrib, "control point", nil, {["label"] = pattrib})
+			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug //TODO: radius is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
+			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["label"] = pattrib})
 		end,
 		["remap dot product to scalar"] = function (processed, attrib)
 			//like "remap control point to scalar", except it gets the angle(?) of 2 cpoints and does math with them to set the scalar. not listed in wiki.
@@ -3075,11 +3087,11 @@ local processfuncs = {
 			//eyeboss.pcf, which were the same but without the player cpoint, and instead use the angle (not the position!) of the second cpoint to change the particle's yaw.
 			//whatever, just make this a position control, seems it's like "remap direction to cp to vector", and should be either this or a manual angle input.
 			//update: actually just combine this one, the only effects that have a position control *for this operator only* are ones that didn't set up the player yaw thing properly
-			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
-			cpoint_from_attrib_value(processed, attrib, "first input control point", "position_combine", {["label"] = pattrib})
-			cpoint_from_attrib_value(processed, attrib, "second input control point", "position_combine", {["label"] = pattrib})
+			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug //TODO: radius is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
+			cpoint_from_attrib_value(processed, attrib, "first input control point", 0, "position_combine", {["label"] = pattrib})
+			cpoint_from_attrib_value(processed, attrib, "second input control point", 0, "position_combine", {["label"] = pattrib})
 		end,
-		["rotation orient relative to cp"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point") end,
+		["rotation orient relative to cp"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point", 0) end,
 		["set child control points from particle positions"] = function(processed, attrib)
 			local groupid = attrib["Group ID to affect"] or 0
 			local startp = attrib["First control point to set"] or 0
@@ -3096,60 +3108,53 @@ local processfuncs = {
 		end,
 		["set control point positions"] = function(processed, attrib)
 			local inputs = {
-				["First Control Point Parent"] = true, //TODO: is it really necessary to add position controls for these cpoint movement parents?
-				["Second Control Point Parent"] = true,
-				["Third Control Point Parent"] = true,
-				["Fourth Control Point Parent"] = true
+				["First Control Point Parent"] = 0, //TODO: is it really necessary to add position controls for these cpoint movement parents?
+				["Second Control Point Parent"] = 0, //store default cpoints in tab values; these are all the same in this one, but not below
+				["Third Control Point Parent"] = 0,
+				["Fourth Control Point Parent"] = 0
 			}
 			if !attrib["Set positions in world space"] then //according to code, only used if not setting in world space (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_ops.cpp#L2725)
-				inputs["Control Point to offset positions from"] = true //pet doesn't add control for this
+				inputs["Control Point to offset positions from"] = 0 //pet doesn't add control for this
 			end
 			local used_cpoints = {} //fix some fx that have an output set to the same cpoint id as an input (tfc_sniper_charge_blue) - in these cases, the cpoint is not overridden
-			for k, _ in pairs (inputs) do
-				cpoint_from_attrib_value(processed, attrib, k, nil, {["doesnt_need_renderer_or_emitter"] = true})
-				if attrib[k] != nil then
-					used_cpoints[attrib[k]] = true
-				end
+			for k, v in pairs (inputs) do
+				cpoint_from_attrib_value(processed, attrib, k, v, nil, {["doesnt_need_renderer_or_emitter"] = true})
+				used_cpoints[attrib[k] or v] = true
 			end
 
 			local outputs = {
-				["First Control Point Number"] = true,
-				["Second Control Point Number"] = true,
-				["Third Control Point Number"] = true,
-				["Fourth Control Point Number"] = true
+				["First Control Point Number"] = 1,
+				["Second Control Point Number"] = 2,
+				["Third Control Point Number"] = 3,
+				["Fourth Control Point Number"] = 4
 			}
-			for k, _ in pairs (outputs) do
-				if attrib[k] != nil and !used_cpoints[attrib[k]] then
-					cpoint_from_attrib_value(processed, attrib, k, "output")
+			for k, v in pairs (outputs) do
+				if !used_cpoints[attrib[k] or v] then
+					cpoint_from_attrib_value(processed, attrib, k, v, "output")
 				end
 			end
 		end,
-		["set control point to particles' center"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point Number to Set", "output") end,
+		["set control point to particles' center"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point Number to Set", 1, "output") end,
 		["set control point to player"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "Control Point Number", "output")
+			cpoint_from_attrib_value(processed, attrib, "Control Point Number", 1, "output")
 			processed["spawnicon_playerposfix"] = true //this attrib forces a cpoint to the player's position, which can break spawnicon renderbounds, so tell it to account for that
 		end,
 	},
 	["initializers"] = {
 		["color random"] = function(processed, attrib)
-			if attrib["tint_perc"] != nil and attrib["tint_perc"] > 0 then //by default, the value of "tint control point" is 0, not -1, so pet adds a control for it by default, but in code, this isn't used unless tint_perc is non-zero (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L1705)
-				cpoint_from_attrib_value(processed, attrib, "tint control point", "position_combine") //samples the lighting from this cpoint's position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Color_Random)
+			if (attrib["tint_perc"] or 0) > 0 then //by default, the value of "tint control point" is 0, not -1, so pet adds a control for it by default, but in code, this isn't used unless tint_perc is non-zero (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L1705)
+				cpoint_from_attrib_value(processed, attrib, "tint control point", 0, "position_combine") //samples the lighting from this cpoint's position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Color_Random)
 			end
 		end,
 		["move particles between 2 control points"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "end control point", nil, {["sets_particle_pos"] = true}) //yes, it only defines an endpoint (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Move_Particles_Between_2_Control_Points)
+			cpoint_from_attrib_value(processed, attrib, "end control point", 1, nil, {["sets_particle_pos"] = true}) //yes, it only defines an endpoint (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Move_Particles_Between_2_Control_Points)
 		end, 
 		["position along epitrochoid"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "control point number", nil, {["sets_particle_pos"] = true})
-			local cpoint = attrib["scale from conrol point (radius 1/radius 2/offset)"] //sic
-			if cpoint != nil and cpoint > -1 then
-				local function DoEpitrochoidAxis(axis, axisv)
-					local doaxis = false
-					if attrib[axisv] != nil and attrib[axisv] != 0 then
-						doaxis = true
-					end
-					if doaxis then
-						cpoint_from_attrib_value(processed, attrib, "scale from conrol point (radius 1/radius 2/offset)", "axis", {
+			cpoint_from_attrib_value(processed, attrib, "control point number", 0, nil, {["sets_particle_pos"] = true})
+			if (attrib["scale from conrol point (radius 1/radius 2/offset)"] or -1) > -1 then //sic (conrol point)
+				local function DoEpitrochoidAxis(axis, axisv, default)
+					if (attrib[axisv] or default) != 0 then
+						cpoint_from_attrib_value(processed, attrib, "scale from conrol point (radius 1/radius 2/offset)", -1, "axis", {
 							["axis"] = axis,
 							["label"] = "Epitrochoid " .. axisv .. " multiplier",
 							//no min/max
@@ -3157,39 +3162,38 @@ local processfuncs = {
 						})
 					end
 				end
-				DoEpitrochoidAxis(0, "radius 1")
-				DoEpitrochoidAxis(1, "radius 2")
-				DoEpitrochoidAxis(2, "point offset")
+				DoEpitrochoidAxis(0, "radius 1", 40)
+				DoEpitrochoidAxis(1, "radius 2", 24)
+				DoEpitrochoidAxis(2, "point offset", 4)
 			end
 		end,
 		["position along path random"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "start control point number", nil, {["sets_particle_pos"] = true})
-			cpoint_from_attrib_value(processed, attrib, "end control point number", nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
+			cpoint_from_attrib_value(processed, attrib, "start control point number", 0, nil, {["sets_particle_pos"] = true})
+			cpoint_from_attrib_value(processed, attrib, "end control point number", 0, nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
 		end,
 		["position along path sequential"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "start control point number", nil, {["sets_particle_pos"] = true})
-			cpoint_from_attrib_value(processed, attrib, "end control point number", nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
+			cpoint_from_attrib_value(processed, attrib, "start control point number", 0, nil, {["sets_particle_pos"] = true})
+			cpoint_from_attrib_value(processed, attrib, "end control point number", 0, nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
 		end,
 		["position along ring"] = function(processed, attrib)
-			if attrib["control point number"] == nil then attrib["control point number"] = 0 end //all the fx in sfm workshop particles speedlines.pcf don't have this value set; seems to default to 0
-			cpoint_from_attrib_value(processed, attrib, "control point number", nil, {["sets_particle_pos"] = true})
+			cpoint_from_attrib_value(processed, attrib, "control point number", 0, nil, {["sets_particle_pos"] = true})
 			//"Override CP (X/Y/Z *= Radius/Thickness/Speed)" and "Override CP 2 (X/Y/Z *= Pitch/Yaw/Roll)" control those things with the values of the cpoint
 			//These are all MULTIPLIERS so an axis doesn't do anything if the value is 0, ignore those
 			//Unlike remap control point to vector, pitch/yaw/roll are in degrees, not radians
 			local function DoRingAxis(cpoint, axis, axisv)
-				if attrib[cpoint] != nil and attrib[cpoint] > -1 then
+				if (attrib[cpoint] or -1) > -1 then
 					local doaxis = false
 					if axisv == "speed" then //this one uses two values so it has special handling 
-						if (attrib["min initial speed"] != nil and attrib["min initial speed"] != 0) 
-						or (attrib["max initial speed"] != nil and attrib["max initial speed"] != 0) then
+						if (attrib["min initial speed"] or 0) != 0 
+						or (attrib["max initial speed"] or 0) != 0 then
 							doaxis = true
 						end
-					elseif attrib[axisv] != nil and attrib[axisv] != 0 then
+					elseif (attrib[axisv] or 0) != 0 then //yes, they all default to 0
 						doaxis = true
 					end
-					if axisv == "initial radius" then axisv = "radius" end //nicer name for slider label
 					if doaxis then
-						cpoint_from_attrib_value(processed, attrib, cpoint, "axis", {
+						if axisv == "initial radius" then axisv = "radius" end //nicer name for slider label
+						cpoint_from_attrib_value(processed, attrib, cpoint, -1, "axis", {
 							["axis"] = axis,
 							["label"] = "Ring " .. axisv .. " multiplier",
 							//no min/max
@@ -3206,7 +3210,7 @@ local processfuncs = {
 			DoRingAxis("Override CP 2 (X/Y/Z *= Pitch/Yaw/Roll)", 2, "roll")
 		end,
 		["position from chaotic attractor"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "Relative Control point number", nil, {["sets_particle_pos"] = true})
+			cpoint_from_attrib_value(processed, attrib, "Relative Control point number", 0, nil, {["sets_particle_pos"] = true})
 		end,
 		["position from parent particles"] = function(processed, attrib)
 			//don't cull parent fx if they don't have a valid renderer, but one of their children has this attribute (i.e. parent alien_ufo_explode_trailing_bits_alt, child alien_ufo_explode_alt_trail_smoke)
@@ -3216,8 +3220,8 @@ local processfuncs = {
 		["position in cp hierarchy"] = function(processed, attrib)
 			//this one is a bit strange. it defines a cpoint for every id between the start and end, and then moves the particle spawn point between them all.
 			//the weird pet behavior where it adds controls for every cpoint between start and end seems to be designed for this initializer.
-			local startp = attrib["start control point number"] or -1
-			local endp = attrib["end control point number"] or -1
+			local startp = attrib["start control point number"] or 0
+			local endp = attrib["end control point number"] or 1
 			if attrib["use highest supplied end point"] then //with this arg set, the particle system uses as many cpoints as you give it. any amount works.
 				//endp = 63 //this is what pet does, and it's functional, but this is stupid, don't do this. no one needs 64 whole cpoints to move around.
 				endp = math.min(startp + 1, 63) //TODO: give players a way to manually enable as many cpoints as they want, without dumping 64 on them by default.
@@ -3231,7 +3235,7 @@ local processfuncs = {
 			//code only uses this cpoint if offset in local space is enabled; (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L776)
 			//this cpoint's ANGLES are used to rotate the offset mins/maxs, its position is not used, so we should either use a position control or a manual angle input maybe
 			if attrib["offset in local space 0/1"] then
-				cpoint_from_attrib_value(processed, attrib, "control_point_number", "position_combine")
+				cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, "position_combine")
 			end
 		end,
 		["position modify warp random"] = function(processed, attrib)
@@ -3241,25 +3245,23 @@ local processfuncs = {
 			local max = attrib["warp max"] or Vector(1,1,1)
 			local time = attrib["warp transition time (treats min/max as start/end sizes)"] or 0
 			if time == 0 and min != max then
-				cpoint_from_attrib_value(processed, attrib, "control point number")
+				cpoint_from_attrib_value(processed, attrib, "control point number", 0)
 			else
-				cpoint_from_attrib_value(processed, attrib, "control point number", "position_combine")
+				cpoint_from_attrib_value(processed, attrib, "control point number", 0, "position_combine")
 			end
 		end,
 		["position on model random"] = function(processed, attrib) 
-			cpoint_from_attrib_value(processed, attrib, "control_point_number", nil, {
+			cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, {
 				["ignore_outputs"] = true, //this cpoint sets an associated model, not a position, so outputs don't override it
 				["on_model"] = true,
 				["sets_particle_pos"] = true,
 			})
 		end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_position#Position_on_Model_Random)
 		["position within box random"] = function(processed, attrib)
-			if attrib["control point number"] == nil then attrib["control point number"] = 0 end //a few ep2 fx don't have this value at all, it seems to default to 0
-			cpoint_from_attrib_value(processed, attrib, "control point number", nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
+			cpoint_from_attrib_value(processed, attrib, "control point number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
 		end,
 		["position within sphere random"] = function(processed, attrib)
-			if attrib["control_point_number"] == nil then attrib["control_point_number"] = 0 end //a few ep2 fx don't have this value at all, it seems to default to 0
-			cpoint_from_attrib_value(processed, attrib, "control_point_number", nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
+			cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
 		end,
 		["remap control point to scalar"] = function(processed, attrib)
 			//like the operator of the same name
@@ -3267,15 +3269,16 @@ local processfuncs = {
 			local axis = attrib["input field 0-2 X/Y/Z"] or 0
 			if axis > -1 then
 				//Make sure we have values for everything, just in case; use default values from pet otherwise
-				local pattrib = ParticleAttributeNames[attrib["output field"]] or "Radius" //PARTICLE_ATTRIBUTE_x enum
+				local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //TODO: radius is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
 				local inMin = attrib["input minimum"] or 0
 				local inMax = attrib["input maximum"] or 1
 				local outMin = attrib["output minimum"] or 0
 				local outMax = attrib["output maximum"] or 1
 				local default = 0
-				if pattrib == "Radius" then default = 16 end //special handling so we don't default to having 0 radius and being invisible
+				if pattrib == "Radius" then default = 16 //special handling so we don't default to having 0 radius and being invisible
+				elseif pattrib == "Alpha" or pattrib == "Alpha Alternate" then default = inMax end //alpha should default to max visibility
 				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax)) //make sure the default value of the slider in the edit window isn't outside its range (see tf2 speech_mediccall)
-				cpoint_from_attrib_value(processed, attrib, "input control point number", "axis", {
+				cpoint_from_attrib_value(processed, attrib, "input control point number", 0, "axis", {
 					["axis"] = axis,
 					["label"] = pattrib,
 					["inMin"] = inMin,
@@ -3290,17 +3293,17 @@ local processfuncs = {
 			//Similar to above, use all 3 axes of the cpoint to set Position, Roll, or Color
 			//TF2/episodes/HL2 pcfs only have use cases for Color, so the others required some testing.
 			//Make sure we have values for everything, just in case; use default values from pet otherwise
-			local pattrib = ParticleAttributeNames[attrib["output field"]] or "Position" //PARTICLE_ATTRIBUTE_x enum
+			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //TODO: position is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
 			local inMin = attrib["input minimum"] or Vector()
 			local inMax = attrib["input maximum"] or Vector()
 			local outMin = attrib["output minimum"] or Vector()
 			local outMax = attrib["output maximum"] or Vector()
 			//Color should default to the equivalent of 1,1,1 (white)
 			local default = nil
-			if attrib["output field"] == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB then
+			if pattrib == "Color" then
 				default = Vector(math.Remap(1, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(1, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(1, outMin.z, outMax.z, inMin.z, inMax.z))
 			end
-			cpoint_from_attrib_value(processed, attrib, "input control point number", "vector", {
+			cpoint_from_attrib_value(processed, attrib, "input control point number", 0, "vector", {
 				["label"] = pattrib,
 				["inMin"] = inMin,
 				["inMax"] = inMax,
@@ -3308,41 +3311,40 @@ local processfuncs = {
 				["outMax"] = outMax,
 				["default"] = default,
 			})
-			cpoint_from_attrib_value(processed, attrib, "local space CP", "position_combine") //uses the cpoint's angles to rotate the output in some odd way, can be used to make a position sort-of-rotate with the cpoint, or make colors change as it spins
+			cpoint_from_attrib_value(processed, attrib, "local space CP", -1, "position_combine") //uses the cpoint's angles to rotate the output in some odd way, can be used to make a position sort-of-rotate with the cpoint, or make colors change as it spins
 		end,
 		["remap initial distance to control point to scalar"] = function(processed, attrib)
-			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
-			cpoint_from_attrib_value(processed, attrib, "control point", nil, {["label"] = pattrib})
+			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug //TODO: radius is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
+			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["label"] = pattrib})
 		end,
 		["remap scalar to vector"] = function(processed, attrib)
-			local field = attrib["output field"] or 0
-			if field == 0 then //cpoint is only used by position vector (0) to make the position relative to that cpoint (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3155)
-				cpoint_from_attrib_value(processed, attrib, "control_point_number", nil, {["sets_particle_pos"] = true}) //yes, this sets particle pos, see unusual_poseidon_light_ fx
+			if (attrib["output field"] or 0) then //cpoint is only used by position vector (0) to make the position relative to that cpoint (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3155)
+				cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, {["sets_particle_pos"] = true}) //yes, this sets particle pos, see unusual_poseidon_light_ fx
 			end
 		end,
-		["set hitbox position on model"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number") end, //presumably uses the model that the cpoint is attached to, so use position; these two are csgo(?) ports and i can't get them to do anything, don't know if they even function in gmod
-		["set hitbox to closest hitbox"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number") end, //^
-		["velocity inherit from control point"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control point number", "position_combine") end,
+		["set hitbox position on model"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0) end, //presumably uses the model that the cpoint is attached to, so use position; TODO: these two are csgo(?) ports and i can't get them to do anything, don't know if they even function in gmod
+		["set hitbox to closest hitbox"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0) end, //^
+		["velocity inherit from control point"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control point number", 0, "position_combine") end,
 		["velocity noise"] = function(processed, attrib)
 			if attrib["Apply Velocity in Local Space (0/1)"] then //cpoint is only used if this is enabled (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L1243)
-				cpoint_from_attrib_value(processed, attrib, "Control Point Number", "position_combine")
+				cpoint_from_attrib_value(processed, attrib, "Control Point Number", 0, "position_combine")
 			end
 		end,
 		["velocity random"] = function(processed, attrib)
-			local lmin = attrib["speed_in_local_coordinate_system_min"] or Vector(0,0,0)
-			local lmax = attrib["speed_in_local_coordinate_system_max"] or Vector(0,0,0)
+			local lmin = attrib["speed_in_local_coordinate_system_min"] or Vector()
+			local lmax = attrib["speed_in_local_coordinate_system_max"] or Vector()
 			if lmin != vector_origin or lmax != vector_origin then //code uses this cpoint if bHasLocalSpeed (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L892), which is determined by this same check (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L855)
 				//if !(lmin.x == lmin.y and lmin.x == lmin.z and lmin.x == -lmax.x and lmin.y == -lmax.y and lmin.z == -lmax.z) then
-					cpoint_from_attrib_value(processed, attrib, "control_point_number", "position_combine")
+					cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, "position_combine")
 				//end
 			end
 		end,
 		["velocity repulse from world"] = function(processed, attrib)
 			if !attrib["Per Particle World Collision Tests"] then //according to code, neither the cpoint nor broadcast-to-children are used with per-particle collision on (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3421)
 				if !attrib["Inherit from Parent"] then
-					cpoint_from_attrib_value(processed, attrib, "control_point_number")
-					local i = attrib["control points to broadcast to children (n + 1)"] //this also isn't used if inheriting
-					if i != nil and i != -1 then
+					cpoint_from_attrib_value(processed, attrib, "control_point_number", 0)
+					local i = attrib["control points to broadcast to children (n + 1)"] or -1 //this also isn't used if inheriting
+					if i != -1 then
 						local groupid = attrib["Child Group ID to affect"] or 0
 						local name = attrib._categoryName .. " " .. attrib.functionName .. ": control points to broadcast to children (n + 1)"
 						PartCtrl_CPoint_AddToProcessed(processed, i, name, "output_children", {["groupid"] = groupid}, attrib)
@@ -3351,7 +3353,7 @@ local processfuncs = {
 				else
 					//let players manually set the values if they spawned a child effect on its own, or for some hypothetical use case where it's intended to be supplied by code or something
 					//this is silly, who's going to use this?
-					cpoint_from_attrib_value(processed, attrib, "control_point_number", "vector", {
+					cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, "vector", {
 						["label"] = "Velocity Direction Normal",
 						["inMin"] = Vector(-1,-1,-1),
 						["inMax"] = Vector(1,1,1),
@@ -3377,35 +3379,35 @@ local processfuncs = {
 		["velocity set from control point"] = function(processed, attrib)
 			//another backported effect from csgo(?), seems to use the position values of these cpoints to set a normal vector for particle velocity, so i guess it should either use position controls or manual value inputs; because it's backported there aren't any existing orangebox effects to accomodate
 			//all of these cpoints are used if available (https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_initializers.cpp#L4160-L4255)
-			cpoint_from_attrib_value(processed, attrib, "control point number")
-			cpoint_from_attrib_value(processed, attrib, "comparison control point number")
-			cpoint_from_attrib_value(processed, attrib, "local space control point number")
+			cpoint_from_attrib_value(processed, attrib, "control point number", 0)
+			cpoint_from_attrib_value(processed, attrib, "comparison control point number", -1)
+			cpoint_from_attrib_value(processed, attrib, "local space control point number", -1)
 		end,
 	},
 	["emitters"] = {
 		["emit noise"] = function(processed, attrib)
 			local min = attrib["emission minimum"] or 0
-			local max = attrib["emission maximum"] or 0
+			local max = attrib["emission maximum"] or 100
 			if min > 0 or max > 0 then
 				processed["has_emitter"] = true
 			end
 		end,
 		["emit_continuously"] = function(processed, attrib)
-			local max = attrib["emission_rate"] or 0
+			local max = attrib["emission_rate"] or 100
 			if max > 0 then
 				processed["has_emitter"] = true
 			end
 		end,
 		//"emit noise" and "emit_continuously" have "scale emission to used control points", which wiki claims is a cpoint id, but it's actually a float that's multiplied by the number of cpoints the effect has, we don't care about this (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_emitters.cpp#L449)
 		["emit_instantaneously"] = function(processed, attrib)
-			local min = attrib["num_to_emit_minimum"] or 0
-			local max = attrib["num_to_emit"] or 0
+			local min = attrib["num_to_emit_minimum"] or -1
+			local max = attrib["num_to_emit"] or 100
 			if min > 0 or max > 0 then
 				processed["has_emitter"] = true
 			end
 			local axis = attrib["emission count scale control point field"] or 0
 			if axis > -1 then
-				cpoint_from_attrib_value(processed, attrib, "emission count scale control point", "axis", {
+				cpoint_from_attrib_value(processed, attrib, "emission count scale control point", -1, "axis", {
 					["axis"] = axis,
 					["label"] = "Emission Count Scale",
 					["inMin"] = 0, //will crash if value is set to less than 0
@@ -3425,30 +3427,30 @@ local processfuncs = {
 				//that particle developers use, i don't know. either way, don't let them create their own position control in these cases, because they aren't useful.
 				type = "position_combine" 
 			end
-			cpoint_from_attrib_value(processed, attrib, "control point number", type, {["overridable_by_constraint"] = true, ["overridable_by_drag"] = true})
+			cpoint_from_attrib_value(processed, attrib, "control point number", 0, type, {["overridable_by_constraint"] = true, ["overridable_by_drag"] = true})
 		end
 	},
 	["constraints"] = {
 		//"collision via traces" always sets cpoint 0 in pet, but this doesn't seem necessary, it functions just fine without it in a test effect using only cpoint 1, and even if we add another cpoint for 0 it doesn't actually seem to do anything; can't find any code actually using a cpoint either (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_constraints.cpp#L630-L1098)
 		["constrain distance to control point"] = function(processed, attrib)
 			if !attrib["global center point"] then //according to code, cpoint is only used if global center point is false (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_constraints.cpp#L87)
-				cpoint_from_attrib_value(processed, attrib, "control point number", nil, {["sets_particle_pos"] = true}) //pet doesn't add control for this
-				if attrib["maximum distance"] < 1 then
+				cpoint_from_attrib_value(processed, attrib, "control point number", 0, nil, {["sets_particle_pos"] = true}) //pet doesn't add control for this
+				if (attrib["maximum distance"] or 100) < 1 then
 					processed["constraint_does_override"] = true //global value on the effect, not cpoint-specific
 				end
 			end
 		end,
 		["constrain distance to path between two control points"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "start control point number", nil, {["sets_particle_pos"] = true})
-			cpoint_from_attrib_value(processed, attrib, "end control point number", nil, {["sets_particle_pos"] = true})
+			cpoint_from_attrib_value(processed, attrib, "start control point number", 0, nil, {["sets_particle_pos"] = true})
+			cpoint_from_attrib_value(processed, attrib, "end control point number", 0, nil, {["sets_particle_pos"] = true})
 			//if there's no way for other cpoint attribs (like the ones that initialize in a box/sphere) to influence the particles because this constraint forces them onto a very specific path, then don't make position controls for those cpoints
-			if attrib["maximum distance"] < 1 then
+			if (attrib["maximum distance"] or 100) < 1 then
 				processed["constraint_does_override"] = true //global value on the effect, not cpoint-specific
 			end
 		end,
 		["prevent passing through a plane"] = function(processed, attrib)
 			if !attrib["global origin"] or !attrib["global normal"] then
-				cpoint_from_attrib_value(processed, attrib, "control point number")
+				cpoint_from_attrib_value(processed, attrib, "control point number", 0)
 			end
 		end,
 		//code says this one always uses cpoint 0 for some trace stuff, but when trying to test it, on every single effect i could find or make with this attribute, it just doesn't seem to work at all? particles pass through brushes, displacements, and static props just fine. (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_constraints.cpp#L473)
@@ -3476,7 +3478,7 @@ function PartCtrl_ProcessPCF(filename)
 			for k, v in pairs (processfuncs) do
 				if ptab[k] then
 					for _, attrib in pairs (ptab[k]) do
-						if !(attrib["operator start fadein"] and attrib["operator start fadein"] >= 99) and !(attrib["operator end fadein"] and attrib["operator end fadein"] >= 99) then //some fx use a superlong fadein to effectively comment out attribs, ridiculous (particles/advisor_fx.pcf Advisor_Psychic_Attach_01b operator Remap Distance to Control Point to Scalar)
+						if !((attrib["operator start fadein"] or 0) >= 99) and !((attrib["operator end fadein"] or 0) >= 99) then //some fx use a superlong fadein to effectively comment out attribs, ridiculous (particles/advisor_fx.pcf Advisor_Psychic_Attach_01b operator Remap Distance to Control Point to Scalar)
 							if !attrib.functionName then
 								MsgN(filename, " particle ", particle, " has attribute with no function name")
 							else
@@ -3492,20 +3494,20 @@ function PartCtrl_ProcessPCF(filename)
 				end
 			end
 			//also process a couple things that are stored in the main table and not in operators
-			if ptab["cull_radius"] != nil and ptab["cull_radius"] > 0 then //(https://github.com/VSES/SourceEngine2007/blob/master/src_main/particles/particles.cpp#L500-L503)
-				cpoint_from_attrib_value(processed, ptab, "cull_control_point", "position_combine", {
+			if (ptab["cull_radius"] or 0) > 0 then //(https://github.com/VSES/SourceEngine2007/blob/master/src_main/particles/particles.cpp#L500-L503)
+				cpoint_from_attrib_value(processed, ptab, "cull_control_point", 0, "position_combine", {
 					["ignore_outputs"] = true, //unlike the other things that ignore outputs, this one actually does set a position, but outputs still don't override it because it runs first i guess
 					["dont_inherit"] = true,
 				}) //this system only runs if an obscure cheat command cl_particle_retire_cost is enabled (https://developer.valvesoftware.com/wiki/Particle_System_Properties), and also only runs on the frame a particle is spawned (https://github.com/nillerusr/source-engine/blob/master/game/client/particlemgr.cpp#L1707); culls the particle by deleting it (or optionally spawning an alternative particle) if this cpoint is taking up too much of the screen
 			end
-			cpoint_from_attrib_value(processed, ptab, "control point to disable rendering if it is the camera", "position_combine", {
+			cpoint_from_attrib_value(processed, ptab, "control point to disable rendering if it is the camera", -1, "position_combine", {
 				["ignore_outputs"] = true, //this cpoint sets an associated model, not a position, so outputs don't override it
 				["dont_inherit"] = true,
 			}) //makes the particle not render if this cpoint is attached to the ent the camera is viewing from (i.e. the player, or a camera ent they're using)
 			if ptab["preventNameBasedLookup"] then
 				processed["prevent_name_based_lookup"] = true //makes the particle impossible to spawn on its own, but still usable as a child. not sure what the point of this is.
 			end
-			if ptab["initial_particles"] != nil and ptab["initial_particles"] > 0 then
+			if (ptab["initial_particles"] or 0) > 0 then
 				processed["has_emitter"] = true
 			end
 			t2[particle] = processed
