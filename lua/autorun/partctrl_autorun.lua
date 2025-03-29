@@ -1923,6 +1923,7 @@ list.Set("PartCtrl_UtilFx", "balloon_pop", {
 			["outMin"] = Vector(0,0,0),
 			["outMax"] = Vector(1,1,1),
 			["default"] = Vector(255,255,255), 
+			["colorpicker"] = true,
 		})
 	end,
 	DoEffect = function(self, ed)
@@ -2184,14 +2185,14 @@ local ParticleAttributeNames = { //names and comments from https://github.com/ni
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB] = "Color", // TINT_RGB, 6 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA] = "Alpha", // ALPHA, 7 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_CREATION_TIME] = "Creation Time", // CREATION_TIME, 8 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER] = "Sequence Number", // SEQUENCE_NUMBER, 9 );
+	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER] = "Sequence", //"Sequence Number", // SEQUENCE_NUMBER, 9 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TRAIL_LENGTH] = "Trail Length", // TRAIL_LENGTH, 10 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_PARTICLE_ID] = "Particle ID", // PARTICLE_ID, 11 ); 
 	[PARTCTRL_PARTICLE_ATTRIBUTE_YAW] = "Yaw", // YAW, 12 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
+	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Sequence 2", //"Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_INDEX] = "PARTICLE_ATTRIBUTE_HITBOX_INDEX (internal)", //NULL, // HITBOX_INDEX is for internal use only
 	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ] = "PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ (internal)", //NULL, // HITBOX_XYZ_RELATIVE is for internal use only
-	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2] = "Alpha Alternate", // ALPHA2, 16
+	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2] = "Alpha 2", //"Alpha Alternate", // ALPHA2, 16
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P0] = "PARTICLE_ATTRIBUTE_TRACE_P0 (internal)",
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P1] = "PARTICLE_ATTRIBUTE_TRACE_P1 (internal)",
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_T] = "PARTICLE_ATTRIBUTE_TRACE_HIT_T (internal)",
@@ -3009,19 +3010,31 @@ local processfuncs = {
 			//controls a whole bunch of stuff (lifetime, radius, alpha, etc.) with the value of a single axis of the cpoint, definitely not a position control
 			local axis = attrib["input field 0-2 X/Y/Z"] or 0
 			if axis > -1 then
-				//Make sure we have values for everything, just in case; use default values from pet otherwise
-				local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //TODO: radius is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
+				local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS //PARTICLE_ATTRIBUTE_x enum
+				local label = ParticleAttributeNames[field]
 				local inMin = attrib["input minimum"] or 0
 				local inMax = attrib["input maximum"] or 1
 				local outMin = attrib["output minimum"] or 0
 				local outMax = attrib["output maximum"] or 1
+				local is_multiplier = attrib["output is scalar of initial random range"] or attrib["output is scalar of current value"]
 				local default = 0
-				if pattrib == "Radius" then default = 16 //special handling so we don't default to having 0 radius and being invisible
-				elseif pattrib == "Alpha" or pattrib == "Alpha Alternate" then default = inMax end //alpha should default to max visibility
+				if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS then
+					if !is_multiplier then
+						default = 16 //special handling so we don't default to having 0 radius and being invisible
+					else
+						default = 1 //default to 100% radius
+					end
+					default = math.Remap(default, outMin, outMax, inMin, inMax)
+				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
+					default = inMax //alpha should default to max visibility
+				end
 				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax)) //make sure the default value of the slider in the edit window isn't outside its range (see tf2 speech_mediccall)
+				if is_multiplier then
+					label = label .. " Scale"
+				end
 				cpoint_from_attrib_value(processed, attrib, "input control point number", 0, "axis", {
 					["axis"] = axis,
-					["label"] = pattrib,
+					["label"] = label,
 					["inMin"] = inMin,
 					["inMax"] = inMax,
 					["outMin"] = outMin,
@@ -3052,32 +3065,44 @@ local processfuncs = {
 		end,
 		["remap distance between two control points to scalar"] = function(processed, attrib)
 			//this uses all the same scalars as remap control point to scalar, but actually uses the distance between two positions to get the value
-			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //TODO: radius is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
+			local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS //PARTICLE_ATTRIBUTE_x enum
+			local label = ParticleAttributeNames[field]
 			local inMin = attrib["distance minimum"] or 0
 			local inMax = attrib["distance maximum"] or 1
 			local outMin = attrib["output minimum"] or 0
 			local outMax = attrib["output maximum"] or 1
+			local is_multiplier = attrib["output is scalar of initial random range"] or attrib["output is scalar of current value"]
 			local default = 0
-			if pattrib == "Radius" then default = 16 //special handling so we don't default to having 0 radius and being invisible
-			elseif pattrib == "Alpha" or pattrib == "Alpha Alternate" then default = inMax end //alpha should default to max visibility
+			if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS then
+				if !is_multiplier then
+					default = 16 //special handling so we don't default to having 0 radius and being invisible
+				else
+					default = 1 //default to 100% radius
+				end
+				default = math.Remap(default, outMin, outMax, inMin, inMax)
+			elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
+				default = inMax //alpha should default to max visibility
+			end
 			default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax)) //make sure the default value of the slider in the edit window isn't outside its range (see tf2 speech_mediccall)
-			local relative_to_cpoint = attrib["starting control point"] or 0 //?
+			if is_multiplier then
+				label = label .. " Scale"
+			end
 			cpoint_from_attrib_value(processed, attrib, "ending control point", 1, "axis", {
 				["axis"] = 0, //arbitrary; any axis will work for this, but ent_partctrl:StartParticle checks which_0 for relative_to_cpoint
-				["label"] = pattrib,
+				["label"] = label,
 				["inMin"] = inMin,
 				["inMax"] = inMax,
 				["outMin"] = outMin,
 				["outMax"] = outMax,
 				["default"] = default,
-				["relative_to_cpoint"] = relative_to_cpoint
+				["relative_to_cpoint"] = attrib["starting control point"] or 0 //?
 			})
 			cpoint_from_attrib_value(processed, attrib, "starting control point", 0, "position_combine") //this is iffy; we assume the start cpoint might be attached to something while the end point isn't, which *is* the case with all existing fx, but doesn't necessarily have to be
 		end,
 		["remap distance to control point to scalar"] = function(processed, attrib)
 			//like the above but uses the distance between a single cpoint's position and the particle (sprite?) itself (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Remap_Distance_to_Control_Point_to_Scalar)
-			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug //TODO: radius is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
-			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["label"] = pattrib})
+			local label = ParticleAttributeNames[attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS] //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
+			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["label"] = label})
 		end,
 		["remap dot product to scalar"] = function (processed, attrib)
 			//like "remap control point to scalar", except it gets the angle(?) of 2 cpoints and does math with them to set the scalar. not listed in wiki.
@@ -3087,9 +3112,9 @@ local processfuncs = {
 			//eyeboss.pcf, which were the same but without the player cpoint, and instead use the angle (not the position!) of the second cpoint to change the particle's yaw.
 			//whatever, just make this a position control, seems it's like "remap direction to cp to vector", and should be either this or a manual angle input.
 			//update: actually just combine this one, the only effects that have a position control *for this operator only* are ones that didn't set up the player yaw thing properly
-			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug //TODO: radius is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
-			cpoint_from_attrib_value(processed, attrib, "first input control point", 0, "position_combine", {["label"] = pattrib})
-			cpoint_from_attrib_value(processed, attrib, "second input control point", 0, "position_combine", {["label"] = pattrib})
+			local label = ParticleAttributeNames[attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS] //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
+			cpoint_from_attrib_value(processed, attrib, "first input control point", 0, "position_combine", {["label"] = label})
+			cpoint_from_attrib_value(processed, attrib, "second input control point", 0, "position_combine", {["label"] = label})
 		end,
 		["rotation orient relative to cp"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point", 0) end,
 		["set child control points from particle positions"] = function(processed, attrib)
@@ -3269,18 +3294,31 @@ local processfuncs = {
 			local axis = attrib["input field 0-2 X/Y/Z"] or 0
 			if axis > -1 then
 				//Make sure we have values for everything, just in case; use default values from pet otherwise
-				local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //TODO: radius is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
+				local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS //PARTICLE_ATTRIBUTE_x enum
+				local label = ParticleAttributeNames[field]
 				local inMin = attrib["input minimum"] or 0
 				local inMax = attrib["input maximum"] or 1
 				local outMin = attrib["output minimum"] or 0
 				local outMax = attrib["output maximum"] or 1
+				local is_multiplier = attrib["output is scalar of initial random range"] //or attrib["output is scalar of current value"] //this one doesn't have this value
 				local default = 0
-				if pattrib == "Radius" then default = 16 //special handling so we don't default to having 0 radius and being invisible
-				elseif pattrib == "Alpha" or pattrib == "Alpha Alternate" then default = inMax end //alpha should default to max visibility
+				if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS then
+					if !is_multiplier then
+						default = 16 //special handling so we don't default to having 0 radius and being invisible
+					else
+						default = 1 //default to 100% radius
+					end
+					default = math.Remap(default, outMin, outMax, inMin, inMax)
+				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
+					default = inMax //alpha should default to max visibility
+				end
 				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax)) //make sure the default value of the slider in the edit window isn't outside its range (see tf2 speech_mediccall)
+				if is_multiplier then
+					label = label .. " Scale"
+				end
 				cpoint_from_attrib_value(processed, attrib, "input control point number", 0, "axis", {
 					["axis"] = axis,
-					["label"] = pattrib,
+					["label"] = label,
 					["inMin"] = inMin,
 					["inMax"] = inMax,
 					["outMin"] = outMin,
@@ -3293,29 +3331,41 @@ local processfuncs = {
 			//Similar to above, use all 3 axes of the cpoint to set Position, Roll, or Color
 			//TF2/episodes/HL2 pcfs only have use cases for Color, so the others required some testing.
 			//Make sure we have values for everything, just in case; use default values from pet otherwise
-			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //TODO: position is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
+			local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_XYZ //PARTICLE_ATTRIBUTE_x enum //assume the default is Position because that's what shows in pet by default, just like Radius is for scalars; can't find any v5 fx to test with that omit this value
+			local label = ParticleAttributeNames[field]
 			local inMin = attrib["input minimum"] or Vector()
 			local inMax = attrib["input maximum"] or Vector()
 			local outMin = attrib["output minimum"] or Vector()
 			local outMax = attrib["output maximum"] or Vector()
-			//Color should default to the equivalent of 1,1,1 (white)
+			local is_multiplier = attrib["output is scalar of initial random range"] //or attrib["output is scalar of current value"] //this one doesn't have this value
 			local default = nil
-			if pattrib == "Color" then
+			local colorpicker = nil
+			if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB or is_multiplier then
+				//Color should default to the equivalent of 1,1,1 (white),
+				//and multipliers should default to 100%
 				default = Vector(math.Remap(1, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(1, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(1, outMin.z, outMax.z, inMin.z, inMax.z))
+				if !is_multiplier then colorpicker = true end //i don't think color multiplier even works at all? whatever
+			else
+				//default to 0
+				default = Vector(math.Remap(0, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(0, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(0, outMin.z, outMax.z, inMin.z, inMax.z))
+			end
+			if is_multiplier then
+				label = label .. " Scale"
 			end
 			cpoint_from_attrib_value(processed, attrib, "input control point number", 0, "vector", {
-				["label"] = pattrib,
+				["label"] = label,
 				["inMin"] = inMin,
 				["inMax"] = inMax,
 				["outMin"] = outMin,
 				["outMax"] = outMax,
 				["default"] = default,
+				["colorpicker"] = colorpicker,
 			})
 			cpoint_from_attrib_value(processed, attrib, "local space CP", -1, "position_combine") //uses the cpoint's angles to rotate the output in some odd way, can be used to make a position sort-of-rotate with the cpoint, or make colors change as it spins
 		end,
 		["remap initial distance to control point to scalar"] = function(processed, attrib)
-			local pattrib = ParticleAttributeNames[attrib["output field"]] or "nil" //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug //TODO: radius is default in pet, should we be defaulting to that in cases where a pcf lacks this value?
-			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["label"] = pattrib})
+			local label = ParticleAttributeNames[attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS] //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
+			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["label"] = label})
 		end,
 		["remap scalar to vector"] = function(processed, attrib)
 			if (attrib["output field"] or 0) then //cpoint is only used by position vector (0) to make the position relative to that cpoint (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3155)

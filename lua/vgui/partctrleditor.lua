@@ -666,7 +666,7 @@ function PANEL:RebuildControls()
 						//Color sets the color of the particle, with the output measured in 0 0 0 = black and 1 1 1 = white. Output values under 0 or over 1 don't seem to do anything different, so
 						//no additive color or negative color wackiness here.
 	
-						if tab.label == "Color" then
+						if tab.colorpicker then
 							local col = vgui.Create("DColorMixer", pnl)
 							col:SetAlphaBar(false)
 							col:Dock(TOP)
@@ -724,8 +724,8 @@ function PANEL:RebuildControls()
 									end
 									slider:SetMinMax(tab.outMin[i], tab.outMax[i])
 								end
-								if istable(tab.default) then
-									slider:SetDefaultValue(tab.default[i])
+								if tab.default != nil then
+									slider:SetDefaultValue(math.Remap(tab.default[i], tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i]))
 								else
 									slider:SetDefaultValue(0)
 								end
@@ -830,7 +830,11 @@ function PANEL:RebuildControls()
 								else
 									slider:SetMinMax(outMin, outMax)
 								end
-								slider:SetDefaultValue(tab.default or 0)
+								if tab.default != nil then
+									slider:SetDefaultValue(math.Remap(tab.default, inMin, inMax, outMin, outMax))
+								else
+									slider:SetDefaultValue(0)
+								end
 								if tab.decimals != nil then slider:SetDecimals(tab.decimals) end //don't "or" this because then it won't work if it's set to 0
 								slider:SetDark(true)
 								slider:SetHeight(18)
