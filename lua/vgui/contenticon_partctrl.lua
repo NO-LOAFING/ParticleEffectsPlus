@@ -601,7 +601,7 @@ function PANEL:OpenMenu()
 		end):SetIcon("icon16/bin_closed.png")
 	end
 
-	//developer control to reload a .pcf file manually
+	//developer controls to reload a .pcf file manually, or dump pcf data into console
 	if GetConVarNumber("developer") >= 1 then
 		menu:AddSpacer()
 
@@ -611,6 +611,19 @@ function PANEL:OpenMenu()
 			net.Start("PartCtrl_ReloadPCF_SendToSv")
 				net.WriteString(self.pcf)
 			net.SendToServer()
+		end)
+
+		if !self.utilfx then
+			menu:AddOption("Print raw PCF data for this effect", function()
+				MsgN("PartCtrl_ReadPCF(\"" .. self.pcf .. "\")[\"" .. self.name .. "\"]:")
+				PrintTable(PartCtrl_ReadPCF(self.pcf)[self.name])
+				MsgN()
+			end)
+		end
+
+		menu:AddOption("Print processed PCF data for this effect", function()
+			MsgN("PartCtrl_ProcessedPCFs[\"" .. self.pcf .. "\"][\"" .. self.name .. "\"]:")
+			PrintTable(PartCtrl_ProcessedPCFs[self.pcf][self.name])
 		end)
 	end
 

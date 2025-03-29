@@ -2264,14 +2264,34 @@ function PartCtrl_ReadPCF(filename)
 	//we *could* run file.Delete("temp_partctrl_readpcfcache.txt", "DATA") after we're done with it, but that doesn't seem necessary; 
 	//there's only ever one of these files at a time and they're not that big, it'd just be another write operation on the user's HD for no benefit
 
+	local version
 	local header = ReadUntilNull(f)
 	//MsgN(header)
-	if header != "<!-- dmx encoding binary 2 format pcf 1 -->\n" and header != "<!-- dmx encoding binary 2 format dmx 1 -->\n" then MsgN(filename, " has unsupported pcf format ", string.TrimRight(header, "\n"), ", ignoring") return end //note: binary 2 format dmx 1 (only used by css's fire_medium_01.pcf) appears to be identical to orangebox's binary 2 format pcf 1
-	//TODO 3/22/25: the most recent update made gmod able to read other pcf formats; we'll need to test multiple other games on this list to make sure we can read and process their pcfs properly (https://developer.valvesoftware.com/wiki/PCF#File_Format)
-	//this will require this function to be fundamentally restructured and have different processing funcs for each dmx format
+	if header == "<!-- dmx encoding binary 2 format pcf 1 -->\n" //used by all orange box pcfs
+	or header == "<!-- dmx encoding binary 2 format dmx 1 -->\n" //only used by css's fire_medium_01.pcf, appears to be identical to orangebox's binary 2 format pcf 1
+	or header == "<!-- dmx encoding binary 3 format pcf 1 -->\n" //only used by portal 2's clouds.pcf
+	or header == "<!-- dmx encoding binary 3 format pcf 2 -->\n" //used by a few portal 2 pcfs; this and the above don't seem to have any formatting differences from binary 2
+	then 
+		version = 2
+	elseif header == "<!-- dmx encoding binary 4 format pcf 2 -->\n" then
+		//TODO: this is untested, wiki says this is used exclusively by l4d2 particles, need to install that game and test them
+		version = 4
+	elseif header == "<!-- dmx encoding binary 5 format pcf 2 -->\n" then
+		version = 5
+	else
+		MsgN(filename, " has unsupported pcf format ", string.TrimRight(header, "\n"), ", ignoring")
+		return
+	end
 
 
-	local nStrings = f:ReadUShort() //this is a short in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+	local nStrings
+	if version <= 3 then
+		nStrings = f:ReadUShort() //this is a short in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+	else
+		nStrings = f:ReadULong() //TODO: getting conflicting info from the wiki; 
+		//one page says this is an int in both version 4 and 5 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions / https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3
+		//while another says it's an int in version 4 only, which doesn't make sense https://developer.valvesoftware.com/wiki/PCF#String_Dictionary
+	end
 	local StringDict = {}
 	//MsgN(filename, " nStrings = ", nStrings)
 	for k = 0, nStrings - 1 do
@@ -2281,14 +2301,23 @@ function PartCtrl_ReadPCF(filename)
 	//PrintTable(StringDict)
 
 
-	local nElements = f:ReadULong() //int, is ReadLong the right way to interpret this?
+	local nElements = f:ReadULong() //int
 	//MsgN(filename, " nElements = ", nElements)
 
 	local function DmeHeader()
 		local tab = {}
-		local type = f:ReadUShort() //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
-		tab.Type = StringDict[type]
-		tab.Name = ReadUntilNull(f) //element names are in-line strings in DMX version 2 https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3
+		if version <= 3 then
+			tab.Type = StringDict[f:ReadUShort()] //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+			tab.Name = ReadUntilNull(f) //element names are in-line strings in DMX version 2 https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3
+		elseif version == 4 then
+			//in version 4, element names are also stored in the string dictionary, but string dictionary indices are still shorts https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary / https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+			tab.Type = StringDict[f:ReadUShort()]
+			tab.Name = StringDict[f:ReadUShort()]
+		elseif version == 5 then
+			//in version 5, string dictionary indices are now ints https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary / https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+			tab.Type = StringDict[f:ReadULong()]
+			tab.Name = StringDict[f:ReadULong()]
+		end
 		//tab.GUID = f:Read(16) //GUID[16]
 		f:Skip(16) //GUID[16], just skip this one
 		return tab
@@ -2302,9 +2331,12 @@ function PartCtrl_ReadPCF(filename)
 
 	local function DmAttribute()
 		local tab = {}
-		local name = f:ReadUShort() //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
-		//MsgN("name = ", StringDict[name])
-		tab.Name = StringDict[name]
+		if version <= 4 then
+			tab.Name = StringDict[f:ReadUShort()] //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+		elseif version == 5 then
+			tab.Name = StringDict[f:ReadULong()]
+		end
+		//MsgN("name = ", tab.Name)
 		if !tab.Name then return tab end //if we returned a bad attribute, bail out immediately; NOTE 3/22/25: this and all the file-reading checks with error messages below were to address a bug with PCFs packed into compressed map files, which would start returning garbage with a "Warning! LZMA compression header is invalid! Extraction failed! particles\_.pcf ( ERR: 1 )" error in console after an arbitrary point; this bug was fixed by the most recent gmod update, so this may no longer be necessary
 		//local at = math.BinToInt(f:Read(1)) or 0 //returns nil
 		//local at = math.BinToInt(ReadUntilNull(f)) or 0
@@ -2312,7 +2344,7 @@ function PartCtrl_ReadPCF(filename)
 		//MsgN("at ", at, " = ", a[at])
 		at = a[at] or ""
 		tab.AttributeType = at
-		local function DoAttribute()
+		local function DoAttribute(is_array)
 			//MsgN("at = ", at)
 			if at == "ATTRIBUTE_ELEMENT" then
 				return f:ReadLong()
@@ -2323,7 +2355,15 @@ function PartCtrl_ReadPCF(filename)
 			elseif at == "ATTRIBUTE_BOOLEAN" then
 				return f:ReadBool()
 			elseif at == "ATTRIBUTE_STRING" then
-				return ReadUntilNull(f)
+				if version <= 3 or is_array then //in higher versions, arrays of strings still use null-terminated strings instead of being stored in the string dictionary
+					return ReadUntilNull(f)
+				elseif version == 4 then
+					return StringDict[f:ReadUShort()] //TODO: conflicting info about this;
+					//one page claims it's a short in version 4 (https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary), which matches the headers;
+					//another page claims it's a long in version 4 (https://developer.valvesoftware.com/wiki/DMX/Binary#Attribute_Values)
+				elseif version == 5 then
+					return StringDict[f:ReadULong()]
+				end
 			elseif at == "ATTRIBUTE_BINARY" then
 				local count = f:ReadULong()
 				return f:Read(count)
@@ -2350,7 +2390,7 @@ function PartCtrl_ReadPCF(filename)
 				local arraysize = f:ReadULong() //int, is ReadULong the right way to interpret this?
 				if arraysize > 1000 then MsgN(filename, " got crazy array size ", arraysize, " - we screwed up file reading somewhere, report this bug!") return end
 				for i = 1, arraysize do
-					table.insert(tab2, DoAttribute())
+					table.insert(tab2, DoAttribute(true))
 				end
 				return tab2
 			end
@@ -2937,19 +2977,19 @@ local processfuncs = {
 		["movement lock to bone"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "control_point_number", "position_combine", {["ignore_outputs"] = true}) //this cpoint sets an associated model, not a position, so outputs don't override it
 			processed["movement_lock"] = processed["movement_lock"] or {}
-			processed["movement_lock"][attrib["control_point_number"]] = true
+			processed["movement_lock"][attrib["control_point_number"] or 0] = true
 		end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Movement_Lock_to_Bone)
 		["movement lock to control point"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "control_point_number", "position_combine")
 			processed["movement_lock"] = processed["movement_lock"] or {}
-			processed["movement_lock"][attrib["control_point_number"]] = true
+			processed["movement_lock"][attrib["control_point_number"] or 0] = true
 		end,
 		["movement maintain position along path"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "start control point number", nil, {["sets_particle_pos"] = true})
 			cpoint_from_attrib_value(processed, attrib, "end control point number", nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
 			//if there's no way for other cpoint attribs (like the ones that initialize in a box/sphere) to influence the particles because this attrib forces them onto a very specific path, then don't make position controls for those cpoints
 			//this functionality was intended for constraints, but this operator does the same thing
-			if attrib["maximum distance"] < 1 then
+			if (attrib["maximum distance"] or 0) < 1 then
 				processed["constraint_does_override"] = true //global value on the effect, not cpoint-specific
 			end
 		end,
