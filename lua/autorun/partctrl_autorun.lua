@@ -2970,7 +2970,40 @@ end
 local processfuncs = {
 	["renderers"] = {
 		["render models"] = function(processed, attrib) processed["has_renderer"] = true end, //add this value manually for each renderer attribute, rather than doing it in _generic, so that we can catch fx that don't have a valid one, like those ep2 blob fx
-		["render_rope"] = function(processed, attrib) processed["has_renderer"] = true end,
+		["render_rope"] = function(processed, attrib)
+			//this definitely isn't how this is intended to be used lol; GOTTA SUPPORT IT ANYWAY
+			if ((attrib["scale CP start"] or -1) > -1) and ((attrib["scale CP end"] or -1) > -1) then
+				local scalar = nil
+				for varname, label in pairs({
+					["scale texture by CP distance"] = "texture",
+					["scale scroll by CP distance"] = "scroll",
+					["scale offset by CP distance"] = "offset",
+				}) do
+					if attrib[varname] then
+						if !scalar then
+							scalar = "Rope " .. label
+						else
+							scalar = scalar .. ", " .. label
+						end
+					end
+				end
+				if scalar then
+					scalar = scalar .. " scale"
+					cpoint_from_attrib_value(processed, attrib, "scale CP end", -1, "axis", {
+						["axis"] = 0, //arbitrary; any axis will work for this, but ent_partctrl:StartParticle checks which_0 for relative_to_cpoint
+						["label"] = scalar,
+						["inMin"] = 0,
+						["outMin"] = 0,
+						["inMax"] = 1024, //arbitrary max scale; these are really small units and are meant to rescale the beam texture to be suitable for a beam X units long
+						["outMax"] = 1024,
+						["default"] = 100, //arbitrary default
+						["relative_to_cpoint"] = attrib["scale CP start"] or -1 //?
+					})
+					cpoint_from_attrib_value(processed, attrib, "scale CP start", -1, "position_combine") //this is iffy; we assume the start cpoint might be attached to something while the end point isn't
+				end
+			end
+			processed["has_renderer"] = true
+		end,
 		["render_sprite_trail"] = function(processed, attrib) processed["has_renderer"] = true end,
 		["render_animated_sprites"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "orientation control point", -1, "position_combine")
@@ -3243,19 +3276,21 @@ local processfuncs = {
 		["position along epitrochoid"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "control point number", 0, nil, {["sets_particle_pos"] = true})
 			if (attrib["scale from conrol point (radius 1/radius 2/offset)"] or -1) > -1 then //sic (conrol point)
-				local function DoEpitrochoidAxis(axis, axisv, default)
+				local function DoEpitrochoidAxis(axis, axisv, default, min)
 					if (attrib[axisv] or default) != 0 then
 						cpoint_from_attrib_value(processed, attrib, "scale from conrol point (radius 1/radius 2/offset)", -1, "axis", {
 							["axis"] = axis,
 							["label"] = "Epitrochoid " .. axisv .. " multiplier",
-							//no min/max
+							["inMin"] = min,
+							["outMin"] = min,
+							//no max
 							["default"] = 1,
 						})
 					end
 				end
 				DoEpitrochoidAxis(0, "radius 1", 40)
 				DoEpitrochoidAxis(1, "radius 2", 24)
-				DoEpitrochoidAxis(2, "point offset", 4)
+				DoEpitrochoidAxis(2, "point offset", 4, 0) //no point in negatives for this one
 			end
 		end,
 		["position along path random"] = function(processed, attrib)
@@ -3293,7 +3328,7 @@ local processfuncs = {
 			//"Override CP (X/Y/Z *= Radius/Thickness/Speed)" and "Override CP 2 (X/Y/Z *= Pitch/Yaw/Roll)" control those things with the values of the cpoint
 			//These are all MULTIPLIERS so an axis doesn't do anything if the value is 0, ignore those
 			//Unlike remap control point to vector, pitch/yaw/roll are in degrees, not radians
-			local function DoRingAxis(cpoint, axis, axisv)
+			local function DoRingAxis(cpoint, axis, axisv, min)
 				if (attrib[cpoint] or -1) > -1 then
 					local doaxis = false
 					if axisv == "speed" then //this one uses two values so it has special handling 
@@ -3309,15 +3344,17 @@ local processfuncs = {
 						cpoint_from_attrib_value(processed, attrib, cpoint, -1, "axis", {
 							["axis"] = axis,
 							["label"] = "Ring " .. axisv .. " multiplier",
-							//no min/max
+							["inMin"] = min,
+							["outMin"] = min,
+							//no max
 							["default"] = 1,
 						})
 					end
 				end
 			end
-			DoRingAxis("Override CP (X/Y/Z *= Radius/Thickness/Speed)", 0, "initial radius")
-			DoRingAxis("Override CP (X/Y/Z *= Radius/Thickness/Speed)", 1, "thickness")
-			DoRingAxis("Override CP (X/Y/Z *= Radius/Thickness/Speed)", 2, "speed")
+			DoRingAxis("Override CP (X/Y/Z *= Radius/Thickness/Speed)", 0, "initial radius", 0) //no point in negatives for these ones
+			DoRingAxis("Override CP (X/Y/Z *= Radius/Thickness/Speed)", 1, "thickness", 0)
+			DoRingAxis("Override CP (X/Y/Z *= Radius/Thickness/Speed)", 2, "speed", 0)
 			DoRingAxis("Override CP 2 (X/Y/Z *= Pitch/Yaw/Roll)", 0, "pitch")
 			DoRingAxis("Override CP 2 (X/Y/Z *= Pitch/Yaw/Roll)", 1, "yaw")
 			DoRingAxis("Override CP 2 (X/Y/Z *= Pitch/Yaw/Roll)", 2, "roll")
@@ -3380,6 +3417,30 @@ local processfuncs = {
 		end,
 		["position within sphere random"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
+			if (attrib["scale cp (distance/speed/local speed)"] or -1) > -1 then
+				local function DoSphereAxis(axis, label, axisvs, min)
+					local doaxis = false
+					for k, v in pairs (axisvs) do
+						if (attrib[k] or v) != v then
+							doaxis = true
+							break
+						end
+					end
+					if doaxis then
+						cpoint_from_attrib_value(processed, attrib, "scale cp (distance/speed/local speed)", -1, "axis", {
+							["axis"] = axis,
+							["label"] = "Sphere " .. label .. " multiplier",
+							["inMin"] = min,
+							["outMin"] = min,
+							//no max
+							["default"] = 1,
+						})
+					end
+				end
+				DoSphereAxis(0, "distance", {["distance_min"] = 0, ["distance_max"] = 0}, 0) //no point in negative scale for this one
+				DoSphereAxis(1, "speed", {["speed_min"] = 0, ["speed_max"] = 0})
+				DoSphereAxis(2, "local speed", {["speed_in_local_coordinate_system_min"] = Vector(), ["speed_in_local_coordinate_system_max"] = Vector()})
+			end
 		end,
 		["remap control point to scalar"] = function(processed, attrib)
 			//like the operator of the same name

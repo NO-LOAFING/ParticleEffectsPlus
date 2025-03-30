@@ -402,7 +402,7 @@ if CLIENT then
 			local window = IsValid(self.PartCtrlWindow) and g_ContextMenu:IsVisible()
 			local ptab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]
 			for k, v in pairs (self.ParticleInfo) do
-				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+				if ptab.cpoints[k] and ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
 					if IsValid(v.ent) then
 						if window or v.ent.PartCtrl_Grip then //hide helpers when they're attached to other ents unless the window is open
 							//Draw particle effect helpers (numbers showing cpoint id, arrows showing cpoint orientation)
