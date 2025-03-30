@@ -3020,6 +3020,20 @@ local processfuncs = {
 			end
 		end,
 		["movement match particle velocities"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point to Broadcast Speed and Direction To", -1, "output") end, //pet doesn't add control for this; sets all 3 axes of the cpoint's position vector to the speed, and sets the cpoint's angle to face the direction (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_ops.cpp#L3788)
+		["movement max velocity"] = function(processed, attrib)
+			local axis = attrib["Override CP field"] or 0
+			if axis > -1 then
+				cpoint_from_attrib_value(processed, attrib, "Override Max Velocity from this CP", -1, "axis", {
+					["axis"] = axis,
+					["label"] = "Max Velocity",
+					["inMin"] = 0,
+					["outMin"] = 0,
+					["inMax"] = 2500, //arbitrary max, because the default max of 10 is too low;
+					["outMax"] = 2500, //no idea if this is good, because i can't find any existing fx using this
+					["default"] = 1,
+				})
+			end
+		end,
 		["movement rotate particle around axis"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point", 0) end,
 		["remap control point to scalar"] = function(processed, attrib)
 			//controls a whole bunch of stuff (lifetime, radius, alpha, etc.) with the value of a single axis of the cpoint, definitely not a position control
@@ -3094,7 +3108,6 @@ local processfuncs = {
 				["colorpicker"] = colorpicker,
 			})
 			cpoint_from_attrib_value(processed, attrib, "local space CP", -1, "position_combine") //uses the cpoint's angles to rotate the output in some odd way, can be used to make a position sort-of-rotate with the cpoint, or make colors change as it spins
-			processed["test"] = true
 		end,
 		["remap cp speed to cp"] = function(processed, attrib)
 			local axis = attrib["Output field 0-2 X/Y/Z"] or 0
@@ -3246,12 +3259,34 @@ local processfuncs = {
 			end
 		end,
 		["position along path random"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "start control point number", 0, nil, {["sets_particle_pos"] = true})
-			cpoint_from_attrib_value(processed, attrib, "end control point number", 0, nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
+			if attrib["randomly select sequential CP pairs between start and end points"] then
+				//uses all cpoints from start to end
+				local startp = attrib["start control point number"] or 0
+				local endp = attrib["end control point number"] or 0
+				local name = attrib._categoryName .. " " .. attrib.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
+				for i = startp, endp do
+					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {["sets_particle_pos"] = true})
+				end
+			else
+				//uses start and end cpoint only
+				cpoint_from_attrib_value(processed, attrib, "start control point number", 0, nil, {["sets_particle_pos"] = true})
+				cpoint_from_attrib_value(processed, attrib, "end control point number", 0, nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
+			end
 		end,
 		["position along path sequential"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "start control point number", 0, nil, {["sets_particle_pos"] = true})
-			cpoint_from_attrib_value(processed, attrib, "end control point number", 0, nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
+			if attrib["Use sequential CP pairs between start and end point"] then
+				//uses all cpoints from start to end
+				local startp = attrib["start control point number"] or 0
+				local endp = attrib["end control point number"] or 0
+				local name = attrib._categoryName .. " " .. attrib.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
+				for i = startp, endp do
+					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {["sets_particle_pos"] = true})
+				end
+			else
+				//uses start and end cpoint only
+				cpoint_from_attrib_value(processed, attrib, "start control point number", 0, nil, {["sets_particle_pos"] = true})
+				cpoint_from_attrib_value(processed, attrib, "end control point number", 0, nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
+			end
 		end,
 		["position along ring"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "control point number", 0, nil, {["sets_particle_pos"] = true})
@@ -3336,7 +3371,12 @@ local processfuncs = {
 			})
 		end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_position#Position_on_Model_Random)
 		["position within box random"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "control point number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
+			if attrib["use local space"] then 
+				 //if this var is set, then the cpoint controls the angle of the box, but not the position. this feels like a bug, but alright.
+				cpoint_from_attrib_value(processed, attrib, "control point number", 0, "position_combine")
+			else
+				cpoint_from_attrib_value(processed, attrib, "control point number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
+			end
 		end,
 		["position within sphere random"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
@@ -3501,6 +3541,17 @@ local processfuncs = {
 			if max > 0 then
 				processed["has_emitter"] = true
 			end
+			local axis = attrib["emission count scale control point field"] or 0
+			if axis > -1 then
+				cpoint_from_attrib_value(processed, attrib, "emission count scale control point", -1, "axis", {
+					["axis"] = axis,
+					["label"] = "Emission Count Scale",
+					["inMin"] = 0,
+					["outMin"] = 0,
+					//no max
+					["default"] = 1,
+				})
+			end
 		end,
 		//"emit noise" and "emit_continuously" have "scale emission to used control points", which wiki claims is a cpoint id, but it's actually a float that's multiplied by the number of cpoints the effect has, we don't care about this (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_emitters.cpp#L449)
 		["emit_instantaneously"] = function(processed, attrib)
@@ -3514,7 +3565,7 @@ local processfuncs = {
 				cpoint_from_attrib_value(processed, attrib, "emission count scale control point", -1, "axis", {
 					["axis"] = axis,
 					["label"] = "Emission Count Scale",
-					["inMin"] = 0, //will crash if value is set to less than 0
+					["inMin"] = 0,
 					["outMin"] = 0,
 					//no max
 					["default"] = 1,
