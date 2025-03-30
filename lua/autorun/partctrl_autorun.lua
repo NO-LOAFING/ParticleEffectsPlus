@@ -2153,7 +2153,7 @@ partctrl_cpointbits = 7 //-1 - 63
 
 partctrl_wait = "wait" //another convenient global, used by particlesystems that can't currently be created (due to CrashCheck or a disabled particle entity) but should be created as soon as possible
 
-//for vector/axis cpoints; names and comments from https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/public/particles/particles.h#L62
+//for vector/axis cpoints; names and comments from https://github.com/SourceSDK2013Ports/csgo-src/blob/main/src/public/particles/particles.h#L78
 PARTCTRL_PARTICLE_ATTRIBUTE_XYZ = 0 // required
 PARTCTRL_PARTICLE_ATTRIBUTE_LIFE_DURATION = 1 // particle lifetime (duration) of particle as a float.
 PARTCTRL_PARTICLE_ATTRIBUTE_PREV_XYZ = 2 // prev coordinates for verlet integration
@@ -2168,35 +2168,51 @@ PARTCTRL_PARTICLE_ATTRIBUTE_TRAIL_LENGTH = 10 // length of the trail
 PARTCTRL_PARTICLE_ATTRIBUTE_PARTICLE_ID = 11 // unique particle identifier
 PARTCTRL_PARTICLE_ATTRIBUTE_YAW = 12 // unique rotation around up vector
 PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 = 13 // second sequnece # (which animation sequence number this particle uses )
-PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_INDEX = 14 // hit box index //The lowest on the list that shows up in pet's attribute field is sequence number 1, so we *probably* don't need to waste another bit on the rest of these, but maybe custom particles could use these for goofy shenanigans so network them anyway.
+PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_INDEX = 14 // hit box index
 PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ = 15
 PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 = 16
-PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P0 = 17 // particle trace caching fields // start pnt of trace
-PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P1 = 18 // end pnt of trace
-PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_T = 19 // 0..1 if hit
-PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL = 20 // 0 0 0 if no hit
-local ParticleAttributeNames = { //names and comments from https://github.com/nillerusr/source-engine/blob/master/particles/particles.cpp#L3026
+PARTCTRL_PARTICLE_ATTRIBUTE_SCRATCH_VEC = 17 //scratch field used for storing arbitraty vec data
+PARTCTRL_PARTICLE_ATTRIBUTE_SCRATCH_FLOAT = 18 //scratch field used for storing arbitraty float data	
+PARTCTRL_PARTICLE_ATTRIBUTE_UNUSED = 19
+PARTCTRL_PARTICLE_ATTRIBUTE_PITCH = 20
+PARTCTRL_PARTICLE_ATTRIBUTE_NORMAL = 21 // 0 0 0 if none
+PARTCTRL_PARTICLE_ATTRIBUTE_GLOW_RGB = 22 // glow color
+PARTCTRL_PARTICLE_ATTRIBUTE_GLOW_ALPHA = 23 // glow alpha
+//old attributes from pre-csgo particles https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/public/particles/particles.h#L62
+//PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P0 = 17 // particle trace caching fields // start pnt of trace
+//PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P1 = 18 // end pnt of trace
+//PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_T = 19 // 0..1 if hit
+//PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL = 20 // 0 0 0 if no hit
+local ParticleAttributeNames = { //names and comments from https://github.com/SourceSDK2013Ports/csgo-src/blob/main/src/particles/particles.cpp#L3782
 	[PARTCTRL_PARTICLE_ATTRIBUTE_XYZ] = "Position", // XYZ, 0
 	[PARTCTRL_PARTICLE_ATTRIBUTE_LIFE_DURATION] = "Life Duration", // LIFE_DURATION, 1 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_PREV_XYZ] = "PARTICLE_ATTRIBUTE_PREV_XYZ (internal)", //NULL, // PREV_XYZ is for internal use only
+	[PARTCTRL_PARTICLE_ATTRIBUTE_PREV_XYZ] = "Position Previous", // PREV_XYZ 
 	[PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS] = "Radius", // RADIUS, 3 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION] = "Roll", // ROTATION, 4 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION_SPEED] = "Roll Speed", // ROTATION_SPEED, 5 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB] = "Color", // TINT_RGB, 6 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA] = "Alpha", // ALPHA, 7 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_CREATION_TIME] = "Creation Time", // CREATION_TIME, 8 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER] = "Sequence", //"Sequence Number", // SEQUENCE_NUMBER, 9 );
+	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER] = "Sequence", //better display name; original: "Sequence Number", // SEQUENCE_NUMBER, 9 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TRAIL_LENGTH] = "Trail Length", // TRAIL_LENGTH, 10 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_PARTICLE_ID] = "Particle ID", // PARTICLE_ID, 11 ); 
 	[PARTCTRL_PARTICLE_ATTRIBUTE_YAW] = "Yaw", // YAW, 12 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Sequence 2", //"Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_INDEX] = "PARTICLE_ATTRIBUTE_HITBOX_INDEX (internal)", //NULL, // HITBOX_INDEX is for internal use only
-	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ] = "PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ (internal)", //NULL, // HITBOX_XYZ_RELATIVE is for internal use only
-	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2] = "Alpha 2", //"Alpha Alternate", // ALPHA2, 16
-	[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P0] = "PARTICLE_ATTRIBUTE_TRACE_P0 (internal)",
-	[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P1] = "PARTICLE_ATTRIBUTE_TRACE_P1 (internal)",
-	[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_T] = "PARTICLE_ATTRIBUTE_TRACE_HIT_T (internal)",
-	[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL] = "PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL (internal)"
+	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Sequence 2", //better display name; original: "Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
+	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_INDEX] = "Hitbox Index", // HITBOX_INDEX, 14
+	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ] = "Hitbox Offset Position", // HITBOX_XYZ_RELATIVE 15
+	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2] = "Alpha 2", //better display name; original: "Alpha Alternate", // ALPHA2, 16
+	[PARTCTRL_PARTICLE_ATTRIBUTE_SCRATCH_VEC] = "Scratch Vector", // SCRATCH_VEC 17
+	[PARTCTRL_PARTICLE_ATTRIBUTE_SCRATCH_FLOAT] = "Scratch Float", // SCRATCH_FLOAT 18
+	[PARTCTRL_PARTICLE_ATTRIBUTE_UNUSED] = "Unused Particle Attribute", //NULL,
+	[PARTCTRL_PARTICLE_ATTRIBUTE_PITCH] = "Pitch", // PITCH, 20
+	[PARTCTRL_PARTICLE_ATTRIBUTE_NORMAL] = "Normal", // NORMAL, 21
+	[PARTCTRL_PARTICLE_ATTRIBUTE_GLOW_RGB] = "Glow RGB", //GLOW_RGB,22 //i don't think these last two are implemented in gmod, actually? doesn't matter
+	[PARTCTRL_PARTICLE_ATTRIBUTE_GLOW_ALPHA] = "Glow Alpha", //GLOW_ALPHA,23
+	//old attributes from pre-csgo particles https://github.com/nillerusr/source-engine/blob/master/particles/particles.cpp#L3026
+	//[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P0] = "PARTICLE_ATTRIBUTE_TRACE_P0 (internal)",
+	//[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P1] = "PARTICLE_ATTRIBUTE_TRACE_P1 (internal)",
+	//[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_T] = "PARTICLE_ATTRIBUTE_TRACE_HIT_T (internal)",
+	//[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL] = "PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL (internal)"
 }
 
 //from the only good glua file parser code i could find on github; we use this to get strings (https://github.com/RaphaelIT7/gmod-lua-gma-writer/blob/master/gma.lua#L202)
