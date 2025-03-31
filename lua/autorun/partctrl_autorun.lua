@@ -2840,7 +2840,8 @@ function PartCtrl_GetParticlesWithAttrib(desiredfunc, filename, extended)
 					if istable(attribs) then
 						for k, v in pairs (attribs) do
 							if istable(v) and v.functionName and string.lower(v.functionName) == string.lower(desiredfunc) then
-								MsgN("(", filename, ") ", particle)
+								//MsgN("(", filename, ") ", particle)
+								MsgN(particle, " ", filename) //actually do it like this so it's easier to spawn them in console
 								if extended then
 									PrintTable(v)
 									MsgN("")
@@ -3038,12 +3039,34 @@ local processfuncs = {
 			["ignore_outputs"] = true, //this cpoint sets an associated model, not a position, so outputs don't override it
 		}) end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Cull_relative_to_model, yeah it's on the wrong page); pet doesn't add a control for this
 		["cull when crossing plane"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point for point on plane", 0) end,
+		["cull when crossing sphere"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point", 0) end,
+		["lifespan maintain count decay"] = function(processed, attrib)
+			local axis = attrib["maintain count scale control point field"] or 0
+			if axis > -1 then
+				cpoint_from_attrib_value(processed, attrib, "maintain count scale control point", -1, "axis", {
+					["axis"] = axis,
+					["label"] = "Maintain Count Scale",
+					["inMin"] = 0,
+					["outMin"] = 0,
+					//no max
+					["default"] = 1,
+				})
+			end
+		end,
 		["movement basic"] = function(processed, attrib)
 			//stupid handling for one effect that has a cpoint with just a force "move towards control point", but also maximum drag on its movement basic that makes the force not work (particles/taunt_fx.pcf taunt_yeti_fistslam_whirlwind)
 			if (attrib["drag"] or 0) >= 0.98 then
 				processed["drag_does_override"] = true //global value on the effect, not cpoint-specific
 			end
 		end,
+		--[[["movement lag compensation"] = function(processed, attrib)
+			//description: "Movement Lag Compensation - Sets a speed and decelerates it based on an input lag amount (Sort of DotA specific)"
+			//in practice, uses the length of (or the value of an axis of) one cpoint to set the desired speed, and then uses the value of
+			//another cpoint's axis (which is meant to be a ping value?) to do some remapping math to multiply that speed by up to 3.
+			https://github.com/kallinosis-dev/srcmodbase-source/blob/dev/particles/builtin_particle_ops.cpp#L8142
+			//this is complicated and i can't find any existing fx using it, so it's hard to say what controls we should add to support it.
+			//leave this blank until we find an effect we need to add support for.
+		end,]]
 		["movement dampen relative to control point"] = function(processed, attrib) 
 			if attrib["falloff range"] >= 5 then //don't process if this value is too small to do anything (lots of ep2 electrical fx have extra useless cpoints with only these for whatever reason)
 				cpoint_from_attrib_value(processed, attrib, "control_point_number", 0)
@@ -3059,6 +3082,28 @@ local processfuncs = {
 			processed["movement_lock"] = processed["movement_lock"] or {}
 			processed["movement_lock"][attrib["control_point_number"] or 0] = true
 		end,
+		["movement lock to saved position along path"] = function(processed, attrib)
+			//this is intended to use matching cpoints with position along path sequential, but you can set them to different
+			//cpoints to make wacky nonsense where those cpoints move the effect instead, which to be fair is the sort of thing
+			//position_combine is for, since that's not likely to be intended.
+			//only works if the saved position is set by something like initializer "Position Along Path Sequential" with "Save Offset" enabled;
+			//and some fx designers include this anyway even though it doesn't work (smissmas2021_unusuals.pcf unusual_smissmas_tree_* fx),
+			//so we definitely don't want to make position controls for these.
+			if attrib["Use sequential CP pairs between start and end point"] then
+				//uses all cpoints from start to end
+				local startp = attrib["start control point number"] or 0
+				local endp = attrib["end control point number"] or 1
+				local name = attrib._categoryName .. " " .. attrib.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
+				for i = startp, endp do
+					PartCtrl_CPoint_AddToProcessed(processed, i, name, "position_combine")
+				end
+			else
+				//uses start and end cpoint only
+				cpoint_from_attrib_value(processed, attrib, "start control point number", 0, "position_combine")
+				cpoint_from_attrib_value(processed, attrib, "end control point number", 1, "position_combine") //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
+			end
+		end,
+		["movement maintain offset"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Local Space CP", 0, "position_combine") end, //rotates the "desired offset" value by the angles of the cpoint; follow the precedent of angle-only cpoints being combined
 		["movement maintain position along path"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "start control point number", 0, nil, {["sets_particle_pos"] = true})
 			cpoint_from_attrib_value(processed, attrib, "end control point number", 0, nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
@@ -3106,7 +3151,8 @@ local processfuncs = {
 				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
 					default = inMax //alpha should default to max visibility
 				end
-				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax)) //make sure the default value of the slider in the edit window isn't outside its range (see tf2 speech_mediccall)
+				//make sure the default value of the control in the edit window isn't outside its range (see tf2 speech_mediccall)
+				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
 				if is_multiplier then
 					label = label .. " Scale"
 				end
@@ -3144,6 +3190,10 @@ local processfuncs = {
 				//default to 0
 				default = Vector(math.Remap(0, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(0, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(0, outMin.z, outMax.z, inMin.z, inMax.z))
 			end
+			for i = 1, 3 do
+				//make sure the default value of the control in the edit window isn't outside its range (see portal 2 portalgun_top_light_squiggles)
+				default[i] = math.Clamp(default[i], math.Remap(outMin[i], outMin[i], outMax[i], inMin[i], inMax[i]), math.Remap(outMax[i], outMin[i], outMax[i], inMin[i], inMax[i]))
+			end
 			if is_multiplier then
 				label = label .. " Scale"
 			end
@@ -3169,7 +3219,7 @@ local processfuncs = {
 			//is this what the wiki calls "Remap Control Point Direction to Vector"? (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Remap_Control_Point_Direction_to_Vector)
 			//if so, then it uses the angle of the cpoint to set the particle's Position, Roll, or Color value, so i guess this should either use a position control to set the angle with,
 			//or a manual angle input?
-			cpoint_from_attrib_value(processed, attrib, "control point", 0)
+			cpoint_from_attrib_value(processed, attrib, "control point", 0, "position_combine")
 			//this doesn't exist in any of the hl2/episodes/tf2 pcfs, so i don't know of any existing effects we need to accomodate. i'm not even sure what this would be used for; after 
 			//testing, the only potential uses i could find for this were setting the particle position to one based on the angle (output field Roll, normalize 1), or making the color 
 			//change based on the angle (ourput field Color, normalize 1). neither of these seems practical, and everything with normalize 0 seems glitchy and generates random noise. 
@@ -3177,6 +3227,8 @@ local processfuncs = {
 			//this seems to have been added in the june 2023 gmod update (https://gmod.facepunch.com/news/june-2023-update), from a 6-16-23 commit (https://discord.com/channels/565105920414318602/788473343065587723/1119340195381256242),
 			//so maybe this was backported from a newer pcf version, like portal 2 or csgo or something. TODO: check newer games' pcfs for use cases?
 			//update: found code for this, still can't find any practical use for it (https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L9390)
+			//update 2: after 3/26/25 update, found some actual fx that use this in portal 2's portals.pcf; which use it to set the new
+			//"normal" value; creates an extraneous cpoint that doesn't visibly do anything, so just position_combine it
 		end,
 		["remap distance between two control points to scalar"] = function(processed, attrib)
 			//this uses all the same scalars as remap control point to scalar, but actually uses the distance between two positions to get the value
@@ -3198,7 +3250,8 @@ local processfuncs = {
 			elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
 				default = inMax //alpha should default to max visibility
 			end
-			default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax)) //make sure the default value of the slider in the edit window isn't outside its range (see tf2 speech_mediccall)
+			//make sure the default value of the control in the edit window isn't outside its range (see tf2 speech_mediccall)
+			default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
 			if is_multiplier then
 				label = label .. " Scale"
 			end
@@ -3482,7 +3535,8 @@ local processfuncs = {
 				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
 					default = inMax //alpha should default to max visibility
 				end
-				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax)) //make sure the default value of the slider in the edit window isn't outside its range (see tf2 speech_mediccall)
+				//make sure the default value of the control in the edit window isn't outside its range (see tf2 speech_mediccall)
+				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
 				if is_multiplier then
 					label = label .. " Scale"
 				end
@@ -3519,6 +3573,10 @@ local processfuncs = {
 			else
 				//default to 0
 				default = Vector(math.Remap(0, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(0, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(0, outMin.z, outMax.z, inMin.z, inMax.z))
+			end
+			for i = 1, 3 do
+				//make sure the default value of the control in the edit window isn't outside its range (see portal 2 portalgun_top_light_squiggles)
+				default[i] = math.Clamp(default[i], math.Remap(outMin[i], outMin[i], outMax[i], inMin[i], inMax[i]), math.Remap(outMax[i], outMin[i], outMax[i], inMin[i], inMax[i]))
 			end
 			if is_multiplier then
 				label = label .. " Scale"
@@ -3829,7 +3887,7 @@ function PartCtrl_ProcessPCF(filename)
 				//a little heavy-handed? maybe. might result in some false positives in complex hierarchy trees. haven't found any actual examples of this causing problems,
 				//and we'd have to totally rework how we handle hierarchy here to make this more accurate (currently have no way to get the parent of a parent, etc. to check if
 				//it's using output_children).
-				local groupid = t[particle2]["group id"]
+				local groupid = t[particle2]["group id"] or 0
 
 				if parent then
 					for k, v in pairs (t2[parent].cpoints) do
