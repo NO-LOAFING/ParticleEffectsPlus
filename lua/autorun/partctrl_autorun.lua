@@ -3300,30 +3300,44 @@ local processfuncs = {
 			//processed["sets_particle_pos_on_children"] = groupid
 		end,
 		["set control point positions"] = function(processed, attrib)
-			local inputs = {
-				["First Control Point Parent"] = 0, //TODO: is it really necessary to add position controls for these cpoint movement parents?
-				["Second Control Point Parent"] = 0, //store default cpoints in tab values; these are all the same in this one, but not below
-				["Third Control Point Parent"] = 0,
-				["Fourth Control Point Parent"] = 0
+			local cpoints = {
+				[1] = {
+					["input"] = "First Control Point Parent",
+					["input_def"] = 0,
+					["output"] = "First Control Point Number",
+					["output_def"] = 1,
+				},
+				[2] = {
+					["input"] = "Second Control Point Parent",
+					["input_def"] = 0,
+					["output"] = "Second Control Point Number",
+					["output_def"] = 2,
+				},
+				[3] = {
+					["input"] = "Third Control Point Parent",
+					["input_def"] = 0,
+					["output"] = "Third Control Point Number",
+					["output_def"] = 3,
+				},
+				[4] = {
+					["input"] = "Fourth Control Point Parent",
+					["input_def"] = 0,
+					["output"] = "Fourth Control Point Number",
+					["output_def"] = 4,
+				},
 			}
+			local used_cpoint //fix some fx that have an output set to the main cpoint they're all offset from (tfc_sniper_charge_blue) - in these cases, the cpoint is not overridden
 			if !attrib["Set positions in world space"] then //according to code, only used if not setting in world space (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_ops.cpp#L2725)
-				inputs["Control Point to offset positions from"] = 0 //pet doesn't add control for this
-			end
-			local used_cpoints = {} //fix some fx that have an output set to the same cpoint id as an input (tfc_sniper_charge_blue) - in these cases, the cpoint is not overridden
-			for k, v in pairs (inputs) do
-				cpoint_from_attrib_value(processed, attrib, k, v, nil, {["doesnt_need_renderer_or_emitter"] = true})
-				used_cpoints[attrib[k] or v] = true
+				cpoint_from_attrib_value(processed, attrib, "Control Point to offset positions from", 0, nil, {["doesnt_need_renderer_or_emitter"] = true})
+				used_cpoint = attrib["Control Point to offset positions from"] or 0
 			end
 
-			local outputs = {
-				["First Control Point Number"] = 1,
-				["Second Control Point Number"] = 2,
-				["Third Control Point Number"] = 3,
-				["Fourth Control Point Number"] = 4
-			}
-			for k, v in pairs (outputs) do
-				if !used_cpoints[attrib[k] or v] then
-					cpoint_from_attrib_value(processed, attrib, k, v, "output")
+			for k, tab in pairs (cpoints) do
+				//do inputs - add position controls for the "parent" cpoints that move things around
+				cpoint_from_attrib_value(processed, attrib, tab.input, tab.input_def, nil, {["doesnt_need_renderer_or_emitter"] = true, ["remove_if_other_cpoint_is_empty"] = attrib[tab.output] or tab.output_def})
+				//then do outputs - remove position controls from the "child" cpoints that are having their positions overridden
+				if (attrib[tab.output] or tab.output_def) != used_cpoint then
+					cpoint_from_attrib_value(processed, attrib, tab.output, tab.output_def, "output")
 				end
 			end
 		end,
@@ -3882,6 +3896,7 @@ function PartCtrl_ProcessPCF(filename)
 			local output_axis = {}
 			local on_model = nil
 			local sets_particle_pos = nil
+			local remove_if_other_cpoint_is_empty = {}
 			local function SetCPointModes(particle2, parent)
 				//MsgN("Doing SetCPointModes for particle ", particle2, ", parent ", parent, "\nCurrent output_children:")
 				//a little heavy-handed? maybe. might result in some false positives in complex hierarchy trees. haven't found any actual examples of this causing problems,
@@ -3923,6 +3938,7 @@ function PartCtrl_ProcessPCF(filename)
 								modes[k] = PARTCTRL_CPOINT_MODE_NONE
 							end
 						end
+						remove_if_other_cpoint_is_empty[k] = {}
 						if v["position"] then
 							//If we're inheriting the cpoint mode from a child, make sure it's not from an attrib that shouldn't be inherited
 							local newtab = {}
@@ -3950,10 +3966,19 @@ function PartCtrl_ProcessPCF(filename)
 										end
 										did_output = false //make sure position_combine below doesn't override this
 									end
-									if modes[k] == PARTCTRL_CPOINT_MODE_POSITION and v2["on_model"] then
+									if modes[k] == PARTCTRL_CPOINT_MODE_POSITION then
 										//also make a list of all the cpoints that have "on_model" fx so that we can print extra info about it in spawnicons
-										on_model = on_model or {}
-										on_model[k] = true
+										if v2["on_model"] then
+											on_model = on_model or {}
+											on_model[k] = true
+										end
+										//also check for "remove_if_other_cpoint_is_empty"; we only care about this if ALL position controls for this cpoint have this
+										local remove = v2["remove_if_other_cpoint_is_empty"]
+										if remove != nil and remove_if_other_cpoint_is_empty[k] != nil then
+											remove_if_other_cpoint_is_empty[k][remove] = true
+										else
+											remove_if_other_cpoint_is_empty[k] = nil
+										end
 									end
 								end
 								if v2["sets_particle_pos"] then
@@ -4045,6 +4070,24 @@ function PartCtrl_ProcessPCF(filename)
 				end
 			end
 			CPointModesFromChildren(particle)
+
+			//Do remove_if_other_cpoint_is_empty thing for operator "set control point positions"; this operator has "parent" cpoints that move 
+			//around "child" cpoints, but if those child cpoints don't actually do anything, then the parent cpoints are useless, so remove them.
+			for k, v in pairs (remove_if_other_cpoint_is_empty) do
+				if istable(v) and table.Count(v) > 0 and modes[k] == PARTCTRL_CPOINT_MODE_POSITION then
+					local empty = true
+					for k2, _ in pairs (v) do
+						if t2[particle].cpoints_with_children[k2] and t2[particle].cpoints_with_children[k2].position then
+							empty = false
+							break
+						end
+					end
+					if empty then
+						//MsgN(particle, ": empty detected: cpoint ", k)
+						modes[k] = PARTCTRL_CPOINT_MODE_NONE
+					end
+				end
+			end
 
 			local shouldcull = !t2[particle].has_renderer or !t2[particle].has_emitter
 			local needfallback = true
