@@ -3128,7 +3128,25 @@ local processfuncs = {
 				})
 			end
 		end,
+		--[[["movement place on ground"] = function(processed, attrib)
+			//https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L9390
+			//uses the movement of the last two cpoints to throttle updates; if either one has moved enough from its previous pos,, then update immediately.
+			//also uses the movement of the first one to throttle something(?) involving interpolation the same way.
+			//no existing portal2/asw fx use this, is this a dota thing? can't even get a custom effect to use these in any meaningful way, ignore for now.
+			cpoint_from_attrib_value(processed, attrib, "interploation distance tolerance cp", -1, "position_combine") //sic
+			cpoint_from_attrib_value(processed, attrib, "reference CP 1", -1, "position_combine")
+			cpoint_from_attrib_value(processed, attrib, "reference CP 2", -1, "position_combine")
+		end,]]
 		["movement rotate particle around axis"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point", 0) end,
+		["normal lock to control point"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, "position_combine") end, //controls angle of Render Models fx; this is an angle control, so combine it
+		["remap average scalar value to cp"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "output control point", 1, "output") end, //overrides the cpoint's position to Vector(result,0,0) (https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L2602)
+		["remap control point direction to vector"] = function(processed, attrib) 
+			//like remap control point to vector, but it sets the vector to the forward normal vector of the cpoint's angle.
+			//can't really turn this into a set of sliders/color picker since that's not how normals work, and the only existing
+			//fx that use this are some alien swarm gib fx that use it to set the particle's "normal" vector to control the gib
+			//model's angle, so make this a position_combine.
+			cpoint_from_attrib_value(processed, attrib, "control point number", 0, "position_combine") 
+		end, 
 		["remap control point to scalar"] = function(processed, attrib)
 			//controls a whole bunch of stuff (lifetime, radius, alpha, etc.) with the value of a single axis of the cpoint, definitely not a position control
 			local axis = attrib["input field 0-2 X/Y/Z"] or 0
@@ -3215,6 +3233,12 @@ local processfuncs = {
 				cpoint_from_attrib_value(processed, attrib, "output control point", -1, "output_axis", {["axis"] = axis})
 			end
 		end,
+		["remap cp velocity to vector"] = function(processed, attrib)
+			//like remap control point to vector, but it sets the vector to the cpoint's velocity value.
+			//can't really turn this into a set of sliders/color picker unless we make some custom functionality to constantly move
+			//the cpoint around, and i can't find any existing fx using this to accomodate, so just position_combine it for now.
+			cpoint_from_attrib_value(processed, attrib, "control point", 0, "position_combine")
+		end,
 		["remap direction to cp to vector"] = function(processed, attrib)
 			//is this what the wiki calls "Remap Control Point Direction to Vector"? (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Remap_Control_Point_Direction_to_Vector)
 			//if so, then it uses the angle of the cpoint to set the particle's Position, Roll, or Color value, so i guess this should either use a position control to set the angle with,
@@ -3229,6 +3253,16 @@ local processfuncs = {
 			//update: found code for this, still can't find any practical use for it (https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L9390)
 			//update 2: after 3/26/25 update, found some actual fx that use this in portal 2's portals.pcf; which use it to set the new
 			//"normal" value; creates an extraneous cpoint that doesn't visibly do anything, so just position_combine it
+		end,
+		["remap distance between two control points to cp"] = function(processed, attrib)
+			//i guess we could convert this into a relative_to_cp vector control just like "remap distance between two control points to scalar" below,
+			//but what would we actually describe the control as? can't find any existing fx using this, so just add normal position controls and output for now.
+			cpoint_from_attrib_value(processed, attrib, "starting control point", 0)
+			cpoint_from_attrib_value(processed, attrib, "ending control point", 1)
+			local axis = attrib["output control point field"] or 0
+			if axis > -1 and (attrib["output control point"] or 2) != -1 then
+				cpoint_from_attrib_value(processed, attrib, "output control point", 2, "output_axis", {["axis"] = axis})
+			end
 		end,
 		["remap distance between two control points to scalar"] = function(processed, attrib)
 			//this uses all the same scalars as remap control point to scalar, but actually uses the distance between two positions to get the value
@@ -3283,6 +3317,30 @@ local processfuncs = {
 			local label = ParticleAttributeNames[attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS] //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
 			cpoint_from_attrib_value(processed, attrib, "first input control point", 0, "position_combine", {["label"] = label})
 			cpoint_from_attrib_value(processed, attrib, "second input control point", 0, "position_combine", {["label"] = label})
+		end,
+		["remap particle bbox volume to cp"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "output control point", -1, "output") end, //sets the whole cpoint to Vector(volume,0,0) https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L2532
+		["remap percentage between two control points to scalar"] = function(processed, attrib)
+			//sets a scalar value on *each individual particle* based on what percentage of the distance between two cpoints it's covered
+			cpoint_from_attrib_value(processed, attrib, "starting control point", 0)
+			cpoint_from_attrib_value(processed, attrib, "ending control point", 1)
+		end,
+		["remap percentage between two control points to vector"] = function(processed, attrib)
+			//sets a vector value on *each individual particle* based on what percentage of the distance between two cpoints it's covered
+			cpoint_from_attrib_value(processed, attrib, "starting control point", 0)
+			cpoint_from_attrib_value(processed, attrib, "ending control point", 1)
+		end,
+		["restart effect after duration"] = function(processed, attrib)
+			local axis = attrib["Control Point Field X/Y/Z"] or 0
+			if axis > -1 then
+				cpoint_from_attrib_value(processed, attrib, "Control Point to Scale Duration", -1, "axis", {
+					["axis"] = axis,
+					["label"] = "Restart Time Scale",
+					["inMin"] = 0, //no point in negative scale for this one
+					["outMin"] = 0,
+					//no max
+					["default"] = 1,
+				})
+			end
 		end,
 		["rotation orient relative to cp"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point", 0) end,
 		["set child control points from particle positions"] = function(processed, attrib)
@@ -3341,6 +3399,17 @@ local processfuncs = {
 				end
 			end
 		end,
+		--[[["set control point rotation"] = function(processed, attrib)
+			//the rotation from this cpoint gets stomped by the angle of the position control, and i don't see a way to fix this. 
+			//even output isn't great because either A: the cpoint being rotated is the first cpoint, it gets assigned to fallback cpoint
+			//-1 instead, and it uses the angle of *that* instead, or B: the cpoint being rotated doesn't get a position set and ends up
+			//at 0,0,0. hrmph.
+			//only way to fix all this would be to add special handling for cpoints using this operator, where ent_partctrl would use
+			//something other than self.particle:AddControlPoint so that the cpoint angle doesn't get set. i can't find any working 
+			//effects that actually use this, so that would be overengineered for now.
+			cpoint_from_attrib_value(processed, attrib, "Control Point", 0, "output")
+			//there's also a "Local Space Control Point" we could position_combine, but again, not useful.
+		end,]]
 		["set control point to particles' center"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point Number to Set", 1, "output") end,
 		["set control point to player"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "Control Point Number", 1, "output")
@@ -3647,7 +3716,7 @@ local processfuncs = {
 					//let players manually set the values if they spawned a child effect on its own, or for some hypothetical use case where it's intended to be supplied by code or something
 					//this is silly, who's going to use this?
 					cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, "vector", {
-						["label"] = "Velocity Direction Normal",
+						["label"] = "Velocity Direction",
 						["inMin"] = Vector(-1,-1,-1),
 						["inMax"] = Vector(1,1,1),
 						["outMin"] = Vector(-1,-1,-1),
@@ -3670,11 +3739,33 @@ local processfuncs = {
 			end
 		end,
 		["velocity set from control point"] = function(processed, attrib)
-			//another backported effect from csgo(?), seems to use the position values of these cpoints to set a normal vector for particle velocity, so i guess it should either use position controls or manual value inputs; because it's backported there aren't any existing orangebox effects to accomodate
-			//all of these cpoints are used if available (https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_initializers.cpp#L4160-L4255)
-			cpoint_from_attrib_value(processed, attrib, "control point number", 0)
-			cpoint_from_attrib_value(processed, attrib, "comparison control point number", -1)
-			cpoint_from_attrib_value(processed, attrib, "local space control point number", -1)
+			//https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_initializers.cpp#L4160-L4255
+			//"control point number"'s position sets the velocity value, local to either the map or to "comparison control point number"
+			//"local space control point number"'s ANGLE rotates the velocity value; its position does not matter
+			//"direction only" makes the outputted velocity a normalized vector (which is still multiplied by another param)
+			cpoint_from_attrib_value(processed, attrib, "comparison control point number", -1, "position_combine")
+			cpoint_from_attrib_value(processed, attrib, "local space control point number", -1, "position_combine")
+			local relative_to_cpoint = attrib["comparison control point number"] or -1
+			if !(relative_to_cpoint > -1) then relative_to_cpoint = nil end
+			local outMax = 1024 //arbitrary
+			local inMax = outMax / (attrib["velocity scale"] or 1)
+			local default = 100 / (attrib["velocity scale"] or 1)
+			local label = "Velocity"
+			if attrib["direction only"] then
+				inMax = 1
+				outMax = 1
+				default = 1
+				label = "Velocity Direction"
+			end
+			cpoint_from_attrib_value(processed, attrib, "control point number", 0, "vector", {
+				["label"] = label,
+				["inMin"] = Vector(-inMax,-inMax,-inMax),
+				["inMax"] = Vector(inMax,inMax,inMax),
+				["outMin"] = Vector(-outMax,-outMax,-outMax),
+				["outMax"] = Vector(outMax,outMax,outMax),
+				["default"] = Vector(default,0,0),
+				["relative_to_cpoint"] = relative_to_cpoint
+			})
 		end,
 	},
 	["emitters"] = {
@@ -4151,9 +4242,14 @@ function PartCtrl_ProcessPCF(filename)
 						break
 					end
 				end
+				if v.output_axis then
+					for k2, v2 in pairs (v.output_axis) do
+						t2[particle].cpoints[k]["which_" .. v2.axis] = -1 //special value for both vector and axis controls to check for, so they can remove a specific axis being overwritten
+					end
+				end
 				if v.axis then
 					//Squish together axis entries that have the same values except for the name
-					local newvectors = {}
+					local newaxes = {}
 					for k2, v2 in pairs (v.axis) do
 						if v.axis[k2] != nil then
 							local newtab = table.Copy(v2)
@@ -4165,17 +4261,19 @@ function PartCtrl_ProcessPCF(filename)
 								end
 							end
 							v.axis[k2] = nil
-							table.insert(newvectors, newtab)
+							table.insert(newaxes, newtab)
 						end
 					end
-					t2[particle].cpoints[k].axis = newvectors
+					t2[particle].cpoints[k].axis = newaxes
 					//set "which" value for each axis (which entry in v.axis for the particle entity, edit window, etc. to get values like inMin and label from)
 					for i = 0, 2 do
-						t2[particle].cpoints[k]["which_" .. i] = 0
-						for k2, v2 in pairs (newvectors) do
-							if v2.axis == i then 
-								t2[particle].cpoints[k]["which_" .. i] = k2
-								break
+						if t2[particle].cpoints[k]["which_" .. i] != -1 then
+							t2[particle].cpoints[k]["which_" .. i] = 0
+							for k2, v2 in pairs (newaxes) do
+								if v2.axis == i then 
+									t2[particle].cpoints[k]["which_" .. i] = k2
+									break
+								end
 							end
 						end
 					end

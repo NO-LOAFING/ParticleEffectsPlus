@@ -656,8 +656,8 @@ function PANEL:RebuildControls()
 						if ent.SpecialEffectAddRoleControls then ent:SpecialEffectAddRoleControls(self, pnl, k, v2, ent2) end
 					end
 				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
-					local tab = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].cpoints[k]
-					tab = tab.vector[tab.which]
+					local tab1 = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].cpoints[k]
+					local tab = tab1.vector[tab1.which]
 					if istable(tab) then
 						//Roll sets the angle of the particle, with the putput measured in radians (pi radians = 180 degrees). Output maximum/minimum sets how many radians it can be rotated up to, 
 						//with values past pi just rotating it past 180 degrees. With a standard render_animated_sprites, only the x value does anything, regardless of orientation type. With render 
@@ -692,68 +692,74 @@ function PANEL:RebuildControls()
 								vec.z = math.Remap(val.b/255, tab.outMin2.z, tab.outMax2.z, tab.inMin.z, tab.inMax.z)
 								ent2:DoInput("cpoint_vector_val_all", k, vec)
 							end
+
+							//TODO: how should we handle an axis being overwritten by output_axis?
 						else
+							local done_first_slider = false
 							for i = 1, 3 do
-								local slider = vgui.Create("DNumSlider", pnl)
-								if tab.label == "Roll" then
-									if i == 1 then
-										slider:SetText("Pitch")
-									elseif i == 2 then
-										slider:SetText("Yaw")
-									else
-										slider:SetText("Roll")
-									end
-									slider:SetMinMax(-180, 180)
-								else
-									if tab.label == "Velocity Direction Normal" or tab.label == "Velocity" then
-										if i == 1 then
-											slider:SetText("Velocity Back/Forward")
-										elseif i == 2 then
-											slider:SetText("Velocity Right/Left")
-										else
-											slider:SetText("Velocity Down/Up")
-										end
-									else
-										if i == 1 then
-											slider:SetText(tab.label .. " X")
-										elseif i == 2 then
-											slider:SetText(tab.label .. " Y")
-										else
-											slider:SetText(tab.label .. " Z")
-										end
-									end
-									slider:SetMinMax(tab.outMin[i], tab.outMax[i])
-								end
-								if tab.default != nil then
-									slider:SetDefaultValue(math.Remap(tab.default[i], tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i]))
-								else
-									slider:SetDefaultValue(0)
-								end
-								slider:SetDark(true)
-								slider:SetHeight(18)
-								slider:Dock(TOP)
-								if i == 1 then
-									slider:DockMargin(padding,betweenitems,0,3)
-								else
-									slider:DockMargin(padding,0,0,3) //no top padding, squish these 3 together
-								end
-	
-								//Go ahead and unclamp these; for pos, they won't do anything anyway, and for roll, they just keep rotating
-								slider.ValueChanged = SliderValueChangedUnclamped
-								slider.SetValue = SliderSetValueUnclamped
-		
-								if tab.label == "Roll" then
-									slider:SetValue(math.Remap(math.deg(v2.val[i]), tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i]))
-								else
-									slider:SetValue(math.Remap(v2.val[i], tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i]))
-								end
-								function slider.OnValueChanged(_, val)
+								if tab1["which_" .. i-1] != -1 then //don't create a slider for an axis that's being overwritten by output_axis
+									local slider = vgui.Create("DNumSlider", pnl)
 									if tab.label == "Roll" then
-										val = math.Remap(math.rad(val), tab.outMin[i], tab.outMax[i], tab.inMin[i], tab.inMax[i])
+										if i == 1 then
+											slider:SetText("Pitch")
+										elseif i == 2 then
+											slider:SetText("Yaw")
+										else
+											slider:SetText("Roll")
+										end
+										slider:SetMinMax(-180, 180)
 									else
-										val = math.Remap(val, tab.outMin[i], tab.outMax[i], tab.inMin[i], tab.inMax[i])
+										if tab.label == "Velocity" or "Velocity Direction" then
+											if i == 1 then
+												slider:SetText(tab.label .. " Back/Fwd")
+											elseif i == 2 then
+												slider:SetText(tab.label .. " Right/Left")
+											else
+												slider:SetText(tab.label .. " Down/Up")
+											end
+										else
+											if i == 1 then
+												slider:SetText(tab.label .. " X")
+											elseif i == 2 then
+												slider:SetText(tab.label .. " Y")
+											else
+												slider:SetText(tab.label .. " Z")
+											end
+										end
+										slider:SetMinMax(tab.outMin[i], tab.outMax[i])
 									end
-									ent2:DoInput("cpoint_vector_val_axis", k, i, val)
+									if tab.default != nil then
+										slider:SetDefaultValue(math.Remap(tab.default[i], tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i]))
+									else
+										slider:SetDefaultValue(0)
+									end
+									slider:SetDark(true)
+									slider:SetHeight(18)
+									slider:Dock(TOP)
+									if !done_first_slider then
+										slider:DockMargin(padding,betweenitems,0,3)
+										done_first_slider = true
+									else
+										slider:DockMargin(padding,0,0,3) //no top padding, squish these 3 together
+									end
+		
+									//Go ahead and unclamp these; for pos, they won't do anything anyway, and for roll, they just keep rotating
+									slider.ValueChanged = SliderValueChangedUnclamped
+									slider.SetValue = SliderSetValueUnclamped
+			
+									if tab.label == "Roll" then
+										slider:SetValue(math.Remap(math.deg(v2.val[i]), tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i]))
+									else
+										slider:SetValue(math.Remap(v2.val[i], tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i]))
+									end
+									function slider.OnValueChanged(_, val)
+										if tab.label == "Roll" then
+											val = math.Remap(math.rad(val), tab.outMin[i], tab.outMax[i], tab.inMin[i], tab.inMax[i])
+										else
+											val = math.Remap(val, tab.outMin[i], tab.outMax[i], tab.inMin[i], tab.inMax[i])
+										end
+										ent2:DoInput("cpoint_vector_val_axis", k, i, val)
+									end
 								end
 							end
 						end
@@ -867,9 +873,7 @@ function PANEL:RebuildControls()
 							end
 						end
 					end
-					//TODO: handle output_axis disabling the control for a specific axis on a cpoint, and not others? no practical examples of this actually being used by anything at the moment
 				end
-	
 			end
 			pnl.RebuildContents(v)
 			self.CPointCategories[ent2][k] = pnl
