@@ -2193,14 +2193,14 @@ local ParticleAttributeNames = { //names and comments from https://github.com/So
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB] = "Color", // TINT_RGB, 6 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA] = "Alpha", // ALPHA, 7 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_CREATION_TIME] = "Creation Time", // CREATION_TIME, 8 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER] = "Sequence", //better display name; original: "Sequence Number", // SEQUENCE_NUMBER, 9 );
+	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER] = "Sequence", //better display name, still sucks, "sequence" isn't meaningful; original: "Sequence Number", // SEQUENCE_NUMBER, 9 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TRAIL_LENGTH] = "Trail Length", // TRAIL_LENGTH, 10 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_PARTICLE_ID] = "Particle ID", // PARTICLE_ID, 11 ); 
 	[PARTCTRL_PARTICLE_ATTRIBUTE_YAW] = "Yaw", // YAW, 12 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Sequence 2", //better display name; original: "Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
+	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Sequence 2", //better display name, still sucks, "sequence" isn't meaningful; original: "Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_INDEX] = "Hitbox Index", // HITBOX_INDEX, 14
 	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ] = "Hitbox Offset Position", // HITBOX_XYZ_RELATIVE 15
-	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2] = "Alpha 2", //better display name; original: "Alpha Alternate", // ALPHA2, 16
+	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2] = "Alpha", //better display name, there's no difference between the two alphas as far as players are concerned; original: "Alpha Alternate", // ALPHA2, 16
 	[PARTCTRL_PARTICLE_ATTRIBUTE_SCRATCH_VEC] = "Scratch Vector", // SCRATCH_VEC 17
 	[PARTCTRL_PARTICLE_ATTRIBUTE_SCRATCH_FLOAT] = "Scratch Float", // SCRATCH_FLOAT 18
 	[PARTCTRL_PARTICLE_ATTRIBUTE_UNUSED] = "Unused Particle Attribute", //NULL,
@@ -3007,7 +3007,7 @@ local processfuncs = {
 				if scalar then
 					scalar = scalar .. " scale"
 					cpoint_from_attrib_value(processed, attrib, "scale CP end", -1, "axis", {
-						["axis"] = 0, //arbitrary; any axis will work for this, but ent_partctrl:StartParticle checks which_0 for relative_to_cpoint
+						["axis"] = 0, //arbitrary; any axis could work for this, but ent_partctrl:StartParticle checks which_0 for relative_to_cpoint
 						["label"] = scalar,
 						["inMin"] = 0,
 						["outMin"] = 0,
@@ -3167,9 +3167,15 @@ local processfuncs = {
 					end
 					default = math.Remap(default, outMin, outMax, inMin, inMax)
 				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
-					default = inMax //alpha should default to max visibility
+					//Alpha should always default to max visibility;
+					//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
+					if outMin <= outMax then
+						default = math.max(inMin, inMax)
+					else
+						default = math.min(inMin, inMax)
+					end
 				end
-				//make sure the default value of the control in the edit window isn't outside its range (see tf2 speech_mediccall)
+				//make sure the default value of the control in the edit window isn't outside its range
 				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
 				if is_multiplier then
 					label = label .. " Scale"
@@ -3282,15 +3288,21 @@ local processfuncs = {
 				end
 				default = math.Remap(default, outMin, outMax, inMin, inMax)
 			elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
-				default = inMax //alpha should default to max visibility
+				//Alpha should always default to max visibility;
+				//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
+				if outMin <= outMax then
+					default = math.max(inMin, inMax)
+				else
+					default = math.min(inMin, inMax)
+				end
 			end
-			//make sure the default value of the control in the edit window isn't outside its range (see tf2 speech_mediccall)
+			//make sure the default value of the control in the edit window isn't outside its range
 			default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
 			if is_multiplier then
 				label = label .. " Scale"
 			end
 			cpoint_from_attrib_value(processed, attrib, "ending control point", 1, "axis", {
-				["axis"] = 0, //arbitrary; any axis will work for this, but ent_partctrl:StartParticle checks which_0 for relative_to_cpoint
+				["axis"] = 0, //arbitrary; any axis could work for this, but ent_partctrl:StartParticle checks which_0 for relative_to_cpoint
 				["label"] = label,
 				["inMin"] = inMin,
 				["inMax"] = inMax,
@@ -3410,6 +3422,13 @@ local processfuncs = {
 			cpoint_from_attrib_value(processed, attrib, "Control Point", 0, "output")
 			//there's also a "Local Space Control Point" we could position_combine, but again, not useful.
 		end,]]
+		["set control point to impact point"] = function(processed, attrib)
+			cpoint_from_attrib_value(processed, attrib, "Control Point to Trace From", 1, "position_combine")
+			cpoint_from_attrib_value(processed, attrib, "Control Point to Set", 1, "output") 
+			//note: if we have a control for the output cpoint (i.e. output doesn't get set because of fadein or something), 
+			//then this operator's changes get squashed completely, even for the window of time where it *should* be doing something.
+			//all existing fx i could find with these conditions work better with a cpoint, though, so do it this way for now.
+		end,
 		["set control point to particles' center"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point Number to Set", 1, "output") end,
 		["set control point to player"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "Control Point Number", 1, "output")
@@ -3615,10 +3634,16 @@ local processfuncs = {
 						default = 1 //default to 100% radius
 					end
 					default = math.Remap(default, outMin, outMax, inMin, inMax)
-				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
-					default = inMax //alpha should default to max visibility
+				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then
+					//Alpha should always default to max visibility;
+					//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
+					if outMin <= outMax then
+						default = math.max(inMin, inMax)
+					else
+						default = math.min(inMin, inMax)
+					end
 				end
-				//make sure the default value of the control in the edit window isn't outside its range (see tf2 speech_mediccall)
+				//make sure the default value of the control in the edit window isn't outside its range
 				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
 				if is_multiplier then
 					label = label .. " Scale"

@@ -42,8 +42,7 @@ function ENT:Initialize()
 
 	else
 
-		//Prevent fx with Collision via traces (i.e. particles/flamethrowertest.pcf flamethrower) from colliding with the grip point
-		self:SetCollisionGroup(COLLISION_GROUP_DEBRIS)
+		//think func handles clientside collision group
 
 		AllPartCtrlGripEnts = AllPartCtrlGripEnts or {}
 		AllPartCtrlGripEnts[self] = true
@@ -61,6 +60,22 @@ end
 if CLIENT then
 	function ENT:OnRemove()
 		AllPartCtrlGripEnts[self] = nil
+	end
+
+	function ENT:Think()
+		//Stupid hack: prevent the grip from colliding with ANY particle effects using traces, even traces with COLLISION_GROUP_NONE
+		//(test with particles/partctrl_test.pcf test_SetCPointtoImpactPoint) by setting the collision group to one that only
+		//collides with very specific things. Then, when we hover over it with the context menu, set it back to the default collision
+		//group, so that the context menu's trace can hit it and right click properties show up. (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/modules/properties.lua#L134)
+		if IsValid(g_ContextMenu) and g_ContextMenu:IsVisible() and self:BeingLookedAtByLocalPlayer() then
+			//using COLLISION_GROUP_DEBRIS here still prevents *most* fx with traces (i.e. tf2 particles/flamethrowertest.pcf flamethrower)
+			//from colliding with the entity, but also causes an issue where the context menu trace won't hit it if there's a prop behind it
+			//(caused by the context menu only checking for debris as a fallback here: https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/modules/properties.lua#L154-L162).
+			//instead, use COLLISION_GROUP_NONE, even though it'll make the effect look bad when we're hovering over it.
+			self:SetCollisionGroup(COLLISION_GROUP_NONE)
+		else
+			self:SetCollisionGroup(COLLISION_GROUP_VEHICLE_CLIP)
+		end
 	end
 end
 
@@ -109,6 +124,16 @@ function ENT:BeingLookedAtByLocalPlayer()
 	local dist = self.MaxWorldTipDistance
 	dist = dist * dist
 
+	local tab = {
+		filter = view,
+	}
+	//Make sure our view trace collides with the grip, no matter which collsion group it's using
+	if self:GetCollisionGroup() == COLLISION_GROUP_VEHICLE_CLIP then
+		tab.collisiongroup = COLLISION_GROUP_VEHICLE
+	else
+		tab.mask = MASK_ALL //needed to hit COLLISION_GROUP_DEBRIS
+	end
+
 	-- If we're spectating a player, perform an eye trace
 	if ( view:IsPlayer() ) then
 		//return view:EyePos():DistToSqr( self:GetPos() ) <= dist && view:GetEyeTrace().Entity == self
@@ -122,12 +147,9 @@ function ENT:BeingLookedAtByLocalPlayer()
 			end
 			view.PartCtrl_LastPlayerTraceAll = framenum
 
-			view.PartCtrl_PlayerTraceAll = util.TraceLine({
-				start = pos,
-				endpos = pos + ( view:GetAimVector() * dist ),
-				filter = view,
-				mask = MASK_ALL //needed to hit COLLISION_GROUP_DEBRIS
-			})
+			tab.start = pos
+			tab.endpos = pos + ( view:GetAimVector() * dist )
+			view.PartCtrl_PlayerTraceAll = util.TraceLine(tab)
 			return view.PartCtrl_PlayerTraceAll.Entity == self
 		end
 	end
@@ -136,12 +158,9 @@ function ENT:BeingLookedAtByLocalPlayer()
 	local pos = view:GetPos()
 
 	if ( pos:DistToSqr( self:GetPos() ) <= dist ) then
-		return util.TraceLine( {
-			start = pos,
-			endpos = pos + ( view:GetAngles():Forward() * dist ),
-			filter = view,
-			mask = MASK_ALL //needed to hit COLLISION_GROUP_DEBRIS
-		} ).Entity == self
+		tab.start = pos
+		tab.endpos = pos + ( view:GetAngles():Forward() * dist )
+		return util.TraceLine(tab).Entity == self
 	end
 
 	return false
