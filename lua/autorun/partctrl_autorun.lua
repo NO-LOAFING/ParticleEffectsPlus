@@ -2512,21 +2512,24 @@ function PartCtrl_ReadPCF(filename)
 					for et_k, et_i in pairs (v.ElementTable) do
 						if !ElementsUnsorted[et_i] then
 							MsgN(filename, " attribute ", k, " tried to get nil element ", et_i)
-						elseif ElementsUnsorted[et_i].k.Type == "DmeParticleChild" then
-							if !ElementsUnsorted[et_i].v.child then
-								MsgN(filename, " DmeParticleChild has no child value")
-							else
-								//store particle children as strings (names of the corresponding fx) to keep the table simple and avoid recursive nonsense
-								//i think the child effect delay is stored here too and gets discarded, but we currently don't do any processing with that
-								for et2_k, et2_i in pairs (ElementsUnsorted[et_i].v.child.ElementTable) do
-									if !ElementsUnsorted[et2_i] then
-										MsgN(filename, " DmeParticleChild tried to get nil element ", et2_i)
-									else
-										table.insert(tab, ElementsUnsorted[et2_i].k.Name)
+						else
+							if ElementsUnsorted[et_i].k.Type == "DmeParticleChild" then
+								if !ElementsUnsorted[et_i].v.child then
+									MsgN(filename, " DmeParticleChild has no child value")
+								else
+									//store particle children as strings (names of the corresponding fx) to keep the table simple and avoid recursive nonsense
+									local childName = nil
+									for et2_k, et2_i in pairs (ElementsUnsorted[et_i].v.child.ElementTable) do
+										if !ElementsUnsorted[et2_i] then
+											MsgN(filename, " DmeParticleChild tried to get nil element ", et2_i)
+										else
+											//table.insert(tab, ElementsUnsorted[et2_i].k.Name)
+											childName = ElementsUnsorted[et2_i].k.Name
+										end
 									end
+									ElementsUnsorted[et_i].v.child = childName
 								end
 							end
-						else
 							//table.insert(tab, ElementsUnsorted[et_i])
 							//discard key for DmeParticleOperators; the name is redundant and is also stored in the functionName attribute, and also there can be multiple with the same name
 							table.insert(tab, ElementsUnsorted[et_i].v)
@@ -3095,7 +3098,7 @@ local processfuncs = {
 				local endp = attrib["end control point number"] or 1
 				local name = attrib._categoryName .. " " .. attrib.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 				for i = startp, endp do
-					PartCtrl_CPoint_AddToProcessed(processed, i, name, "position_combine")
+					PartCtrl_CPoint_AddToProcessed(processed, i, name, "position_combine", nil, attrib)
 				end
 			else
 				//uses start and end cpoint only
@@ -3130,7 +3133,7 @@ local processfuncs = {
 		end,
 		--[[["movement place on ground"] = function(processed, attrib)
 			//https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L9390
-			//uses the movement of the last two cpoints to throttle updates; if either one has moved enough from its previous pos,, then update immediately.
+			//uses the movement of the last two cpoints to throttle updates; if either one has moved enough from its previous pos, then update immediately.
 			//also uses the movement of the first one to throttle something(?) involving interpolation the same way.
 			//no existing portal2/asw fx use this, is this a dota thing? can't even get a custom effect to use these in any meaningful way, ignore for now.
 			cpoint_from_attrib_value(processed, attrib, "interploation distance tolerance cp", -1, "position_combine") //sic
@@ -3346,7 +3349,7 @@ local processfuncs = {
 			if axis > -1 then
 				cpoint_from_attrib_value(processed, attrib, "Control Point to Scale Duration", -1, "axis", {
 					["axis"] = axis,
-					["label"] = "Restart Time Scale",
+					["label"] = "Duration Scale",
 					["inMin"] = 0, //no point in negative scale for this one
 					["outMin"] = 0,
 					//no max
@@ -3434,6 +3437,66 @@ local processfuncs = {
 			cpoint_from_attrib_value(processed, attrib, "Control Point Number", 1, "output")
 			processed["spawnicon_playerposfix"] = true //this attrib forces a cpoint to the player's position, which can break spawnicon renderbounds, so tell it to account for that
 		end,
+		["set control points from particle positions"] = function(processed, attrib)
+			//like "set child control points from particle positions", but it sets the effect's own cpoints instead.
+			//only existing effect i could find using this was portal 2's dissolve_flashes_glow particles/spark_fx.pcf, which uses
+			//it to move the renderer's "Visibility Proxy Input Control Point Number" to each particle as it's spawned, and i made
+			//a test effect that uses it functionally the same way as the child one, by moving a cpoint that's only used by child fx.
+			local startp = attrib["First control point to set"] or 0
+			local endp = startp + ((attrib["# of control points to set"] or 1) - 1)
+			local name = attrib._categoryName .. " " .. attrib.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
+			for i = startp, endp do
+				PartCtrl_CPoint_AddToProcessed(processed, i, name, "output", nil, attrib)
+			end
+		end,
+		["set cp offset to cp percentage between two control points"] = function(processed, attrib)
+			//this one is pretty elaborate, it gets the position of an "input" control point relative to two other "start" and
+			//"ending" control points, uses it to scale a value relative to a fourth "offset" control point, and then outputs 
+			//that to a fifth "output" control point.
+			//no existing portal2/asw fx use this, what could this possibly be for? just handle the output and then do normal 
+			//position controls for the rest, until we find an effect we need to accomodate.
+			cpoint_from_attrib_value(processed, attrib, "starting control point", 0)
+			cpoint_from_attrib_value(processed, attrib, "ending control point", 1)
+			cpoint_from_attrib_value(processed, attrib, "offset control point", 2)
+			cpoint_from_attrib_value(processed, attrib, "input control point", 3)
+			cpoint_from_attrib_value(processed, attrib, "output control point", 4, "output") //note: this output gets clobbered if we make a position control for the same cpoint, probably interacts badly if we don't create this control due to fadein or something
+		end,
+		--[[["set cp orientation to cp direction"] = function(processed, attrib)
+			//gets the direction the input cpoint is currently moving, and rotates the angle of the output cpoint
+			//to point in that direction. no existing portal2/asw fx use this, what is this used for?
+			//the output angle gets clobbered by the angle of the position control if it has one, so should we handle this like
+			//a pos output to keep it untouched? maybe wait until there's an effect using this to see how we should accomodate it.
+			//https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L9338
+			cpoint_from_attrib_value(processed, attrib, "input control point", 0)
+			cpoint_from_attrib_value(processed, attrib, "output control point", 0, "output")
+		end,]]
+		["set per child control point from particle positions"] = function(processed, attrib)
+			//sets a single control point on a limited number of child fx
+			//https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L5220
+			local groupid = attrib["Group ID to affect"] or 0
+			local limit = attrib["# of children to set"] or 1
+			cpoint_from_attrib_value(processed, attrib, "control point to set", 0, "output_children", {["groupid"] = groupid, ["limit"] = limit})
+
+			//again, like "set child control points from particle positions", some fx (portalgun_beam_holding_object) emit invisible particles (no renderer) 
+			//and then use them to set the position of a child control point. ordinarily, we'd cull the cpoint data from fx with no renderer, because their 
+			//attribs don't do anything that the player can see, but in this case, we don't want to do that, so mark as having a renderer.
+			//TODO: this might be bad if the children don't have a renderer either, can we catch those?
+			if #processed["children"] > 0 then processed["has_renderer"] = true end
+			//processed["sets_particle_pos_on_children"] = groupid
+		end,
+		["stop effect after duration"] = function(processed, attrib)
+			local axis = attrib["Control Point Field X/Y/Z"] or 0
+			if axis > -1 then
+				cpoint_from_attrib_value(processed, attrib, "Control Point to Scale Duration", -1, "axis", {
+					["axis"] = axis,
+					["label"] = "Duration Scale",
+					["inMin"] = 0, //no point in negative scale for this one
+					["outMin"] = 0,
+					//no max
+					["default"] = 1,
+				})
+			end
+		end,
 	},
 	["initializers"] = {
 		["color random"] = function(processed, attrib)
@@ -3471,7 +3534,7 @@ local processfuncs = {
 				local endp = attrib["end control point number"] or 0
 				local name = attrib._categoryName .. " " .. attrib.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 				for i = startp, endp do
-					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {["sets_particle_pos"] = true})
+					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {["sets_particle_pos"] = true}, attrib)
 				end
 			else
 				//uses start and end cpoint only
@@ -3486,7 +3549,7 @@ local processfuncs = {
 				local endp = attrib["end control point number"] or 0
 				local name = attrib._categoryName .. " " .. attrib.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 				for i = startp, endp do
-					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {["sets_particle_pos"] = true})
+					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {["sets_particle_pos"] = true}, attrib)
 				end
 			else
 				//uses start and end cpoint only
@@ -3549,7 +3612,7 @@ local processfuncs = {
 			end
 			local name = attrib._categoryName .. " " .. attrib.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 			for i = startp, endp do
-				PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {["sets_particle_pos"] = true})
+				PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {["sets_particle_pos"] = true}, attrib)
 			end
 		end,
 		["position modify offset random"] = function(processed, attrib)
@@ -3758,7 +3821,7 @@ local processfuncs = {
 						["outMin"] = 0, //I'd like the slider to use maximum/minimum velocity instead so it looks nicer,
 						["outMax"] = 1, //but unfortunately those can be different for each axis, which doesn't work here
 						["default"] = 1,
-					})
+					}, attrib)
 					//according to code, broadcast to children doesn't run if inheriting
 				end
 			end
@@ -3875,7 +3938,7 @@ local processfuncs = {
 		end,
 		//code says this one always uses cpoint 0 for some trace stuff, but when trying to test it, on every single effect i could find or make with this attribute, it just doesn't seem to work at all? particles pass through brushes, displacements, and static props just fine. (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_constraints.cpp#L473)
 		//TODO: test on a map that isn't gm_flatgrass, maybe it's a problem with distance from the world origin or something
-		//["prevent passing through static part of world"] = function(processed, attrib) PartCtrl_CPoint_AddToProcessed(processed, 0, attrib._categoryName .. " " .. attrib.functionName .. ": always uses cpoint 0") end,
+		//["prevent passing through static part of world"] = function(processed, attrib) PartCtrl_CPoint_AddToProcessed(processed, 0, attrib._categoryName .. " " .. attrib.functionName .. ": always uses cpoint 0", nil, nil, attrib) end,
 	}
 }
 function PartCtrl_ProcessPCF(filename)
@@ -3934,8 +3997,8 @@ function PartCtrl_ProcessPCF(filename)
 		end
 		for particle, _ in pairs (t2) do
 			if !t2[particle]["has_renderer"] then
-				for _, child in pairs (t2[particle].children) do
-					if t2[child]["parent_force_has_renderer"] then
+				for _, childtab in pairs (t2[particle].children) do
+					if t2[childtab.child] and t2[childtab.child]["parent_force_has_renderer"] then
 						t2[particle]["has_renderer"] = true 
 						break
 					end
@@ -3953,22 +4016,22 @@ function PartCtrl_ProcessPCF(filename)
 					MsgN(filename, " ", particle2, " child ", child, " cpoints_from_child_fx has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
 					return cpoints
 				end
-				for _, child in pairs (t[particle2].children) do
-					if t2[child] then
-						local cpoints2 = table.Copy(t2[child].cpoints)
+				for _, childtab in pairs (t[particle2].children) do
+					if t2[childtab.child] then
+						local cpoints2 = table.Copy(t2[childtab.child].cpoints)
 						//make sure the child has also inherited cpoints from its own children
-						if istable(t[child].children) then
-							//if dodebug and #t[child].children > 0 then MsgN("children of ", child, ":") PrintTable(t[child].children) end
-							for _, child2 in pairs (t[child].children) do
-								if t2[child2] then
-									local cpoints3 = cpoints_from_child_fx(table.Copy(t2[child2].cpoints), child2, depth)
+						if istable(t[childtab.child].children) then
+							//if dodebug and #t[childtab.child].children > 0 then MsgN("children of ", childtab.child, ":") PrintTable(t[childtab.child].children) end
+							for _, childtab2 in pairs (t[childtab.child].children) do
+								if t2[childtab2.child] then
+									local cpoints3 = cpoints_from_child_fx(table.Copy(t2[childtab2.child].cpoints), childtab2.child, depth)
 									for i, tab in pairs (cpoints3) do
 										cpoints2[i] = cpoints2[i] or {}
 										for processedk, processedv in pairs (tab) do
 											for k, v in pairs (processedv) do
 												//mark attribs as being inherited from a child
 												if v["name"] then
-													processedv[k]["name"] = "child " .. child2 .. " | " .. processedv[k]["name"]
+													processedv[k]["name"] = "child " .. childtab2.child .. " | " .. processedv[k]["name"]
 												end
 											end
 											if istable(cpoints2[i][processedk]) then
@@ -3988,7 +4051,7 @@ function PartCtrl_ProcessPCF(filename)
 								for k, v in pairs (processedv) do
 									//mark attribs as being inherited from a child
 									if v["name"] then
-										processedv[k]["name"] = "child " .. child .. " | " .. processedv[k]["name"]
+										processedv[k]["name"] = "child " .. childtab.child .. " | " .. processedv[k]["name"]
 									end
 								end
 								if istable(cpoints[i][processedk]) then
@@ -4017,16 +4080,24 @@ function PartCtrl_ProcessPCF(filename)
 				//MsgN("Doing SetCPointModes for particle ", particle2, ", parent ", parent, "\nCurrent output_children:")
 				//a little heavy-handed? maybe. might result in some false positives in complex hierarchy trees. haven't found any actual examples of this causing problems,
 				//and we'd have to totally rework how we handle hierarchy here to make this more accurate (currently have no way to get the parent of a parent, etc. to check if
-				//it's using output_children).
+				//it's using output_children); output_children[parent] structure probably does limits wrong if a parent has multiple children of the same effect, who then
+				//themselves use output_children (they'd all share the same limit), but no existing fx use a complicated structure like that.
 				local groupid = t[particle2]["group id"] or 0
 
 				if parent then
 					for k, v in pairs (t2[parent].cpoints) do
-						if v["output_children"] then
+						if v["output_children"] and !output_children[parent] then
+							output_children[parent] = {}
 							for k2, v2 in pairs (v["output_children"]) do
 								if v2["groupid"] then
-									output_children[k] = output_children[k] or {}
-									output_children[k][v2["groupid"]] = true
+									output_children[parent][k] = output_children[parent][k] or {}
+									//"limit" value sets the number of children to override the target cpoint on;
+									//use the largest possible limit provided, no limit provided means unlimited
+									local limit = v2["limit"] or math.huge
+									if output_children[parent][k][v2["groupid"]] then
+										limit = math.max(limit, output_children[parent][k][v2["groupid"]])
+									end
+									output_children[parent][k][v2["groupid"]] = limit
 								end
 							end
 						end
@@ -4035,7 +4106,10 @@ function PartCtrl_ProcessPCF(filename)
 				//PrintTable(output_children)
 				
 				for k, v in pairs (t2[particle2].cpoints) do
-					if !output_children[k] or !output_children[k][groupid] then
+					if output_children[parent] and output_children[parent][k] and output_children[parent][k][groupid] and output_children[parent][k][groupid] > 0 then
+						//if the target cpoint is being overridden by output_children, decrease the limit by 1 if applicable, and then skip to the next cpoint
+						output_children[parent][k][groupid] = output_children[parent][k][groupid] - 1
+					else
 						if v["output_axis"] then
 							for k2, v2 in pairs (v["output_axis"]) do
 								if v2["axis"] then
@@ -4173,14 +4247,14 @@ function PartCtrl_ProcessPCF(filename)
 				end
 
 				if istable(t2[particle2].children) then
-					for _, child in pairs (t2[particle2].children) do
-						if !t2[child] then
+					for _, childtab in pairs (t2[particle2].children) do
+						if !t2[childtab.child] then
 							//MsgN(filename, " ", particle2, " CPointModesFromChildren tried to get nonexistent child effect ", child)
 						else
-							SetCPointModes(child, particle2)
+							SetCPointModes(childtab.child, particle2)
 							//Now inherit from the child's children, and so on
 							//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
-							CPointModesFromChildren(child, depth)
+							CPointModesFromChildren(childtab.child, depth)
 						end
 					end
 				end
@@ -4222,7 +4296,7 @@ function PartCtrl_ProcessPCF(filename)
 				t2[particle]["renderer_emitter_shouldcull"] = true
 			end
 			if needfallback then
-				//PartCtrl_CPoint_AddToProcessed(t2[particle], -1, "fallback position cpoint created due to no position cpoint") //causes bizarre unnecessary cpoint -1 on utaunt_rainbow_teamcolor_red
+				//PartCtrl_CPoint_AddToProcessed(t2[particle], -1, "fallback position cpoint created due to no position cpoint", nil, nil, attrib) //causes bizarre unnecessary cpoint -1 on utaunt_rainbow_teamcolor_red
 				t2[particle].cpoints_with_children[-1] = {["position"] = {[1] = {["name"] = "fallback position cpoint created due to no position cpoint"}}}
 				modes[-1] = PARTCTRL_CPOINT_MODE_POSITION
 			end
@@ -4349,15 +4423,15 @@ function PartCtrl_ProcessPCF(filename)
 				PartCtrl_PCFsByParticleName[particle][filename] = true
 			end
 		end
-		//Remove culled children from child lists, add parents to parent lists
+		//Remove culled children and empty entries from child lists, add parents to parent lists
 		for particle, _ in pairs (t2) do
 			local shouldclean = false
-			for k, child in pairs (t2[particle].children) do
-				if !t2[child] then 
+			for k, childtab in pairs (t2[particle].children) do
+				if !t2[childtab.child] then 
 					t2[particle].children[k] = nil
 					shouldclean = true
 				else
-					table.insert(t2[child].parents, particle)
+					table.insert(t2[childtab.child].parents, particle)
 				end
 			end
 			if shouldclean then

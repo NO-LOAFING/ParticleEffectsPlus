@@ -550,6 +550,11 @@ function PANEL:OpenMenu()
 	if istable(PartCtrl_ProcessedPCFs[self.pcf]) and istable(PartCtrl_ProcessedPCFs[self.pcf][self.name]) then
 		local function ListChildFx(submenu, name2, tabname)
 			for _, child in pairs (PartCtrl_ProcessedPCFs[self.pcf][name2][tabname]) do
+				//ptab.children is a table of tables containing both child names and other info about them;
+				//ptab.parents is just a table of strings
+				if istable(child) then
+					child = child.child
+				end
 				if PartCtrl_ProcessedPCFs[self.pcf][child] then
 					local OnClick = function()
 						RunConsoleCommand("partctrl_spawnparticle", child, self.pcf)
