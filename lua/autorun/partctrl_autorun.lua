@@ -2307,7 +2307,6 @@ function PartCtrl_ReadPCF(filename)
 	then 
 		version = 2
 	elseif header == "<!-- dmx encoding binary 4 format pcf 2 -->\n" then
-		//TODO: this is untested, wiki says this is used exclusively by l4d2 particles, need to install that game and test them
 		version = 4
 	elseif header == "<!-- dmx encoding binary 5 format pcf 2 -->\n" then
 		version = 5
@@ -2321,9 +2320,7 @@ function PartCtrl_ReadPCF(filename)
 	if version <= 3 then
 		nStrings = f:ReadUShort() //this is a short in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
 	else
-		nStrings = f:ReadULong() //TODO: getting conflicting info from the wiki; 
-		//one page says this is an int in both version 4 and 5 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions / https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3
-		//while another says it's an int in version 4 only, which doesn't make sense https://developer.valvesoftware.com/wiki/PCF#String_Dictionary
+		nStrings = f:ReadULong() //this is an int in both version 4 and 5 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions / https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3
 	end
 	local StringDict = {}
 	//MsgN(filename, " nStrings = ", nStrings)
@@ -2391,9 +2388,7 @@ function PartCtrl_ReadPCF(filename)
 				if version <= 3 or is_array then //in higher versions, arrays of strings still use null-terminated strings instead of being stored in the string dictionary
 					return ReadUntilNull(f)
 				elseif version == 4 then
-					return StringDict[f:ReadUShort()] //TODO: conflicting info about this;
-					//one page claims it's a short in version 4 (https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary), which matches the headers;
-					//another page claims it's a long in version 4 (https://developer.valvesoftware.com/wiki/DMX/Binary#Attribute_Values)
+					return StringDict[f:ReadUShort()] //this is a short in version 4 (https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary), which matches the headers
 				elseif version == 5 then
 					return StringDict[f:ReadULong()]
 				end
@@ -2853,6 +2848,7 @@ function PartCtrl_GetParticlesWithAttrib(desiredfunc, filename, extended)
 								//MsgN("(", filename, ") ", particle)
 								MsgN(particle, " ", filename) //actually do it like this so it's easier to spawn them in console
 								if extended then
+									MsgN(category, " ", desiredfunc)
 									PrintTable(v)
 									MsgN("")
 								end
@@ -3045,7 +3041,7 @@ local processfuncs = {
 			cpoint_from_attrib_value(processed, attrib, "Light 3 Control Point", 0, "position_combine")
 			cpoint_from_attrib_value(processed, attrib, "Light 4 Control Point", 0, "position_combine")
 		end,
-		["cull relative to model"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, { //TODO: should this be a position_combine? can't actually find any fx that use this.
+		["cull relative to model"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, { //TODO: should this be a position_combine? can't actually find any fx that use this, even in portal2/asw/l4d2
 			["ignore_outputs"] = true, //this cpoint sets an associated model, not a position, so outputs don't override it
 		}) end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Cull_relative_to_model, yeah it's on the wrong page); pet doesn't add a control for this
 		["cull when crossing plane"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point for point on plane", 0) end,
@@ -3074,8 +3070,8 @@ local processfuncs = {
 			//in practice, uses the length of (or the value of an axis of) one cpoint to set the desired speed, and then uses the value of
 			//another cpoint's axis (which is meant to be a ping value?) to do some remapping math to multiply that speed by up to 3.
 			https://github.com/kallinosis-dev/srcmodbase-source/blob/dev/particles/builtin_particle_ops.cpp#L8142
-			//this is complicated and i can't find any existing fx using it, so it's hard to say what controls we should add to support it.
-			//leave this blank until we find an effect we need to add support for.
+			//this is complicated and i can't find any existing fx using it in porta2/asw/l4d2, so it's hard to say what controls we should
+			//add to support it. leave this blank until we find an effect we need to add support for.
 		end,]]
 		["movement dampen relative to control point"] = function(processed, attrib) 
 			if attrib["falloff range"] >= 5 then //don't process if this value is too small to do anything (lots of ep2 electrical fx have extra useless cpoints with only these for whatever reason)
@@ -3142,7 +3138,7 @@ local processfuncs = {
 			//https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L9390
 			//uses the movement of the last two cpoints to throttle updates; if either one has moved enough from its previous pos, then update immediately.
 			//also uses the movement of the first one to throttle something(?) involving interpolation the same way.
-			//no existing portal2/asw fx use this, is this a dota thing? can't even get a custom effect to use these in any meaningful way, ignore for now.
+			//no existing portal2/asw/l4d2 fx use this, is this a dota thing? can't even get a custom effect to use these in any meaningful way, ignore for now.
 			cpoint_from_attrib_value(processed, attrib, "interploation distance tolerance cp", -1, "position_combine") //sic
 			cpoint_from_attrib_value(processed, attrib, "reference CP 1", -1, "position_combine")
 			cpoint_from_attrib_value(processed, attrib, "reference CP 2", -1, "position_combine")
@@ -3256,19 +3252,10 @@ local processfuncs = {
 			cpoint_from_attrib_value(processed, attrib, "control point", 0, "position_combine")
 		end,
 		["remap direction to cp to vector"] = function(processed, attrib)
-			//is this what the wiki calls "Remap Control Point Direction to Vector"? (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Remap_Control_Point_Direction_to_Vector)
-			//if so, then it uses the angle of the cpoint to set the particle's Position, Roll, or Color value, so i guess this should either use a position control to set the angle with,
-			//or a manual angle input?
+			//https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L9390
+			//uses the angle of the cpoint to set a vector value; only existing fx i could find using this are a few in  portal 2's portals.pcf,
+			//which use it to set the new "normal" value; creates an extraneous cpoint that doesn't visibly do anything, so just position_combine it.
 			cpoint_from_attrib_value(processed, attrib, "control point", 0, "position_combine")
-			//this doesn't exist in any of the hl2/episodes/tf2 pcfs, so i don't know of any existing effects we need to accomodate. i'm not even sure what this would be used for; after 
-			//testing, the only potential uses i could find for this were setting the particle position to one based on the angle (output field Roll, normalize 1), or making the color 
-			//change based on the angle (ourput field Color, normalize 1). neither of these seems practical, and everything with normalize 0 seems glitchy and generates random noise. 
-			//i guess maybe you could design an effect to use p,y,r as a color input instead of x,y,z, but why would you do that?
-			//this seems to have been added in the june 2023 gmod update (https://gmod.facepunch.com/news/june-2023-update), from a 6-16-23 commit (https://discord.com/channels/565105920414318602/788473343065587723/1119340195381256242),
-			//so maybe this was backported from a newer pcf version, like portal 2 or csgo or something. TODO: check newer games' pcfs for use cases?
-			//update: found code for this, still can't find any practical use for it (https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L9390)
-			//update 2: after 3/26/25 update, found some actual fx that use this in portal 2's portals.pcf; which use it to set the new
-			//"normal" value; creates an extraneous cpoint that doesn't visibly do anything, so just position_combine it
 		end,
 		["remap distance between two control points to cp"] = function(processed, attrib)
 			//i guess we could convert this into a relative_to_cp vector control just like "remap distance between two control points to scalar" below,
@@ -3460,8 +3447,8 @@ local processfuncs = {
 			//this one is pretty elaborate, it gets the position of an "input" control point relative to two other "start" and
 			//"ending" control points, uses it to scale a value relative to a fourth "offset" control point, and then outputs 
 			//that to a fifth "output" control point.
-			//no existing portal2/asw fx use this, what could this possibly be for? just handle the output and then do normal 
-			//position controls for the rest, until we find an effect we need to accomodate.
+			//no existing portal2/asw/l4d2 fx use this, what could this possibly be for? just handle the output and then do 
+			//normal position controls for the rest, until we find an effect we need to accomodate.
 			cpoint_from_attrib_value(processed, attrib, "starting control point", 0)
 			cpoint_from_attrib_value(processed, attrib, "ending control point", 1)
 			cpoint_from_attrib_value(processed, attrib, "offset control point", 2)
@@ -3470,7 +3457,7 @@ local processfuncs = {
 		end,
 		--[[["set cp orientation to cp direction"] = function(processed, attrib)
 			//gets the direction the input cpoint is currently moving, and rotates the angle of the output cpoint
-			//to point in that direction. no existing portal2/asw fx use this, what is this used for?
+			//to point in that direction. no existing portal2/asw/l4d2 fx use this, what is this used for?
 			//the output angle gets clobbered by the angle of the position control if it has one, so should we handle this like
 			//a pos output to keep it untouched? maybe wait until there's an effect using this to see how we should accomodate it.
 			//https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L9338
