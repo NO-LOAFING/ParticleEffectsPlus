@@ -1934,7 +1934,7 @@ end
 
 
 
-MsgN("partctrl test: running entity code")
+if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running entity code") end
 
 //See PartCtrl_ReadAndProcessPCFs comments in partctrl_autorun.lua
 
@@ -1943,6 +1943,6 @@ if !PartCtrl_ReadAndProcessPCFs_StartupHasRun then
 end
 
 timer.Simple(0, function()
-	MsgN("partctrl test: running entity code on timer")
+	if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running entity code on timer") end
 	PartCtrl_ReadAndProcessPCFs_StartupIsOver = true
 end)

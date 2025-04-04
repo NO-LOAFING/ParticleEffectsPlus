@@ -2274,19 +2274,23 @@ table.insert(a, "ATTRIBUTE_MATRIX_ARRAY")
 
 function PartCtrl_ReadPCF(filename)
 
+	//don't print non-critical messages unless we're in developer mode; 
+	//always print messages for bugs that player should report
+	local dodebug = (GetConVarNumber("developer") >= 1)
+
 	local f = file.Open(filename, "rb", "GAME")
-	if !f then MsgN(filename, " can't be read, report this bug!") return end
+	if !f then MsgN("PartCtrl: ", filename, " can't be read, report this bug!") return end
 
 	//If the pcf is packed into the current map, then write a copy of it into the data folder and read that instead.
 	//This is necessary because performing read operations on packed files takes a very long time (only if the map file is compressed, but we don't have 
 	//a way to check for that); pd_watergate's *7* packed pcfs add *10 whole minutes* to the load time if we don't cache them like this!
 	if file.Exists(filename, "BSP") then
-		MsgN(filename, " is packed into the current BSP file, caching")
+		if dodebug then MsgN("PartCtrl: ", filename, " is packed into the current BSP file, caching") end
 		if file.Write("temp_partctrl_readpcfcache.txt", f:Read()) then
 			f = file.Open("temp_partctrl_readpcfcache.txt", "rb", "DATA")
-			if !f then MsgN(filename, " cache was written, but can't be read; report this bug!") return end
+			if !f then MsgN("PartCtrl: ", filename, " cache was written, but can't be read; report this bug!") return end
 		else
-			MsgN(filename, " was unable to be cached; report this bug!")
+			MsgN("PartCtrl: ", filename, " was unable to be cached; report this bug!")
 			return
 		end
 	end
@@ -2308,7 +2312,7 @@ function PartCtrl_ReadPCF(filename)
 	elseif header == "<!-- dmx encoding binary 5 format pcf 2 -->\n" then
 		version = 5
 	else
-		MsgN(filename, " has unsupported pcf format ", string.TrimRight(header, "\n"), ", ignoring")
+		if dodebug then MsgN("PartCtrl: ", filename, " has unsupported pcf format ", string.TrimRight(header, "\n"), ", ignoring") end
 		return
 	end
 
@@ -2417,7 +2421,7 @@ function PartCtrl_ReadPCF(filename)
 				at = string.Replace(at, "_ARRAY", "")
 				local tab2 = {}
 				local arraysize = f:ReadULong() //int, is ReadULong the right way to interpret this?
-				if arraysize > 1000 then MsgN(filename, " got crazy array size ", arraysize, " - we screwed up file reading somewhere, report this bug!") return end
+				if arraysize > 1000 then MsgN("PartCtrl: ", filename, " got crazy array size ", arraysize, " - we screwed up file reading somewhere, report this bug!") return end
 				for i = 1, arraysize do
 					table.insert(tab2, DoAttribute(true))
 				end
@@ -2434,11 +2438,11 @@ function PartCtrl_ReadPCF(filename)
 		local body = {}
 		local attributecount = f:ReadULong() //int, is ReadULong the right way to interpret this?
 		//MsgN("attributecount = ", attributecount)
-		if !attributecount then MsgN(filename, " got no attribute count - we screwed up file reading somewhere, report this bug!") return end
-		if attributecount > 100 then MsgN(filename, " got crazy attribute count ", attributecount, " - we screwed up file reading somewhere, report this bug!") return end
+		if !attributecount then MsgN("PartCtrl: ", filename, " got no attribute count - we screwed up file reading somewhere, report this bug!") return end
+		if attributecount > 100 then MsgN("PartCtrl: ", filename, " got crazy attribute count ", attributecount, " - we screwed up file reading somewhere, report this bug!") return end
 		for i = 1, attributecount do
 			local attrib = DmAttribute()
-			if !attrib.Name then MsgN(filename, " attribute ", i, " has no name value - we screwed up file reading somewhere, report this bug!") return end
+			if !attrib.Name then MsgN("PartCtrl: ", filename, " attribute ", i, " has no name value - we screwed up file reading somewhere, report this bug!") return end
 			table.insert(body, attrib)
 		end
 		ElementBodies[i-1] = body
@@ -2459,7 +2463,7 @@ function PartCtrl_ReadPCF(filename)
 
 		local v = {}
 		if !ElementBodies[i] then
-			MsgN(filename, " element index ", i, " has no body - we screwed up file reading somewhere, report this bug!")
+			MsgN("PartCtrl: ", filename, " element index ", i, " has no body - we screwed up file reading somewhere, report this bug!")
 			break //note: in all the cases where this bug has happened (reading pcfs packed into compressed tf2 maps before 3/26/25 update) every element after the first one with this bug will also be empty, so stop here
 		else
 			for i, attrib in pairs (ElementBodies[i]) do
@@ -2499,29 +2503,32 @@ function PartCtrl_ReadPCF(filename)
 	PrintTable(nonParentedElements)]]
 	//Looks like in every pcf, 0 is the only unparented element, so start there to save time instead of iterating over the whole table again
 	local Elements = {}
-	if !ElementsUnsorted[0].v.particleSystemDefinitions or !ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable then MsgN(filename, " element 0 doesn't contain a particleSystemDefinitions table, ignoring") return end
+	if !ElementsUnsorted[0].v.particleSystemDefinitions or !ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable then 
+		if dodebug then MsgN("PartCtrl: ", filename, " element 0 doesn't contain a particleSystemDefinitions table, ignoring") end
+		return
+	end
 	for _, i in pairs (ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable) do
 		if !ElementsUnsorted[i] then
-			MsgN(filename, " tried to get DmeParticleSystemDefinition from nil element ", i)
+			if dodebug then MsgN("PartCtrl: ", filename, " tried to get DmeParticleSystemDefinition from nil element ", i) end
 		elseif ElementsUnsorted[i].k.Type != "DmeParticleSystemDefinition" then
-			MsgN(filename, " tried to get DmeParticleSystemDefinition element ", ElementsUnsorted[i].k.Name, ", but it was a ", ElementsUnsorted[i].k.Type, " element")
+			if dodebug then MsgN("PartCtrl: ", filename, " tried to get DmeParticleSystemDefinition element ", ElementsUnsorted[i].k.Name, ", but it was a ", ElementsUnsorted[i].k.Type, " element") end
 		else
 			for k, v in pairs (ElementsUnsorted[i].v) do
 				if istable(v) and v.ElementTable then
 					local tab = {}
 					for et_k, et_i in pairs (v.ElementTable) do
 						if !ElementsUnsorted[et_i] then
-							MsgN(filename, " attribute ", k, " tried to get nil element ", et_i)
+							if dodebug then MsgN("PartCtrl: ", filename, " attribute ", k, " tried to get nil element ", et_i) end
 						else
 							if ElementsUnsorted[et_i].k.Type == "DmeParticleChild" then
 								if !ElementsUnsorted[et_i].v.child then
-									MsgN(filename, " DmeParticleChild has no child value")
+									if dodebug then MsgN("PartCtrl: ", filename, " DmeParticleChild has no child value") end
 								else
 									//store particle children as strings (names of the corresponding fx) to keep the table simple and avoid recursive nonsense
 									local childName = nil
 									for et2_k, et2_i in pairs (ElementsUnsorted[et_i].v.child.ElementTable) do
 										if !ElementsUnsorted[et2_i] then
-											MsgN(filename, " DmeParticleChild tried to get nil element ", et2_i)
+											if dodebug then MsgN("PartCtrl: ", filename, " DmeParticleChild tried to get nil element ", et2_i) end
 										else
 											//table.insert(tab, ElementsUnsorted[et2_i].k.Name)
 											childName = ElementsUnsorted[et2_i].k.Name
@@ -2870,7 +2877,7 @@ end
 
 //For reference:
 //Orangebox particle code: https://github.com/nillerusr/source-engine/tree/master/particles
-//Newer (CSGO-era?) particle code, used by some operators backported to gmod: https://github.com/nillerusr/Kisak-Strike/tree/master/particles
+//Newer (Portal 2/Alien Swarm/CSGO-era?) particle code: https://github.com/nillerusr/Kisak-Strike/tree/master/particles
 //https://developer.valvesoftware.com/wiki/Category:Particle_System
 local badoutputattribs = {
 	["operator start fadein"] = 0,
@@ -3944,9 +3951,13 @@ local processfuncs = {
 function PartCtrl_ProcessPCF(filename)
 	if hook.Call("PartCtrl_PreProcessPCF", nil, filename) == false then return end //Let hook funcs prevent PCFs from being read by returning false
 
+	//don't print non-critical messages unless we're in developer mode; 
+	//always print messages for bugs that player should report
+	local dodebug = (GetConVarNumber("developer") >= 1)
+
 	local t = PartCtrl_ReadPCF(filename)
 	if !t then
-		MsgN(filename, " couldn't be read")
+		if dodebug then MsgN("PartCtrl: ", filename, " couldn't be read") end
 	else
 		local t2 = {}
 		for particle, ptab in pairs (t) do
@@ -3963,7 +3974,7 @@ function PartCtrl_ProcessPCF(filename)
 					for _, attrib in pairs (ptab[k]) do
 						if !((attrib["operator start fadein"] or 0) >= 99) and !((attrib["operator end fadein"] or 0) >= 99) then //some fx use a superlong fadein to effectively comment out attribs, ridiculous (particles/advisor_fx.pcf Advisor_Psychic_Attach_01b operator Remap Distance to Control Point to Scalar)
 							if !attrib.functionName then
-								MsgN(filename, " particle ", particle, " has attribute with no function name")
+								if dodebug then MsgN("PartCtrl: ", filename, " particle ", particle, " has attribute with no function name") end
 							else
 								attrib._categoryName = string.TrimRight(k, "s") //for name
 								local name = string.lower(attrib.functionName) or ""
@@ -4013,7 +4024,7 @@ function PartCtrl_ProcessPCF(filename)
 				depth = depth or 0
 				depth = depth + 1
 				if depth > 99 then
-					MsgN(filename, " ", particle2, " child ", child, " cpoints_from_child_fx has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
+					MsgN("PartCtrl: ", filename, " ", particle2, " child ", child, " cpoints_from_child_fx has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
 					return cpoints
 				end
 				for _, childtab in pairs (t[particle2].children) do
@@ -4021,7 +4032,7 @@ function PartCtrl_ProcessPCF(filename)
 						local cpoints2 = table.Copy(t2[childtab.child].cpoints)
 						//make sure the child has also inherited cpoints from its own children
 						if istable(t[childtab.child].children) then
-							//if dodebug and #t[childtab.child].children > 0 then MsgN("children of ", childtab.child, ":") PrintTable(t[childtab.child].children) end
+							//if #t[childtab.child].children > 0 then MsgN("children of ", childtab.child, ":") PrintTable(t[childtab.child].children) end
 							for _, childtab2 in pairs (t[childtab.child].children) do
 								if t2[childtab2.child] then
 									local cpoints3 = cpoints_from_child_fx(table.Copy(t2[childtab2.child].cpoints), childtab2.child, depth)
@@ -4077,11 +4088,11 @@ function PartCtrl_ProcessPCF(filename)
 			local sets_particle_pos = nil
 			local remove_if_other_cpoint_is_empty = {}
 			local function SetCPointModes(particle2, parent)
-				//MsgN("Doing SetCPointModes for particle ", particle2, ", parent ", parent, "\nCurrent output_children:")
 				//a little heavy-handed? maybe. might result in some false positives in complex hierarchy trees. haven't found any actual examples of this causing problems,
 				//and we'd have to totally rework how we handle hierarchy here to make this more accurate (currently have no way to get the parent of a parent, etc. to check if
 				//it's using output_children); output_children[parent] structure probably does limits wrong if a parent has multiple children of the same effect, who then
 				//themselves use output_children (they'd all share the same limit), but no existing fx use a complicated structure like that.
+
 				local groupid = t[particle2]["group id"] or 0
 
 				if parent then
@@ -4103,6 +4114,7 @@ function PartCtrl_ProcessPCF(filename)
 						end
 					end
 				end
+				//MsgN("Doing SetCPointModes for particle ", particle2, ", parent ", parent, "\nCurrent output_children:")
 				//PrintTable(output_children)
 				
 				for k, v in pairs (t2[particle2].cpoints) do
@@ -4242,14 +4254,14 @@ function PartCtrl_ProcessPCF(filename)
 				depth = depth or 0
 				depth = depth + 1
 				if depth > 99 then
-					MsgN(filename, " ", particle2, " CPointModesFromChildren has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
+					MsgN("PartCtrl: ", filename, " ", particle2, " CPointModesFromChildren has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
 					return
 				end
 
 				if istable(t2[particle2].children) then
 					for _, childtab in pairs (t2[particle2].children) do
 						if !t2[childtab.child] then
-							//MsgN(filename, " ", particle2, " CPointModesFromChildren tried to get nonexistent child effect ", child)
+							if dodebug then MsgN("PartCtrl: ", filename, " ", particle2, " CPointModesFromChildren tried to get nonexistent child effect ", child) end
 						else
 							SetCPointModes(childtab.child, particle2)
 							//Now inherit from the child's children, and so on
@@ -4440,7 +4452,7 @@ function PartCtrl_ProcessPCF(filename)
 		end
 		
 		if table.Count(t2) == 0 then
-			MsgN(filename, " contains no usable effects, ignoring")
+			if dodebug then MsgN("PartCtrl: ", filename, " contains no usable effects, ignoring") end
 		else
 			return t2
 		end
@@ -4989,7 +5001,7 @@ if CLIENT then
 
 		browseParticles:SetExpanded(true)
 
-		MsgN("partctrl test: running PopulateContent")
+		if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running PopulateContent") end
 
 	end) end)
 
@@ -5134,7 +5146,7 @@ hook.Add("GameContentChanged", "PartCtrl_GameContentChanged", function()
 		searchParticles = nil
 	end
 
-	MsgN("partctrl test: running GameContentChanged")
+	if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running GameContentChanged") end
 
 end)
 
@@ -5594,4 +5606,4 @@ if CLIENT then
 		PrecacheParticleSystem("")
 	end)
 end
-MsgN("partctrl test: running autorun")
+if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running autorun") end
