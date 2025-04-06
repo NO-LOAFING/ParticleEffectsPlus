@@ -694,8 +694,72 @@ function PANEL:RebuildControls()
 							end
 
 							//TODO: how should we handle an axis being overwritten by output_axis?
+						elseif tab.textentry then
+							local done_first = false
+							for i = 1, 3 do
+								if tab1["which_" .. i-1] != -1 then //don't create an entry for an axis that's being overwritten by output_axis
+									local entrypnl = vgui.Create("Panel", pnl)
+									entrypnl:SetHeight(20)
+									entrypnl:Dock(TOP)
+									if !done_first then
+										entrypnl:DockMargin(padding,padding,padding,3)
+										done_first = true
+									else
+										entrypnl:DockMargin(padding,0,padding,3) //no top padding, squish these 3 together
+									end
+							
+									local label = vgui.Create("DLabel", entrypnl)
+									label:SetDark(true)
+									if i == 1 then
+										label:SetText(tab.label .. " X")
+									elseif i == 2 then
+										label:SetText(tab.label .. " Y")
+									else
+										label:SetText(tab.label .. " Z")
+									end
+									label:Dock(LEFT)
+							
+									local entry = vgui.Create("DTextEntry", entrypnl)
+									entry:SetNumeric(true)
+									entry:SetHeight(20)
+									entry:Dock(FILL)
+									local val = math.Remap(v2.val[i], tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i])
+									if tab.decimals != nil then val = math.Round(val, tab.decimals) end
+									entry:SetText(val)
+							
+									entry.OnEnter = function()
+										//Set the displayed text to the actual number value we're using
+										local val = math.Clamp(tonumber(entry:GetText()) or 0, tab.outMin[i], tab.outMax[i])
+										if tab.decimals != nil then val = math.Round(val, tab.decimals) end
+										entry:SetText(val)
+
+										//Then send it to the server
+										val = math.Remap(val, tab.outMin[i], tab.outMax[i], tab.inMin[i], tab.inMax[i])
+										ent2:DoInput("cpoint_vector_val_axis", k, i, val)
+									end
+									entry.OnFocusChanged = function(_, b) 
+										if !b then entry:OnEnter() end
+									end
+
+									function entrypnl.PerformLayout(_, w, h)
+										local w2, h2 = label:GetTextSize()
+										label:SetWide(w2 + padding*2)
+									end
+								end
+							end
+							if tab.textentry.info then
+								local text = vgui.Create("DLabel", pnl)
+								text:SetDark(true)
+								text:SetWrap(true)
+								text:SetTextInset(0, 0)
+								text:SetText(tab.textentry.info)
+								text:SetContentAlignment(5)
+								text:SetAutoStretchVertical(true)
+								text:DockMargin(padding,betweenitems,padding,0)
+								text:Dock(TOP)
+							end
 						else
-							local done_first_slider = false
+							local done_first = false
 							for i = 1, 3 do
 								if tab1["which_" .. i-1] != -1 then //don't create a slider for an axis that's being overwritten by output_axis
 									local slider = vgui.Create("DNumSlider", pnl)
@@ -736,9 +800,9 @@ function PANEL:RebuildControls()
 									slider:SetDark(true)
 									slider:SetHeight(18)
 									slider:Dock(TOP)
-									if !done_first_slider then
+									if !done_first then
 										slider:DockMargin(padding,betweenitems,0,3)
-										done_first_slider = true
+										done_first = true
 									else
 										slider:DockMargin(padding,0,0,3) //no top padding, squish these 3 together
 									end
@@ -865,9 +929,14 @@ function PANEL:RebuildControls()
 								end
 	
 								slider:SetValue(math.Remap(v2.val[i], inMin, inMax, outMin, outMax))
+								slider.val = slider:GetValue()
 								function slider.OnValueChanged(_, val)
+									if tab.decimals != nil then
+										val = math.Round(val, tab.decimals)
+										if val == slider.val then return end //don't send updates if the number didn't actually change
+										slider.val = val
+									end
 									val = math.Remap(val, outMin, outMax, inMin, inMax)
-									if tab.decimals != nil then val = math.Round(val, tab.decimals) end
 									ent2:DoInput("cpoint_axis_val", k, i, val)
 								end
 							end

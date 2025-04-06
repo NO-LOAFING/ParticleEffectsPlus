@@ -2193,11 +2193,11 @@ local ParticleAttributeNames = { //names and comments from https://github.com/So
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB] = "Color", // TINT_RGB, 6 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA] = "Alpha", // ALPHA, 7 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_CREATION_TIME] = "Creation Time", // CREATION_TIME, 8 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER] = "Sequence", //better display name, still sucks, "sequence" isn't meaningful; original: "Sequence Number", // SEQUENCE_NUMBER, 9 );
+	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER] = "Skin", //better display name, technically inaccurate but players are more likely to understand what this means; original: "Sequence Number", // SEQUENCE_NUMBER, 9 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TRAIL_LENGTH] = "Trail Length", // TRAIL_LENGTH, 10 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_PARTICLE_ID] = "Particle ID", // PARTICLE_ID, 11 ); 
 	[PARTCTRL_PARTICLE_ATTRIBUTE_YAW] = "Yaw", // YAW, 12 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Sequence 2", //better display name, still sucks, "sequence" isn't meaningful; original: "Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
+	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Skin", //better display name, technically inaccurate but players are more likely to understand what this means, "sequence" isn't meaningful; original: "Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_INDEX] = "Hitbox Index", // HITBOX_INDEX, 14
 	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ] = "Hitbox Offset Position", // HITBOX_XYZ_RELATIVE 15
 	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2] = "Alpha", //better display name, there's no difference between the two alphas as far as players are concerned; original: "Alpha Alternate", // ALPHA2, 16
@@ -2206,7 +2206,7 @@ local ParticleAttributeNames = { //names and comments from https://github.com/So
 	[PARTCTRL_PARTICLE_ATTRIBUTE_UNUSED] = "Unused Particle Attribute", //NULL,
 	[PARTCTRL_PARTICLE_ATTRIBUTE_PITCH] = "Pitch", // PITCH, 20
 	[PARTCTRL_PARTICLE_ATTRIBUTE_NORMAL] = "Normal", // NORMAL, 21
-	[PARTCTRL_PARTICLE_ATTRIBUTE_GLOW_RGB] = "Glow RGB", //GLOW_RGB,22 //i don't think these last two are implemented in gmod, actually? doesn't matter
+	[PARTCTRL_PARTICLE_ATTRIBUTE_GLOW_RGB] = "Glow RGB", //GLOW_RGB,22 //i don't think these last two are implemented in gmod, actually?
 	[PARTCTRL_PARTICLE_ATTRIBUTE_GLOW_ALPHA] = "Glow Alpha", //GLOW_ALPHA,23
 	//old attributes from pre-csgo particles https://github.com/nillerusr/source-engine/blob/master/particles/particles.cpp#L3026
 	//[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P0] = "PARTICLE_ATTRIBUTE_TRACE_P0 (internal)",
@@ -2306,9 +2306,9 @@ function PartCtrl_ReadPCF(filename)
 	or header == "<!-- dmx encoding binary 3 format pcf 2 -->\n" //used by a few portal 2 pcfs; this and the above don't seem to have any formatting differences from binary 2
 	then 
 		version = 2
-	elseif header == "<!-- dmx encoding binary 4 format pcf 2 -->\n" then
+	elseif header == "<!-- dmx encoding binary 4 format pcf 2 -->\n" then //only used by by l4d2 pcfs?
 		version = 4
-	elseif header == "<!-- dmx encoding binary 5 format pcf 2 -->\n" then
+	elseif header == "<!-- dmx encoding binary 5 format pcf 2 -->\n" then //used by most portal 2 pcfs and all(?) alien swarm pcfs
 		version = 5
 	else
 		if dodebug then MsgN("PartCtrl: ", filename, " has unsupported pcf format ", string.TrimRight(header, "\n"), ", ignoring") end
@@ -3164,14 +3164,11 @@ local processfuncs = {
 				local outMin = attrib["output minimum"] or 0
 				local outMax = attrib["output maximum"] or 1
 				local is_multiplier = attrib["output is scalar of initial random range"] or attrib["output is scalar of current value"]
-				local default = 0
-				if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS then
-					if !is_multiplier then
-						default = 16 //special handling so we don't default to having 0 radius and being invisible
-					else
-						default = 1 //default to 100% radius
-					end
-					default = math.Remap(default, outMin, outMax, inMin, inMax)
+				local default
+				local decimals = nil
+				if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS and !is_multiplier then
+					//radius scalars should default to a nice big size, not 1 pixel
+					default = math.Remap(8, outMin, outMax, inMin, inMax)
 				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
 					//Alpha should always default to max visibility;
 					//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
@@ -3180,6 +3177,13 @@ local processfuncs = {
 					else
 						default = math.min(inMin, inMax)
 					end
+				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER or field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 then
+					//sequence number scalars should be whole numbers, and default to 0 (first sequence)
+					default = math.Remap(0, outMin, outMax, inMin, inMax)
+					decimals = 0
+				else
+					//default to 1
+					default = math.Remap(1, outMin, outMax, inMin, inMax)
 				end
 				//make sure the default value of the control in the edit window isn't outside its range
 				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
@@ -3194,6 +3198,7 @@ local processfuncs = {
 					["outMin"] = outMin,
 					["outMax"] = outMax,
 					["default"] = default,
+					["decimals"] = decimals,
 				})
 			end
 		end,
@@ -3276,14 +3281,11 @@ local processfuncs = {
 			local outMin = attrib["output minimum"] or 0
 			local outMax = attrib["output maximum"] or 1
 			local is_multiplier = attrib["output is scalar of initial random range"] or attrib["output is scalar of current value"]
-			local default = 0
-			if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS then
-				if !is_multiplier then
-					default = 16 //special handling so we don't default to having 0 radius and being invisible
-				else
-					default = 1 //default to 100% radius
-				end
-				default = math.Remap(default, outMin, outMax, inMin, inMax)
+			local default
+			local decimals = nil
+			if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS and !is_multiplier then
+				//radius scalars should default to a nice big size, not 1 pixel
+				default = math.Remap(8, outMin, outMax, inMin, inMax)
 			elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
 				//Alpha should always default to max visibility;
 				//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
@@ -3292,6 +3294,13 @@ local processfuncs = {
 				else
 					default = math.min(inMin, inMax)
 				end
+			elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER or field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 then
+				//sequence number scalars should be whole numbers, and default to 0 (first sequence)
+				default = math.Remap(0, outMin, outMax, inMin, inMax)
+				decimals = 0
+			else
+				//default to 1
+				default = math.Remap(1, outMin, outMax, inMin, inMax)
 			end
 			//make sure the default value of the control in the edit window isn't outside its range
 			default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
@@ -3306,6 +3315,7 @@ local processfuncs = {
 				["outMin"] = outMin,
 				["outMax"] = outMax,
 				["default"] = default,
+				["decimals"] = decimals,
 				["relative_to_cpoint"] = attrib["starting control point"] or 0 //?
 			})
 			cpoint_from_attrib_value(processed, attrib, "starting control point", 0, "position_combine") //this is iffy; we assume the start cpoint might be attached to something while the end point isn't, which *is* the case with all existing fx, but doesn't necessarily have to be
@@ -3498,9 +3508,18 @@ local processfuncs = {
 				cpoint_from_attrib_value(processed, attrib, "tint control point", 0, "position_combine") //samples the lighting from this cpoint's position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Color_Random)
 			end
 		end,
+		["cull relative to model"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, { //TODO: should this be a position_combine? can't actually find any fx that use this, even in portal2/asw/l4d2
+			["ignore_outputs"] = true, //this cpoint sets an associated model, not a position, so outputs don't override it
+		}) end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Cull_relative_to_model)
 		["move particles between 2 control points"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "end control point", 1, nil, {["sets_particle_pos"] = true}) //yes, it only defines an endpoint (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Move_Particles_Between_2_Control_Points)
 		end, 
+		["normal align to cp"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, "position_combine") end, //controls angle of Render Models fx; this is an angle control, so combine it
+		["normal modify offset random"] = function(processed, attrib)
+			if attrib["offset in local space 0/1"] then //cpoint is only used if this is true https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_initializers.cpp#L7267
+				cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, "position_combine") //controls angle of Render Models fx; this is an angle control, so combine it
+			end
+		end,
 		["position along epitrochoid"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "control point number", 0, nil, {["sets_particle_pos"] = true})
 			if (attrib["scale from conrol point (radius 1/radius 2/offset)"] or -1) > -1 then //sic (conrol point)
@@ -3683,15 +3702,12 @@ local processfuncs = {
 				local outMin = attrib["output minimum"] or 0
 				local outMax = attrib["output maximum"] or 1
 				local is_multiplier = attrib["output is scalar of initial random range"] //or attrib["output is scalar of current value"] //this one doesn't have this value
-				local default = 0
-				if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS then
-					if !is_multiplier then
-						default = 16 //special handling so we don't default to having 0 radius and being invisible
-					else
-						default = 1 //default to 100% radius
-					end
-					default = math.Remap(default, outMin, outMax, inMin, inMax)
-				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then
+				local default
+				local decimals = nil
+				if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS and !is_multiplier then
+					//radius scalars should default to a nice big size, not 1 pixel
+					default = math.Remap(8, outMin, outMax, inMin, inMax)
+				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
 					//Alpha should always default to max visibility;
 					//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
 					if outMin <= outMax then
@@ -3699,6 +3715,13 @@ local processfuncs = {
 					else
 						default = math.min(inMin, inMax)
 					end
+				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER or field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 then
+					//sequence number scalars should be whole numbers, and default to 0 (first sequence)
+					default = math.Remap(0, outMin, outMax, inMin, inMax)
+					decimals = 0
+				else
+					//default to 1
+					default = math.Remap(1, outMin, outMax, inMin, inMax)
 				end
 				//make sure the default value of the control in the edit window isn't outside its range
 				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
@@ -3713,6 +3736,7 @@ local processfuncs = {
 					["outMin"] = outMin,
 					["outMax"] = outMax,
 					["default"] = default,
+					["decimals"] = decimals,
 				})
 			end
 		end,
@@ -3757,6 +3781,13 @@ local processfuncs = {
 			})
 			cpoint_from_attrib_value(processed, attrib, "local space CP", -1, "position_combine") //uses the cpoint's angles to rotate the output in some odd way, can be used to make a position sort-of-rotate with the cpoint, or make colors change as it spins
 		end,
+		["remap cp orientation to rotation"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control point", 0, "position_combine") end, //uses the cpoint's angles to set the pitch/yaw/roll of particles; this is an angle control, so position_combine it
+		["remap initial direction to cp to vector"] = function(processed, attrib)
+			//like "remap direction to cp to vector" but an initializer instead of operator.
+			//can't find any fx using this in portal2/asw/l4d2, and can't get it to do anything useful in a custom effect,
+			//so just position_combine it like the operator version.
+			cpoint_from_attrib_value(processed, attrib, "control point", 0, "position_combine")
+		end,
 		["remap initial distance to control point to scalar"] = function(processed, attrib)
 			local label = ParticleAttributeNames[attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS] //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
 			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["label"] = label})
@@ -3765,6 +3796,39 @@ local processfuncs = {
 			if (attrib["output field"] or 0) then //cpoint is only used by position vector (0) to make the position relative to that cpoint (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3155)
 				cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, {["sets_particle_pos"] = true}) //yes, this sets particle pos, see unusual_poseidon_light_ fx
 			end
+		end,
+		["remap speed to scalar"] = function(processed, attrib)
+			if !attrib["per particle"] then
+				//uses the speed of the cpoint to set a scalar value, just position_combine it
+				cpoint_from_attrib_value(processed, attrib, "control point number (ignored if per particle)", 0, "position_combine")
+			end
+		end,
+		["sequence from control point"] = function(processed, attrib)
+			//https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_initializers.cpp#L3172
+			//this is incredibly specific and needs its own special handling with textentries.
+
+			//every digit of the number supplied to each axis is turned into a sprite, with each digit potentially corresponding to 
+			//a unique sprite, and each axis having its own set of sprites.
+
+			//in the only working effect with this operator, particles/infested_damage.pcf damage_numbers_digits from alien swarm, 
+			//axis 0 shows a minus for every 0 and a plus for every 1 or higher; axis 1 shows the corresponding number for each digit; 
+			//and axis 2 shows an exclamation point for every digit. this means axis 1 just displays whichever number you give it, 
+			//while the other two are less intuitive.
+
+			//local max = Vector(99999999, 99999999, 99999999)
+			local max = Vector(16384, 16384, 16384) //limit due to technical limitations of net.WriteVector (https://wiki.facepunch.com/gmod/net.WriteVector)
+			local min = Vector(0,0,0)
+			cpoint_from_attrib_value(processed, attrib, "control point", 1, "vector", {
+				["label"] = "Sprites",
+				["inMin"] = min,
+				["inMax"] = max,
+				["outMin"] = min,
+				["outMax"] = max,
+				["default"] = Vector(0,1,0),
+				["decimals"] = 0,
+				//info text can't be too specific, since custom fx could potentially use these for any conceivable sprites, and we would have no way of knowing about it
+				["textentry"] = {["info"] = "Enter numbers into the boxes to set the effect's sprites. Each number can correspond to a different sprite, and each axis has its own set of sprites."},
+			})
 		end,
 		["set hitbox position on model"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0) end, //presumably uses the model that the cpoint is attached to, so use position; TODO: these two are csgo(?) ports and i can't get them to do anything, don't know if they even function in gmod
 		["set hitbox to closest hitbox"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0) end, //^
