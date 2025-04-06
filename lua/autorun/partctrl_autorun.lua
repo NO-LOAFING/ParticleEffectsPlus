@@ -3609,6 +3609,12 @@ local processfuncs = {
 		["position from chaotic attractor"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "Relative Control point number", 0, nil, {["sets_particle_pos"] = true})
 		end,
+		["position from parent cache"] = function(processed, attrib)
+			//this operator's presence overrides others that would set the particle pos (i.e. "position within sphere random") and actively makes
+			//the effect unusable on its own - see l4d2's particles/firework_crate_fx.pcf firework_crate_ground_sparks_01.
+			//this shouldn't even be possible, gmod's pet doesn't let you add this operator and another position one at the same time.
+			processed["sets_particle_pos_forcedisable"] = true
+		end,
 		["position from parent particles"] = function(processed, attrib)
 			//don't cull parent fx if they don't have a valid renderer, but one of their children has this attribute (i.e. parent alien_ufo_explode_trailing_bits_alt, child alien_ufo_explode_alt_trail_smoke)
 			processed["parent_force_has_renderer"] = true
@@ -4253,7 +4259,7 @@ function PartCtrl_ProcessPCF(filename)
 										end
 									end
 								end
-								if v2["sets_particle_pos"] then
+								if v2["sets_particle_pos"] and !t2[particle2].sets_particle_pos_forcedisable then
 									sets_particle_pos = sets_particle_pos or {}
 									sets_particle_pos[k] = true
 								end
@@ -4292,7 +4298,7 @@ function PartCtrl_ProcessPCF(filename)
 										modes[k] = PARTCTRL_CPOINT_MODE_POSITION_COMBINE
 									end
 								end
-								if v2["sets_particle_pos"] then
+								if v2["sets_particle_pos"] and !t2[particle2].sets_particle_pos_forcedisable then
 									sets_particle_pos = sets_particle_pos or {}
 									sets_particle_pos[k] = true
 								end
