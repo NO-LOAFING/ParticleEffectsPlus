@@ -2979,7 +2979,7 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 end
 local function cpoint_from_attrib_value(processed, attrib, value, default_k, processedk, processedv)
 	local k = attrib[value] or default_k
-	if k > -1 then
+	if k > -1 or (processedv and processedv["force_allow_-1"]) then
 		local name = value
 		if attrib.functionName then
 			name = attrib.functionName .. ": " .. name
@@ -3663,7 +3663,14 @@ local processfuncs = {
 			end
 		end,
 		["position within sphere random"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
+			if !attrib["randomly distribute to highest supplied Control Point"] then
+				cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
+			else
+				local name = attrib._categoryName .. " " .. attrib.functionName .. ": randomly distribute to highest supplied Control Point"
+				PartCtrl_CPoint_AddToProcessed(processed, -1, name, "position_combine", {["sets_particle_pos"] = true, ["force_allow_-1"] = true}, attrib)
+				//TODO: ehh, this makes it combine with the control of the first available position control; 
+				//works on all fx i could find, but could potentially result in bad cpoints on more complex fx 
+			end
 			if (attrib["scale cp (distance/speed/local speed)"] or -1) > -1 then
 				local function DoSphereAxis(axis, label, axisvs, min)
 					local doaxis = false
@@ -3916,15 +3923,28 @@ local processfuncs = {
 	},
 	["emitters"] = {
 		["emit noise"] = function(processed, attrib)
-			local min = attrib["emission minimum"] or 0
-			local max = attrib["emission maximum"] or 100
-			if min > 0 or max > 0 then
+			if (attrib["emission minimum"] or 0) > 0 or (attrib["emission maximum"] or 100) > 0 then
 				processed["has_emitter"] = true
 			end
 		end,
+		["emit to maintain count"] = function(processed, attrib)
+			if (attrib["count to maintain"] or 100) > 0 then
+				processed["has_emitter"] = true
+			end
+			local axis = attrib["maintain count scale control point field"] or 0
+			if axis > -1 then
+				cpoint_from_attrib_value(processed, attrib, "maintain count scale control point", -1, "axis", {
+					["axis"] = axis,
+					["label"] = "Maintain Count Scale",
+					["inMin"] = 0,
+					["outMin"] = 0,
+					//no max
+					["default"] = 1,
+				})
+			end
+		end,
 		["emit_continuously"] = function(processed, attrib)
-			local max = attrib["emission_rate"] or 100
-			if max > 0 then
+			if (attrib["emission_rate"] or 100) > 0 then
 				processed["has_emitter"] = true
 			end
 			local axis = attrib["emission count scale control point field"] or 0
@@ -3941,9 +3961,7 @@ local processfuncs = {
 		end,
 		//"emit noise" and "emit_continuously" have "scale emission to used control points", which wiki claims is a cpoint id, but it's actually a float that's multiplied by the number of cpoints the effect has, we don't care about this (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_emitters.cpp#L449)
 		["emit_instantaneously"] = function(processed, attrib)
-			local min = attrib["num_to_emit_minimum"] or -1
-			local max = attrib["num_to_emit"] or 100
-			if min > 0 or max > 0 then
+			if (attrib["num_to_emit_minimum"] or -1) > 0 or (attrib["num_to_emit"] or 100) > 0 then
 				processed["has_emitter"] = true
 			end
 			local axis = attrib["emission count scale control point field"] or 0
@@ -3960,10 +3978,10 @@ local processfuncs = {
 		end,
 	},
 	["forces"] = { //ForceGenerator
+		["force based on distance from plane"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control point number", 0) end, //don't know if the extra overrides on "pull toward control point" are necessary here, i don't think any existing fx need them
 		["pull towards control point"] = function(processed, attrib)
-			local force = attrib["amount of force"] or 0
 			local type = nil
-			if math.abs(force) < 10 then //can be negative
+			if math.abs(attrib["amount of force"] or 0) < 10 then //can be negative
 				//a lot of effects have this attrib with miniscule force values, for whatever reason. they don't visibly appear to do anything, maybe it's part of some hacky workaround
 				//that particle developers use, i don't know. either way, don't let them create their own position control in these cases, because they aren't useful.
 				type = "position_combine" 
@@ -3989,6 +4007,7 @@ local processfuncs = {
 				processed["constraint_does_override"] = true //global value on the effect, not cpoint-specific
 			end
 		end,
+		//"constrain particles to a box" is in worldspace only?? why? what is this for?
 		["prevent passing through a plane"] = function(processed, attrib)
 			if !attrib["global origin"] or !attrib["global normal"] then
 				cpoint_from_attrib_value(processed, attrib, "control point number", 0)
@@ -4273,10 +4292,14 @@ function PartCtrl_ProcessPCF(filename)
 										modes[k] = PARTCTRL_CPOINT_MODE_POSITION_COMBINE
 									end
 								end
+								if v2["sets_particle_pos"] then
+									sets_particle_pos = sets_particle_pos or {}
+									sets_particle_pos[k] = true
+								end
 							end
 						end
 						if v["vector"] then
-							if modes[k] == nil then
+							if modes[k] == nil and (t2[particle2].has_renderer and t2[particle2].has_emitter) then
 								modes[k] = PARTCTRL_CPOINT_MODE_VECTOR
 							end
 						end
@@ -4290,7 +4313,7 @@ function PartCtrl_ProcessPCF(filename)
 									end
 								end
 							end
-							if doaxis then
+							if doaxis and (t2[particle2].has_renderer and t2[particle2].has_emitter) then
 								modes[k] = PARTCTRL_CPOINT_MODE_AXIS
 							end
 						end
@@ -4343,25 +4366,44 @@ function PartCtrl_ProcessPCF(filename)
 			end
 
 			local shouldcull = !t2[particle].has_renderer or !t2[particle].has_emitter
-			local needfallback = true
+			local needfallback = -1
 			for k, v in pairs (modes) do
 				if !shouldcull and !needfallback then break end
 				if shouldcull and v != PARTCTRL_CPOINT_MODE_NONE then
 					//Clear out empty effects (no renderer, no emitter, no cpoints even from children)
 					shouldcull = false
 				end
-				if needfallback and v == PARTCTRL_CPOINT_MODE_POSITION then
-					//Create fallback movement cpoint "-1" for effects that don't have a movement cpoint
-					needfallback = false
+				if needfallback then 
+					if v == PARTCTRL_CPOINT_MODE_POSITION then
+						//Create fallback position cpoint for effects that don't have any
+						needfallback = nil
+					end
 				end
 			end
 			if shouldcull then
 				t2[particle]["renderer_emitter_shouldcull"] = true
 			end
 			if needfallback then
-				//PartCtrl_CPoint_AddToProcessed(t2[particle], -1, "fallback position cpoint created due to no position cpoint", nil, nil, attrib) //causes bizarre unnecessary cpoint -1 on utaunt_rainbow_teamcolor_red
-				t2[particle].cpoints_with_children[-1] = {["position"] = {[1] = {["name"] = "fallback position cpoint created due to no position cpoint"}}}
-				modes[-1] = PARTCTRL_CPOINT_MODE_POSITION
+				if !modes[0] then
+					//just use cpoint 0 if it's open
+					needfallback = 0
+				else
+					//If possible, turn the first available position_combine cpoint into a normal position
+					for k, v in SortedPairs (modes) do
+						if k != -1 and v == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+							needfallback = k
+							break
+						end
+					end
+				end
+				//if neither of those work, then use the nonsense cpoint -1, which is probably fine since it's most likely
+				//not going to be able to do anything anyway; it's just there so we have an entity to associate the effect with.
+
+				t2[particle].cpoints_with_children[needfallback] = t2[particle].cpoints_with_children[needfallback] or {}
+				t2[particle].cpoints_with_children[needfallback].position = t2[particle].cpoints_with_children[needfallback].position or {}
+				table.insert(t2[particle].cpoints_with_children[needfallback].position, {["name"] = "fallback position cpoint created due to no position cpoint"})
+
+				modes[needfallback] = PARTCTRL_CPOINT_MODE_POSITION
 			end
 			//Finally, store the cpoint modes
 			for k, v in pairs (modes) do
