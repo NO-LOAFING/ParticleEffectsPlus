@@ -2882,6 +2882,22 @@ local badoutputattribs = {
 	["operator end fadeout"] = 0,
 	["first particle to copy"] = 1, //see striderbuster_flechette_attached
 }
+//new operator params that seem like they *might* matter re. outputs, but in practice, the only fx i could find with them were a few l4d2 ones,
+//and none of them needed to have their outputs rejected, so ignore these for now
+--[[local badoutputattribs2 = {
+	["time strength random scale max"] = 1,
+	["operator time scale seed"] = 0,
+	["operator time scale min"] = 1,
+	["operator time scale max"] = 1,
+	["operator time offset seed"] = 0,
+	["operator time offset min"] = 0,
+	["operator time offset max"] = 0,
+	["operator strength scale seed"] = 0,
+	["operator strength random scale min"] = 1,
+	["operator strength random scale max"] = 1,
+	["operator fade oscillate"] = 0,
+	["operator end cap state"] = -1,
+}]]
 function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processedv, attrib)
 	if attrib then
 		//if an output has a fadein/fadeout, then it isn't always overriding this cpoint, so we don't care about it - reject it
@@ -2894,6 +2910,17 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 					return
 				end
 			end
+			//test: which fx even have these?
+			--[[for bad, v in pairs (badoutputattribs2) do
+				if attrib[bad] != nil and attrib[bad] > v then
+					if !processed.bad2 then
+						processed.bad2 = ""
+					else
+						processed.bad2 = processed.bad2 .. "\n"
+					end
+					processed.bad2 = processed.bad2 .. name .. ": " .. bad .. " = " .. attrib[bad]
+				end
+			end]]
 		end
 	end
 	
@@ -4171,33 +4198,48 @@ function PartCtrl_ProcessPCF(filename)
 
 				local groupid = t[particle2]["group id"] or 0
 
-				if parent then
+				if parent and !output_children[parent] then
+					tab = nil
 					for k, v in pairs (t2[parent].cpoints) do
-						if v["output_children"] and !output_children[parent] then
-							output_children[parent] = {}
+						if v["output_children"] then
 							for k2, v2 in pairs (v["output_children"]) do
 								if v2["groupid"] then
-									output_children[parent][k] = output_children[parent][k] or {}
+									tab = tab or {}
+									tab[k] = tab[k] or {}
 									//"limit" value sets the number of children to override the target cpoint on;
 									//use the largest possible limit provided, no limit provided means unlimited
 									local limit = v2["limit"] or math.huge
-									if output_children[parent][k][v2["groupid"]] then
-										limit = math.max(limit, output_children[parent][k][v2["groupid"]])
+									if tab[k][v2["groupid"]] then
+										limit = math.max(limit, tab[k][v2["groupid"]])
 									end
-									output_children[parent][k][v2["groupid"]] = limit
+									tab[k][v2["groupid"]] = limit
 								end
 							end
 						end
 					end
+					if tab then
+						output_children[parent] = tab
+					end
 				end
-				//MsgN("Doing SetCPointModes for particle ", particle2, ", parent ", parent, "\nCurrent output_children:")
-				//PrintTable(output_children)
 				
 				for k, v in pairs (t2[particle2].cpoints) do
-					if output_children[parent] and output_children[parent][k] and output_children[parent][k][groupid] and output_children[parent][k][groupid] > 0 then
-						//if the target cpoint is being overridden by output_children, decrease the limit by 1 if applicable, and then skip to the next cpoint
-						output_children[parent][k][groupid] = output_children[parent][k][groupid] - 1
-					else
+					//this method doesn't work, argh
+					//can't detect that a parent of a parent is doing output_children on a cpoint
+					//if output_children[parent] and output_children[parent][k] and output_children[parent][k][groupid] and output_children[parent][k][groupid] > 0 then
+					//	//if the target cpoint is being overridden by output_children, decrease the limit by 1 if applicable, and then skip to the next cpoint
+					//	output_children[parent][k][groupid] = output_children[parent][k][groupid] - 1
+					//else
+					//dumber brute-force method, just get the first parent setting output_axis, and hope nothing complicated is using limits
+					local doskip = false
+					for ent, tab in pairs (output_children) do
+						if tab[k] and tab[k][groupid] and tab[k][groupid] > 0 then
+							//if the target cpoint is being overridden by output_children, decrease the limit by 1 if applicable, and then skip to the next cpoint
+							output_children[ent][k][groupid] = output_children[ent][k][groupid] - 1
+							doskip = true
+							break
+						end
+					end
+					if !doskip then
 						if v["output_axis"] then
 							for k2, v2 in pairs (v["output_axis"]) do
 								if v2["axis"] then
