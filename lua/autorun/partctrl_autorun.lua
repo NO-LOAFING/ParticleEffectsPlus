@@ -2142,6 +2142,30 @@ list.Set("PartCtrl_UtilFx", "wheel_indicator", {
 //.PCF FILE READING CODE//
 //////////////////////////
 
+//Custom version of SortedPairs to sort by table key, but caps-agnostically (see original: https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/extensions/table.lua#L539-L576)
+//This is used to match how the particle editor sorts particle names, so we don't sort capitalized particles above uncapitalized ones.
+local function SortedPairsLower(pTable)
+
+	local keys = table.GetKeys(pTable) //use the global getkeys instead of the local one used in the SortedPairs code, so we don't have to copy as much
+
+	//if ( Desc ) then //we don't care about this
+	//	table.sort( keys, function( a, b )
+	//		return string.lower(a) > string.lower(b) 
+	//	end )
+	//else
+		table.sort( keys, function( a, b )
+			return string.lower(a) < string.lower(b) //this is the only functional change
+		end )
+	//end
+
+	local i, key = 1, nil
+	return function()
+		key, i = keys[ i ], i + 1
+		return key, pTable[ key ]
+	end
+
+end
+
 //silly pretend enums
 PARTCTRL_CPOINT_MODE_NONE		= 0
 PARTCTRL_CPOINT_MODE_POSITION		= 1
@@ -2840,7 +2864,7 @@ function PartCtrl_GetParticlesWithAttrib(desiredfunc, filename, extended)
 	local function GetAttribsFromFile(desiredfunc, filename, extended)
 		local tab = PartCtrl_ReadPCF(filename)
 		if tab then
-			for particle, ptab in SortedPairs (tab) do
+			for particle, ptab in SortedPairsLower (tab) do
 				for category, attribs in pairs (ptab) do
 					if istable(attribs) then
 						for k, v in pairs (attribs) do
@@ -4436,7 +4460,7 @@ function PartCtrl_ProcessPCF(filename)
 					//just use cpoint 0 if it's open
 					needfallback = 0
 				else
-					//If possible, turn the first available position_combine cpoint into a normal position
+					//If possible, turn the first available position_combine cpoint into a normal position cpoint
 					for k, v in SortedPairs (modes) do
 						if k != -1 and v == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
 							needfallback = k
@@ -4828,7 +4852,7 @@ if CLIENT then
 			local dochildfx = cv_childfx_spawnlist:GetInt()
 			if dochildfx == 0 then
 				//No child fx
-				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do //use SortedPairs to sort them in alphabetical order
+				for particle, _ in SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do //sort them in alphabetical order
 					if !PartCtrl_ProcessedPCFs[pcf][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf][particle].parents) < 1 then
 						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
 					end
@@ -4836,7 +4860,7 @@ if CLIENT then
 			elseif dochildfx == 1 then
 				local tab = {}
 				//Separate child fx
-				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do //use SortedPairs to sort them in alphabetical order
+				for particle, _ in SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do //sort them in alphabetical order
 					if !PartCtrl_ProcessedPCFs[pcf][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf][particle].parents) < 1 then
 						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
 					else
@@ -4851,7 +4875,7 @@ if CLIENT then
 				end
 			else
 				//All fx sorted alphabetically
-				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do //use SortedPairs to sort them in alphabetical order
+				for particle, _ in SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do //sort them in alphabetical order
 					spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
 				end
 			end
@@ -4869,7 +4893,7 @@ if CLIENT then
 		if !istable(PartCtrl_UtilFxByTitle[name]) then
 			MsgN("OnUtilFxNodeSelected tried to make spawnlist for invalid title ", name)
 		else
-			for particle, _ in SortedPairs (PartCtrl_UtilFxByTitle[name]) do //use SortedPairs to sort them in alphabetical order
+			for particle, _ in SortedPairsLower (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
 				spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = "UtilFx", ["nicename"] = particle})
 			end
 		end
@@ -4957,7 +4981,7 @@ if CLIENT then
 
 					menu:AddOption("#spawnmenu.createautospawnlist", function()
 						local tab = {}
-						for particle, _ in SortedPairs (PartCtrl_UtilFxByTitle[name]) do //use SortedPairs to sort them in alphabetical order
+						for particle, _ in SortedPairsLower (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
 							table.insert(tab, {["pcf"] = "UtilFx", ["particle"] = particle})
 						end
 						PartCtrl_CreateCustomSpawnlist(tab, "Scripted Effects", "icon16/page_gear.png")
@@ -5009,7 +5033,7 @@ if CLIENT then
 
 							menu:AddOption("#spawnmenu.createautospawnlist", function()
 								local tab = {}
-								for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[cname]) do //use SortedPairs to sort them in alphabetical order
+								for particle, _ in SortedPairsLower (PartCtrl_ProcessedPCFs[cname]) do //sort them in alphabetical order
 									table.insert(tab, {["pcf"] = cname, ["particle"] = particle})
 								end
 								PartCtrl_CreateCustomSpawnlist(tab, string.GetFileFromFilename(cname))
@@ -5155,7 +5179,7 @@ if CLIENT then
 		if searchParticles == nil then
 			searchParticles = {}
 			for pcf, _ in SortedPairs (PartCtrl_ProcessedPCFs) do
-				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do
+				for particle, _ in SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do
 					table.insert(searchParticles, {["name"] = particle, ["name_lower"] = particle:lower(), ["pcf"] = pcf}) //lowercase needs to be separate, because effect names are case-sensitive when spawning them
 				end
 			end
