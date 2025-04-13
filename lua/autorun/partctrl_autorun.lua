@@ -2296,14 +2296,15 @@ table.insert(a, "ATTRIBUTE_MATRIX_ARRAY")
 //reference:
 //https://developer.valvesoftware.com/wiki/PCF, https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3, https://developer.valvesoftware.com/wiki/DMX/Binary
 
-function PartCtrl_ReadPCF(filename)
+function PartCtrl_ReadPCF(filename, path)
 
 	//don't print non-critical messages unless we're in developer mode; 
 	//always print messages for bugs that player should report
 	local dodebug = (GetConVarNumber("developer") >= 1)
 
-	local f = file.Open(filename, "rb", "GAME")
-	if !f then MsgN("PartCtrl: ", filename, " can't be read, report this bug!") return end
+	local f = file.Open(filename, "rb", path or "GAME")
+	if !f then MsgN("PartCtrl: ", filename, " (", path or "GAME", ") can't be read, report this bug!") return end
+	//path arg is only used by PartCtrl_GetPCFConflicts, don't worry about it past this point
 
 	//If the pcf is packed into the current map, then write a copy of it into the data folder and read that instead.
 	//This is necessary because performing read operations on packed files takes a very long time (only if the map file is compressed, but we don't have 
@@ -2892,6 +2893,67 @@ function PartCtrl_GetParticlesWithAttrib(desiredfunc, filename, extended)
 	else
 		GetAttribsFromFile(desiredfunc, filename, extended)
 	end
+end
+
+
+//Test: Get a list of all pcfs that are defined by multiple games, and for each one, print the checksums of each copy of the file, along with the checksum
+//of the one actually being loaded by the game. This lets us determine which games have unique instances of a pcf as opposed to identical copies, and also 
+//tells us which ones are getting loaded vs. getting clobbered by mount order.
+function PartCtrl_GetPCFConflicts()
+	
+	local particles = {}
+	for k, v in pairs (PartCtrl_AllPCFPaths) do
+		particles[v] = {}
+	end
+	for k, v in pairs (PartCtrl_SkippedPCFPaths) do
+		particles[v] = {}
+	end
+	local games = engine.GetGames()
+	games[0] = {depot = 1, folder = "garrysmod", mounted = true}
+	for k, v in pairs (games) do
+		if !v.mounted then continue end
+
+		//make folder and depot names all the same length so it reads better
+		local folder2 = v.folder
+		for i = 1, (17-#(v.folder)) do //longest folder name in engine.GetGames is thestanleyparable
+			folder2 = folder2 .. " "
+		end
+		v.depot = tostring(v.depot)
+		for i = 1, (7-#(v.depot)) do //longest depot number in engine.GetGames is treason's 1786950
+			v.depot = " " .. v.depot
+		end
+
+		for name, _ in pairs (particles) do
+			local f = file.Read(name, v.folder)
+			if f then
+				particles[name][v.depot .. ": " .. folder2] = util.SHA256(f)
+			end
+			//alternative: get checksum of the table we return from reading the file, just in case there's some false positive making
+			//file.Read return a non-identical string even if nothing relevant is different (i.e. file save timestamp or something?)
+			//the results of this turned out to be no different from the above, and it's much slower, so comment this out for now.
+			--[[local f = PartCtrl_ReadPCF(name, v.folder)
+			if f then
+				particles[name][v.depot .. ": " .. folder2] = util.SHA256(util.TableToKeyValues(f))
+			end]]
+		end
+	end
+	for name, v in pairs (particles) do
+		if table.Count(v) <= 1 then
+			particles[name] = nil
+		else
+			local f = file.Read(name, "GAME")
+			if f then
+				particles[name]["      0: mounted          "] = util.SHA256(f) //top of list
+			end
+			//see above
+			--[[local f = PartCtrl_ReadPCF(name)
+			if f then
+				particles[name]["      0: mounted          "] = util.SHA256(util.TableToKeyValues(f)) //top of list
+			end]]
+		end
+	end
+	PrintTable(particles)
+
 end
 
 
@@ -4762,14 +4824,79 @@ PartCtrl_ReadAndProcessPCFs_StartupIsOver = PartCtrl_ReadAndProcessPCFs_StartupI
 
 function PartCtrl_ReadAndProcessPCFs()
 
+	local dodebug = (GetConVarNumber("developer") >= 1)
+
 	//MsgN("starting PartCtrl_ReadAndProcessPCFs at time ", SysTime())
 
+	//First, get a list of conflicting pcf fallback files.
+	//
+	//The purpose of these is to resolve conflicts where multiple mounted games have different, unique pcf files sharing the same file path.
+	//For example, TF2 has an "explosion.pcf" which shares a name with a pcf from HL2, and a "blood_impact.pcf" which shares a name with a pcf
+	//included in gmod by default. The former will always be overridden if HL2 is mounted, and the latter will always be overridden no matter what.
+	//Both of the TF2 pcfs contain unique effects that we don't want the player to be locked out of using, so this addon includes copies of TF2's 
+	//"explosion.pcf" and "blood_impact.pcf" under a different file path, which this addon then handles by seamlessly including them alongside the 
+	//other pcfs actually being loaded from TF2.
+	//
+	//This addon *only* includes copies of pcf files, *not* their textures/materials, so we only load fallbacks for games that are mounted.
+	//
+	//Currently includes fallback pcfs for the following games mounted: cstrike, hl2, left4dead2, portal, portal2, swarm, tf; retrieved 4/13/25
+	//To check all pcf file conflicts (i.e. with more games mounted, or after a game update) run PartCtrl_GetPCFConflicts().
+	local _, games = file.Find("particles/partctrl_fallbacks/*", "GAME")
+	PartCtrl_FallbackPCFs = {}
+	for _, _game in pairs (games) do
+		if IsMounted(_game) then
+			local files, _ = file.Find("particles/partctrl_fallbacks/" .. _game .. "/*", "GAME")
+			for _, filename in pairs (files) do
+				local f = file.Read("particles/partctrl_fallbacks/" .. _game .. "/" .. filename, "GAME")
+				if f then
+					PartCtrl_FallbackPCFs["particles/" .. filename] = PartCtrl_FallbackPCFs["particles/" .. filename] or {}
+					PartCtrl_FallbackPCFs["particles/" .. filename][_game] = util.SHA256(f)
+				end
+			end
+		end
+	end
+
 	PartCtrl_AllPCFPaths = {}
+	PartCtrl_SkippedPCFPaths = {} //also keep a list of skipped pcfs, so that PartCtrl_GetPCFConflicts() can still check them
 	local function PartCtrl_FindAllPCFPaths(dir)
 		local files, dirs = file.Find(dir .. "*", "GAME")
 		for _, filename in pairs (files) do
 			if string.EndsWith(filename, ".pcf") and !string.EndsWith(filename, "_dx80.pcf") and !string.EndsWith(filename, "_dx90_slow.pcf") and !string.EndsWith(filename, "_high.pcf") then
-				table.insert(PartCtrl_AllPCFPaths, dir .. filename)
+				filename = dir .. filename
+				//If the currently mounted instance of this pcf is identical to one of its fallback pcfs, then don't load it, only the 
+				//fallback. This prevents the browse tree and searches from getting cluttered up with two identical copies of everything.
+				//Making the fallback pcf's file path take priority also helps prevent the creation of bad saves (otherwise, you could make 
+				//a save with an effect, then mount a game that overrides that effect's pcf, and then the effect in the save would become 
+				//unusable because it's not associated with the fallback pcf's file path)
+				if PartCtrl_FallbackPCFs[filename] then
+					local f = file.Read(filename, "GAME")
+					if f then
+						local checksum = util.SHA256(f)
+						local skip = false
+						for k, v in pairs (PartCtrl_FallbackPCFs[filename]) do
+							if v == checksum then
+								if dodebug then MsgN("PartCtrl: ", filename, " identical to fallback from game ", k) end
+								skip = true
+								//break
+							end
+							//Check to make sure fallback pcfs are actually identical to the ones from the games; complain if not
+							local f2 = file.Read(filename, k)
+							if f2 then
+								local checksum2 = util.SHA256(f2)
+								if checksum2 != v then
+									MsgN("PartCtrl: Fallback pcf for ", filename, " (", k, ") is mismatched (", checksum2, " != ", v, "); this probably means the fallback file needs to be updated, report this bug!")
+								end
+							end
+						end
+						PartCtrl_FallbackPCFs[filename].mounted = checksum
+						if dodebug then MsgN("PartCtrl: ", filename, " skip due to identical fallback pcf = ", skip) end
+						if skip then
+							table.insert(PartCtrl_SkippedPCFPaths, filename)
+							continue
+						end
+					end
+				end
+				table.insert(PartCtrl_AllPCFPaths, filename)
 			end
 		end
 		for _, dirname in pairs (dirs) do
