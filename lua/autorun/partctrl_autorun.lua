@@ -2899,7 +2899,7 @@ end
 //Test: Get a list of all pcfs that are defined by multiple games, and for each one, print the checksums of each copy of the file, along with the checksum
 //of the one actually being loaded by the game. This lets us determine which games have unique instances of a pcf as opposed to identical copies, and also 
 //tells us which ones are getting loaded vs. getting clobbered by mount order.
-function PartCtrl_GetPCFConflicts()
+function PartCtrl_GetPCFConflicts(alternate)
 	
 	local particles = {}
 	for k, v in pairs (PartCtrl_AllPCFPaths) do
@@ -2924,32 +2924,38 @@ function PartCtrl_GetPCFConflicts()
 		end
 
 		for name, _ in pairs (particles) do
-			local f = file.Read(name, v.folder)
-			if f then
-				particles[name][v.depot .. ": " .. folder2] = util.SHA256(f)
+			if !alternate then
+				local f = file.Read(name, v.folder)
+				if f then
+					particles[name][v.depot .. ": " .. folder2] = util.SHA256(f)
+				end
+			else
+				//alternative: get checksum of the table we return from reading the file, just in case there's some false positive making
+				//file.Read return a non-identical string even if nothing relevant is different (i.e. file save timestamp or something?)
+				//the results of this turned out to be no different from the above, and it's much slower, so don't do this by default.
+				local f = PartCtrl_ReadPCF(name, v.folder)
+				if f then
+					particles[name][v.depot .. ": " .. folder2] = util.SHA256(util.TableToKeyValues(f))
+				end
 			end
-			//alternative: get checksum of the table we return from reading the file, just in case there's some false positive making
-			//file.Read return a non-identical string even if nothing relevant is different (i.e. file save timestamp or something?)
-			//the results of this turned out to be no different from the above, and it's much slower, so comment this out for now.
-			--[[local f = PartCtrl_ReadPCF(name, v.folder)
-			if f then
-				particles[name][v.depot .. ": " .. folder2] = util.SHA256(util.TableToKeyValues(f))
-			end]]
 		end
 	end
 	for name, v in pairs (particles) do
 		if table.Count(v) <= 1 then
 			particles[name] = nil
 		else
-			local f = file.Read(name, "GAME")
-			if f then
-				particles[name]["      0: mounted          "] = util.SHA256(f) //top of list
+			if !alternate then
+				local f = file.Read(name, "GAME")
+				if f then
+					particles[name]["      0: mounted          "] = util.SHA256(f) //top of list
+				end
+			else
+				//see above
+				local f = PartCtrl_ReadPCF(name)
+				if f then
+					particles[name]["      0: mounted          "] = util.SHA256(util.TableToKeyValues(f)) //top of list
+				end
 			end
-			//see above
-			--[[local f = PartCtrl_ReadPCF(name)
-			if f then
-				particles[name]["      0: mounted          "] = util.SHA256(util.TableToKeyValues(f)) //top of list
-			end]]
 		end
 	end
 	PrintTable(particles)
@@ -4841,16 +4847,22 @@ function PartCtrl_ReadAndProcessPCFs()
 	//
 	//Currently includes fallback pcfs for the following games mounted: cstrike, hl2, left4dead2, portal, portal2, swarm, tf; retrieved 4/13/25
 	//To check all pcf file conflicts (i.e. with more games mounted, or after a game update) run PartCtrl_GetPCFConflicts().
-	local _, games = file.Find("particles/partctrl_fallbacks/*", "GAME")
+	local _, dirs = file.Find("particles/partctrl_fallbacks/*", "GAME")
 	PartCtrl_FallbackPCFs = {}
-	for _, _game in pairs (games) do
-		if IsMounted(_game) then
-			local files, _ = file.Find("particles/partctrl_fallbacks/" .. _game .. "/*", "GAME")
-			for _, filename in pairs (files) do
-				local f = file.Read("particles/partctrl_fallbacks/" .. _game .. "/" .. filename, "GAME")
-				if f then
-					PartCtrl_FallbackPCFs["particles/" .. filename] = PartCtrl_FallbackPCFs["particles/" .. filename] or {}
-					PartCtrl_FallbackPCFs["particles/" .. filename][_game] = util.SHA256(f)
+	for _, str in pairs (dirs) do
+		local games = string.Split(str, "+")
+		for _, _game in pairs (games) do
+			if IsMounted(_game) then
+				local files, _ = file.Find("particles/partctrl_fallbacks/" .. str .. "/*", "GAME")
+				for _, filename in pairs (files) do
+					local f = file.Read("particles/partctrl_fallbacks/" .. str .. "/" .. filename, "GAME")
+					if f then
+						PartCtrl_FallbackPCFs["particles/" .. filename] = PartCtrl_FallbackPCFs["particles/" .. filename] or {}
+						PartCtrl_FallbackPCFs["particles/" .. filename][_game] = {["checksum"] = util.SHA256(f)}
+						if str != _game then 
+							PartCtrl_FallbackPCFs["particles/" .. filename][_game].path = str
+						end
+					end
 				end
 			end
 		end
@@ -4874,7 +4886,7 @@ function PartCtrl_ReadAndProcessPCFs()
 						local checksum = util.SHA256(f)
 						local skip = false
 						for k, v in pairs (PartCtrl_FallbackPCFs[filename]) do
-							if v == checksum then
+							if checksum == v.checksum then
 								if dodebug then MsgN("PartCtrl: ", filename, " identical to fallback from game ", k) end
 								skip = true
 								//break
@@ -4883,12 +4895,12 @@ function PartCtrl_ReadAndProcessPCFs()
 							local f2 = file.Read(filename, k)
 							if f2 then
 								local checksum2 = util.SHA256(f2)
-								if checksum2 != v then
-									MsgN("PartCtrl: Fallback pcf for ", filename, " (", k, ") is mismatched (", checksum2, " != ", v, "); this probably means the fallback file needs to be updated, report this bug!")
+								if checksum2 != v.checksum then
+									MsgN("PartCtrl: Fallback pcf for ", filename, " (", k, ") is mismatched (", checksum2, " != ", v.checksum, "); this probably means the fallback file needs to be updated, report this bug!")
 								end
 							end
 						end
-						PartCtrl_FallbackPCFs[filename].mounted = checksum
+						//PartCtrl_FallbackPCFs[filename].mounted = checksum
 						if dodebug then MsgN("PartCtrl: ", filename, " skip due to identical fallback pcf = ", skip) end
 						if skip then
 							table.insert(PartCtrl_SkippedPCFPaths, filename)
