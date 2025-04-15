@@ -5105,84 +5105,96 @@ if CLIENT then
 		local particles = node:AddFolder(name, path .. "particles", pathid, true, false, "*.*") //unlike ES, the arg after pathid is true, which adds nodes for files as well
 		particles:SetIcon(icon)
 
-		local oldcallback = particles.FilePopulateCallback
-		particles.FilePopulateCallback = function(self, files, folders, foldername, path, bAndChildren, wildcard)
-			oldcallback(self, files, folders, foldername, path, bAndChildren, wildcard)
-			//Create unique node for utilfx
-			if !particles.utilfxnode and PartCtrl_UtilFxByTitle[name] then
-				//MsgN("making utilfx node for ", name)
-				particles.utilfxnode = particles:AddNode("Scripted Effects", "icon16/page_gear.png")
-				particles.utilfxnode.utilfx = true
-				self.Expander:SetExpanded(false) //fix icon having a - instead of a + if this is the only node it contains
-				particles.utilfxnode.DoRightClick = function()
-					if !IsValid(particles.utilfxnode) then return end
-					local menu = DermaMenu()
+		particles.FilePopulateCallback = function(self, files, folders, foldername, path, bAndChildren, wildcard) //based on DTree_Node.FilePopulateCallback (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/vgui/dtree_node.lua#L448)
+			local showfiles = self:GetShowFiles()
 
-					menu:AddOption("#spawnmenu.createautospawnlist", function()
-						local tab = {}
-						for particle, _ in SortedPairsLower (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
-							table.insert(tab, {["pcf"] = "UtilFx", ["particle"] = particle})
-						end
-						PartCtrl_CreateCustomSpawnlist(tab, "Scripted Effects", "icon16/page_gear.png")
-					end):SetIcon("icon16/page_add.png")
-
-					//developer control to reload a .pcf file manually; we want this for utilfx too just in case one of the list entries was edited
-					if GetConVarNumber("developer") >= 1 then
-						menu:AddOption("Reload PartCtrl_UtilFx", function()
-							net.Start("PartCtrl_ReloadPCF_SendToSv")
-								net.WriteString("UtilFx")
-							net.SendToServer()
-						end)
-					end
-
-					menu:Open()
+			self.ChildNodes:InvalidateLayout(true)
+		
+			local FileCount = 0
+		
+			if folders then
+				for k, File in SortedPairsByValue (folders) do
+					if File == "partctrl_fallbacks" then continue end //don't show this folder, instead we add fallback pcfs to the appropriate game folders below
+		
+					local Node = self:AddNode(File)
+					Node:MakeFolder(string.Trim( foldername .. "/" .. File, "/" ), path, showfiles, wildcard, true)
+					Node.FilePopulateCallback = particles.FilePopulateCallback
+					FileCount = FileCount + 1
 				end
 			end
-			for _, cnode in pairs (self:GetChildNodes()) do
-				if cnode.utilfx then continue end
-				if cnode.utilfx then MsgN("this shouldn't hapen") end
-				local cname = cnode:GetFileName()
-				local badname = false
-				if cname then
-					//Legacy addons will have a file path starting with the addon folder instead of the particle folder, so trim that stuff out
-					//(i.e. turn addons/test_onlyparticles/particles/ukmovement.pcf into particles/ukmovement.pcf)
-					if !string.StartsWith(cname, "particles/") then
-						local start, _, _ = string.find(cname, "/particles/", 1, true) //this will break if someone names a legacy addon literally just "particles", OH WELL
-						if start == nil then
-							badname = true
-						else
-							cname = string.sub(cname, start + 1)
-							cnode:SetFileName(cname)
+		
+			if showfiles then
+				//Create unique node for utilfx
+				if !particles.utilfxnode and PartCtrl_UtilFxByTitle[name] then
+					//MsgN("making utilfx node for ", name)
+					particles.utilfxnode = particles:AddNode("Scripted Effects", "icon16/page_gear.png")
+					particles.utilfxnode.utilfx = true
+					FileCount = FileCount + 1
+					particles.utilfxnode.DoRightClick = function()
+						if !IsValid(particles.utilfxnode) then return end
+						local menu = DermaMenu()
+
+						menu:AddOption("#spawnmenu.createautospawnlist", function()
+							local tab = {}
+							for particle, _ in SortedPairsLower (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
+								table.insert(tab, {["pcf"] = "UtilFx", ["particle"] = particle})
+							end
+							PartCtrl_CreateCustomSpawnlist(tab, "Scripted Effects", "icon16/page_gear.png")
+						end):SetIcon("icon16/page_add.png")
+
+						//developer control to reload a .pcf file manually; we want this for utilfx too just in case one of the list entries was edited
+						if GetConVarNumber("developer") >= 1 then
+							menu:AddOption("Reload PartCtrl_UtilFx", function()
+								net.Start("PartCtrl_ReloadPCF_SendToSv")
+									net.WriteString("UtilFx")
+								net.SendToServer()
+							end)
 						end
+
+						menu:Open()
 					end
-					//Clear out .txt file particle manifests and such, also clear out bad .pcf files that weren't processed
-					if !istable(PartCtrl_ProcessedPCFs[cname]) then badname = true end
 				end
-				if badname then
-					cnode:Remove()
-					self:InvalidateLayout()
-				else
-					if cname and string.EndsWith(cname, ".pcf") then
-						cnode:SetIcon("icon16/page.png")
-						cnode.DoRightClick = function()
-							if !IsValid(cnode) then return end
+
+				//Legacy addons will have a file path starting with the addon folder instead of the particle folder, so trim that stuff out
+				//(i.e. turn addons/test_onlyparticles/particles/ukmovement.pcf into particles/ukmovement.pcf)
+				if !string.StartsWith(foldername, "particles") then
+					local start, _, _ = string.find(foldername, "/particles", 1, true) //this will break if someone names a legacy addon literally just "particles", OH WELL
+					if start == nil then
+						//if we got a nonsense folder somehow, then back out now
+						showfiles = false
+						self:SetShowFiles(nil)
+					else
+						foldername = string.sub(foldername, start + 1)
+					end
+				end
+
+				if showfiles then
+					local function AddFile(name, filename)
+						//Clear out .txt file particle manifests and such, also clear out bad .pcf files that weren't processed
+						if !istable(PartCtrl_ProcessedPCFs[filename]) then return end
+
+						local Node = self:AddNode(name, "icon16/page.png")
+						Node:SetFileName(filename)
+						FileCount = FileCount + 1
+						Node.DoRightClick = function()
+							if !IsValid(Node) then return end
 							local menu = DermaMenu()
 
-							menu:AddOption("Copy .pcf file path to clipboard", function() SetClipboardText(cname) end):SetIcon("icon16/page_copy.png")
+							menu:AddOption("Copy .pcf file path to clipboard", function() SetClipboardText(filename) end):SetIcon("icon16/page_copy.png")
 
 							menu:AddOption("#spawnmenu.createautospawnlist", function()
 								local tab = {}
-								for particle, _ in SortedPairsLower (PartCtrl_ProcessedPCFs[cname]) do //sort them in alphabetical order
-									table.insert(tab, {["pcf"] = cname, ["particle"] = particle})
+								for particle, _ in SortedPairsLower (PartCtrl_ProcessedPCFs[filename]) do //sort them in alphabetical order
+									table.insert(tab, {["pcf"] = filename, ["particle"] = particle})
 								end
-								PartCtrl_CreateCustomSpawnlist(tab, string.GetFileFromFilename(cname))
+								PartCtrl_CreateCustomSpawnlist(tab, name)
 							end):SetIcon("icon16/page_add.png")
 
 							//developer control to reload a .pcf file manually
 							if GetConVarNumber("developer") >= 1 then
 								menu:AddOption("Reload .pcf file", function()
 									net.Start("PartCtrl_ReloadPCF_SendToSv")
-										net.WriteString(cname)
+										net.WriteString(filename)
 									net.SendToServer()
 								end)
 							end
@@ -5190,15 +5202,57 @@ if CLIENT then
 							menu:Open()
 						end
 					end
-					cnode.FilePopulateCallback = particles.FilePopulateCallback
+			
+					for k, File in SortedPairs (files) do
+						local fallbacks = PartCtrl_FallbackPCFs[foldername .. "/" .. File]
+						if fallbacks and fallbacks[path] then
+							//For a game folder, add the fallback pcf for the file if applicable, instead of the mounted file
+							local path2 = fallbacks[path].path or path
+							AddFile(File .. " (" .. path2 .. ")", "particles/partctrl_fallbacks/" .. path2 .. "/" .. File)
+							continue
+						end
+
+						AddFile(File, string.Trim(foldername .. "/" .. File, "/"))
+
+						if fallbacks and path == "GAME" then
+							//For the "All" folder, add every fallback pcf for this file, in addition to the mounted file
+							local fallbacks_to_add = {}
+							for Game, tab in pairs (fallbacks) do
+								local path2 = tab.path or Game
+								//add these to a table first, to make sure we don't add duplicate nodes for fallbacks that apply to more than 1 game
+								fallbacks_to_add[File .. " (" .. path2 .. ")"] = "particles/partctrl_fallbacks/" .. path2 .. "/" .. File
+							end
+							for k, v in pairs (fallbacks_to_add) do
+								AddFile(k, v)
+							end
+						end
+					end
 				end
 			end
-			//clear out folders that generate empty - checking fi/fo up above doesn't work because some games (ep1) have empty tables even though they have files(??)
-			//this looks kind of bad because you can see the folders appear and then disappear, but i don't know what a better solution would be
-			if name != "#spawnmenu.category.downloads" and self:GetChildNodeCount() == 0 then
-				self:Remove()
-				node:InvalidateLayout()
+		
+			if FileCount == 0 then
+				if name != "#spawnmenu.category.downloads" then
+					//clear out folders that generate empty - checking fi/fo up above doesn't work because some games (ep1) have empty tables even though they have files(??)
+					//this looks kind of bad because you can see the folders appear and then disappear, but i don't know what a better solution would be
+					self:Remove()
+				else
+					//default empty folder behavior
+					self.ChildNodes:Remove()
+					self.ChildNodes = nil
+			
+					self:SetNeedsPopulating(false)
+					self:SetShowFiles(nil)
+					self:SetWildCard(nil)
+			
+					self:InvalidateLayout()
+			
+					self.Expander:SetExpanded(true)
+		
+					return
+				end
 			end
+		
+			self:InvalidateLayout()
 		end
 
 		particles.OnNodeSelected = function(self, node_sel)
