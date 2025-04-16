@@ -245,13 +245,14 @@ function PANEL:BeginNewParticle()
 		//MsgN("PANEL:BeginNewParticle ", self.pcf)
 		PartCtrl_AddParticles(self.pcf, self.name) //crash prevention
 
-		self:StartParticle()
+		//self:StartParticle()
+		self.particle = partctrl_wait //make think run StartParticle next frame; this lets all the spawnicons in a spawnlist run PartCtrl_AddParticles first, before any of them have spawned any fx
 	//end
 	//MsgN(self.IsInSearch, table.Count(PartCtrl_PCFsByParticleName[self.name]) > 1, timer.Exists("search_models_update"), " ", par2:GetClassName(), " ", self.name, " ", self.pcf)
 	//MsgN("according to icon, parent is ", self:GetParent(), " and self is ", self)
 
 	//if (!self.particle and PartCtrl_AddParticles_CrashCheck_PreventingCrash) or badsearchparticle then
-	if !self.particle or self.particle == "cleaned_up" and PartCtrl_AddParticles_CrashCheck_PreventingCrash then
+	if (!self.particle or self.particle == "cleaned_up") and PartCtrl_AddParticles_CrashCheck_PreventingCrash then
 		self.particle = partctrl_wait	//ordinarily, PANEL:Paint won't try to recreate the particle if self.particle is nil, which is what we want. however, if crash prevention
 	end					//prevented us from creating our effect here, then make this value non-nil so PANEL:Paint will try to create it once crash prevention is over.
 
@@ -308,6 +309,9 @@ function PANEL:StartParticle()
 		if self.particle2 then
 			PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] = true
 		end
+	else
+		//we should've been able to create the particlesystem, but failed for some reason (i.e. pcf wasn't precached yet?), try again
+		self.particle = partctrl_wait
 	end
 
 end
@@ -649,8 +653,8 @@ function PANEL:Copy()
 
 end
 
-local cleaned_up = "cleaned_up"
-timer.Create("ContentIcon_PartCtrl_CleanUpParticles", 0.1, 0, function()
+--[[local cleaned_up = "cleaned_up"
+timer.Create("ContentIcon_PartCtrl_CleanUpParticles", 0, 0, function()
 
 	local autohide = !g_SpawnMenu:IsVisible()
 	if istable(PartCtrl_AllContentIcons) then
@@ -664,7 +668,7 @@ timer.Create("ContentIcon_PartCtrl_CleanUpParticles", 0.1, 0, function()
 		end
 	end
 
-end)
+end)]]
 
 vgui.Register("ContentIcon_PartCtrl", PANEL, "ContentIcon")
 
