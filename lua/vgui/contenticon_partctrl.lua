@@ -653,23 +653,6 @@ function PANEL:Copy()
 
 end
 
---[[local cleaned_up = "cleaned_up"
-timer.Create("ContentIcon_PartCtrl_CleanUpParticles", 0, 0, function()
-
-	local autohide = !g_SpawnMenu:IsVisible()
-	if istable(PartCtrl_AllContentIcons) then
-		for pcf, tab in pairs (PartCtrl_AllContentIcons) do
-			for panel, _ in pairs (tab) do
-				if IsValid(panel) and (autohide or !panel:GetParent():GetParent():GetParent():IsVisible()) then //this dumb nested parent is the spawnlist containing the spawnicon (or a container for it or something), which becomes non-visible when another spawnlist is selected
-					panel:RemoveParticle()
-					panel.particle = cleaned_up
-				end
-			end
-		end
-	end
-
-end)]]
-
 vgui.Register("ContentIcon_PartCtrl", PANEL, "ContentIcon")
 
 spawnmenu.AddContentType("partctrl", function(container, obj)
