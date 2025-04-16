@@ -2,13 +2,17 @@
 
 if SERVER then
 	CreateConVar("sv_partctrl_particlesperent", 32, FCVAR_REPLICATED, "Max number of effect instances (or projectiles) that a single particle effect entity can have active at once.", 1)
-	local int_singleplayer
+	//Assume that most servers won't want serverside projectile fx because they're too easy to grief with, 
+	//and won't want ReadPCF caching because we can't assume connecting clients will use this addon more than once.
+	//Is this right? No idea, I don't run a server.
+	local int_sp
 	if game.SinglePlayer() then
 		int_sp = 1
 	else
 		int_sp = 0
 	end
 	CreateConVar("sv_partctrl_allowserverprojectiles", int_sp, FCVAR_REPLICATED, "If 0, disables the serverside projectiles option on projectile effects.", 0, 1)
+	CreateConVar("sv_partctrl_cachereadpcf", int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, the results of PartCtrl_ReadPCF are cached to the data folder. This makes subsequent startups 2-3x faster, but the first time quite a bit slower as it saves ~50MB to the data folder.", 0, 1)
 else
 	//Some convars to separate child fx from others; in practice, this doesn't work well because there are 
 	//A: lots of normal fx that are also used as children, and would be excluded (i.e. eye_powerup_green_lvl_3, rocket_explosion_classic, rocket_trail_classic_crit_red, many more) 
@@ -18,7 +22,7 @@ else
 	CreateClientConVar("cl_partctrl_childfx_in_search", 1, false, false, "If 0, prevents child particle effects from being shown in search results.", 0, 1)
 end
 
-
+ 
 
 
 
@@ -2296,14 +2300,36 @@ table.insert(a, "ATTRIBUTE_MATRIX_ARRAY")
 //reference:
 //https://developer.valvesoftware.com/wiki/PCF, https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3, https://developer.valvesoftware.com/wiki/DMX/Binary
 
+local cache_version = "1" //update this in case ReadPCF is updated to return a different table
+local docache = GetConVar("sv_partctrl_cachereadpcf")
+
 function PartCtrl_ReadPCF(filename, path)
 
 	//don't print non-critical messages unless we're in developer mode; 
 	//always print messages for bugs that player should report
 	local dodebug = (GetConVarNumber("developer") >= 1)
 
+	local checksum
+	if docache:GetBool() then
+		//If possible, load the results of this function from cache instead. This makes PartCtrl_ReadAndProcessPCFs 2-3x faster on all subsequent
+		//startups (compared to without caching), but makes the very first load quite a bit slower as we save the files to the cache, and also adds
+		//approx. 50MB to the data folder (because of how BIG tf2's pcfs are!).
+		checksum = file.Read(filename, path or "GAME")
+		if !checksum then MsgN("PartCtrl: ", filename, " (", path or "GAME", ") can't be read, report this bug!") return end
+		checksum = util.SHA256(checksum)
+		local cached_file = file.Read("partctrl_cache_" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", "DATA")
+		if cached_file then
+			cached_file = util.JSONToTable(cached_file)
+			//PrintTable(cached_file)
+			if cached_file then 
+				if dodebug then MsgN("PartCtrl: ", filename, " loading from cache") end
+				return cached_file
+			end
+		end
+	end
+
 	local f = file.Open(filename, "rb", path or "GAME")
-	if !f then MsgN("PartCtrl: ", filename, " (", path or "GAME", ") can't be read, report this bug!") return end
+	if !f then MsgN("PartCtrl: ", filename, " (", path or "GAME", ") can't be opened, report this bug!") return end
 	//path arg is only used by PartCtrl_GetPCFConflicts, don't worry about it past this point
 
 	//If the pcf is packed into the current map, then write a copy of it into the data folder and read that instead.
@@ -2570,7 +2596,27 @@ function PartCtrl_ReadPCF(filename, path)
 			Elements[ElementsUnsorted[i].k.Name] = ElementsUnsorted[i].v
 		end
 	end
+
+	if docache:GetBool() then
+		local str = util.TableToJSON(Elements)
+		if str then
+			local dirs = string.Explode("/", "partctrl_cache_" .. cache_version ..  "/" .. filename)
+			local d = ""
+			for k,v in ipairs(dirs) do
+			d = (d..v.."/")
+			if !file.IsDir(d, "DATA") then file.CreateDir(d) end
+			end
+			if file.Write("partctrl_cache_" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", str) then
+				if dodebug then MsgN("PartCtrl: ", filename, " saved to cache") end
+			else
+				if dodebug then MsgN("PartCtrl: ", filename, " couldn't be cached because file.Write failed?") end
+			end
+		else
+			if dodebug then MsgN("PartCtrl: ", filename, " couldn't be cached because util.TableToJSON failed?") end
+		end
+	end
 	
+	//PrintTable(Elements)
 	return Elements
 
 end
@@ -4831,8 +4877,7 @@ PartCtrl_ReadAndProcessPCFs_StartupIsOver = PartCtrl_ReadAndProcessPCFs_StartupI
 function PartCtrl_ReadAndProcessPCFs()
 
 	local dodebug = (GetConVarNumber("developer") >= 1)
-
-	//MsgN("starting PartCtrl_ReadAndProcessPCFs at time ", SysTime())
+	local starttime = SysTime()
 
 	//First, get a list of conflicting pcf fallback files.
 	//
@@ -4936,7 +4981,7 @@ function PartCtrl_ReadAndProcessPCFs()
 
 	PartCtrl_ReadAndProcessPCFs_StartupHasRun = true
 
-	//MsgN("ending PartCtrl_ReadAndProcessPCFs at time ", SysTime())
+	if dodebug then MsgN("PartCtrl: PartCtrl_ReadAndProcessPCFs took " , SysTime() - starttime, " secs") end
 
 end
 
