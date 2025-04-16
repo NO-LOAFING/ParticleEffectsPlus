@@ -5618,22 +5618,12 @@ if CLIENT then
 				delay = 0
 			else
 				//MsgN("not skipping")
+				delay = 0.1
 				local tab = {}
 				for _, pcf in ipairs (AddParticles_Queued) do
 					table.Merge(tab, PartCtrl_AddParticles_AddedParticles_Overrides[pcf])
 					tab[pcf] = true
-
-					//stupid fix: these pcfs in particular are really prone to crashing when switching between them, unless we wait an extra-long time after deleting
-					//their fx before running game.AddParticles. no idea why this happens with these ones specifically, and can't reproduce it nearly as reliably with 
-					//any other pcfs. maybe something isn't properly getting cleaned up above and has to die naturally? whatever, just put this silly hard-coded 
-					//extra time delay here. note: unfortunately we don't have a way to *only* do this if we actually removed an effect, since swapping between pcf
-					//spawnlists autokills their fx (meaning they don't get caught here) but triggers this bug anyway.
-					if !delay and string.find(pcf, "blood_impact.pcf", 1, true) then
-						delay = 1.5 //yes, this IS the minimum amount of time! 1.4 secs less crashes after 6 tries!
-						//MsgN("time to be slow")
-					end
 				end
-				if !delay then delay = 0.1 end
 				//Crash prevention:
 				//Internally, when gmod loads a new pcf from game.AddParticles, and that pcf overrides any effect names, any existing particlesystems using those effects are forcibly stopped. If too 
 				//many unique effects are stopped at once by the engine this way, it can crash. If our panel/entity code recreates them too soon after the engine stops them, it can also crash. 
@@ -5647,8 +5637,11 @@ if CLIENT then
 								AddParticles_QueuedTime = time
 								k2:StopEmissionAndDestroyImmediately()
 								//surface.PlaySound("vo/ravenholm/monk_danger01.wav")
+							else
+								//Don't remove fx from the list until we're absolutely sure they're gone; some of them can
+								//be really stubborn, try swapping between spawnlists for blood_impact.pcf and its tf2 fallback
+								PartCtrl_AddParticles_CrashCheck[v][k2] = nil
 							end
-							PartCtrl_AddParticles_CrashCheck[v][k2] = nil
 						end
 					end
 				end

@@ -217,10 +217,10 @@ function ENT:Think()
 			local v = self.OldParticles[1]
 			//MsgN(#self.OldParticles, " is too many particles, removing oldest ", v)
 			if IsValid(v) then v:StopEmissionAndDestroyImmediately() end
-			if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][v] then
+			--[[if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][v] then
 				//Remove now-invalid particles from the crashcheck list
 				PartCtrl_AddParticles_CrashCheck[pcf][v] = nil
-			end
+			end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
 			table.remove(self.OldParticles, 1)
 		end
 
@@ -505,20 +505,20 @@ if CLIENT then
 		local pcf = self:GetPCF()
 		if self.particle and self.particle.IsValid and self.particle:IsValid() then
 			self.particle:StopEmissionAndDestroyImmediately()
-			if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle] then
+			--[[if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle] then
 				//Remove now-invalid particles from the crashcheck list
 				PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = nil
-			end
+			end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
 		end
 		//Clean up old particles
 		if istable(self.OldParticles) then
 			for k, v in pairs (self.OldParticles) do
 				if v and v.IsValid and v:IsValid() then
 					v:StopEmissionAndDestroyImmediately()
-					if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][v] then
+					--[[if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][v] then
 						//Remove now-invalid particles from the crashcheck list
 						PartCtrl_AddParticles_CrashCheck[pcf][v] = nil
-					end
+					end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
 				end
 			end
 		end

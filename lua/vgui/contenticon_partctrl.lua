@@ -209,17 +209,17 @@ function PANEL:RemoveParticle()
 
 	if self.particle and self.particle.IsValid and self.particle:IsValid() then
 		self.particle:StopEmissionAndDestroyImmediately()
-		if PartCtrl_AddParticles_CrashCheck[self.pcf] and PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle] then
+		--[[if PartCtrl_AddParticles_CrashCheck[self.pcf] and PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle] then
 			//Remove now-invalid particles from the crashcheck list
 			PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle] = nil
-		end
+		end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
 	end
 	if self.particle2 and self.particle2.IsValid and self.particle2:IsValid() then
 		self.particle2:StopEmissionAndDestroyImmediately()
-		if PartCtrl_AddParticles_CrashCheck[self.pcf] and PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] then
+		--[[if PartCtrl_AddParticles_CrashCheck[self.pcf] and PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] then
 			//Remove now-invalid particles from the crashcheck list
 			PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] = nil
-		end
+		end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
 	end
 
 end
@@ -477,12 +477,13 @@ function PANEL:Paint(w, h)
 				PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle] = nil
 			end
 			if self.particle2 then
-				if self.particle2:IsValid() then
+				if self.particle2.IsValid and self.particle2:IsValid() then
 					self.particle2:StopEmissionAndDestroyImmediately()
-				end
-				if PartCtrl_AddParticles_CrashCheck[self.pcf] and PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] then
-					//Remove now-invalid particles from the crashcheck list
-					PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] = nil
+				else
+					if PartCtrl_AddParticles_CrashCheck[self.pcf] and PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] then
+						//Remove now-invalid particles from the crashcheck list
+						PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] = nil
+					end
 				end
 			end
 			if self.particle == "cleaned_up" then
