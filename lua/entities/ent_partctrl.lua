@@ -396,47 +396,62 @@ if CLIENT then
 
 	end
 
+	local icon_loading = Material("vgui/loading-rotate.vmt") //TODO: replace this with a custom texture eventually, something bulkier that looks better when drawn on top of a grip point
 	function ENT:DrawCPointHelpers()
 
 		if self.ParticleInfo and !IsValid(self:GetSpecialEffectParent()) then
 			local window = IsValid(self.PartCtrlWindow) and g_ContextMenu:IsVisible()
 			local ptab = PartCtrl_ProcessedPCFs[self:GetPCF()][self:GetParticleName()]
+
+			local view = LocalPlayer():GetViewEntity()
+			local camang = nil
+			if view:IsPlayer() then
+				camang = view:EyeAngles()
+			else
+				camang = view:GetAngles()
+			end
+			camang:RotateAroundAxis( camang:Up(), -90 )
+			camang:RotateAroundAxis( camang:Forward(), 90 )
+
 			for k, v in pairs (self.ParticleInfo) do
 				if ptab.cpoints[k] and ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
 					if IsValid(v.ent) then
+						local pos = nil
+						local ang = nil
+						if IsValid(v.ent.AttachedEntity) then
+							pos = v.ent.AttachedEntity:GetAttachment(self.ParticleInfo[k].attach)
+						else
+							pos = v.ent:GetAttachment(self.ParticleInfo[k].attach)
+						end
+						if istable(pos) then
+							ang = pos.Ang
+							pos = pos.Pos
+						else
+							ang = v.ent:GetAngles()
+							pos = v.ent:GetPos()
+						end
+						//Draw particle effect helpers (arrow showing cpoint orientation, number showing cpoint id)
 						if window or v.ent.PartCtrl_Grip then //hide helpers when they're attached to other ents unless the window is open
-							//Draw particle effect helpers (numbers showing cpoint id, arrows showing cpoint orientation)
-							local pos = nil
-							local ang = nil
-							if IsValid(v.ent.AttachedEntity) then
-								pos = v.ent.AttachedEntity:GetAttachment(self.ParticleInfo[k].attach)
-							else
-								pos = v.ent:GetAttachment(self.ParticleInfo[k].attach)
-							end
-							if istable(pos) then
-								ang = pos.Ang
-								pos = pos.Pos
-							else
-								ang = v.ent:GetAngles()
-								pos = v.ent:GetPos()
-							end
-
 							render.SetMaterial(partctrl_arrowmat)
 							render.DrawBeam(pos, pos + (ang:Forward() * 20), 20, 1, 0, color_white)
 
-							//TODO: this doesn't render through walls like the arrows or grips do, is there a better way than 3D2D to make text that resizes nicely like this?
-							local view = LocalPlayer():GetViewEntity()
-							local camang = nil
-							if view:IsPlayer() then
-								camang = view:EyeAngles()
-							else
-								camang = view:GetAngles()
-							end
-							camang:RotateAroundAxis( camang:Up(), -90 )
-							camang:RotateAroundAxis( camang:Forward(), 90 )
+							cam.IgnoreZ(true)
 							cam.Start3D2D(pos, camang, 0.125)
 								draw.SimpleTextOutlined(k,"PartCtrl_3D2DFont",0,-50,partctrl_colortext,TEXT_ALIGN_CENTER,TEXT_ALIGN_BOTTOM,3,partctrl_colorborder)
 							cam.End3D2D()
+							cam.IgnoreZ(false)
+						end
+						//If particle is being throttled by crash prevention, draw loading icon
+						if PartCtrl_AddParticles_CrashCheck_PreventingCrash and (!self.particle or !(self.particle.IsValid and self.particle:IsValid())) then
+							//This has to use 3D2D again instead of a simple render.DrawSprite, 
+							//just because DrawSprite doesn't seem to have a way to rotate the image
+							cam.IgnoreZ(true)
+							cam.Start3D2D(pos, camang, 1)
+								surface.SetDrawColor(255,255,255,255)
+								surface.SetMaterial(icon_loading)
+								surface.DrawTexturedRectRotated(0, 0, 16, 16, CurTime() * 300 % 360)
+							cam.End3D2D()
+							cam.IgnoreZ(false)
 						end
 					end
 				end

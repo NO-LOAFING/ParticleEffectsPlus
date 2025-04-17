@@ -381,6 +381,7 @@ function PANEL:DoColorCPoints()
 end
 
 local ViewAngle = Angle(25, 220, 0)
+local icon_loading = Material("vgui/loading-rotate.vmt") //TODO: replace this with a custom texture eventually, something bulkier that looks better when it's drawn small like this
 function PANEL:Paint(w, h)
 
 	if !self.DoneSetup then
@@ -494,6 +495,13 @@ function PANEL:Paint(w, h)
 				//so just run StartParticle and don't bother with PCF file stuff
 				self:StartParticle()
 			end
+			//If particle is being throttled by crash prevention, draw loading icon
+			if self.particle == partctrl_wait then
+				local load_width = math.min(w,h) * 0.65
+				surface.SetDrawColor(255,255,255,255)
+				surface.SetMaterial(icon_loading)
+				surface.DrawTexturedRectRotated(w/2, h/2, load_width, load_width, CurTime() * 300 % 360)
+			end
 		end
 	end
 
@@ -505,10 +513,12 @@ function PANEL:Paint(w, h)
 	local y = self.Border + 8
 	for k, v in pairs (self.icons) do
 		//Draw icon
+		surface.SetDrawColor(255,255,255,255)
 		surface.SetMaterial(v.icon)
 		surface.DrawTexturedRect(x, y, 16, 16)
 		//Draw icon2
 		if v.icon2 then
+			surface.SetDrawColor(255,255,255,255)
 			surface.SetMaterial(v.icon2)
 			surface.DrawTexturedRect(x, y, 16, 16)
 		end
