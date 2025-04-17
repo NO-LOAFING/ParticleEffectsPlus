@@ -2225,7 +2225,7 @@ local ParticleAttributeNames = { //names and comments from https://github.com/So
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TRAIL_LENGTH] = "Trail Length", // TRAIL_LENGTH, 10 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_PARTICLE_ID] = "Particle ID", // PARTICLE_ID, 11 ); 
 	[PARTCTRL_PARTICLE_ATTRIBUTE_YAW] = "Yaw", // YAW, 12 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Skin", //better display name, technically inaccurate but players are more likely to understand what this means, "sequence" isn't meaningful; original: "Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
+	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Skin", //better display name, technically inaccurate but players are more likely to understand what this means; original: "Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_INDEX] = "Hitbox Index", // HITBOX_INDEX, 14
 	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ] = "Hitbox Offset Position", // HITBOX_XYZ_RELATIVE 15
 	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2] = "Alpha", //better display name, there's no difference between the two alphas as far as players are concerned; original: "Alpha Alternate", // ALPHA2, 16
@@ -2316,7 +2316,7 @@ function PartCtrl_ReadPCF(filename, path)
 		//approx. 50MB to the data folder (because of how BIG tf2's pcfs are!).
 		checksum = file.Read(filename, path or "GAME")
 		if !checksum then MsgN("PartCtrl: ", filename, " (", path or "GAME", ") can't be read, report this bug!") return end
-		checksum = util.SHA256(checksum)
+		checksum = util.SHA256(checksum) //if the pcf file is updated, then the checksum will be different; this stops us from loading outdated data
 		local cached_file = file.Read("partctrl_cache_" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", "DATA")
 		if cached_file then
 			cached_file = util.JSONToTable(cached_file)
@@ -4879,6 +4879,9 @@ function PartCtrl_ReadAndProcessPCFs()
 	local dodebug = (GetConVarNumber("developer") >= 1)
 	local starttime = SysTime()
 
+	PartCtrl_AllPCFPaths = {}
+	PartCtrl_SkippedPCFPaths = {} //also keep a list of skipped pcfs, so that PartCtrl_GetPCFConflicts() can still check them
+
 	//First, get a list of conflicting pcf fallback files.
 	//
 	//The purpose of these is to resolve conflicts where multiple mounted games have different, unique pcf files sharing the same file path.
@@ -4907,14 +4910,14 @@ function PartCtrl_ReadAndProcessPCFs()
 						if str != _game then 
 							PartCtrl_FallbackPCFs["particles/" .. filename][_game].path = str
 						end
+						//Only add fallback pcfs for mounted games to PartCtrl_AllPCFPaths
+						table.insert(PartCtrl_AllPCFPaths, "particles/partctrl_fallbacks/" .. str .. "/" .. filename)
 					end
 				end
 			end
 		end
 	end
 
-	PartCtrl_AllPCFPaths = {}
-	PartCtrl_SkippedPCFPaths = {} //also keep a list of skipped pcfs, so that PartCtrl_GetPCFConflicts() can still check them
 	local function PartCtrl_FindAllPCFPaths(dir)
 		local files, dirs = file.Find(dir .. "*", "GAME")
 		for _, filename in pairs (files) do
@@ -4957,7 +4960,9 @@ function PartCtrl_ReadAndProcessPCFs()
 			end
 		end
 		for _, dirname in pairs (dirs) do
-			PartCtrl_FindAllPCFPaths(dir .. dirname .. "/")
+			if dirname != "partctrl_fallbacks" then //don't do fallback pcfs here, we handled those selectively earlier
+				PartCtrl_FindAllPCFPaths(dir .. dirname .. "/")
+			end
 		end
 	end
 	PartCtrl_FindAllPCFPaths("particles/")
@@ -4968,7 +4973,19 @@ function PartCtrl_ReadAndProcessPCFs()
 		PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
 	end
 
+	local dofirst = {}
+	local dosecond = {}
 	for filename, _ in pairs (PartCtrl_ProcessedPCFs) do
+		//Run game.AddParticles on fallback pcfs before normal pcfs, so the normal ones override them by default;
+		//this prevents TF2's blood fx from becoming the default when you shoot an NPC, for instance
+		if string.StartsWith(filename, "particles/partctrl_fallbacks/") then
+			table.insert(dofirst, filename)
+		else
+			table.insert(dosecond, filename)
+		end
+	end
+	table.Add(dofirst, dosecond)
+	for _, filename in pairs (dofirst) do
 		if CLIENT then
 			PartCtrl_AddParticles(filename)
 		else
