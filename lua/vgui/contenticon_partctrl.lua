@@ -389,6 +389,21 @@ function PANEL:Paint(w, h)
 		return
 	end
 
+	//When hovered over with the mouse, check AddParticles again.
+	//(i.e. hover over an effect being overridden to make it show the correct one)
+	//This only runs if hovered over for *two* frames in a row, to get around an issue where upon opening the 
+	//spawnmenu, the cursor is considered to be hovering over the panel in the center of the screen for 1 frame.
+	self.LastHovered = self.LastHovered or 0
+	if self:IsHovered() then
+		self.LastHovered = self.LastHovered + 1
+	else
+		self.LastHovered = 0
+	end
+	if self.LastHovered == 2 then
+		//surface.PlaySound("vo/ravenholm/engage02.wav")
+		PartCtrl_AddParticles(self.pcf, self.name)
+	end
+
 	//Draw particle preview
 	if self.particle then
 		if self.particle.IsValid and self.particle:IsValid() then
@@ -496,7 +511,7 @@ function PANEL:Paint(w, h)
 				self:StartParticle()
 			end
 			//If particle is being throttled by crash prevention, draw loading icon
-			if self.particle == partctrl_wait then
+			if PartCtrl_AddParticles_CrashCheck_PreventingCrash and (!self.particle or !(self.particle.IsValid and self.particle:IsValid())) then
 				local load_width = math.min(w,h) * 0.65
 				surface.SetDrawColor(255,255,255,255)
 				surface.SetMaterial(icon_loading)
