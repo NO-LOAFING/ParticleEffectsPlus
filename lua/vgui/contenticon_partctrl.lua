@@ -226,7 +226,10 @@ end
 
 function PANEL:BeginNewParticle()
 
-	if self.utilfx or !istable(PartCtrl_ProcessedPCFs[self.pcf]) or !istable(PartCtrl_ProcessedPCFs[self.pcf][self.name]) then return end
+	if self.utilfx or !istable(PartCtrl_ProcessedPCFs[self.pcf]) or !istable(PartCtrl_ProcessedPCFs[self.pcf][self.name]) 
+	or PartCtrl_ProcessedPCFs[self.pcf][self.name].prevent_name_based_lookup then //don't bother trying to create fx with this attribute, even in developer mode, it'll just fail and spam the console with errors
+		return
+	end
 
 	self:RemoveParticle()
 
@@ -317,6 +320,7 @@ function PANEL:StartParticle()
 end
 
 function PANEL:DoPosCPoints(p)
+
 	//Handle position cpoints by placing them all in a fixed-length line, with the cpoints distributed evenly from one end of the line to another
 	local multigrip_length = 100
 
@@ -359,6 +363,7 @@ function PANEL:DoPosCPoints(p)
 			done_position_combine = true
 		end
 	end
+
 end
 
 function PANEL:DoColorCPoints()
@@ -578,14 +583,16 @@ function PANEL:OpenMenu()
 
 	//List all parents and children of this effect recursively; this means we don't have to clutter up the spawnlists with children
 	if istable(PartCtrl_ProcessedPCFs[self.pcf]) and istable(PartCtrl_ProcessedPCFs[self.pcf][self.name]) then
-		local function ListChildFx(submenu, name2, tabname)
+		local function ListChildFx(submenu, submenuoption, name2, tabname)
+			local listed_fx = {} //don't list the same effect more than once - sometimes a parent can have multiple of the same child
 			for _, child in pairs (PartCtrl_ProcessedPCFs[self.pcf][name2][tabname]) do
 				//ptab.children is a table of tables containing both child names and other info about them;
 				//ptab.parents is just a table of strings
 				if istable(child) then
 					child = child.child
 				end
-				if PartCtrl_ProcessedPCFs[self.pcf][child] then
+				if PartCtrl_ProcessedPCFs[self.pcf][child] and !listed_fx[child] then
+					listed_fx[child] = true
 					local OnClick = function()
 						RunConsoleCommand("partctrl_spawnparticle", child, self.pcf)
 						surface.PlaySound("ui/buttonclickrelease.wav")
@@ -594,7 +601,7 @@ function PANEL:OpenMenu()
 					local option2
 					if PartCtrl_ProcessedPCFs[self.pcf][child][tabname] and table.Count(PartCtrl_ProcessedPCFs[self.pcf][child][tabname]) > 0 then
 						submenu2, option2 = submenu:AddSubMenu(child, OnClick)
-						ListChildFx(submenu2, child, tabname)
+						ListChildFx(submenu2, option2, child, tabname)
 					else
 						option2 = submenu:AddOption(child, OnClick)
 					end
@@ -605,17 +612,18 @@ function PANEL:OpenMenu()
 					end
 				end
 			end
+			submenuoption:SetText(submenuoption:GetText() .. " (" .. table.Count(listed_fx) .. ")") //count the number of fx not including dupes
 		end
 		local ptab = PartCtrl_ProcessedPCFs[self.pcf][self.name]
 		if ptab.parents and table.Count(ptab.parents) > 0 then
-			local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn parent effect (".. table.Count(ptab.parents) ..")")
+			local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn parent effect")
 			base_submenuoption:SetImage("icon16/shape_group.png")
-			ListChildFx(base_submenu, self.name, "parents")
+			ListChildFx(base_submenu, base_submenuoption, self.name, "parents")
 		end
 		if ptab.children and table.Count(ptab.children) > 0 then
-			local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn child effect (".. table.Count(ptab.children) ..")")
+			local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn child effect")
 			base_submenuoption:SetImage("icon16/shape_ungroup.png")
-			ListChildFx(base_submenu, self.name, "children")
+			ListChildFx(base_submenu, base_submenuoption, self.name, "children")
 		end
 	end
 

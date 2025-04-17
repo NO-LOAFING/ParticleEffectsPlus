@@ -2319,7 +2319,10 @@ function PartCtrl_ReadPCF(filename, path)
 		checksum = util.SHA256(checksum) //if the pcf file is updated, then the checksum will be different; this stops us from loading outdated data
 		local cached_file = file.Read("partctrl_cache_" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", "DATA")
 		if cached_file then
-			cached_file = util.JSONToTable(cached_file)
+			//"true" arg below stops it from converting all table keys from strings to numbers where possible.
+			//this prevents edge cases where an effect just named a number can get converted into a bad name, and doesn't 
+			//*seem* to cause any issues with sequential subtables like operator lists, but keep an eye on this just in case.
+			cached_file = util.JSONToTable(cached_file, false, true)
 			//PrintTable(cached_file)
 			if cached_file then 
 				if dodebug then MsgN("PartCtrl: ", filename, " loading from cache") end
@@ -4893,7 +4896,7 @@ function PartCtrl_ReadAndProcessPCFs()
 	//
 	//This addon *only* includes copies of pcf files, *not* their textures/materials, so we only load fallbacks for games that are mounted.
 	//
-	//Currently includes fallback pcfs for the following games mounted: cstrike, hl2, left4dead2, portal, portal2, swarm, tf; retrieved 4/13/25
+	//Currently includes fallback pcfs for the following games mounted: hl2, cstrike, tf, hl2mp, hl1, portal, left4dead2, portal2, swarm; retrieved 4/13/25
 	//To check all pcf file conflicts (i.e. with more games mounted, or after a game update) run PartCtrl_GetPCFConflicts().
 	local _, dirs = file.Find("particles/partctrl_fallbacks/*", "GAME")
 	PartCtrl_FallbackPCFs = {}
