@@ -442,7 +442,7 @@ if CLIENT then
 							cam.IgnoreZ(false)
 						end
 						//If particle is being throttled by crash prevention, draw loading icon
-						if PartCtrl_AddParticles_CrashCheck_PreventingCrash and (!self.particle or !(self.particle.IsValid and self.particle:IsValid())) then
+						if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self:GetPCF()] and (!self.particle or !(self.particle.IsValid and self.particle:IsValid())) then
 							//This has to use 3D2D again instead of a simple render.DrawSprite, 
 							//just because DrawSprite doesn't seem to have a way to rotate the image
 							cam.IgnoreZ(true)
@@ -548,7 +548,7 @@ if CLIENT then
 		if !IsValid(sfxpar) or !sfxpar.DisableChildAutoplay then
 			self:StartParticle()
 		end
-		if !self.utilfx and !self.particle and PartCtrl_AddParticles_CrashCheck_PreventingCrash then
+		if !self.utilfx and !self.particle and PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self:GetPCF()] then
 			self.particle = partctrl_wait	//ordinarily, ENT:Think won't try to recreate the particle if self.particle is nil, which is what we want. however, if crash prevention
 		end					//prevented us from creating our effect here, then make this value non-nil so ENT:Think will try to create it once crash prevention is over.
 		//Reset loop-related vars
@@ -614,7 +614,7 @@ if CLIENT then
 			return
 		end
 
-		if PartCtrl_AddParticles_CrashCheck_PreventingCrash then return end
+		if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self:GetPCF()] then return end
 		if !self.precached then
 			PrecacheParticleSystem(self:GetParticleName())
 			self.precached = true

@@ -251,8 +251,8 @@ function PANEL:BeginNewParticle()
 	//MsgN(self.IsInSearch, table.Count(PartCtrl_PCFsByParticleName[self.name]) > 1, timer.Exists("search_models_update"), " ", par2:GetClassName(), " ", self.name, " ", self.pcf)
 	//MsgN("according to icon, parent is ", self:GetParent(), " and self is ", self)
 
-	//if (!self.particle and PartCtrl_AddParticles_CrashCheck_PreventingCrash) or badsearchparticle then
-	if (!self.particle or self.particle == "cleaned_up") and PartCtrl_AddParticles_CrashCheck_PreventingCrash then
+	//if (!self.particle and PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self.pcf]) or badsearchparticle then
+	if (!self.particle or self.particle == "cleaned_up") and PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self.pcf] then
 		self.particle = partctrl_wait	//ordinarily, PANEL:Paint won't try to recreate the particle if self.particle is nil, which is what we want. however, if crash prevention
 	end					//prevented us from creating our effect here, then make this value non-nil so PANEL:Paint will try to create it once crash prevention is over.
 
@@ -262,7 +262,7 @@ function PANEL:StartParticle()
 
 	if self.utilfx or !istable(PartCtrl_ProcessedPCFs[self.pcf]) or !istable(PartCtrl_ProcessedPCFs[self.pcf][self.name]) then return end
 
-	if PartCtrl_AddParticles_CrashCheck_PreventingCrash then return end
+	if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self.pcf] then return end
 	if !self.precached then
 		PrecacheParticleSystem(self.name)
 		self.precached = true
@@ -401,7 +401,7 @@ function PANEL:Paint(w, h)
 	end
 	if self.LastHovered == 2 then
 		//surface.PlaySound("vo/ravenholm/engage02.wav")
-		PartCtrl_AddParticles(self.pcf, self.name)
+		PartCtrl_AddParticles(self.pcf, self.name) //crash prevention
 	end
 
 	//Draw particle preview
@@ -511,7 +511,7 @@ function PANEL:Paint(w, h)
 				self:StartParticle()
 			end
 			//If particle is being throttled by crash prevention, draw loading icon
-			if PartCtrl_AddParticles_CrashCheck_PreventingCrash and (!self.particle or !(self.particle.IsValid and self.particle:IsValid())) then
+			if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self.pcf] and (!self.particle or !(self.particle.IsValid and self.particle:IsValid())) then
 				local load_width = math.min(w,h) * 0.65
 				surface.SetDrawColor(255,255,255,255)
 				surface.SetMaterial(icon_loading)

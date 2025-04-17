@@ -5584,6 +5584,7 @@ if CLIENT then
 	local AddParticles_Queued = {}
 	local AddParticles_QueuedTime = nil
 	PartCtrl_AddParticles_CrashCheck = {}
+	PartCtrl_AddParticles_CrashCheck_ThrottledPCFs = {}
 	PartCtrl_AddParticles_AddedParticles = PartCtrl_AddParticles_AddedParticles or {}
 	PartCtrl_AddParticles_AddedParticles_Overrides = PartCtrl_AddParticles_AddedParticles_Overrides or {}
 
@@ -5655,7 +5656,9 @@ if CLIENT then
 				table.remove(AddParticles_Queued, key2) //make sure the most recently called pcf takes precedence (i.e. if swapping between multiple pcf spawnlists with conflicting fx, make sure the one we clicked on last has the right fx when we call game.AddParticles)
 			end
 			table.insert(AddParticles_Queued, pcf)
-			PartCtrl_AddParticles_CrashCheck_PreventingCrash = true //try always doing this, even before the think hook runs?
+			//Crash prevention: throttle effects from the queued pcf, and all pcfs it conflicts with
+			PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] = true
+			table.Merge(PartCtrl_AddParticles_CrashCheck_ThrottledPCFs, PartCtrl_AddParticles_AddedParticles_Overrides[pcf])
 
 			//Also move the pcf to the end of the AddedParticles list
 			if key then
@@ -5681,17 +5684,12 @@ if CLIENT then
 			else
 				//MsgN("not skipping")
 				delay = 0.1
-				local tab = {}
-				for _, pcf in ipairs (AddParticles_Queued) do
-					table.Merge(tab, PartCtrl_AddParticles_AddedParticles_Overrides[pcf])
-					tab[pcf] = true
-				end
 				//Crash prevention:
 				//Internally, when gmod loads a new pcf from game.AddParticles, and that pcf overrides any effect names, any existing particlesystems using those effects are forcibly stopped. If too 
 				//many unique effects are stopped at once by the engine this way, it can crash. If our panel/entity code recreates them too soon after the engine stops them, it can also crash. 
 				//Finally, if there are too many existing particlesystems that simply share a pcf with one being overridden, then it can also crash (why? the engine doesn't even remove these ones!).
 				//To get around all this, we first remove all the offending particlesystems ourselves, then call game.AddParticles a frame later, after we can be sure they're all gone.
-				for v, _ in pairs (tab) do
+				for v, _ in pairs (PartCtrl_AddParticles_CrashCheck_ThrottledPCFs) do
 					if istable(PartCtrl_AddParticles_CrashCheck[v]) then
 						for k2, v2 in pairs (PartCtrl_AddParticles_CrashCheck[v]) do
 							if k2 and k2:IsValid() then
@@ -5717,7 +5715,7 @@ if CLIENT then
 				end
 				AddParticles_Queued = {}
 				AddParticles_QueuedTime = nil
-				PartCtrl_AddParticles_CrashCheck_PreventingCrash = false
+				PartCtrl_AddParticles_CrashCheck_ThrottledPCFs = {}
 				//Stupid fix: the first time PrecacheParticleSystem is run by anything, it will cause a substantial stutter, 
 				//so get it over with during map load instead of disrupting gameplay the first time the player opens a spawnlist or something.
 				if !PartCtrl_DoneFirstPrecache then

@@ -298,7 +298,7 @@ if CLIENT then
 
 	function ENT:SpecialEffectThink()
 
-		if PartCtrl_AddParticles_CrashCheck_PreventingCrash or !self.SpecialEffectChildren or table.Count(self.SpecialEffectChildren) == 0 then return end
+		if !self.SpecialEffectChildren or table.Count(self.SpecialEffectChildren) == 0 then return end
 
 		local max = nil
 		if self:GetLoopSafety() then

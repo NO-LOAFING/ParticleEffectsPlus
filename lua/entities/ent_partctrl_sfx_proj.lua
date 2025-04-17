@@ -96,8 +96,7 @@ function ENT:SetSpecialEffectDefaults()
 			p.ParticleInfo[0].sfx_role = 1
 		end
 
-		//TODO: this should be ExplosionCore_Wall from tf2's particles/explosion.pcf, but that's currently overridden by HL2 anniversary pcf of the same name
-		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "ExplosionCore_MidAir", "particles/bigboom.pcf")
+		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "ExplosionCore_Wall", "particles/partctrl_fallbacks/tf/explosion.pcf")
 		if IsValid(p) then
 			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 			p.ParticleInfo[0].sfx_role = 2
@@ -804,7 +803,7 @@ local cv_max = GetConVar("sv_partctrl_particlesperent")
 
 function ENT:SpecialEffectThink()
 
-	//if CLIENT and (PartCtrl_AddParticles_CrashCheck_PreventingCrash or !self.SpecialEffectChildren or table.Count(self.SpecialEffectChildren) == 0) then return end
+	//if CLIENT and (!self.SpecialEffectChildren or table.Count(self.SpecialEffectChildren) == 0) then return end
 
 	local max = nil
 	if self:GetLoopSafety() then
