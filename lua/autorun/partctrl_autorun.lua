@@ -44,12 +44,29 @@ local tf2_unusual_wep_pcfs = {
 }
 local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all dupes with conflicting names,\nwhich slow the game down with unnecessary PCF reloads every time\nyou search for a TF2 weapon."
 local crash_blacklist_text = "Blacklisted: causes crash when spawned"
+local redundant_blacklist_text = "Blacklisted: redundant copy of stock gmod effect"
 local default_blacklist = {
 	//Portal 2
 	["particles/chicken.pcf"] = {
 		feathers_large = crash_blacklist_text,
 		feathers_single = crash_blacklist_text,
 		feathers_small = crash_blacklist_text,
+	},
+}
+//blacklist all fx *except* the ones listed
+local default_whitelist = {
+	//Counter-Strike: Source
+	["particles/partctrl_fallbacks/cstrike/fire_01.pcf"] = {
+		whitelist = {
+			bomb_explosion_huge = true,
+		}
+	},
+	//Half-Life 2 + Episodes
+	["particles/partctrl_fallbacks/hl2/fire_01.pcf"] = {
+		whitelist = {
+			smoke_skybox_01a = true,
+			smoke_skybox_01b = true,
+		}
 	},
 }
 hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
@@ -64,6 +81,13 @@ hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
 		for k, v in pairs (tab) do
 			if default_blacklist[filename][k] then
 				tab[k].shouldcull = default_blacklist[filename][k]
+			end
+		end
+	end
+	if default_whitelist[filename] then
+		for k, v in pairs (tab) do
+			if !default_whitelist[filename].whitelist[k] then
+				tab[k].shouldcull = default_whitelist[filename].fail_msg or redundant_blacklist_text
 			end
 		end
 	end
@@ -3012,6 +3036,95 @@ function PartCtrl_GetPCFConflicts(alternate)
 end
 
 
+//Test: Intended for use with a fallback pcf and the pcf it overrides; prints all differences between 2 raw pcf data tables.
+function PartCtrl_ComparePCFs(file1, file2, shownil)
+	
+	local allresults = {}
+
+	//returns if a table is a default color table
+	local function bad(tab)
+		if (tab.r == 255 and tab.g == 255 and tab.b == 255 and (tab.a == nil or tab.a == 255))
+		or (tab.r == 0 and tab.g == 0 and tab.b == 0 and (tab.a == nil or tab.a == 0)) then
+			return true
+		end
+	end
+
+	local function Compare(t1, t2, isfirst, spew)
+		local allkeys = {}
+		for k, _ in pairs (t1) do
+			allkeys[k] = true
+		end
+		for k, _ in pairs (t2) do
+			allkeys[k] = true
+		end
+		local results = {}
+		for k, _ in SortedPairs (allkeys) do
+			if spew or t1[k] != t2[k] then
+				if istable(t1[k]) and istable(t2[k]) then
+					//They're both tables, compare their contents
+					local results2 = Compare(t1[k], t2[k], false, spew)
+					if #results2 > 0 or isfirst then
+						local name = k
+						if t1[k].functionName and t2[k].functionName then
+							if t1[k].functionName == t2[k].functionName then
+								name = tostring(k) .. " (" .. t1[k].functionName .. ")"
+							else
+								name = tostring(k) .. " (" .. t1[k].functionName .. "/" .. t2[k].functionName .. ")"
+							end
+						end
+						if isfirst then 
+							name = "\n\n\n\n@@@@@@@@@@@@@@@@@@@@@ " .. name //make effect names extra visible
+						end
+						table.insert(results, name)
+						if #results2 > 0 then
+							table.Add(results, results2)
+						else
+							table.insert(results, "no differences")
+						end
+						table.insert(results, "")
+					end
+				elseif shownil or (
+					(
+						t1[k] != nil or (istable(t2[k]) and !bad(t2[k]))
+					) and 
+					(
+						t2[k] != nil or (istable(t1[k]) and !bad(t1[k]))
+					)
+				) then
+					local name = k
+					if istable(t1[k]) and t1[k].functionName then
+						name = tostring(k) .. " (" .. t1[k].functionName .. ")"
+					elseif istable(t2[k]) and t2[k].functionName then
+						name = tostring(k) .. " (" .. t2[k].functionName .. ")"
+					end
+					local result1 = t1[k]
+					local result2 = t2[k]
+					if isfirst then
+						name = "@@@@@@@@@@@@@@@@@@@@@ " .. name //make effect names extra visible
+						//don't dump entire effect tables if they're only in 1 file
+						if istable(result1) then result1 = "EFFECT ONLY IN " .. file1 end
+						if istable(result2) then result2 = "EFFECT ONLY IN " .. file2 end
+					end 
+					if result1 == nil then result1 = "nil" end
+					if result2 == nil then result2 = "nil" end
+					table.Add(results, {name, result1, result2, ""})
+				end
+			end
+		end
+		return results
+	end
+
+	for _, v in pairs (Compare(PartCtrl_ReadPCF(file1), PartCtrl_ReadPCF(file2), true)) do
+		if istable(v) then
+			PrintTable(v)
+		else
+			MsgN(v)
+		end
+	end
+
+end
+
+
 //For reference:
 //Orangebox particle code: https://github.com/nillerusr/source-engine/tree/master/particles
 //Newer (Portal 2/Alien Swarm/CSGO-era?) particle code: https://github.com/nillerusr/Kisak-Strike/tree/master/particles
@@ -4710,11 +4823,13 @@ function PartCtrl_ProcessPCF(filename)
 			//If the player starts up the game in developer mode, effects aren't culled, but instead have a warning on the spawnicon telling the dev why they won't show up to players.
 			if t2[particle].shouldcull and GetConVarNumber("developer") < 1 then
 				t2[particle] = nil
-			else
-				//Store which PCFs this particle name is defined in - this is used to detect particles that are multiply defined and display a warning in the spawnicon
-				//(do this last so we don't conflict with particles that have been culled)
-				PartCtrl_PCFsByParticleName[particle] = PartCtrl_PCFsByParticleName[particle] or {}
+			end
+			//Store which PCFs this particle name is defined in - this is used to detect particles that are multiply defined and display a warning in the spawnicon
+			PartCtrl_PCFsByParticleName[particle] = PartCtrl_PCFsByParticleName[particle] or {}
+			if t2[particle] then
 				PartCtrl_PCFsByParticleName[particle][filename] = true
+			else
+				PartCtrl_PCFsByParticleName[particle][filename] = "culled" //these fx aren't spawnable but still collide with the default ones, so prepare crash prevention anyway
 			end
 		end
 		//Remove culled children and empty entries from child lists, add parents to parent lists
