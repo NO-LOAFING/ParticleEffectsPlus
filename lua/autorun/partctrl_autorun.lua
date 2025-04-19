@@ -54,19 +54,19 @@ local default_blacklist = {
 			smoke_skybox_01b = true,
 		}
 	},
-	--[[["particles/partctrl_fallbacks/hl2/vortigaunt_fx.pcf"] = { //this is pointless, who's going to use these? TODO: remove once archived
+	["particles/partctrl_fallbacks/hl2/vortigaunt_fx.pcf"] = {
 		whitelist = {
 			//some fx are slightly different from gmod's vortigaunt_fx.pcf
-			vortigaunt_beam = true, //doesn't have child vortigaunt_glow_beam_cp0
-			vortigaunt_charge_token = true,  //children are different
-			vortigaunt_charge_token_b = true, //spawns more particles; can't tell if this is different honestly
-			vortigaunt_charge_token_c = true, //spawns more particles; subtly brighter
-			vortigaunt_charge_token_d = true, //spawns a lot more particles, still barely visible unless it's dark but it counts
-			vortigaunt_hand_glow = true,
-			vortigaunt_hand_glow_b = true, 
-			vortigaunt_hand_glow_c = true, 
+			//vortigaunt_beam = true, //doesn't have child vortigaunt_glow_beam_cp0, so it's technically different, but who's going to use this?
+			//vortigaunt_charge_token = true,  //children are different
+			//vortigaunt_charge_token_b = true, //higher particle limit; can't tell if this is different honestly
+			//vortigaunt_charge_token_c = true, //higher particle limit; subtly brighter?
+			//vortigaunt_charge_token_d = true, //much higher particle limit, still barely visible unless it's dark
+			vortigaunt_hand_glow = true, //visibly smaller
+			vortigaunt_hand_glow_b = true, //^
+			vortigaunt_hand_glow_c = true, //^
 		}
-	},]]
+	},
 	//Counter-Strike: Source
 	["particles/partctrl_fallbacks/cstrike/fire_01.pcf"] = {
 		whitelist = {
@@ -80,7 +80,7 @@ local default_blacklist = {
 	},
 	//Left 4 Dead 2
 	["particles/partctrl_fallbacks/left4dead2/fire_01.pcf"] = {
-		//contains a ton of duplicate fx from gmod's fire_01.cf as well as a ton of unique ones; 
+		//contains a ton of duplicate fx from gmod's fire_01.pcf as well as a ton of unique ones; 
 		//there's slightly more good ones than bad, so doing a blacklist is shorter
 		burning_gib_01_drag = dupe_blacklist_text,
 		burning_gib_01_follower2 = dupe_blacklist_text,
@@ -261,7 +261,8 @@ hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
 					tab[k].shouldcull = default_blacklist[filename][k]
 				end
 			else
-				//if whitelist is present, blacklist all fx in the pcf *except* the ones listed
+				//if whitelist is present, blacklist all fx in the pcf *except* the ones listed.
+				//this will break if we want to blacklist an effect named just "whitelist", OH WELL
 				if !default_blacklist[filename].whitelist[k] then
 					tab[k].shouldcull = default_blacklist[filename].whitelist_fail_msg or dupe_blacklist_text
 				end
@@ -5192,6 +5193,32 @@ function PartCtrl_ReadAndProcessPCFs()
 	//
 	//Currently includes fallback pcfs for the following games mounted: hl2, cstrike, tf, hl2mp, hl1, portal, left4dead2, portal2, swarm; retrieved 4/13/25
 	//To check all pcf file conflicts (i.e. with more games mounted, or after a game update) run PartCtrl_GetPCFConflicts().
+	//
+	//Omissions:
+	//- portal+portal2 blood_impact.pcf: contains completely blank overrides for blood_impact_red/green/yellow_01, seemingly as a brute-force way of removing 
+	//  blood fx from portal. this is problematic for players, because loading this pcf overrides these fx, but the player won't be able to tell why because 
+	//  blank fx are culled from the list. only other fx are 3 orphaned children of blood_impact_red, 2 of which are visually identical to stock. 
+	//  blood_impact_red_01_goop is actually unique from stock, but people aren't likely to use it anyway, and it's not worth the trouble with the blank ones.
+	//- hl2+cstrike burning_fx.pcf: functionally identical to gmod's except burning_character's initializer Position on Model Random hitbox scale is 1 instead 
+	//  of 2. if this makes a difference, it's so subtle i couldn't tell you what it is.
+	//- swarm burningplayer.pcf: this is just tf2's burningplayer.pcf with a lot of fx missing, except burningplayer_corpse(glow) emit slightly more particles. 
+	//  not worth it.
+	//- portal2 cleansers.pcf: this is just portal 1's cleansers.pcf with a lot of fx missing, except for one new effect human_cleanser_cheap, which is just a 
+	//  copy of human_cleanser with a few optimization params set that isn't visibly any different.
+	//- left4dead2's default.pcf: functionally identical to hl2/tf's, just in a newer pcf format
+	//- left4dead2's error.pcf: functionally identical to gmod's, just in a newer pcf format
+	//- portal2's finale_fx.pcf: this is portal 1's finale_fx.pcf except finale_gasescape1/finale_gasescape_initial spawn more particles and have a different 
+	//  texture. not worth it
+	//- portal2's neurotoxins.pcf: this is portal 1's neurotoxins.pcf except neurotoxins_step2 spawns more particles, not worth it
+	//- portal2's water_leaks.pcf: this is hl2's water_leaks.pcf except WaterLeak_Pipe_1_TrailDrops_1 is different (and makes parent fx look worse); not worth it
+	//Notes:
+	//- left4dead2's electrical_fx.pcf has a lot of duplicate fx from hl2's electrical_fx.pcf, but that's not a stock gmod effect. so we can't blacklist the dupes 
+	//  and guarantee the player has hl2 installed, we'll just have to live with them
+	//- swarm's electrical_fx.pcf has a lot of duplicate fx from both hl2's and left4dead2's, but again, same problem, we can't guarantee which games are installed
+	//- just about all the fx in portal 1 that weren't updated in portal 2 are included somewhere in it as duplicates, but often in different pcf files, not much we 
+	//  can do there
+	//- portal2's environmental_fx.pcf is just a few fx copied from left4dead2's environmental_fx.pcf, and one unique one called case_bubbles; this sucks but having 
+	//  a fallback for it is better than having the pcf change drastically depending on what games you have installed
 	local _, dirs = file.Find("particles/partctrl_fallbacks/*", "GAME")
 	PartCtrl_FallbackPCFs = {}
 	for _, str in pairs (dirs) do
