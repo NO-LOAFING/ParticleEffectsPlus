@@ -44,29 +44,206 @@ local tf2_unusual_wep_pcfs = {
 }
 local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all dupes with conflicting names,\nwhich slow the game down with unnecessary PCF reloads every time\nyou search for a TF2 weapon."
 local crash_blacklist_text = "Blacklisted: causes crash when spawned"
-local redundant_blacklist_text = "Blacklisted: redundant copy of stock gmod effect"
+local dupe_blacklist_text = "Blacklisted: redundant copy of stock gmod effect"
 local default_blacklist = {
+	//Half-Life 2 + Episodes
+	["particles/partctrl_fallbacks/hl2/fire_01.pcf"] = {
+		whitelist = {
+			//file is functionally identical to gmod's fire_01.pcf, except for 2 new fx
+			smoke_skybox_01a = true,
+			smoke_skybox_01b = true,
+		}
+	},
+	--[[["particles/partctrl_fallbacks/hl2/vortigaunt_fx.pcf"] = { //this is pointless, who's going to use these? TODO: remove once archived
+		whitelist = {
+			//some fx are slightly different from gmod's vortigaunt_fx.pcf
+			vortigaunt_beam = true, //doesn't have child vortigaunt_glow_beam_cp0
+			vortigaunt_charge_token = true,  //children are different
+			vortigaunt_charge_token_b = true, //spawns more particles; can't tell if this is different honestly
+			vortigaunt_charge_token_c = true, //spawns more particles; subtly brighter
+			vortigaunt_charge_token_d = true, //spawns a lot more particles, still barely visible unless it's dark but it counts
+			vortigaunt_hand_glow = true,
+			vortigaunt_hand_glow_b = true, 
+			vortigaunt_hand_glow_c = true, 
+		}
+	},]]
+	//Counter-Strike: Source
+	["particles/partctrl_fallbacks/cstrike/fire_01.pcf"] = {
+		whitelist = {
+			//file is functionally identical to gmod's fire_01.pcf, except for 1 new effect
+			bomb_explosion_huge = true,
+		}
+	},
+	//Team Fortress 2
+	["particles/partctrl_fallbacks/tf/impact_fx.pcf"] = {
+		impact_generic_smoke = dupe_blacklist_text, //dupe from gmod impact_fx.pcf; the rest of the effects in this pcf are unique
+	},
+	//Left 4 Dead 2
+	["particles/partctrl_fallbacks/left4dead2/fire_01.pcf"] = {
+		//contains a ton of duplicate fx from gmod's fire_01.cf as well as a ton of unique ones; 
+		//there's slightly more good ones than bad, so doing a blacklist is shorter
+		burning_gib_01_drag = dupe_blacklist_text,
+		burning_gib_01_follower2 = dupe_blacklist_text,
+		burning_gib_01b = dupe_blacklist_text,
+		burning_vehicle = dupe_blacklist_text,
+		burning_wood_01b = dupe_blacklist_text,
+		burning_wood_01c = dupe_blacklist_text,
+		embers_large_01 = dupe_blacklist_text,
+		embers_large_02 = dupe_blacklist_text,
+		embers_medium_01 = dupe_blacklist_text,
+		embers_medium_03 = dupe_blacklist_text,
+		embers_small_01 = dupe_blacklist_text,
+		env_embers_large = dupe_blacklist_text,
+		env_embers_medium = dupe_blacklist_text,
+		env_embers_medium_spread = dupe_blacklist_text,
+		env_embers_small = dupe_blacklist_text,
+		env_embers_small_spread = dupe_blacklist_text,
+		env_embers_tiny = dupe_blacklist_text,
+		env_fire_medium_spread_b = dupe_blacklist_text,
+		//explosion_huge = dupe_blacklist_text, //child explosion_huge_k (plume of flames) is different, so this isn't a dupe
+		explosion_huge_b = dupe_blacklist_text,
+		explosion_huge_burning_chunks = dupe_blacklist_text,
+		explosion_huge_c = dupe_blacklist_text,
+		explosion_huge_d = dupe_blacklist_text,
+		explosion_huge_e = dupe_blacklist_text,
+		explosion_huge_f = dupe_blacklist_text,
+		explosion_huge_g = dupe_blacklist_text,
+		explosion_huge_h = dupe_blacklist_text,
+		explosion_huge_j = dupe_blacklist_text,
+		explosion_huge_smoking_chunks = dupe_blacklist_text,
+		//explosion_silo = dupe_blacklist_text, //children explosion_huge_flames, explosion_huge_flames_b are different, so this isn't a dupe
+		//fire_large_01 = dupe_blacklist_text, //child smoke_large_01 is different, so this isn't a dupe
+		fire_large_02_filler = dupe_blacklist_text,
+		fire_large_02_fillerb = dupe_blacklist_text,
+		fire_large_base = dupe_blacklist_text,
+		fire_medium_01_glow = dupe_blacklist_text,
+		//fire_medium_02 = dupe_blacklist_text, //child smoke_medium_02 uses a different texture; it's very subtle, but it counts, so not a dupe
+		fire_medium_02_nosmoke = dupe_blacklist_text,
+		//fire_medium_03 = dupe_blacklist_text, //child smoke_medium_02 uses a different texture; it's very subtle, but it counts, so not a dupe
+		//fire_medium_03_brownsmoke = dupe_blacklist_text, //child smoke_medium_02c has slightly fewer particles; it's very subtle, but it counts, so not a dupe
+		fire_medium_base = dupe_blacklist_text,
+		fire_medium_burst = dupe_blacklist_text,
+		fire_medium_heatwave = dupe_blacklist_text,
+		//fire_small_01 = dupe_blacklist_text, operator Oscillate Vector has different values that don't seem to make a difference, but child smoke_small_01 uses a different texture, so not a dupe
+		fire_small_02 = dupe_blacklist_text,
+		//fire_small_03 = dupe_blacklist_text, //child smoke_small_01 uses a different texture, so not a dupe
+		fire_small_base = dupe_blacklist_text, 
+		fire_small_flameouts = dupe_blacklist_text,
+		fire_verysmall_01 = dupe_blacklist_text,
+		smoke_burning_engine_01 = dupe_blacklist_text, //has different bounding box size; no visible difference
+		smoke_exhaust_01a = dupe_blacklist_text, //lower max particle count, but no visible difference since it never gets near the cap
+		smoke_exhaust_01b = dupe_blacklist_text, //lower max particle count, but no visible difference since it never gets near the cap
+		smoke_large_01b = dupe_blacklist_text,
+		smoke_large_02b = dupe_blacklist_text,
+		smoke_medium_01 = dupe_blacklist_text,
+		Smoke_medium_02b = dupe_blacklist_text,
+		["Smoke_medium_02b Version #2"] = dupe_blacklist_text,
+		smoke_small_01b = dupe_blacklist_text,
+	},
+	["particles/fire_fx.pcf"] = {
+		//many unique fx, but a few dupes from gmod's fire_01.pcf
+		burning_gib_01_drag = dupe_blacklist_text,
+		burning_gib_01_follower2 = dupe_blacklist_text,
+		embers_large_01 = dupe_blacklist_text,
+		fire_large_base = dupe_blacklist_text,
+		fire_medium_01_glow = dupe_blacklist_text,
+		fire_small_02 = dupe_blacklist_text,
+		fire_small_base = dupe_blacklist_text,
+		fire_small_flameouts = dupe_blacklist_text,
+		fire_verysmall_01 = dupe_blacklist_text,
+		smoke_large_01b = dupe_blacklist_text,
+		smoke_large_02b = dupe_blacklist_text,
+		smoke_medium_01 = dupe_blacklist_text,
+		["Smoke_medium_02b Version #2"] = dupe_blacklist_text,
+		smoke_small_01b = dupe_blacklist_text,
+	},
+	["particles/fire_infected_fx.pcf"] = {
+		smoke_gib_01 = dupe_blacklist_text, //another gmod fire_01.pcf dupe
+	},
 	//Portal 2
 	["particles/chicken.pcf"] = {
 		feathers_large = crash_blacklist_text,
 		feathers_single = crash_blacklist_text,
 		feathers_small = crash_blacklist_text,
 	},
-}
-//blacklist all fx *except* the ones listed
-local default_whitelist = {
-	//Counter-Strike: Source
-	["particles/partctrl_fallbacks/cstrike/fire_01.pcf"] = {
+	["particles/partctrl_fallbacks/portal2/fire_01.pcf"] = {
 		whitelist = {
-			bomb_explosion_huge = true,
+			//contains mostly duplicate fx from gmod's fire_01.pcf, except for the following:
+			burning_gib_01 = true,
+			burning_gib_01b = true,
+			fire_jet_01 = true,
+			fire_jet_01_flame = true,
+			fire_jet_02 = true,
+			fire_jet_billow = true,
+			fire_jet_billow2 = true,
+			fire_jet_billow_steam = true,
+			huge_flames = true,
+			huge_flames_b = true,
+			smoke_gib_01 = true,
+			smoke_small_01b = true,
+			turret_burning_gib_01 = true,
+			turret_smoke_gib1 = true,
+			turret_smoke_gib2 = true,
 		}
 	},
-	//Half-Life 2 + Episodes
-	["particles/partctrl_fallbacks/hl2/fire_01.pcf"] = {
+	["particles/fire_01_unused.pcf"] = {
 		whitelist = {
-			smoke_skybox_01a = true,
-			smoke_skybox_01b = true,
+			//contains mostly duplicate fx from gmod's fire_01.pcf, except for the following:
+			burning_engine_01 = true, //child burning_engine_fire is different
+			burning_engine_fire = true,
+			burning_gib_01 = true, //child smoke_gib_01 is different
+			burning_gib_01_follower1 = true, //child smoke_gib_01 is different
+			burning_gib_01_follower2 = true,
+			burning_gib_01b = true,
+			burning_wood_01b = true,
+			explosion_huge = true, //children explosion_huge_d and explosion_huge_g are different
+			explosion_huge_d = true,
+			explosion_huge_g = true,
+			explosion_silo = true, //children explosion_huge_d and explosion_huge_g are different
+			fire_jet_01 = true, //child fire_jet_01_flame is different
+			fire_jet_01_flame = true,
+			fire_large_01 = true, //child smoke_large_01 is different
+			fire_medium_02 = true, //child smoke_medium_02 is different
+			fire_medium_03 = true, //child smoke_medium_02 is different
+			fire_small_01 = true, //child smoke_small_01 is different
+			fire_small_03 = true, //child smoke_small_01 is different
+			smoke_gib_01 = true,
+			smoke_large_01 = true,
+			smoke_large_02 = true,
+			smoke_medium_02 = true,
+			["smoke_medium_02 Version #2"] = true,
+			smoke_small_01 = true,
 		}
+	},
+	["particles/partctrl_fallbacks/portal2/water_impact.pcf"] = {
+		//some dupes from gmod water_impact.pcf
+		slime_splash_01 = dupe_blacklist_text,
+		slime_splash_01_droplets = dupe_blacklist_text,
+		slime_splash_01_reversed = dupe_blacklist_text,
+		slime_splash_01_surface = dupe_blacklist_text,
+		slime_splash_02 = dupe_blacklist_text,
+		slime_splash_03 = dupe_blacklist_text,
+		water_splash_02_droplets = dupe_blacklist_text,
+		water_splash_02_vertical = dupe_blacklist_text,
+	},
+	["particles/water_impact_unused.pcf"] = {
+		whitelist = {
+			//mostly dupes from gmod's water_impact.pcf, but a few fx are slightly different or unique
+			water_foam_line_long = true,
+			water_foam_line_longb = true,
+			water_foam_line_longc = true,
+			water_foam_line_longd = true,
+			water_foam_line_medium = true,
+			water_foam_line_mediumb = true,
+			water_foam_line_mediumc = true,
+			water_foam_line_mediumd = true,
+			water_splash_01_surface4_impact = true,
+			water_splash_02_animated = true,
+		}
+	},
+	//Alien Swarm 
+	["particles/vindincendgrenade.pcf"]= {
+		explosion_huge_e = dupe_blacklist_text, //duplicate of effect from gmod's fire_01_pcf; the rest of the fx in this pcf with conflicting names are all unique
 	},
 }
 hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
@@ -79,15 +256,15 @@ hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
 	end
 	if default_blacklist[filename] then
 		for k, v in pairs (tab) do
-			if default_blacklist[filename][k] then
-				tab[k].shouldcull = default_blacklist[filename][k]
-			end
-		end
-	end
-	if default_whitelist[filename] then
-		for k, v in pairs (tab) do
-			if !default_whitelist[filename].whitelist[k] then
-				tab[k].shouldcull = default_whitelist[filename].fail_msg or redundant_blacklist_text
+			if !default_blacklist[filename].whitelist then
+				if default_blacklist[filename][k] then
+					tab[k].shouldcull = default_blacklist[filename][k]
+				end
+			else
+				//if whitelist is present, blacklist all fx in the pcf *except* the ones listed
+				if !default_blacklist[filename].whitelist[k] then
+					tab[k].shouldcull = default_blacklist[filename].whitelist_fail_msg or dupe_blacklist_text
+				end
 			end
 		end
 	end
@@ -3058,7 +3235,7 @@ function PartCtrl_ComparePCFs(file1, file2, shownil)
 			allkeys[k] = true
 		end
 		local results = {}
-		for k, _ in SortedPairs (allkeys) do
+		for k, _ in SortedPairsLower (allkeys) do
 			if spew or t1[k] != t2[k] then
 				if istable(t1[k]) and istable(t2[k]) then
 					//They're both tables, compare their contents
@@ -4828,8 +5005,10 @@ function PartCtrl_ProcessPCF(filename)
 			PartCtrl_PCFsByParticleName[particle] = PartCtrl_PCFsByParticleName[particle] or {}
 			if t2[particle] then
 				PartCtrl_PCFsByParticleName[particle][filename] = true
+			//TODO: rethink this? crash prevention doesn't actually need any extra info on these, this is just to add info to the 
+			//tooltip to *maybe* let the player know why this effect gets overwritten when they load another effect from this pcf.
 			else
-				PartCtrl_PCFsByParticleName[particle][filename] = "culled" //these fx aren't spawnable but still collide with the default ones, so prepare crash prevention anyway
+				PartCtrl_PCFsByParticleName[particle][filename] = "culled"
 			end
 		end
 		//Remove culled children and empty entries from child lists, add parents to parent lists

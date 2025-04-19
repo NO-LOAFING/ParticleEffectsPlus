@@ -77,10 +77,11 @@ function PANEL:Setup(pcf, name)
 
 			if table.Count(PartCtrl_PCFsByParticleName[name]) > 1 then
 				tooltip = tooltip .. "\n\nWarning: This particle effect name is defined in multiple files:"
-				for k, _ in pairs (PartCtrl_PCFsByParticleName[name]) do
+				for k, v in pairs (PartCtrl_PCFsByParticleName[name]) do
 					tooltip = tooltip .. "\n" .. k
+					if isstring(v) then tooltip = tooltip .. " (" .. v .. ")" end //list pcfs where this effect is defined but culled
 				end
-				tooltip = tooltip .. "\nOnly one effect called \"" .. name .. "\" can be loaded at a time.\nIf you load effects from any of these files, even in spawnicons, it will\nuse the \"" .. name .. "\" from the most recently loaded file." 
+				tooltip = tooltip .. "\nOnly one effect called \"" .. name .. "\" can be loaded at a time.\nIf you load multiply defined effects from any of these files, even in spawnicons,\nit will use the \"" .. name .. "\" from the most recently loaded file." 
 				table.insert(self.icons, {["icon"] = icon_multiplydefined, ["icon2"] = icon_multiplydefined_2})
 			end
 
