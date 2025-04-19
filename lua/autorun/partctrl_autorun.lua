@@ -62,7 +62,7 @@ local default_blacklist = {
 			//vortigaunt_charge_token_b = true, //higher particle limit; can't tell if this is different honestly
 			//vortigaunt_charge_token_c = true, //higher particle limit; subtly brighter?
 			//vortigaunt_charge_token_d = true, //much higher particle limit, still barely visible unless it's dark
-			vortigaunt_hand_glow = true, //visibly smaller
+			vortigaunt_hand_glow = true, //noticeably smaller, might actually be useful
 			vortigaunt_hand_glow_b = true, //^
 			vortigaunt_hand_glow_c = true, //^
 		}
@@ -5805,16 +5805,10 @@ if CLIENT then
 		searchParticles = nil //force search to rebuild search cache so any new fx will be found
 		MsgN("Reloading ", str, " on client ", LocalPlayer())
 
-		//refresh spawnicons
-		if istable(PartCtrl_AllContentIcons) and istable(PartCtrl_AllContentIcons[str]) then
-			for k, _ in pairs (PartCtrl_AllContentIcons[str]) do
-				if IsValid(k) then
-					if k.Setup and k.pcf and k.name then
-						k:Setup(k.pcf, k.name)
-					end
-				else
-					PartCtrl_AllContentIcons[str][k] = nil 
-				end
+		//refresh spawnicons (this is handled by the think hook in contenticon_partctrl.lua)
+		if PartCtrl_IconFx and PartCtrl_IconFx[str] then
+			for name, _ in pairs (PartCtrl_IconFx[str]) do
+				PartCtrl_IconFx[str][name].reset = true
 			end
 		end
 
@@ -5915,6 +5909,7 @@ if CLIENT then
 	function PartCtrl_AddParticles(pcf, effectname) //optional effectname arg for spawnicons and particle entities, which usually only care about conflicts with their one effect
 
 		if !istable(PartCtrl_ProcessedPCFs[pcf]) then return end
+		if effectname and !istable(PartCtrl_ProcessedPCFs[pcf][effectname]) then return end
 
 		local doaddparticles = false
 		local key2 = table.KeyFromValue(AddParticles_Queued, pcf)
@@ -6045,19 +6040,6 @@ if CLIENT then
 				if !PartCtrl_DoneFirstPrecache then
 					PrecacheParticleSystem("")
 					PartCtrl_DoneFirstPrecache = true
-				end
-			end
-		end
-
-		//Also clean up fx from non-visible spawnicons here, so the crash prevention loop up there has a chance to catch them first
-		local autohide = !g_SpawnMenu:IsVisible()
-		if istable(PartCtrl_AllContentIcons) then
-			for pcf, tab in pairs (PartCtrl_AllContentIcons) do
-				for panel, _ in pairs (tab) do
-					if IsValid(panel) and (autohide or !panel:GetParent():GetParent():GetParent():IsVisible()) then //this dumb nested parent is the spawnlist containing the spawnicon (or a container for it or something), which becomes non-visible when another spawnlist is selected
-						panel:RemoveParticle()
-						panel.particle = "cleaned_up"
-					end
 				end
 			end
 		end

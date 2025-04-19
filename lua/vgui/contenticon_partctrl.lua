@@ -15,312 +15,198 @@ local icon_utilfx = Material("icon16/cog.png")
 local icon_info = Material("icon16/information.png")
 
 if system.IsLinux() then
-	--[[surface.CreateFont("PartCtrl_DermaDefaultSmall", {
+	surface.CreateFont("PartCtrl_DermaDefaultSmall", {
 		font		= "DejaVu Sans",
-		size		= 12, //don't have this font, so just have to trust that this is right (1pt larger than the tahoma, like in https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/derma/init.lua#L6C1-L45C4)
+		size		= 13, //don't have this font, so just have to trust that this is right (1pt larger than the tahoma, like in https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/derma/init.lua#L6C1-L45C4)
 		weight		= 500,
 		extended	= true
-	})]]
-	surface.CreateFont("PartCtrl_DermaDefaultSmallOutlined", {
-		font		= "DejaVu Sans",
-		size		= 12, //don't have this font, so just have to trust that this is right (1pt larger than the tahoma, like in https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/derma/init.lua#L6C1-L45C4)
-		weight		= 500,
-		extended	= true,
-		outline		= true
 	})
 else
-	--[[surface.CreateFont("PartCtrl_DermaDefaultSmall", {
+	surface.CreateFont("PartCtrl_DermaDefaultSmall", {
 		font		= "Tahoma",
-		size		= 11, //not too happy with this, 10pt is just a bit too small to be easily readable, but 11pt is still too big for a lot of particle names
+		size		= 12,
 		weight		= 500,
 		extended	= true
-	})]]
-	surface.CreateFont("PartCtrl_DermaDefaultSmallOutlined", {
-		font		= "Tahoma",
-		size		= 11, //not too happy with this, 10pt is just a bit too small to be easily readable, but 11pt is still too big for a lot of particle names
-		weight		= 500,
-		extended	= true,
-		outline		= true
 	})
 end
 
 function PANEL:Setup(pcf, name)
-
-	//list of all panels, for developer refresh func and particle cleanup
-	PartCtrl_AllContentIcons = PartCtrl_AllContentIcons or {}
-	PartCtrl_AllContentIcons[pcf] = PartCtrl_AllContentIcons[pcf] or {}
-	PartCtrl_AllContentIcons[pcf][self] = true
 
 	self.pcf = pcf
 	self.name = name
 	self:SetName(name)
 	self:SetSpawnName(pcf)
 	self:SetContentType("partctrl")
-	//particle names are consistently too long for a single line, try multiline text
-	//self.Label:SetWrap(true)
-	//self.Label:SetAutoStretchVertical(true)
-	//self.Label:SetContentAlignment(5) //doesn't work when SetWrap is set to true
-	//we can't make multiline text look good, try small text
-	//self.Label:SetFont("HudHintTextSmall") //too blurry
-	//self.Label:SetFont("PartCtrl_DermaDefaultSmall") //as of 3/26/25 update, this doesn't work either; in the implementation of label text scrolling, the label is now hard-coded in the paint function instead of being a separate object, so we can't change its font easily, though it's not as necessary to do so any more (https://github.com/Facepunch/garrysmod/commit/57ab57d524376c15a95b4072d1dc7d81070f0ee5)
 
-	local tooltip = name
-	self.icons = {}
-	if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) or !istable(PartCtrl_ProcessedPCFs[pcf][name].cpoints) then
-		tooltip = tooltip .. "\n(" .. pcf .. ")\n\nInvalid particle effect (from game/addon that isn't mounted?)"
-		//table.insert(self.icons, {["icon"] = icon_invalid})
-		self:SetMaterial("icon16/cancel.png") //icon_invalid) //why doesn't this one take a Material()? whatever
-	else
-		self.utilfx = PartCtrl_ProcessedPCFs[pcf][name].utilfx
-		if !self.utilfx then
-			tooltip = tooltip .. "\n(" .. pcf .. ")"
-
-			if table.Count(PartCtrl_PCFsByParticleName[name]) > 1 then
-				tooltip = tooltip .. "\n\nWarning: This particle effect name is defined in multiple files:"
-				for k, v in pairs (PartCtrl_PCFsByParticleName[name]) do
-					tooltip = tooltip .. "\n" .. k
-					if isstring(v) then tooltip = tooltip .. " (" .. v .. ")" end //list pcfs where this effect is defined but culled
-				end
-				tooltip = tooltip .. "\nOnly one effect called \"" .. name .. "\" can be loaded at a time.\nIf you load multiply defined effects from any of these files, even in spawnicons,\nit will use the \"" .. name .. "\" from the most recently loaded file." 
-				table.insert(self.icons, {["icon"] = icon_multiplydefined, ["icon2"] = icon_multiplydefined_2})
-			end
-
-			//developer warnings for culled fx
-			if PartCtrl_ProcessedPCFs[pcf][name].shouldcull then
-				tooltip = tooltip .. "\n\nERROR: This effect will not be loaded outside of developer mode.\n\n" .. tostring(PartCtrl_ProcessedPCFs[pcf][name].shouldcull) //just in case some doofus makes it a bool
-				//tooltip reaches max length if all 3 errors are on one effect, but whatever
-				table.insert(self.icons, {["icon"] = icon_deverror})
-			end
-		else
-			tooltip = tooltip .. "\n(Scripted Effect)"
-			//table.insert(self.icons, {["icon"] = icon_utilfx})
-			self:SetMaterial("icon16/cog.png") //icon_utilfx) //why doesn't this one take a Material()? whatever
-		end
-
-		local types = {}
-		for _, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
-			types[v.mode] = types[v.mode] or 0
-			types[v.mode] = types[v.mode] + 1
-		end
-
-		if types[PARTCTRL_CPOINT_MODE_POSITION] > 1 then
-			table.insert(self.icons, {["icon"] = icon_position, ["num"] = types[PARTCTRL_CPOINT_MODE_POSITION]})
-		end
-
-		self.particle2_playerposfix = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_playerposfix //particle attrib "set control point to player" sets this to true
-		self.doparticle2 = self.particle2_playerposfix
-		self.EditCPoints = {}
-		self.EditCPointsText = {}
-		self.ColorCPoints = {}
-		for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
-			if v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
-				if !v.vector or !v.vector[v.which] then MsgN(pcf, ": ", name, " - this effect is trying to get a vector value that it doesn't have, some dumb inheritance problem, go report this!") end
-				if v.vector[v.which].colorpicker then
-					self.ColorCPoints[k] = v.vector[v.which]
-				else
-					self.EditCPoints[k] = v.vector[v.which].default or vector_origin
-					table.insert(self.EditCPointsText, v.vector[v.which].label)
-				end
-			elseif v.mode == PARTCTRL_CPOINT_MODE_AXIS then
-				self.EditCPoints[k] = Vector(0,0,0)
-				for i = 0, 2 do
-					axistab = v.axis[v["which_" .. i]]
-					if istable(axistab) then
-						self.EditCPoints[k][i+1] = axistab.default or 0
-						table.insert(self.EditCPointsText, axistab.label)
-					end
-				end
-			end
-		end
-		self.iColorCPoints = {}
-		local num = table.Count(self.ColorCPoints)
-		if num > 0 then
-			if num == 1 then
-				num = nil
-				tooltip = tooltip .. "\n\nThis effect is colorable."
-			else
-				tooltip = tooltip .. "\n\nThis effect has " .. num .. " editable colors. You can set them all at once\nwith the color tool, or set them separately in the edit window."
-			end
-			table.insert(self.icons, {["icon"] = icon_color, ["num"] = num})
-			for k, v in SortedPairs (self.ColorCPoints) do
-				table.insert(self.iColorCPoints, k)
-			end
-			self.doparticle2 = true
-		end
-		if PartCtrl_ProcessedPCFs[pcf][name].on_model then
-			local count = table.Count(PartCtrl_ProcessedPCFs[pcf][name].on_model)
-			if types[PARTCTRL_CPOINT_MODE_POSITION] > count then
-				tooltip = tooltip .. "\n\nThis effect will cover a whole model if control point"
-				if count > 1 then tooltip = tooltip .. "s" end
-				local docomma = false
-				for k, _ in pairs (PartCtrl_ProcessedPCFs[pcf][name].on_model) do
-					if docomma then tooltip = tooltip .. "," end
-					tooltip = tooltip .. " " .. k
-					docomma = true
-				end
-				if docomma then
-					tooltip = tooltip .. " is attached."
-				else
-					tooltip = tooltip .. " are attached."
-				end
-			else
-				tooltip = tooltip .. "\n\nThis effect will cover a whole model if attached."
-			end
-			table.insert(self.icons, {["icon"] = icon_model})
-		end
-		if table.Count(self.EditCPoints) > 0 then
-			table.insert(self.icons, {["icon"] = icon_edit})
-			tooltip = tooltip .. "\n\nThis effect has editable properties:"
-			for _, v in pairs (self.EditCPointsText) do
-				tooltip = tooltip .. "\n" .. v
-			end
-			self.doparticle2 = true
-		end
-		if PartCtrl_ProcessedPCFs[pcf][name].info then
-			table.insert(self.icons, {["icon"] = icon_info})
-			tooltip = tooltip .. "\n\nInfo:\n" .. PartCtrl_ProcessedPCFs[pcf][name].info
-		end
-
-		//test lots of icons
-		--[[for i = 1, 20 do
-			table.insert(self.icons, {["icon"] = icon_test, ["num"] = i})
-		end]]
-
+	if pcf == "UtilFx" then
+		self:SetMaterial("icon16/cog.png") //icon_utilfx) //why doesn't this one take a Material()? whatever
 	end
-	self:SetTooltip(tooltip)
 
-	self:BeginNewParticle()
+	//PartCtrl_AddParticles(pcf, name) //crash prevention
 	self.DoneSetup = true
 
 end
 
-function PANEL:OnRemove()
+local ViewAngle = Angle(25, 220, 0)
+local icon_loading = Material("vgui/loading-rotate.vmt") //TODO: replace this with a custom texture eventually, something bulkier that looks better when it's drawn small like this
+function PANEL:Paint(w, h)
 
-	//list of all panels, for developer refresh func and particle cleanup
-	PartCtrl_AllContentIcons = PartCtrl_AllContentIcons or {}
-	PartCtrl_AllContentIcons[self.pcf] = PartCtrl_AllContentIcons[self.pcf] or {}
-	PartCtrl_AllContentIcons[self.pcf][self] = nil
-
-	//don't leave behind an orphaned particle
-	self:RemoveParticle()
-
-end
-
-function PANEL:RemoveParticle()
-
-	if self.particle and self.particle.IsValid and self.particle:IsValid() then
-		self.particle:StopEmissionAndDestroyImmediately()
-		--[[if PartCtrl_AddParticles_CrashCheck[self.pcf] and PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle] then
-			//Remove now-invalid particles from the crashcheck list
-			PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle] = nil
-		end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
-	end
-	if self.particle2 and self.particle2.IsValid and self.particle2:IsValid() then
-		self.particle2:StopEmissionAndDestroyImmediately()
-		--[[if PartCtrl_AddParticles_CrashCheck[self.pcf] and PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] then
-			//Remove now-invalid particles from the crashcheck list
-			PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] = nil
-		end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
-	end
-
-end
-
-function PANEL:BeginNewParticle()
-
-	if self.utilfx or !istable(PartCtrl_ProcessedPCFs[self.pcf]) or !istable(PartCtrl_ProcessedPCFs[self.pcf][self.name]) 
-	or PartCtrl_ProcessedPCFs[self.pcf][self.name].prevent_name_based_lookup then //don't bother trying to create fx with this attribute, even in developer mode, it'll just fail and spam the console with errors
+	if !self.DoneSetup then
+		baseclass.Get("ContentIcon").Paint(self, w, h)
 		return
 	end
 
-	self:RemoveParticle()
-
-	//TODO: none of this works because we can't tell if our parent is the search panel. the IsInSearch = true that we set in search.AddProvider stops being true when the spawnicon is recreated by 
-	//a model search update, and self:GetParent() == g_SpawnMenu.SearchPropPanel NEVER works.
-	////If this spawnicon is from a search, then if the spawnmenu model search is currently populating, it'll recreate the spawnicon every time it finds a new model.
-	////If this spawnicon has a conflicting PCF, then it'll run game.AddParticles every time the spawnicon is recreated, which will cause a stutter.
-	////If both of these are true, then that means it'll stutter *every single time* the search finds a new model, which can slow the game down to a crawl or even crash. Instead, just wait
-	////for the model search to finish populating before we start the particle.
-	//local badsearchparticle = false
-	//local par2 = self:GetParent():GetParent()
-	//if self.IsInSearch and table.Count(PartCtrl_PCFsByParticleName[self.name]) > 1 and timer.Exists("search_models_update") then //the check for search_models_update is sort of a hack, but it's the only way i could find to check if the spawnmenu model search is currently populating (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/cl_search_models.lua#L38)
-	//	badsearchparticle = true
-	//else
-		//Call game.AddParticles every time we begin a new particle, so that re-opening a spawnlist can reload pcf files with conflicting effects that have since been overridden
-		//MsgN("PANEL:BeginNewParticle ", self.pcf)
-		PartCtrl_AddParticles(self.pcf, self.name) //crash prevention
-
-		//self:StartParticle()
-		self.particle = partctrl_wait //make think run StartParticle next frame; this lets all the spawnicons in a spawnlist run PartCtrl_AddParticles first, before any of them have spawned any fx
-	//end
-	//MsgN(self.IsInSearch, table.Count(PartCtrl_PCFsByParticleName[self.name]) > 1, timer.Exists("search_models_update"), " ", par2:GetClassName(), " ", self.name, " ", self.pcf)
-	//MsgN("according to icon, parent is ", self:GetParent(), " and self is ", self)
-
-	//if (!self.particle and PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self.pcf]) or badsearchparticle then
-	if (!self.particle or self.particle == "cleaned_up") and PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self.pcf] then
-		self.particle = partctrl_wait	//ordinarily, PANEL:Paint won't try to recreate the particle if self.particle is nil, which is what we want. however, if crash prevention
-	end					//prevented us from creating our effect here, then make this value non-nil so PANEL:Paint will try to create it once crash prevention is over.
-
-end
-
-function PANEL:StartParticle()
-
-	if self.utilfx or !istable(PartCtrl_ProcessedPCFs[self.pcf]) or !istable(PartCtrl_ProcessedPCFs[self.pcf][self.name]) then return end
-
-	if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self.pcf] then return end
-	if !self.precached then
-		PrecacheParticleSystem(self.name)
-		self.precached = true
-	end
-	self.particle = CreateParticleSystemNoEntity(self.name, vector_origin)
-	if self.particle and self.particle:IsValid() then
-		//For effects using a color or edit cpoint, their renderbounds will be stretched out by the cpoint if they're too far away,
-		//so create a second particlesystem without those cpoints, so we can use its renderbounds instead
-		if self.doparticle2 then
-			if self.particle2_playerposfix then
-				self.particle2 = CreateParticleSystem(LocalPlayer(), self.name, PATTACH_ABSORIGIN_FOLLOW)
-			else
-				self.particle2 = CreateParticleSystemNoEntity(self.name, vector_origin)
-			end
-			
-			if self.particle2 and (!self.particle2.IsValid or !self.particle2:IsValid()) then
-				self.particle2 = nil
-			end
-			self.particle2:SetShouldDraw(false)
-		end
-		self.particle:SetShouldDraw(false)
-		self.mins = nil
-		self.maxs = nil
-		self.iGrips = {}
-		self.iPositionCombine = {}
-		for k, v in pairs (PartCtrl_ProcessedPCFs[self.pcf][self.name].cpoints) do
-			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
-				table.insert(self.iGrips, k)
-			elseif v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
-				table.insert(self.iPositionCombine, k)
-			end
-		end
-		self:DoPosCPoints(self.particle)
-		if self.particle2 then
-			self:DoPosCPoints(self.particle2)
-		end
-		//Handle axis cpoints and vector cpoints other than colors by just setting them to their default value
-		for k, v in pairs (self.EditCPoints) do
-			self.particle:SetControlPoint(k, v)
-		end
-		self:DoColorCPoints() //accomodate CERTAIN EFFECTS that don't change color after spawning, looking at you wrangler :shakefist:
-		PartCtrl_AddParticles_CrashCheck[self.pcf] = PartCtrl_AddParticles_CrashCheck[self.pcf] or {}
-		PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle] = true
-		if self.particle2 then
-			PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] = true
-		end
+	//When hovered over with the mouse, check AddParticles again.
+	//(i.e. hover over an effect being overridden to make it show the correct one)
+	//This only runs if hovered over for *two* frames in a row, to get around an issue where upon opening the 
+	//spawnmenu, the cursor is considered to be hovering over the panel in the center of the screen for 1 frame.
+	self.LastHovered = self.LastHovered or 0
+	if self:IsHovered() then
+		self.LastHovered = self.LastHovered + 1
 	else
-		//we should've been able to create the particlesystem, but failed for some reason (i.e. pcf wasn't precached yet?), try again
-		self.particle = partctrl_wait
+		self.LastHovered = 0
+	end
+	if self.LastHovered == 2 and self.pcf != "UtilFx" then
+		//surface.PlaySound("vo/ravenholm/engage02.wav")
+		PartCtrl_AddParticles(self.pcf, self.name) //crash prevention
 	end
 
+	//Add this effect to PartCtrl_IconFx - even if we're not showing a particle in this panel, 
+	//we still want it to populate other stuff like icons and tooltips
+	PartCtrl_IconFx[self.pcf] = PartCtrl_IconFx[self.pcf] or {}
+	PartCtrl_IconFx[self.pcf][self.name] = PartCtrl_IconFx[self.pcf][self.name] or {}
+	PartCtrl_IconFx[self.pcf][self.name].panels = PartCtrl_IconFx[self.pcf][self.name].panels or {}
+	
+	local itab = PartCtrl_IconFx[self.pcf][self.name]
+	self:SetTooltip(itab.tooltip)
+
+	if self.invalid != itab.invalid then
+		if itab.invalid then
+			self:SetMaterial("icon16/cancel.png") //icon_invalid) //why doesn't this one take a Material()? whatever
+		else
+			self:SetMaterial("")
+		end
+		self.invalid = itab.invalid
+	end
+
+	
+	local bd = self.Border + 4
+	local showparticle = true
+
+	//If the icon's effect is currently being overridden by another pcf's effect of the same name, show a notification instead
+	if itab.MultiplyDefined then
+		local key = table.KeyFromValue(PartCtrl_AddParticles_AddedParticles, self.pcf)
+		if key != nil then
+			local tab = {}
+			for k, _ in pairs (PartCtrl_PCFsByParticleName[self.name]) do
+				tab[k] = true
+			end
+			tab[self.pcf] = nil
+			for k, v in SortedPairs (PartCtrl_AddParticles_AddedParticles) do
+				if k > key and tab[v] then
+					local mdef_width = math.min(w,h) * 0.5
+					surface.SetDrawColor(0,0,0,64)
+					surface.DrawRect(0 + bd, 0 + bd, w - (bd*2), h - (bd*2))
+
+					surface.SetDrawColor(255,255,255,255)
+					surface.SetMaterial(icon_multiplydefined)
+					surface.DrawTexturedRect((w-mdef_width)/2, (h-mdef_width)/2, mdef_width, mdef_width)
+					surface.SetMaterial(icon_multiplydefined_2)
+					surface.DrawTexturedRect((w-mdef_width)/2, (h-mdef_width)/2, mdef_width, mdef_width)
+
+					draw.SimpleTextOutlined("(hover to load)", "DermaDefaultBold", w/2, h/2, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0,0,0,255))
+
+					showparticle = nil
+					break
+				end
+			end
+		end
+	end
+
+	//Draw particle preview
+	itab.panels[self] = showparticle //don't bother creating a particle for this panel if we're not showing it
+	if showparticle then 
+		if itab.particle and itab.particle.IsValid and itab.particle:IsValid() then
+			if itab.view then
+				local x, y = self:LocalToScreen(0,0)
+				cam.Start3D(itab.view.pos, ViewAngle, 90, x + bd, y + bd, w - (bd*2), h - (bd*2), 1, math.huge)
+
+				//Buncha stuff copied from DModelPanel:DrawModel (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/vgui/dmodelpanel.lua#L77);
+				//properly cuts off the 3D render if this panel is partially hidden by scrolling
+				local curparent = self
+				local leftx, topy = self:LocalToScreen(0, 0)
+				local rightx, bottomy = self:LocalToScreen(self:GetWide(), self:GetTall())
+				while curparent:GetParent() != nil do
+					curparent = curparent:GetParent()
+					local x1, y1 = curparent:LocalToScreen(0, 0)
+					local x2, y2 = curparent:LocalToScreen(curparent:GetWide(), curparent:GetTall())
+					leftx = math.max(leftx, x1)
+					topy = math.max(topy, y1)
+					rightx = math.min(rightx, x2)
+					bottomy = math.min(bottomy, y2)
+					previous = curparent
+				end
+				render.ClearDepth(false)
+				render.SetScissorRect(leftx, topy, rightx, bottomy, true)
+
+				cam.StartOrthoView(-itab.view.ortho, itab.view.ortho, itab.view.ortho, -itab.view.ortho) //we use an orthogonal view instead of how RenderSpawnIcon does it, because RenderSpawnIcon's FOV code sucks really bad for icons that zoom out a lot
+				itab.particle:Render()
+				--[[render.DrawWireframeBox(vector_origin, angle_zero, itab.mins, itab.maxs, color_white, true)
+				if itab.particle2 then
+					local mn_, mx_ = itab.particle2:GetRenderBounds()
+					render.DrawWireframeBox(vector_origin, angle_zero, mn_, mx_, Color(255,0,0), true)
+				end]]
+				//render.DrawWireframeBox(Vector(mn.x, mx.y, mn.z), angle_zero, Vector(-1,-1,-1), Vector(1,1,1), Color(255,0,0), false)
+				//render.DrawWireframeBox(Vector(mx.x, mn.y, mx.z), angle_zero, Vector(-1,-1,-1), Vector(1,1,1), Color(0,0,255), false)
+				render.SetScissorRect(0, 0, 0, 0, false) //also from DModelPanel:DrawModel
+				cam.End3D()
+				cam.EndOrthoView()
+			end
+		else
+			//If particle is being throttled by crash prevention, draw loading icon
+			if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self.pcf] and (!itab.particle or !(itab.particle.IsValid and itab.particle:IsValid())) then
+				local load_width = math.min(w,h) * 0.65
+				surface.SetDrawColor(255,255,255,255)
+				surface.SetMaterial(icon_loading)
+				surface.DrawTexturedRectRotated(w/2, h/2, load_width, load_width, CurTime() * 300 % 360)
+			end
+		end
+	end
+
+	//Draw the default contenticon stuff on top of the particle
+	baseclass.Get("ContentIcon").Paint(self, w, h)
+
+	//Draw info icons
+	if itab.icons then
+		local x = self.Border + 8
+		local y = self.Border + 8
+		for k, v in pairs (itab.icons) do
+			//Draw icon
+			surface.SetDrawColor(255,255,255,255)
+			surface.SetMaterial(v.icon)
+			surface.DrawTexturedRect(x, y, 16, 16)
+			//Draw icon2
+			if v.icon2 then
+				surface.SetDrawColor(255,255,255,255)
+				surface.SetMaterial(v.icon2)
+				surface.DrawTexturedRect(x, y, 16, 16)
+			end
+			//Draw number
+			if v.num then
+				draw.SimpleTextOutlined(v.num, "PartCtrl_DermaDefaultSmall", x+8, y+8, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0,0,0,255))
+			end
+			x = x + 16 + 2 //move the position of the next icon to the right by the width of this icon, plus a bit more
+			if x + 16 > (w - self.Border - 8) then //if this would cause the next icon to stick out past the right edge of the panel, then start a new row instead
+				y = y + 16 + 2
+				x = self.Border + 8
+			end
+		end
+	end
 end
 
-function PANEL:DoPosCPoints(p)
+PartCtrl_IconFx = {}
+
+local function DoPosCPoints(self, p)
 
 	//Handle position cpoints by placing them all in a fixed-length line, with the cpoints distributed evenly from one end of the line to another
 	local multigrip_length = 100
@@ -367,7 +253,7 @@ function PANEL:DoPosCPoints(p)
 
 end
 
-function PANEL:DoColorCPoints()
+local function DoColorCPoints(self)
 
 	//For color cpoints, cycle through rainbow colors
 	local speed = 50
@@ -386,181 +272,297 @@ function PANEL:DoColorCPoints()
 
 end
 
-local ViewAngle = Angle(25, 220, 0)
-local icon_loading = Material("vgui/loading-rotate.vmt") //TODO: replace this with a custom texture eventually, something bulkier that looks better when it's drawn small like this
-function PANEL:Paint(w, h)
+//All spawnicon fx are handled by this external think func, instead of by individual panels.
+//Each effect has one single particlesystem instance, which is shared between every spawnicon for that effect.
+//This is to try to reduce the lag caused by spawnmenu search loading, which rapidly deletes and replaces all the search result spawnicons every few
+//secs - instead of each new panel having to do all this from scratch each time, the effects can be seamlessly transfered over to the new panels.
+hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 
-	if !self.DoneSetup then
-		baseclass.Get("ContentIcon").Paint(self, w, h)
-		return
-	end
+	local autohide = !g_SpawnMenu:IsVisible()
 
-	//When hovered over with the mouse, check AddParticles again.
-	//(i.e. hover over an effect being overridden to make it show the correct one)
-	//This only runs if hovered over for *two* frames in a row, to get around an issue where upon opening the 
-	//spawnmenu, the cursor is considered to be hovering over the panel in the center of the screen for 1 frame.
-	self.LastHovered = self.LastHovered or 0
-	if self:IsHovered() then
-		self.LastHovered = self.LastHovered + 1
-	else
-		self.LastHovered = 0
-	end
-	if self.LastHovered == 2 then
-		//surface.PlaySound("vo/ravenholm/engage02.wav")
-		PartCtrl_AddParticles(self.pcf, self.name) //crash prevention
-	end
+	for pcf, pcftab in pairs (PartCtrl_IconFx) do
+		local utilfx = (pcf == "UtilFx")
+		for name, effecttab in pairs (pcftab) do
 
-	//Draw particle preview
-	if self.particle then
-		if self.particle.IsValid and self.particle:IsValid() then
-			//Based off PositionSpawnIcon (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/util/client.lua#L208)
-			//as called by IconEditor:BestGuessLayout (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/gui/iconeditor.lua#L362)
-			self.mins = self.mins or vector_origin
-			self.maxs = self.maxs or vector_origin
-			local mn, mx
-			if self.particle2 and self.particle2:IsValid() then
-				if self.particle2_playerposfix then
-					self.particle2:Render() //always render particle2 or it'll fall asleep and stop updating cpoint positions properly
+			local self = PartCtrl_IconFx[pcf][name] //this works??
+
+			//First, go through the list of panels using this effect, and remove any that are invalid or not visible
+			for panel, _ in pairs (effecttab.panels) do
+				if !IsValid(panel) or (autohide or !panel:GetParent():GetParent():GetParent():IsVisible()) then //this dumb nested parent is the spawnlist containing the spawnicon (or a container for it or something), which becomes non-visible when another spawnlist is selected
+					self.panels[panel] = nil
 				end
-				mn, mx = self.particle2:GetRenderBounds()
-			else
-				mn, mx = self.particle:GetRenderBounds()
 			end
-			//MsgN(mn, ",     ", mx)
-			//Clamp the up/down axis so that rising smoke, falling debris, etc. don't move the camera totally out of position
-			local width = math.max((math.abs(mn.x) + math.abs(mx.x)), (math.abs(mn.y) + math.abs(mx.y)), 100) / 2 //minimum 50 so that certain really small effects (tf2 medic bubbles) don't end up with no height at all
-			mn.z = math.max(mn.z, -width)
-			mx.z = math.min(mx.z, width)
 
-			//Expand our bounds using the new bounds, and only recreate all the view info if the bounds have changed
-			//Because the particle's render bounds are constantly fluctuating as more particles are added, destroyed, and moved, this behavior lets us keep expanding our bounds
-			//bit by bit until we can settle down at the maximum potential bounds.
-			mn = Vector(math.min(mn.x, self.mins.x), math.min(mn.y, self.mins.y), math.min(mn.z, self.mins.z))
-			mx = Vector(math.max(mx.x, self.maxs.x), math.max(mx.y, self.maxs.y), math.max(mx.z, self.maxs.z))
-			if mn != self.mins or mx != self.maxs then
-				self.mins = mn
-				self.maxs = mx
-
-				local middle = (mn + mx) * 0.5
-				//Works better with ortho than RenderSpawnIcon's size code; uses the distance between the edges of the box on the left and right sides of the panel
-				local mn2 = Vector(mn.x, mx.y, mn.z)
-				local mx2 = Vector(mx.x, mn.y, mx.z)
-				local size = mn2:Distance2D(mx2) * 0.9 //zoom in just a bit; the majority of effects still have a good distance between the visible edge of the effect and the edge of the bbox, so this helps make them more visible; a small number of effects that don't have this issue get cut off slightly, but it's worth the tradeoff
-				
-				//Loosely based off RenderSpawnIcon_Prop (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/util/client.lua#L53)
-				local ViewPos = vector_origin + ViewAngle:Forward() * size * -15
-				self.view = {
-					pos = ViewPos + middle,
-					ortho = size/2
-				}
-			end
-			if self.view then
-				local x, y = self:LocalToScreen(0,0)
-				local bd = self.Border + 4
-				cam.Start3D(self.view.pos, ViewAngle, 90, x + bd, y + bd, w - (bd*2), h - (bd*2), 1, math.huge)
-
-				//Buncha stuff copied from DModelPanel:DrawModel (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/vgui/dmodelpanel.lua#L77);
-				//properly cuts off the 3D render if this panel is partially hidden by scrolling
-				local curparent = self
-				local leftx, topy = self:LocalToScreen(0, 0)
-				local rightx, bottomy = self:LocalToScreen(self:GetWide(), self:GetTall())
-				while curparent:GetParent() != nil do
-					curparent = curparent:GetParent()
-					local x1, y1 = curparent:LocalToScreen(0, 0)
-					local x2, y2 = curparent:LocalToScreen(curparent:GetWide(), curparent:GetTall())
-					leftx = math.max(leftx, x1)
-					topy = math.max(topy, y1)
-					rightx = math.min(rightx, x2)
-					bottomy = math.min(bottomy, y2)
-					previous = curparent
-				end
-				render.ClearDepth(false)
-				render.SetScissorRect(leftx, topy, rightx, bottomy, true)
-
-				self:DoColorCPoints()
-
-				cam.StartOrthoView(-self.view.ortho, self.view.ortho, self.view.ortho, -self.view.ortho) //we use an orthogonal view instead of how RenderSpawnIcon does it, because RenderSpawnIcon's FOV code sucks really bad for icons that zoom out a lot
-				self.particle:Render()
-				--[[render.DrawWireframeBox(vector_origin, angle_zero, self.mins, self.maxs, color_white, true)
-				if self.particle2 then
-					local mn_, mx_ = self.particle2:GetRenderBounds()
-					render.DrawWireframeBox(vector_origin, angle_zero, mn_, mx_, Color(255,0,0), true)
-				end]]
-				//render.DrawWireframeBox(Vector(mn.x, mx.y, mn.z), angle_zero, Vector(-1,-1,-1), Vector(1,1,1), Color(255,0,0), false)
-				//render.DrawWireframeBox(Vector(mx.x, mn.y, mx.z), angle_zero, Vector(-1,-1,-1), Vector(1,1,1), Color(0,0,255), false)
-				render.SetScissorRect(0, 0, 0, 0, false) //also from DModelPanel:DrawModel
-				cam.End3D()
-				cam.EndOrthoView()
-			end
-		else
-			//Particle is non-nil but invalid; that means we should have a particle but lost it, so make a new particle
-			if PartCtrl_AddParticles_CrashCheck[self.pcf] and PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle] then
-				//Remove now-invalid particles from the crashcheck list
-				PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle] = nil
-			end
-			if self.particle2 then
-				if self.particle2.IsValid and self.particle2:IsValid() then
-					self.particle2:StopEmissionAndDestroyImmediately()
+			//Store first-time info
+			if !effecttab.tooltip then
+				local tooltip = name
+				self.icons = {}
+				if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) or !istable(PartCtrl_ProcessedPCFs[pcf][name].cpoints) then
+					tooltip = tooltip .. "\n(" .. pcf .. ")\n\nInvalid particle effect (from game/addon that isn't mounted?)"
+					self.invalid = true
 				else
-					if PartCtrl_AddParticles_CrashCheck[self.pcf] and PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] then
-						//Remove now-invalid particles from the crashcheck list
-						PartCtrl_AddParticles_CrashCheck[self.pcf][self.particle2] = nil
+					if !utilfx then
+						tooltip = tooltip .. "\n(" .. pcf .. ")"
+			
+						if table.Count(PartCtrl_PCFsByParticleName[name]) > 1 then
+							tooltip = tooltip .. "\n\nWarning: This particle effect name is defined in multiple files:"
+							for k, v in pairs (PartCtrl_PCFsByParticleName[name]) do
+								tooltip = tooltip .. "\n" .. k
+								if isstring(v) then tooltip = tooltip .. " (" .. v .. ")" end //list pcfs where this effect is defined but culled
+							end
+							tooltip = tooltip .. "\nOnly one effect called \"" .. name .. "\" can be loaded at a time.\nIf you load multiply defined effects from any of these files, even in spawnicons,\nit will use the \"" .. name .. "\" from the most recently loaded file." 
+							table.insert(self.icons, {["icon"] = icon_multiplydefined, ["icon2"] = icon_multiplydefined_2})
+							self.MultiplyDefined = true
+						end
+			
+						//developer warnings for culled fx
+						if PartCtrl_ProcessedPCFs[pcf][name].shouldcull then
+							tooltip = tooltip .. "\n\nERROR: This effect will not be loaded outside of developer mode.\n\n" .. tostring(PartCtrl_ProcessedPCFs[pcf][name].shouldcull) //just in case some doofus makes it a bool
+							//tooltip reaches max length if all 3 errors are on one effect, but whatever
+							table.insert(self.icons, {["icon"] = icon_deverror})
+						end
+					else
+						tooltip = tooltip .. "\n(Scripted Effect)"
 					end
+			
+					local types = {}
+					for _, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
+						types[v.mode] = types[v.mode] or 0
+						types[v.mode] = types[v.mode] + 1
+					end
+			
+					if types[PARTCTRL_CPOINT_MODE_POSITION] > 1 then
+						table.insert(self.icons, {["icon"] = icon_position, ["num"] = types[PARTCTRL_CPOINT_MODE_POSITION]})
+					end
+			
+					self.particle2_playerposfix = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_playerposfix //particle attrib "set control point to player" sets this to true
+					self.doparticle2 = self.particle2_playerposfix
+					self.EditCPoints = {}
+					self.EditCPointsText = {}
+					self.ColorCPoints = {}
+					for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
+						if v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
+							if !v.vector or !v.vector[v.which] then MsgN(pcf, ": ", name, " - this effect is trying to get a vector value that it doesn't have, some dumb inheritance problem, go report this!") end
+							if v.vector[v.which].colorpicker then
+								self.ColorCPoints[k] = v.vector[v.which]
+							else
+								self.EditCPoints[k] = v.vector[v.which].default or vector_origin
+								table.insert(self.EditCPointsText, v.vector[v.which].label)
+							end
+						elseif v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+							self.EditCPoints[k] = Vector(0,0,0)
+							for i = 0, 2 do
+								axistab = v.axis[v["which_" .. i]]
+								if istable(axistab) then
+									self.EditCPoints[k][i+1] = axistab.default or 0
+									table.insert(self.EditCPointsText, axistab.label)
+								end
+							end
+						end
+					end
+					self.iColorCPoints = {}
+					local num = table.Count(self.ColorCPoints)
+					if num > 0 then
+						if num == 1 then
+							num = nil
+							tooltip = tooltip .. "\n\nThis effect is colorable."
+						else
+							tooltip = tooltip .. "\n\nThis effect has " .. num .. " editable colors. You can set them all at once\nwith the color tool, or set them separately in the edit window."
+						end
+						table.insert(self.icons, {["icon"] = icon_color, ["num"] = num})
+						for k, v in SortedPairs (self.ColorCPoints) do
+							table.insert(self.iColorCPoints, k)
+						end
+						self.doparticle2 = true
+					end
+					if PartCtrl_ProcessedPCFs[pcf][name].on_model then
+						local count = table.Count(PartCtrl_ProcessedPCFs[pcf][name].on_model)
+						if types[PARTCTRL_CPOINT_MODE_POSITION] > count then
+							tooltip = tooltip .. "\n\nThis effect will cover a whole model if control point"
+							if count > 1 then tooltip = tooltip .. "s" end
+							local docomma = false
+							for k, _ in pairs (PartCtrl_ProcessedPCFs[pcf][name].on_model) do
+								if docomma then tooltip = tooltip .. "," end
+								tooltip = tooltip .. " " .. k
+								docomma = true
+							end
+							if docomma then
+								tooltip = tooltip .. " is attached."
+							else
+								tooltip = tooltip .. " are attached."
+							end
+						else
+							tooltip = tooltip .. "\n\nThis effect will cover a whole model if attached."
+						end
+						table.insert(self.icons, {["icon"] = icon_model})
+					end
+					if table.Count(self.EditCPoints) > 0 then
+						table.insert(self.icons, {["icon"] = icon_edit})
+						tooltip = tooltip .. "\n\nThis effect has editable properties:"
+						for _, v in pairs (self.EditCPointsText) do
+							tooltip = tooltip .. "\n" .. v
+						end
+						self.doparticle2 = true
+					end
+					if PartCtrl_ProcessedPCFs[pcf][name].info then
+						table.insert(self.icons, {["icon"] = icon_info})
+						tooltip = tooltip .. "\n\nInfo:\n" .. PartCtrl_ProcessedPCFs[pcf][name].info
+					end
+			
+					//test lots of icons
+					--[[for i = 1, 20 do
+						table.insert(self.icons, {["icon"] = icon_test, ["num"] = i})
+					end]]
+			
+				end
+				self.tooltip = tooltip
+			end
+
+			//Manage the particle
+			if !utilfx and !PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] then //if this effect is being throttled, then we want the crash prevention func to handle removing it, not remove it here
+				if !effecttab.reset and table.Count(effecttab.panels) > 0
+				and istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][name]) //run remove particle check if these fail, because it's possible for a pcf or effect to become invalid after refreshing a pcf file
+				and !PartCtrl_ProcessedPCFs[pcf][name].prevent_name_based_lookup then //don't bother trying to create fx with this attribute, even in developer mode, it'll just fail and spam the console with errors
+					if !(effecttab.particle and effecttab.particle.IsValid and effecttab.particle:IsValid()) then
+
+						//Create the particle
+
+						if !self.precached then
+							PrecacheParticleSystem(name)
+							self.precached = true
+						end
+
+						self.particle = CreateParticleSystemNoEntity(name, vector_origin)
+						if self.particle and self.particle:IsValid() then
+							//For effects using a color or edit cpoint, their renderbounds will be stretched out by the cpoint if they're too far away,
+							//so create a second particlesystem without those cpoints, so we can use its renderbounds instead
+							if self.doparticle2 then
+								if self.particle2_playerposfix then
+									self.particle2 = CreateParticleSystem(LocalPlayer(), name, PATTACH_ABSORIGIN_FOLLOW)
+								else
+									self.particle2 = CreateParticleSystemNoEntity(name, vector_origin)
+								end
+								
+								if self.particle2 and (!self.particle2.IsValid or !self.particle2:IsValid()) then
+									self.particle2 = nil
+								end
+								self.particle2:SetShouldDraw(false)
+							end
+							self.particle:SetShouldDraw(false)
+							self.mins = nil
+							self.maxs = nil
+							self.iGrips = {}
+							self.iPositionCombine = {}
+							for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
+								if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+									table.insert(self.iGrips, k)
+								elseif v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+									table.insert(self.iPositionCombine, k)
+								end
+							end
+							DoPosCPoints(self, self.particle)
+							if self.particle2 then
+								DoPosCPoints(self, self.particle2)
+							end
+							//Handle axis cpoints and vector cpoints other than colors by just setting them to their default value
+							for k, v in pairs (self.EditCPoints) do
+								self.particle:SetControlPoint(k, v)
+							end
+							DoColorCPoints(self) //accomodate CERTAIN EFFECTS that don't change color after spawning, looking at you wrangler :shakefist:
+							PartCtrl_AddParticles_CrashCheck[pcf] = PartCtrl_AddParticles_CrashCheck[pcf] or {}
+							PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = true
+							if self.particle2 then
+								PartCtrl_AddParticles_CrashCheck[pcf][self.particle2] = true
+							end
+						end
+
+					else
+
+						//Update the particle
+
+						//Based off PositionSpawnIcon (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/util/client.lua#L208)
+						//as called by IconEditor:BestGuessLayout (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/gui/iconeditor.lua#L362)
+						self.mins = self.mins or vector_origin
+						self.maxs = self.maxs or vector_origin
+						local mn, mx
+						if self.particle2 and self.particle2:IsValid() then
+							if self.particle2_playerposfix then
+								self.particle2:Render() //always render particle2 or it'll fall asleep and stop updating cpoint positions properly
+							end
+							mn, mx = self.particle2:GetRenderBounds()
+						else
+							mn, mx = self.particle:GetRenderBounds()
+						end
+						//MsgN(mn, ",     ", mx)
+						//Clamp the up/down axis so that rising smoke, falling debris, etc. don't move the camera totally out of position
+						local width = math.max((math.abs(mn.x) + math.abs(mx.x)), (math.abs(mn.y) + math.abs(mx.y)), 100) / 2 //minimum 50 so that certain really small effects (tf2 medic bubbles) don't end up with no height at all
+						mn.z = math.max(mn.z, -width)
+						mx.z = math.min(mx.z, width)
+
+						//Expand our bounds using the new bounds, and only recreate all the view info if the bounds have changed
+						//Because the particle's render bounds are constantly fluctuating as more particles are added, destroyed, and moved, this behavior lets us keep expanding our bounds
+						//bit by bit until we can settle down at the maximum potential bounds.
+						mn = Vector(math.min(mn.x, self.mins.x), math.min(mn.y, self.mins.y), math.min(mn.z, self.mins.z))
+						mx = Vector(math.max(mx.x, self.maxs.x), math.max(mx.y, self.maxs.y), math.max(mx.z, self.maxs.z))
+						if mn != self.mins or mx != self.maxs then
+							self.mins = mn
+							self.maxs = mx
+
+							local middle = (mn + mx) * 0.5
+							//Works better with ortho than RenderSpawnIcon's size code; uses the distance between the edges of the box on the left and right sides of the panel
+							local mn2 = Vector(mn.x, mx.y, mn.z)
+							local mx2 = Vector(mx.x, mn.y, mx.z)
+							local size = mn2:Distance2D(mx2) * 0.9 //zoom in just a bit; the majority of effects still have a good distance between the visible edge of the effect and the edge of the bbox, so this helps make them more visible; a small number of effects that don't have this issue get cut off slightly, but it's worth the tradeoff
+							
+							//Loosely based off RenderSpawnIcon_Prop (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/util/client.lua#L53)
+							local ViewPos = vector_origin + ViewAngle:Forward() * size * -15
+							self.view = {
+								pos = ViewPos + middle,
+								ortho = size/2
+							}
+						end
+
+						DoColorCPoints(self)
+						
+					end
+				else
+
+					//Remove the particle
+
+					if effecttab.particle then
+						if effecttab.particle.IsValid and effecttab.particle:IsValid() then
+							effecttab.particle:StopEmissionAndDestroyImmediately()
+						//elseif PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][effecttab.particle] then
+						//	//Remove now-invalid particles from the crashcheck list
+						//	PartCtrl_AddParticles_CrashCheck[pcf][effecttab.particle] = nil
+						else
+							self.particle = nil
+						end
+					end
+					if effecttab.particle2 then
+						if effecttab.particle2.IsValid and effecttab.particle2:IsValid() then
+							effecttab.particle2:StopEmissionAndDestroyImmediately()
+						//elseif PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][effecttab.particle2] then
+						//	//Remove now-invalid particles from the crashcheck list
+						//	PartCtrl_AddParticles_CrashCheck[pcf][effecttab.particle2] = nil
+						else
+							self.particle2 = nil
+						end
+					end
+
 				end
 			end
-			if self.particle == "cleaned_up" then
-				//Cleaned up by the panel being hidden; run BeginNewParticle to reload the PCF file if necessary
-				self:BeginNewParticle()
-			else
-				//Either the particle ran to completion and expired, or we ran BeginNewParticle earlier and the crashcheck is making us wait,
-				//so just run StartParticle and don't bother with PCF file stuff
-				self:StartParticle()
+
+			if effecttab.reset then
+				//Remove all info for this particle, recreate it from scratch next frame
+				//(this is set by reloading a pcf with the extra dev dropdown options)
+				PartCtrl_IconFx[pcf][name] = nil
 			end
-			//If particle is being throttled by crash prevention, draw loading icon
-			if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self.pcf] and (!self.particle or !(self.particle.IsValid and self.particle:IsValid())) then
-				local load_width = math.min(w,h) * 0.65
-				surface.SetDrawColor(255,255,255,255)
-				surface.SetMaterial(icon_loading)
-				surface.DrawTexturedRectRotated(w/2, h/2, load_width, load_width, CurTime() * 300 % 360)
-			end
+
 		end
 	end
 
-	//Draw the default contenticon stuff on top of the particle
-	baseclass.Get("ContentIcon").Paint(self, w, h)
-
-	//Draw info icons
-	local x = self.Border + 8
-	local y = self.Border + 8
-	for k, v in pairs (self.icons) do
-		//Draw icon
-		surface.SetDrawColor(255,255,255,255)
-		surface.SetMaterial(v.icon)
-		surface.DrawTexturedRect(x, y, 16, 16)
-		//Draw icon2
-		if v.icon2 then
-			surface.SetDrawColor(255,255,255,255)
-			surface.SetMaterial(v.icon2)
-			surface.DrawTexturedRect(x, y, 16, 16)
-		end
-		//Draw number
-		if v.num then
-			surface.SetFont("PartCtrl_DermaDefaultSmallOutlined")
-			local x2, y2 = surface.GetTextSize(v.num)
-			x2 = x + 8 - (x2/2)
-			y2 = y + 8 - (y2/3) //matches better with icon2 than y2/2
-			surface.SetTextColor(255,255,255)
-			surface.SetTextPos(x2, y2)
-			surface.DrawText(v.num)
-		end
-		x = x + 16 + 2 //move the position of the next icon to the right by the width of this icon, plus a bit more
-		if x + 16 > (w - self.Border - 8) then //if this would cause the next icon to stick out past the right edge of the panel, then start a new row instead
-			y = y + 16 + 2
-			x = self.Border + 8
-		end
-	end
-
-end
+end)
 
 function PANEL:DoClick()
 
@@ -574,7 +576,7 @@ function PANEL:OpenMenu()
 	local menu = DermaMenu()
 
 	menu:AddOption("Copy effect name to clipboard", function() SetClipboardText(self.name) end):SetIcon("icon16/page_copy.png")
-	if !self.utilfx then menu:AddOption("Copy .pcf file path to clipboard", function() SetClipboardText(self.pcf) end):SetIcon("icon16/page_copy.png") end
+	if self.pcf != "UtilFx" then menu:AddOption("Copy .pcf file path to clipboard", function() SetClipboardText(self.pcf) end):SetIcon("icon16/page_copy.png") end
 
 	menu:AddOption("#spawnmenu.menu.spawn_with_toolgun", function()
 		RunConsoleCommand("gmod_tool", "partctrl_creator")
@@ -650,14 +652,14 @@ function PANEL:OpenMenu()
 		menu:AddSpacer()
 
 		local text = "Reload .pcf file"
-		if self.utilfx then text = "Reload PartCtrl_UtilFx" end
+		if self.pcf == "UtilFx" then text = "Reload PartCtrl_UtilFx" end
 		menu:AddOption(text, function()
 			net.Start("PartCtrl_ReloadPCF_SendToSv")
 				net.WriteString(self.pcf)
 			net.SendToServer()
 		end)
 
-		if !self.utilfx then
+		if self.pcf != "UtilFx" then
 			menu:AddOption("Print raw PCF data for this effect", function()
 				MsgN("PartCtrl_ReadPCF(\"" .. self.pcf .. "\")[\"" .. self.name .. "\"]:")
 				PrintTable(PartCtrl_ReadPCF(self.pcf)[self.name])
