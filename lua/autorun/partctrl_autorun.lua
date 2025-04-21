@@ -386,7 +386,6 @@ end)
 	default_time = 1,	//Float, default setting of "seconds between repeats" on newly spawned fx, should roughly correspond to how long it takes for the effect to "finish", defaults to 1 if absent
 	info = "Text text text",//String, optional, adds extra info to the spawnicon and edit window
 	info_sfx = "Text text", //String, optional, alternative info text used instead of the above if attached to a special effect (tracer/beam/projectile)
-	on_model = {[0] = true}, //Table, optional, adds extra info to the spawnicon about which cpoints make the effect cover the whole model if attached
 	min_length = 129,	//Float/int, optional, overrides how far apart the grip points will spawn; used by some tracer fx that don't render if the points are too close together
 
 	DoProcess = function(tab, extras)
@@ -541,7 +540,7 @@ list.Set("PartCtrl_UtilFx", "ManhackSparks", {
 list.Set("PartCtrl_UtilFx", "TeslaHitboxes", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.2, //default repeat rate and beam count taken from ragdoll boogie and antlion (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/RagdollBoogie.cpp#L119, https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/game/server/hl2/npc_antlion.cpp#L2254)
-	on_model = {[0] = true},
+	info = "This effect will apply to a whole model if control point 0 is attached.", //on_model
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
@@ -4132,6 +4131,10 @@ local processfuncs = {
 				["on_model"] = true,
 				["sets_particle_pos"] = true,
 			})
+			//if (attrib["desired hitbox"] or -1) > -1 then
+				//TODO: should there be different info text handling for this? it doesn't apply to the *entire* model, 
+				//but rather to a *specific part* of the model, though we don't have a way of knowing what that part is
+			//end
 		end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_position#Position_on_Model_Random)
 		["position within box random"] = function(processed, attrib)
 			if attrib["use local space"] then 
@@ -4908,8 +4911,27 @@ function PartCtrl_ProcessPCF(filename)
 			for k, v in pairs (modes) do
 				t2[particle].cpoints_with_children[k].mode = v
 			end
-			t2[particle]["on_model"] = on_model
+
 			t2[particle]["sets_particle_pos"] = sets_particle_pos
+
+			//Do info text for on_model
+			if on_model then
+				local text = ""
+				text = "This effect will apply to a whole model if control point"
+				if table.Count(on_model) > 1 then text = text .. "s" end
+				local docomma = false
+				for k, _ in pairs (on_model) do
+					if docomma then text = text .. "," end
+					text = text .. " " .. k
+					docomma = true
+				end
+				if docomma then
+					text = text .. " is attached."
+				else
+					text = text .. " are attached."
+				end
+				PartCtrl_AppendInfoText(t2[particle], text)
+			end
 
 			//Do min_length for tracer fx
 			local raw = t2[particle].min_length_raw_child or 0
@@ -5120,7 +5142,6 @@ function PartCtrl_ProcessUtilFx()
 				["info_sfx"] = v.info_sfx,
 				["utilfx"] = true,
 				["default_time"] = v.default_time,
-				["on_model"] = v.on_model,
 				["min_length"] = v.min_length
 			}
 			if t.default_time == nil then t.default_time = 1 end

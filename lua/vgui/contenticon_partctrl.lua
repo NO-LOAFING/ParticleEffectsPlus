@@ -8,7 +8,6 @@ local icon_position = Material("icon16/arrow_right.png")//Material("sprites/grip
 //local icon_position_none = Material("icon16/bullet_delete.png")
 local icon_edit = Material("icon16/pencil.png")
 local icon_color = Material("icon16/color_wheel.png")
-local icon_model = Material("icon16/brick_go.png") //ehh
 local icon_test = Material("icon16/color_wheel.png")
 local icon_deverror = Material("icon16/error.png")
 local icon_utilfx = Material("icon16/cog.png")
@@ -374,27 +373,6 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							table.insert(self.iColorCPoints, k)
 						end
 						self.doparticle2 = true
-					end
-					if PartCtrl_ProcessedPCFs[pcf][name].on_model then
-						local count = table.Count(PartCtrl_ProcessedPCFs[pcf][name].on_model)
-						if types[PARTCTRL_CPOINT_MODE_POSITION] > count then
-							tooltip = tooltip .. "\n\nThis effect will cover a whole model if control point"
-							if count > 1 then tooltip = tooltip .. "s" end
-							local docomma = false
-							for k, _ in pairs (PartCtrl_ProcessedPCFs[pcf][name].on_model) do
-								if docomma then tooltip = tooltip .. "," end
-								tooltip = tooltip .. " " .. k
-								docomma = true
-							end
-							if docomma then
-								tooltip = tooltip .. " is attached."
-							else
-								tooltip = tooltip .. " are attached."
-							end
-						else
-							tooltip = tooltip .. "\n\nThis effect will cover a whole model if attached."
-						end
-						table.insert(self.icons, {["icon"] = icon_model})
 					end
 					if table.Count(self.EditCPoints) > 0 then
 						table.insert(self.icons, {["icon"] = icon_edit})
