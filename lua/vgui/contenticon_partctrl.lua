@@ -209,7 +209,6 @@ PartCtrl_IconFx = {}
 local function DoPosCPoints(self, p)
 
 	//Handle position cpoints by placing them all in a fixed-length line, with the cpoints distributed evenly from one end of the line to another
-	local multigrip_length = 100
 
 	//In addition to not setting vector/axis cpoints that would stretch out the renderbounds, we also account for certain fx with "set control point to player", which have a cpoint that always 
 	//sets its position to the player. We can't stop the cpoint from moving there, so instead we move all the other cpoints to be relative to the player as well. This isn't perfect, because the
@@ -227,7 +226,7 @@ local function DoPosCPoints(self, p)
 	for i, k in ipairs (self.iGrips) do
 		local pos = 0
 		if i > 1 then
-			pos = ((i-1)/(#self.iGrips-1))*multigrip_length
+			pos = ((i-1)/(#self.iGrips-1))*self.length
 		end
 		pos = Vector(pos,0,0)
 		//MsgN(i, " = ", pos)
@@ -337,6 +336,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 			
 					self.particle2_playerposfix = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_playerposfix //particle attrib "set control point to player" sets this to true
 					self.doparticle2 = self.particle2_playerposfix
+					self.length = PartCtrl_ProcessedPCFs[pcf][name].min_length or 100
 					self.EditCPoints = {}
 					self.EditCPointsText = {}
 					self.ColorCPoints = {}

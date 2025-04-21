@@ -3494,6 +3494,11 @@ local processfuncs = {
 		["_generic"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Visibility Proxy Input Control Point Number", -1, "position_combine") end, //pet doesn't add cpoint control for this; all renderers except render_rope have this; uses this position for visiblilty testing, which can then scale particle alpha/size based on how visible the area around the point is (https://developer.valvesoftware.com/wiki/Generic_Render_Operator_Visibility_Options)
 	},
 	["operators"]= {
+		["alpha fade and decay"] = function(processed, attrib)
+			//only do min_length for tracers if we have one of the right decay operators; tracer fx using other things 
+			//(i.e. alien swarm tracers using "alpha fade and decay for tracers") don't have a minimum length between cpoints to render
+			processed["min_length_raw_hasdecay"] = true
+		end,
 		["color light from control point"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "Light 1 Control Point", 0, "position_combine")
 			cpoint_from_attrib_value(processed, attrib, "Light 2 Control Point", 0, "position_combine")
@@ -3505,6 +3510,11 @@ local processfuncs = {
 		}) end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Cull_relative_to_model, yeah it's on the wrong page); pet doesn't add a control for this
 		["cull when crossing plane"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point for point on plane", 0) end,
 		["cull when crossing sphere"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point", 0) end,
+		["lifespan decay"] = function(processed, attrib)
+			//only do min_length for tracers if we have one of the right decay operators; tracer fx using other things 
+			//(i.e. alien swarm tracers using "alpha fade and decay for tracers") don't have a minimum length between cpoints to render
+			processed["min_length_raw_hasdecay"] = true
+		end,
 		["lifespan maintain count decay"] = function(processed, attrib)
 			local axis = attrib["maintain count scale control point field"] or 0
 			if axis > -1 then
@@ -3972,6 +3982,10 @@ local processfuncs = {
 		}) end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Cull_relative_to_model)
 		["move particles between 2 control points"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "end control point", 1, nil, {["sets_particle_pos"] = true}) //yes, it only defines an endpoint (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Move_Particles_Between_2_Control_Points)
+			//the minimum distance between cpoints needed to render fx using this operator actually scales with FRAMERATE, ridiculous
+			//TODO: not much more we can do about this since min_length is serverside, argh. i guess this could use a convar? a serverside convar for how much fps they expect clients to have? nonsense
+			processed["min_length_raw"] = (math.max((attrib["maximum speed"] or 1), (attrib["minimum speed"] or 1))/58) + 1
+			+ (attrib["start offset"] or 0) - (attrib["end offset"] or 0)
 		end, 
 		["normal align to cp"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, "position_combine") end, //controls angle of Render Models fx; this is an angle control, so combine it
 		["normal modify offset random"] = function(processed, attrib)
@@ -4801,6 +4815,11 @@ function PartCtrl_ProcessPCF(filename)
 				end
 				//MsgN("Current modes:")
 				//PrintTable(modes)
+
+				//Also inherit min_length stuff from children here, this loop is a good place to do this
+				if particle2 != particle and t2[particle2].min_length_raw_hasdecay and t2[particle2].min_length_raw then
+					t2[particle].min_length_raw_child = math.max((t2[particle].min_length_raw_child or 0), t2[particle2].min_length_raw)
+				end
 			end
 			SetCPointModes(particle)
 			//Cpoints that haven't been filled in yet should inherit from children
@@ -4891,6 +4910,15 @@ function PartCtrl_ProcessPCF(filename)
 			end
 			t2[particle]["on_model"] = on_model
 			t2[particle]["sets_particle_pos"] = sets_particle_pos
+
+			//Do min_length for tracer fx
+			local raw = t2[particle].min_length_raw_child or 0
+			if t2[particle].min_length_raw_hasdecay then
+				raw = math.max((t2[particle].min_length_raw or 0), raw)
+			end
+			if raw > 100 then //don't bother if it would actually make it smaller than default
+				t2[particle].min_length = raw
+			end
 		end
 		for particle, _ in pairs (t2) do
 			//Now that we're done setting cpoint modes, apply cpoint data from children
