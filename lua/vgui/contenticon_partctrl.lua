@@ -93,33 +93,22 @@ function PANEL:Paint(w, h)
 	local showparticle = true
 
 	//If the icon's effect is currently being overridden by another pcf's effect of the same name, show a notification instead
-	if itab.MultiplyDefined then
-		local key = table.KeyFromValue(PartCtrl_AddParticles_AddedParticles, self.pcf)
-		if key != nil then
-			local tab = {}
-			for k, _ in pairs (PartCtrl_PCFsByParticleName[self.name]) do
-				tab[k] = true
-			end
-			tab[self.pcf] = nil
-			for k, v in SortedPairs (PartCtrl_AddParticles_AddedParticles) do
-				if k > key and tab[v] then
-					local mdef_width = math.min(w,h) * 0.5
-					surface.SetDrawColor(0,0,0,64)
-					surface.DrawRect(0 + bd, 0 + bd, w - (bd*2), h - (bd*2))
+	if itab.MultiplyDefined
+	and PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] != self.pcf
+	and !(PartCtrl_DuplicateFx[self.pcf] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == PartCtrl_DuplicateFx[self.pcf][self.name]) then
+		local mdef_width = math.min(w,h) * 0.5
+		surface.SetDrawColor(0,0,0,64)
+		surface.DrawRect(0 + bd, 0 + bd, w - (bd*2), h - (bd*2))
 
-					surface.SetDrawColor(255,255,255,255)
-					surface.SetMaterial(icon_multiplydefined)
-					surface.DrawTexturedRect((w-mdef_width)/2, (h-mdef_width)/2, mdef_width, mdef_width)
-					surface.SetMaterial(icon_multiplydefined_2)
-					surface.DrawTexturedRect((w-mdef_width)/2, (h-mdef_width)/2, mdef_width, mdef_width)
+		surface.SetDrawColor(255,255,255,255)
+		surface.SetMaterial(icon_multiplydefined)
+		surface.DrawTexturedRect((w-mdef_width)/2, (h-mdef_width)/2, mdef_width, mdef_width)
+		surface.SetMaterial(icon_multiplydefined_2)
+		surface.DrawTexturedRect((w-mdef_width)/2, (h-mdef_width)/2, mdef_width, mdef_width)
 
-					draw.SimpleTextOutlined("(hover to load)", "DermaDefaultBold", w/2, h/2, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0,0,0,255))
-
-					showparticle = nil
-					break
-				end
-			end
-		end
+		local text = "(hover to load)"
+		draw.SimpleTextOutlined(text, "DermaDefaultBold", w/2, h/2, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0,0,0,255))
+		showparticle = nil
 	end
 
 	//Draw particle preview
@@ -303,14 +292,25 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						tooltip = tooltip .. "\n(" .. pcf .. ")"
 			
 						if table.Count(PartCtrl_PCFsByParticleName[name]) > 1 then
-							tooltip = tooltip .. "\n\nWarning: This particle effect name is defined in multiple files:"
+							local pcfs_added = 0
+							local text = "\n\nWarning: This particle effect name is defined in multiple files:"
 							for k, v in pairs (PartCtrl_PCFsByParticleName[name]) do
-								tooltip = tooltip .. "\n" .. k
-								if isstring(v) then tooltip = tooltip .. " (" .. v .. ")" end //list pcfs where this effect is defined but culled
+								if PartCtrl_PCFsWithConflicts[k] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
+									text = text .. "\n" .. k
+									if PartCtrl_DuplicateFx[k] and PartCtrl_DuplicateFx[k][name] then
+										text = text .. " (duplicate of " .. PartCtrl_DuplicateFx[k][name] .. ")"
+									elseif isstring(v) then
+										text = text .. " (" .. v .. ")" //list pcfs where this effect is defined but culled
+									end
+									pcfs_added = pcfs_added + 1
+								end
 							end
-							tooltip = tooltip .. "\nOnly one effect called \"" .. name .. "\" can be loaded at a time.\nIf you load multiply defined effects from any of these files, even in spawnicons,\nit will use the \"" .. name .. "\" from the most recently loaded file." 
-							table.insert(self.icons, {["icon"] = icon_multiplydefined, ["icon2"] = icon_multiplydefined_2})
-							self.MultiplyDefined = true
+							text = text .. "\n\nOnly one effect called \"" .. name .. "\" can be loaded at a time.\nIf you reload effects from any of these files, even in spawnicons,\nit will use the \"" .. name .. "\" from the most recently loaded file." 
+							if pcfs_added > 1 then
+								tooltip = tooltip .. text
+								table.insert(self.icons, {["icon"] = icon_multiplydefined, ["icon2"] = icon_multiplydefined_2})
+								self.MultiplyDefined = true
+							end
 						end
 			
 						//developer warnings for culled fx
@@ -391,6 +391,12 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					--[[for i = 1, 20 do
 						table.insert(self.icons, {["icon"] = icon_test, ["num"] = i})
 					end]]
+
+					//test: unique icon for duplicate fx to make sure we didn't miss any
+					if PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][name] then
+						table.insert(self.icons, {["icon"] = Material("icon16/page_paste.png")})
+					end
+
 			
 				end
 				self.tooltip = tooltip

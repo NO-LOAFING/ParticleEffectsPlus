@@ -42,21 +42,22 @@ local tf2_unusual_wep_pcfs = {
 	["particles/weapon_unusual_hot.pcf"] = true,
 	["particles/weapon_unusual_isotope.pcf"] = true
 }
-local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all dupes with conflicting names,\nwhich slow the game down with unnecessary PCF reloads every time\nyou search for a TF2 weapon."
+local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all useless duplicates with conflicting names"
 local crash_blacklist_text = "Blacklisted: causes crash when spawned"
-local dupe_blacklist_text = "Blacklisted: redundant copy of stock gmod effect"
+local dupe_fire = "particles/fire_01.pcf" //so many duplicates from this pcf
 local default_blacklist = {
 	//Half-Life 2 + Episodes
 	["particles/partctrl_fallbacks/hl2/fire_01.pcf"] = {
-		whitelist = {
-			//file is functionally identical to gmod's fire_01.pcf, except for 2 new fx
+		//file is functionally identical to gmod's fire_01.pcf, except for 2 new fx
+		duplicates_whitelist = {
 			smoke_skybox_01a = true,
 			smoke_skybox_01b = true,
-		}
+		},
+		duplicates_whitelist_fail = dupe_fire
 	},
 	["particles/partctrl_fallbacks/hl2/vortigaunt_fx.pcf"] = {
-		whitelist = {
-			//some fx are slightly different from gmod's vortigaunt_fx.pcf
+		//some fx are slightly different from gmod's vortigaunt_fx.pcf
+		duplicates_whitelist = {
 			//vortigaunt_beam = true, //doesn't have child vortigaunt_glow_beam_cp0, so it's technically different, but who's going to use this?
 			//vortigaunt_charge_token = true,  //children are different
 			//vortigaunt_charge_token_b = true, //higher particle limit; can't tell if this is different honestly
@@ -65,110 +66,122 @@ local default_blacklist = {
 			vortigaunt_hand_glow = true, //noticeably smaller, might actually be useful
 			vortigaunt_hand_glow_b = true, //^
 			vortigaunt_hand_glow_c = true, //^
-		}
+		},
+		duplicates_whitelist_fail = "particles/vortigaunt_fx.pcf"
 	},
 	//Counter-Strike: Source
 	["particles/partctrl_fallbacks/cstrike/fire_01.pcf"] = {
-		whitelist = {
-			//file is functionally identical to gmod's fire_01.pcf, except for 1 new effect
+		//file is functionally identical to gmod's fire_01.pcf, except for 1 new effect
+		duplicates_whitelist = {
 			bomb_explosion_huge = true,
-		}
+		},
+		duplicates_whitelist_fail = dupe_fire
 	},
 	//Team Fortress 2
 	["particles/partctrl_fallbacks/tf/impact_fx.pcf"] = {
-		impact_generic_smoke = dupe_blacklist_text, //dupe from gmod impact_fx.pcf; the rest of the effects in this pcf are unique
+		duplicates = {
+			impact_generic_smoke = "particles/impact_fx.pcf", //dupe from gmod impact_fx.pcf; the rest of the effects in this pcf are unique
+		}
 	},
 	//Left 4 Dead 2
 	["particles/partctrl_fallbacks/left4dead2/fire_01.pcf"] = {
 		//contains a ton of duplicate fx from gmod's fire_01.pcf as well as a ton of unique ones; 
 		//there's slightly more good ones than bad, so doing a blacklist is shorter
-		burning_gib_01_drag = dupe_blacklist_text,
-		burning_gib_01_follower2 = dupe_blacklist_text,
-		burning_gib_01b = dupe_blacklist_text,
-		burning_vehicle = dupe_blacklist_text,
-		burning_wood_01b = dupe_blacklist_text,
-		burning_wood_01c = dupe_blacklist_text,
-		embers_large_01 = dupe_blacklist_text,
-		embers_large_02 = dupe_blacklist_text,
-		embers_medium_01 = dupe_blacklist_text,
-		embers_medium_03 = dupe_blacklist_text,
-		embers_small_01 = dupe_blacklist_text,
-		env_embers_large = dupe_blacklist_text,
-		env_embers_medium = dupe_blacklist_text,
-		env_embers_medium_spread = dupe_blacklist_text,
-		env_embers_small = dupe_blacklist_text,
-		env_embers_small_spread = dupe_blacklist_text,
-		env_embers_tiny = dupe_blacklist_text,
-		env_fire_medium_spread_b = dupe_blacklist_text,
-		//explosion_huge = dupe_blacklist_text, //child explosion_huge_k (plume of flames) is different, so this isn't a dupe
-		explosion_huge_b = dupe_blacklist_text,
-		explosion_huge_burning_chunks = dupe_blacklist_text,
-		explosion_huge_c = dupe_blacklist_text,
-		explosion_huge_d = dupe_blacklist_text,
-		explosion_huge_e = dupe_blacklist_text,
-		explosion_huge_f = dupe_blacklist_text,
-		explosion_huge_g = dupe_blacklist_text,
-		explosion_huge_h = dupe_blacklist_text,
-		explosion_huge_j = dupe_blacklist_text,
-		explosion_huge_smoking_chunks = dupe_blacklist_text,
-		//explosion_silo = dupe_blacklist_text, //children explosion_huge_flames, explosion_huge_flames_b are different, so this isn't a dupe
-		//fire_large_01 = dupe_blacklist_text, //child smoke_large_01 is different, so this isn't a dupe
-		fire_large_02_filler = dupe_blacklist_text,
-		fire_large_02_fillerb = dupe_blacklist_text,
-		fire_large_base = dupe_blacklist_text,
-		fire_medium_01_glow = dupe_blacklist_text,
-		//fire_medium_02 = dupe_blacklist_text, //child smoke_medium_02 uses a different texture; it's very subtle, but it counts, so not a dupe
-		fire_medium_02_nosmoke = dupe_blacklist_text,
-		//fire_medium_03 = dupe_blacklist_text, //child smoke_medium_02 uses a different texture; it's very subtle, but it counts, so not a dupe
-		//fire_medium_03_brownsmoke = dupe_blacklist_text, //child smoke_medium_02c has slightly fewer particles; it's very subtle, but it counts, so not a dupe
-		fire_medium_base = dupe_blacklist_text,
-		fire_medium_burst = dupe_blacklist_text,
-		fire_medium_heatwave = dupe_blacklist_text,
-		//fire_small_01 = dupe_blacklist_text, operator Oscillate Vector has different values that don't seem to make a difference, but child smoke_small_01 uses a different texture, so not a dupe
-		fire_small_02 = dupe_blacklist_text,
-		//fire_small_03 = dupe_blacklist_text, //child smoke_small_01 uses a different texture, so not a dupe
-		fire_small_base = dupe_blacklist_text, 
-		fire_small_flameouts = dupe_blacklist_text,
-		fire_verysmall_01 = dupe_blacklist_text,
-		smoke_burning_engine_01 = dupe_blacklist_text, //has different bounding box size; no visible difference
-		smoke_exhaust_01a = dupe_blacklist_text, //lower max particle count, but no visible difference since it never gets near the cap
-		smoke_exhaust_01b = dupe_blacklist_text, //lower max particle count, but no visible difference since it never gets near the cap
-		smoke_large_01b = dupe_blacklist_text,
-		smoke_large_02b = dupe_blacklist_text,
-		smoke_medium_01 = dupe_blacklist_text,
-		Smoke_medium_02b = dupe_blacklist_text,
-		["Smoke_medium_02b Version #2"] = dupe_blacklist_text,
-		smoke_small_01b = dupe_blacklist_text,
+		duplicates = {
+			burning_gib_01_drag = dupe_fire,
+			burning_gib_01_follower2 = dupe_fire,
+			burning_gib_01b = dupe_fire,
+			burning_vehicle = dupe_fire,
+			burning_wood_01b = dupe_fire,
+			burning_wood_01c = dupe_fire,
+			embers_large_01 = dupe_fire,
+			embers_large_02 = dupe_fire,
+			embers_medium_01 = dupe_fire,
+			embers_medium_03 = dupe_fire,
+			embers_small_01 = dupe_fire,
+			env_embers_large = dupe_fire,
+			env_embers_medium = dupe_fire,
+			env_embers_medium_spread = dupe_fire,
+			env_embers_small = dupe_fire,
+			env_embers_small_spread = dupe_fire,
+			env_embers_tiny = dupe_fire,
+			env_fire_medium_spread_b = dupe_fire,
+			//explosion_huge = dupe_fire, //child explosion_huge_k (plume of flames) is different, so this isn't a dupe
+			explosion_huge_b = dupe_fire,
+			explosion_huge_burning_chunks = dupe_fire,
+			explosion_huge_c = dupe_fire,
+			explosion_huge_d = dupe_fire,
+			explosion_huge_e = dupe_fire,
+			explosion_huge_f = dupe_fire,
+			explosion_huge_g = dupe_fire,
+			explosion_huge_h = dupe_fire,
+			explosion_huge_j = dupe_fire,
+			explosion_huge_smoking_chunks = dupe_fire,
+			//explosion_silo = dupe_fire, //children explosion_huge_flames, explosion_huge_flames_b are different, so this isn't a dupe
+			//fire_large_01 = dupe_fire, //child smoke_large_01 is different, so this isn't a dupe
+			fire_large_02_filler = dupe_fire,
+			fire_large_02_fillerb = dupe_fire,
+			fire_large_base = dupe_fire,
+			fire_medium_01_glow = dupe_fire,
+			//fire_medium_02 = dupe_fire, //child smoke_medium_02 uses a different texture; it's very subtle, but it counts, so not a dupe
+			fire_medium_02_nosmoke = dupe_fire,
+			//fire_medium_03 = = dupe_fire, //child smoke_medium_02 uses a different texture; it's very subtle, but it counts, so not a dupe
+			//fire_medium_03_brownsmoke = dupe_fire, //child smoke_medium_02c has slightly fewer particles; it's very subtle, but it counts, so not a dupe
+			fire_medium_base = dupe_fire,
+			fire_medium_burst = dupe_fire,
+			fire_medium_heatwave = dupe_fire,
+			//fire_small_01 = dupe_fire, operator Oscillate Vector has different values that don't seem to make a difference, but child smoke_small_01 uses a different texture, so not a dupe
+			fire_small_02 = dupe_fire,
+			//fire_small_03 = dupe_fire, //child smoke_small_01 uses a different texture, so not a dupe
+			fire_small_base = dupe_fire,
+			fire_small_flameouts = dupe_fire,
+			fire_verysmall_01 = dupe_fire,
+			smoke_burning_engine_01 = dupe_fire, //has different bounding box size; no visible difference
+			smoke_exhaust_01a = dupe_fire, //lower max particle count, but no visible difference since it never gets near the cap
+			smoke_exhaust_01b = dupe_fire, //lower max particle count, but no visible difference since it never gets near the cap
+			smoke_large_01b = dupe_fire,
+			smoke_large_02b = dupe_fire,
+			smoke_medium_01 = dupe_fire,
+			Smoke_medium_02b = dupe_fire,
+			["Smoke_medium_02b Version #2"] = dupe_fire,
+			smoke_small_01b = dupe_fire,
+		}
 	},
 	["particles/fire_fx.pcf"] = {
 		//many unique fx, but a few dupes from gmod's fire_01.pcf
-		burning_gib_01_drag = dupe_blacklist_text,
-		burning_gib_01_follower2 = dupe_blacklist_text,
-		embers_large_01 = dupe_blacklist_text,
-		fire_large_base = dupe_blacklist_text,
-		fire_medium_01_glow = dupe_blacklist_text,
-		fire_small_02 = dupe_blacklist_text,
-		fire_small_base = dupe_blacklist_text,
-		fire_small_flameouts = dupe_blacklist_text,
-		fire_verysmall_01 = dupe_blacklist_text,
-		smoke_large_01b = dupe_blacklist_text,
-		smoke_large_02b = dupe_blacklist_text,
-		smoke_medium_01 = dupe_blacklist_text,
-		["Smoke_medium_02b Version #2"] = dupe_blacklist_text,
-		smoke_small_01b = dupe_blacklist_text,
+		duplicates = {
+			burning_gib_01_drag = dupe_fire,
+			burning_gib_01_follower2 = dupe_fire,
+			embers_large_01 = dupe_fire,
+			fire_large_base = dupe_fire,
+			fire_medium_01_glow = dupe_fire,
+			fire_small_02 = dupe_fire,
+			fire_small_base = dupe_fire,
+			fire_small_flameouts = dupe_fire,
+			fire_verysmall_01 = dupe_fire,
+			smoke_large_01b = dupe_fire,
+			smoke_large_02b = dupe_fire,
+			smoke_medium_01 = dupe_fire,
+			["Smoke_medium_02b Version #2"] = dupe_fire,
+			smoke_small_01b = dupe_fire,
+		}
 	},
 	["particles/fire_infected_fx.pcf"] = {
-		smoke_gib_01 = dupe_blacklist_text, //another gmod fire_01.pcf dupe
+		duplicates = {
+			smoke_gib_01 = dupe_fire, //another gmod fire_01.pcf dupe
+		}
 	},
 	//Portal 2
 	["particles/chicken.pcf"] = {
-		feathers_large = crash_blacklist_text,
-		feathers_single = crash_blacklist_text,
-		feathers_small = crash_blacklist_text,
+		blacklist = {
+			feathers_large = crash_blacklist_text,
+			feathers_single = crash_blacklist_text,
+			feathers_small = crash_blacklist_text,
+		}
 	},
 	["particles/partctrl_fallbacks/portal2/fire_01.pcf"] = {
-		whitelist = {
-			//contains mostly duplicate fx from gmod's fire_01.pcf, except for the following:
+		//contains mostly duplicate fx from gmod's fire_01.pcf, except for the following:
+		duplicates_whitelist = {
 			burning_gib_01 = true,
 			burning_gib_01b = true,
 			fire_jet_01 = true,
@@ -184,11 +197,12 @@ local default_blacklist = {
 			turret_burning_gib_01 = true,
 			turret_smoke_gib1 = true,
 			turret_smoke_gib2 = true,
-		}
+		},
+		duplicates_whitelist_fail = dupe_fire
 	},
 	["particles/fire_01_unused.pcf"] = {
-		whitelist = {
-			//contains mostly duplicate fx from gmod's fire_01.pcf, except for the following:
+		//contains mostly duplicate fx from gmod's fire_01.pcf, except for the following:
+		duplicates_whitelist = {
 			burning_engine_01 = true, //child burning_engine_fire is different
 			burning_engine_fire = true,
 			burning_gib_01 = true, //child smoke_gib_01 is different
@@ -213,21 +227,24 @@ local default_blacklist = {
 			smoke_medium_02 = true,
 			["smoke_medium_02 Version #2"] = true,
 			smoke_small_01 = true,
-		}
+		},
+		duplicates_whitelist_fail = dupe_fire
 	},
 	["particles/partctrl_fallbacks/portal2/water_impact.pcf"] = {
 		//some dupes from gmod water_impact.pcf
-		slime_splash_01 = dupe_blacklist_text,
-		slime_splash_01_droplets = dupe_blacklist_text,
-		slime_splash_01_reversed = dupe_blacklist_text,
-		slime_splash_01_surface = dupe_blacklist_text,
-		slime_splash_02 = dupe_blacklist_text,
-		slime_splash_03 = dupe_blacklist_text,
-		water_splash_02_droplets = dupe_blacklist_text,
-		water_splash_02_vertical = dupe_blacklist_text,
+		duplicates = {
+			slime_splash_01 = "particles/water_impact.pcf",
+			slime_splash_01_droplets = "particles/water_impact.pcf",
+			slime_splash_01_reversed = "particles/water_impact.pcf",
+			slime_splash_01_surface = "particles/water_impact.pcf",
+			slime_splash_02 = "particles/water_impact.pcf",
+			slime_splash_03 = "particles/water_impact.pcf",
+			water_splash_02_droplets = "particles/water_impact.pcf",
+			water_splash_02_vertical = "particles/water_impact.pcf",
+		}
 	},
 	["particles/water_impact_unused.pcf"] = {
-		whitelist = {
+		duplicates_whitelist = {
 			//mostly dupes from gmod's water_impact.pcf, but a few fx are slightly different or unique
 			water_foam_line_long = true,
 			water_foam_line_longb = true,
@@ -239,170 +256,199 @@ local default_blacklist = {
 			water_foam_line_mediumd = true,
 			water_splash_01_surface4_impact = true,
 			water_splash_02_animated = true,
-		}
+		},
+		duplicates_whitelist_fail = "particles/water_impact.pcf"
 	},
 	//Alien Swarm 
 	["particles/vindincendgrenade.pcf"] = {
-		explosion_huge_e = dupe_blacklist_text, //duplicate of effect from gmod's fire_01_pcf; the rest of the fx in this pcf with conflicting names are all unique
+		duplicates = {
+			explosion_huge_e = dupe_fire, //duplicate of effect from gmod's fire_01_pcf; the rest of the fx in this pcf with conflicting names are all unique
+		}
 	},
 	//TF2 map particles addon
 	["particles/nucleus_event_effects.pcf"] = {
-		nucleus_core_steady = "Blacklisted: dupe of nucleus_event_core_steady, except it conflicts with a stock tf2 effect" //note: only reason this doesn't override the desired effect on koth_nucleus is because the game arbitrarily reads particles/level_fx.pcf after this one, which sucks; this isn't an issue on pd_circus because it doesn't actually use this effect
+		blacklist = {
+			nucleus_core_steady = "Blacklisted: dupe of nucleus_event_core_steady, except it conflicts with a stock tf2 effect" //note: only reason this doesn't override the desired effect on koth_nucleus is because the game arbitrarily reads particles/level_fx.pcf after this one, which sucks; this isn't an issue on pd_circus because it doesn't actually use this effect
+		}
 	},
 	["particles/particles_vsh_abilities (vsh_maul).pcf"] = {
-		vsh_megapunch_shockwave_embers_bg = "Blacklisted: dupe of effect from particles_vsh_abilities.pcf",
-		vsh_megapunch_shockwave_embers_fg = "Blacklisted: dupe of effect from particles_vsh_abilities.pcf",
-		vsh_megapunch_shockwave_plasma_2 = "Blacklisted: dupe of effect from particles_vsh_abilities.pcf",
-		vsh_megapunch_shockwave_plasma_3 = "Blacklisted: dupe of effect from particles_vsh_abilities.pcf",
-		vsh_megapunch_shockwave_wave_fg = "Blacklisted: dupe of effect from particles_vsh_abilities.pcf",
+		duplicates = {
+			vsh_megapunch_shockwave_embers_bg = "particles/particles_vsh_abilities.pcf",
+			vsh_megapunch_shockwave_embers_fg = "particles/particles_vsh_abilities.pcf",
+			vsh_megapunch_shockwave_plasma_2 = "particles/particles_vsh_abilities.pcf",
+			vsh_megapunch_shockwave_plasma_3 = "particles/particles_vsh_abilities.pcf",
+			vsh_megapunch_shockwave_wave_fg = "particles/particles_vsh_abilities.pcf",
+		}
 	},
 	["particles/particles_vsh_auras (vsh_outburst).pcf"] = {
-		vsh_arm_rt_aura_chargedash_smoke = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_rt_aura_chargedash_trail_fg = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
+		duplicates = {
+			vsh_arm_rt_aura_chargedash_smoke = "particles/particles_vsh_auras.pcf",
+			vsh_arm_rt_aura_chargedash_trail_fg = "particles/particles_vsh_auras.pcf",
+		}
 	},
 	["particles/particles_vsh_auras (vsh_maul).pcf"] = {
-		vsh_arm_lt_aura_megapunch_warp = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_lt_aura_normal_bg_1 = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_lt_aura_normal_bg_2 = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_lt_aura_normal_trail_bg = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_rt_aura_chargedash_bg_1 = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_rt_aura_chargedash_bg_2 = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_rt_aura_chargedash_fg = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_rt_aura_chargedash_smoke = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_rt_aura_chargedash_trail_bg = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_rt_aura_chargedash_warp = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_rt_aura_normal_bg_1 = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_rt_aura_normal_bg_2 = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_rt_aura_normal_fg = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_arm_rt_aura_normal_trail_bg = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_body_aura_bg_1 = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_body_aura_bg_2 = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_body_aura_fg = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_body_aura_trail_bg = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_body_trail = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_hand_effect_chargedash = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_hand_effect_chargedash_glow_1 = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_hand_effect_chargedash_glow_2 = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_hand_effect_chargedash_tracers = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_hand_effect_chargedash_vacuum_bits = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_hand_effect_chargedash_vacuum_smoke = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_hand_effect_megapunch_spawn = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_hand_effect_premegapunch = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
-		vsh_hand_effect_premegapunch_tracers = "Blacklisted: dupe of effect from particles_vsh_auras.pcf",
+		duplicates = {
+			vsh_arm_lt_aura_megapunch_warp = "particles/particles_vsh_auras.pcf",
+			vsh_arm_lt_aura_normal_bg_1 = "particles/particles_vsh_auras.pcf",
+			vsh_arm_lt_aura_normal_bg_2 = "particles/particles_vsh_auras.pcf",
+			vsh_arm_lt_aura_normal_trail_bg = "particles/particles_vsh_auras.pcf",
+			vsh_arm_rt_aura_chargedash_bg_1 = "particles/particles_vsh_auras.pcf",
+			vsh_arm_rt_aura_chargedash_bg_2 = "particles/particles_vsh_auras.pcf",
+			vsh_arm_rt_aura_chargedash_fg = "particles/particles_vsh_auras.pcf",
+			vsh_arm_rt_aura_chargedash_smoke = "particles/particles_vsh_auras.pcf",
+			vsh_arm_rt_aura_chargedash_trail_bg = "particles/particles_vsh_auras.pcf",
+			vsh_arm_rt_aura_chargedash_warp = "particles/particles_vsh_auras.pcf",
+			vsh_arm_rt_aura_normal_bg_1 = "particles/particles_vsh_auras.pcf",
+			vsh_arm_rt_aura_normal_bg_2 = "particles/particles_vsh_auras.pcf",
+			vsh_arm_rt_aura_normal_fg = "particles/particles_vsh_auras.pcf",
+			vsh_arm_rt_aura_normal_trail_bg = "particles/particles_vsh_auras.pcf",
+			vsh_body_aura_bg_1 = "particles/particles_vsh_auras.pcf",
+			vsh_body_aura_bg_2 = "particles/particles_vsh_auras.pcf",
+			vsh_body_aura_fg = "particles/particles_vsh_auras.pcf",
+			vsh_body_aura_trail_bg = "particles/particles_vsh_auras.pcf",
+			vsh_body_trail = "particles/particles_vsh_auras.pcf",
+			vsh_hand_effect_chargedash = "particles/particles_vsh_auras.pcf",
+			vsh_hand_effect_chargedash_glow_1 = "particles/particles_vsh_auras.pcf",
+			vsh_hand_effect_chargedash_glow_2 = "particles/particles_vsh_auras.pcf",
+			vsh_hand_effect_chargedash_tracers = "particles/particles_vsh_auras.pcf",
+			vsh_hand_effect_chargedash_vacuum_bits = "particles/particles_vsh_auras.pcf",
+			vsh_hand_effect_chargedash_vacuum_smoke = "particles/particles_vsh_auras.pcf",
+			vsh_hand_effect_megapunch_spawn = "particles/particles_vsh_auras.pcf",
+			vsh_hand_effect_premegapunch = "particles/particles_vsh_auras.pcf",
+			vsh_hand_effect_premegapunch_tracers = "particles/particles_vsh_auras.pcf",
+		}
 	},
 	["particles/particles_vsh_overrides (vsh_outburst).pcf"] = {
-		mark_for_death = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_bg_1 = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_bg_1_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_bg_2 = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_bg_2_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_bg_3_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_icon_fg = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_icon_fg_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_icon_spawn = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_bg = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_burst_repeating_child = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_paper = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_rock = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_scissors = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_win_flash = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_win_flash_bg = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_win_flash_core = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_win_flash_glow = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_win_sparks = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_drips = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_drips_milk = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_bg_1 = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_bg_1_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_bg_2 = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_bg_2_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_bg_3_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_fg = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_fg_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_spawn = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
+		duplicates = {
+			mark_for_death = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_bg_1 = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_bg_1_repeat = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_bg_2 = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_bg_2_repeat = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_bg_3_repeat = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_icon_fg = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_icon_fg_repeat = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_icon_spawn = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_bg = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_burst_repeating_child = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_paper = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_rock = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_scissors = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_win_flash = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_win_flash_bg = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_win_flash_core = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_win_flash_glow = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_win_sparks = "particles/particles_vsh_overrides.pcf",
+			peejar_drips = "particles/particles_vsh_overrides.pcf",
+			peejar_drips_milk = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_bg_1 = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_bg_1_repeat = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_bg_2 = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_bg_2_repeat = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_bg_3_repeat = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_fg = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_fg_repeat = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_spawn = "particles/particles_vsh_overrides.pcf",
+		}
 	},
 	["particles/particles_vsh_overrides (vsh_maul).pcf"] = {
-		mark_for_death = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_bg_1 = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_bg_1_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_bg_2 = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_bg_2_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_bg_3_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_icon_fg = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_icon_fg_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		mark_for_death_icon_spawn = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_bg = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_burst_repeating_child = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_paper = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_rock = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_scissors = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_win_flash = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_win_flash_bg = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_win_flash_core = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_win_flash_glow = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		overwrite_rps_win_sparks = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_drips = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_drips_milk = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_bg_1 = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_bg_1_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_bg_2 = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_bg_2_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_bg_3_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_fg = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_fg_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
-		peejar_icon_spawn = "Blacklisted: dupe of effect from particles_vsh_overrides.pcf",
+		duplicates = {
+			mark_for_death = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_bg_1 = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_bg_1_repeat = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_bg_2 = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_bg_2_repeat = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_bg_3_repeat = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_icon_fg = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_icon_fg_repeat = "particles/particles_vsh_overrides.pcf",
+			mark_for_death_icon_spawn = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_bg = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_burst_repeating_child = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_paper = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_rock = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_scissors = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_win_flash = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_win_flash_bg = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_win_flash_core = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_win_flash_glow = "particles/particles_vsh_overrides.pcf",
+			overwrite_rps_win_sparks = "particles/particles_vsh_overrides.pcf",
+			peejar_drips = "particles/particles_vsh_overrides.pcf",
+			peejar_drips_milk = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_bg_1 = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_bg_1_repeat = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_bg_2 = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_bg_2_repeat = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_bg_3_repeat = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_fg = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_fg_repeat = "particles/particles_vsh_overrides.pcf",
+			peejar_icon_spawn = "particles/particles_vsh_overrides.pcf",
 
-		burningplayer_rainbow_red = "Blacklisted: dupe of effect from particles_vsh_overrides (vsh_outburst).pcf",
-		burningplayer_rainbow_red_stars01 = "Blacklisted: dupe of effect from particles_vsh_overrides (vsh_outburst).pcf",
-		burningplayer_rainbow_red_stars02 = "Blacklisted: dupe of effect from particles_vsh_overrides (vsh_outburst).pcf",
-		burningplayer_rainbow_red_stars03 = "Blacklisted: dupe of effect from particles_vsh_overrides (vsh_outburst).pcf",
-		burningplayer_rainbow_red_stars04 = "Blacklisted: dupe of effect from particles_vsh_overrides (vsh_outburst).pcf",
-		burningplayer_red = "Blacklisted: dupe of effect from particles_vsh_overrides (vsh_outburst).pcf",
-		burningplayer_red_flyingbits = "Blacklisted: dupe of effect from particles_vsh_overrides (vsh_outburst).pcf",
-		burningplayer_red_smoke = "Blacklisted: dupe of effect from particles_vsh_overrides (vsh_outburst).pcf",
-		speech_taunt_red = "Blacklisted: dupe of effect from particles_vsh_overrides (vsh_outburst).pcf",
-		speech_taunt_red_repeat = "Blacklisted: dupe of effect from particles_vsh_overrides (vsh_outburst).pcf",
+			burningplayer_rainbow_red = "particles/particles_vsh_overrides (vsh_outburst).pcf",
+			burningplayer_rainbow_red_stars01 = "particles/particles_vsh_overrides (vsh_outburst).pcf",
+			burningplayer_rainbow_red_stars02 = "particles/particles_vsh_overrides (vsh_outburst).pcf",
+			burningplayer_rainbow_red_stars03 = "particles/particles_vsh_overrides (vsh_outburst).pcf",
+			burningplayer_rainbow_red_stars04 = "particles/particles_vsh_overrides (vsh_outburst).pcf",
+			burningplayer_red = "particles/particles_vsh_overrides (vsh_outburst).pcf",
+			burningplayer_red_flyingbits = "particles/particles_vsh_overrides (vsh_outburst).pcf",
+			burningplayer_red_smoke = "particles/particles_vsh_overrides (vsh_outburst).pcf",
+			speech_taunt_red = "particles/particles_vsh_overrides (vsh_outburst).pcf",
+			speech_taunt_red_repeat = "particles/particles_vsh_overrides (vsh_outburst).pcf",
+		}
 	},
 	["particles/asylum_particles.pcf"] = {
-		whitelist = {
+		duplicates_whitelist = {
 			env_rain_gutterdrip_collision = true, //the only unique effect in this pcf
 		},
-		whitelist_fail_msg = "Blacklisted: dupe of effect from tf2's water.pcf"
+		duplicates_whitelist_fail = "particles/water.pcf"
 	},
 	["particles/snowville_particles.pcf"] = {
 		//aurora_02b is unique
-		aurora_3a = "Blacklisted: dupe of effect from aurora_borealis.pcf",
-		aurora_3b = "Blacklisted: dupe of effect from aurora_borealis.pcf",
-		aurora_4a = "Blacklisted: dupe of effect from aurora_borealis.pcf",
-		aurora_4b = "Blacklisted: dupe of effect from aurora_borealis.pcf",
+		duplicates = {
+			aurora_3a = "particles/aurora_borealis.pcf",
+			aurora_3b = "particles/aurora_borealis.pcf",
+			aurora_4a = "particles/aurora_borealis.pcf",
+			aurora_4b = "particles/aurora_borealis.pcf",
+		}
 	},
 	["particles/brine_salmann_goop.pcf"] = {
-		blood_impact_green_01 = "Blacklisted: dupe of effect from tf2's blood_impact.pcf", //override that's actually a copy tf2's blood_impact_red_01, for salmann skeleton reskins
-		blood_impact_red_01_chunk = "Blacklisted: dupe of effect from tf2's blood_impact.pcf",
-		blood_impact_red_01_droplets = "Blacklisted: dupe of effect from tf2's blood_impact.pcf",
-		blood_impact_red_01_goop = "Blacklisted: dupe of effect from tf2's blood_impact.pcf",
-		bonzo_vomit_bones2_red = "Blacklisted: dupe of effect from tf2's halloween.pcf",
-		bonzo_vomit_bones_red = "Blacklisted: dupe of effect from tf2's halloween.pcf",
+		blacklist = {
+			blood_impact_green_01 = "Blacklisted: override that's actually a copy of tf2's blood_impact_red_01, for salmann skeleton reskins"
+		},
+		duplicates = {
+			blood_impact_red_01_chunk = "particles/partctrl_fallbacks/tf/blood_impact.pcf",
+			blood_impact_red_01_droplets =  "particles/partctrl_fallbacks/tf/blood_impact.pcf",
+			blood_impact_red_01_goop = "particles/partctrl_fallbacks/tf/blood_impact.pcf",
+			bonzo_vomit_bones2_red = "particles/halloween.pcf",
+			bonzo_vomit_bones_red = "particles/halloween.pcf",
+		}
 	},
 	["particles/camp_fx.pcf"] = {
-		waterfall_bottomsplash = "Blacklisted: dupe of effect from tf2's water.pcf"
+		duplicates = {
+			waterfall_bottomsplash = "particles/water.pcf"
+		}
 	},
 	["particles/eotl_lights.pcf"] = {
-		//red lights have different radius
-		cart_flashinglight = "Blacklisted: dupe of effect from tf2's flag_particles.pcf",
-		cart_flashinglight_glow = "Blacklisted: dupe of effect from tf2's flag_particles.pcf",
-		cart_flashinglight_light = "Blacklisted: dupe of effect from tf2's flag_particles.pcf",
+		duplicates = {
+			//red lights have different radius
+			cart_flashinglight =  "particles/flag_particles.pcf",
+			cart_flashinglight_glow = "particles/flag_particles.pcf",
+			cart_flashinglight_light = "particles/flag_particles.pcf",
+		}
 	},
 	["particles/slaughter_fx.pcf"] = {
-		radioactive_drip = "Blacklisted: dupe of effect from particles/farmageddon_underworld_fx.pcf", //arbitrary which one gets blacklisted, actually i think slaughter might be the original? farmageddon has more radioactive fx though,
-		radioactive_goop = "Blacklisted: dupe of effect from particles/farmageddon_underworld_fx.pcf", //and this way we only need to add 1 more table to the blacklist instead of 2, since slaughter has to have one anyway
-		xms_snowburst_child01 = "Blacklisted: dupe of effect from tf2's xms.pcf"
+		duplicates = {
+			radioactive_drip = "particles/farmageddon_underworld_fx.pcf", //arbitrary which one gets blacklisted, actually i think slaughter might be the original? farmageddon has more radioactive fx though,
+			radioactive_goop = "particles/farmageddon_underworld_fx.pcf", //and this way we only need to add 1 more table to the blacklist instead of 2, since slaughter has to have one anyway
+			xms_snowburst_child01 = "particles/xms.pcf"
+		}
 	},
 	["particles/vineyard_rain.pcf"] = {
-		env_rain_256_streaks = "Blacklisted: dupe of effect from tf2's rain_custom.pcf"
+		duplicates = {
+			env_rain_256_streaks = "particles/rain_custom.pcf"
+		}
 	},
 	["particles/pier_fx.pcf"] = {
-		whitelist = {
+		duplicates_whitelist = {
 			firework_blue_stars = true,
 			firework_green_stars = true,
 			firework_orange_stars = true,
@@ -411,28 +457,42 @@ local default_blacklist = {
 			firework_white_stars = true,
 			firework_yellow_stars = true,
 		},
-		whitelist_fail_msg = "Blacklisted: dupe of effect from tf2's taunt_fx.pcf"
+		duplicates_whitelist_fail = "particles/taunt_fx.pcf"
+	},
+	["particles/precipice_spooky_fx.pcf"] = {
+		duplicates = {
+			//water_splash01_droplets is different, which means so is its parent water_splash01
+			water_splash01_bullet = "particles/water.pcf",
+			water_splash01_cluster = "particles/water.pcf",
+			water_splash01_column = "particles/water.pcf",
+			water_splash01_playerripple = "particles/water.pcf",
+			water_splash01_ripple = "particles/water.pcf",
+		}
 	},
 	["particles/scary_ghost (plr_hacksaw_event).pcf"] = {
-		ghost_flash = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		ghost_glow = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		ghost_glow_red = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		ghost_smoke = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		ghost_sparkle = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		ghost_sparkle_red = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		halloween_boss_axe_hit_sparks = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		halloween_boss_axe_hit_world = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		halloween_boss_death = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		halloween_boss_death_bits = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		halloween_boss_death_cloud = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		halloween_boss_death_floatybits = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		halloween_boss_foot_fire_customcolor = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		halloween_boss_foot_impact_customcolor = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		halloween_boss_shape_glow = "Blacklisted: dupe of effect from tf2's scary_ghost.pcf",
-		//the rest of the fx also conflict, but they're recolors, so they're unique
+		duplicates = {
+			ghost_flash = "particles/scary_ghost.pcf",
+			ghost_glow = "particles/scary_ghost.pcf",
+			ghost_glow_red = "particles/scary_ghost.pcf",
+			ghost_smoke = "particles/scary_ghost.pcf",
+			ghost_sparkle = "particles/scary_ghost.pcf",
+			ghost_sparkle_red = "particles/scary_ghost.pcf",
+			halloween_boss_axe_hit_sparks = "particles/scary_ghost.pcf",
+			halloween_boss_axe_hit_world = "particles/scary_ghost.pcf",
+			halloween_boss_death = "particles/scary_ghost.pcf",
+			halloween_boss_death_bits = "particles/scary_ghost.pcf",
+			halloween_boss_death_cloud = "particles/scary_ghost.pcf",
+			halloween_boss_death_floatybits = "particles/scary_ghost.pcf",
+			halloween_boss_foot_fire_customcolor = "particles/scary_ghost.pcf",
+			halloween_boss_foot_impact_customcolor = "particles/scary_ghost.pcf",
+			halloween_boss_shape_glow = "particles/scary_ghost.pcf",
+			//the rest of the fx also conflict, but they're recolors, so they're unique
+		}
 	},
 	["particles/toxic.pcf"] = {
-		hwn_cart_cap_neutral = "Blacklisted: dupe of effect from tf2's halloween.pcf"
+		duplicates = {
+			hwn_cart_cap_neutral = "particles/halloween.pcf"
+		}
 	},
 }
 hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
@@ -445,16 +505,22 @@ hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
 	end
 	if default_blacklist[filename] then
 		for k, v in pairs (tab) do
-			if !default_blacklist[filename].whitelist then
-				if default_blacklist[filename][k] then
-					tab[k].shouldcull = default_blacklist[filename][k]
-				end
-			else
-				//if whitelist is present, blacklist all fx in the pcf *except* the ones listed.
-				//this will break if we want to blacklist an effect named just "whitelist", OH WELL
-				if !default_blacklist[filename].whitelist[k] then
-					tab[k].shouldcull = default_blacklist[filename].whitelist_fail_msg or dupe_blacklist_text
-				end
+			//if duplicates is present, flag all listed fx as dupes
+			if default_blacklist[filename].duplicates and default_blacklist[filename].duplicates[k] then
+				tab[k].duplicate_effect = default_blacklist[filename].duplicates[k]
+			end
+			//if duplicates_whitelist is present, flag all fx in the pcf as dupes *except* the ones listed
+			if default_blacklist[filename].duplicates_whitelist and !default_blacklist[filename].duplicates_whitelist[k] then
+				tab[k].duplicate_effect = default_blacklist[filename].duplicates_whitelist_fail
+			end
+
+			//if blacklist is present, blacklist all listed fx
+			if default_blacklist[filename].blacklist and default_blacklist[filename].blacklist[k] then
+				tab[k].shouldcull = default_blacklist[filename].blacklist[k]
+			end
+			//if whitelist is present, blacklist all fx in the pcf *except* the ones listed
+			if default_blacklist[filename].whitelist and !default_blacklist[filename].whitelist[k] then
+				tab[k].shouldcull = default_blacklist[filename].whitelist_fail
 			end
 		end
 	end
@@ -5305,6 +5371,17 @@ function PartCtrl_ProcessPCF(filename)
 		//Now that the processed table is finished, let hook funcs modify it arbitrarily (including deciding which fx to cull)
 		hook.Call("PartCtrl_PostProcessPCF", nil, filename, t2)
 		for particle, _ in pairs (t2) do
+			if t2[particle].duplicate_effect then //this has to be set manually by the hook func above, since visually identical fx can still have minor pcf info differences
+				PartCtrl_DuplicateFx[filename] = PartCtrl_DuplicateFx[filename] or {}
+				PartCtrl_DuplicateFx[filename][particle] = t2[particle].duplicate_effect
+				local shouldcull = t2[particle].shouldcull
+				if shouldcull then
+					shouldcull = shouldcull .. "\n\n"
+				else
+					shouldcull = ""
+				end
+				t2[particle].shouldcull = shouldcull .. "This effect is a duplicate of " .. t2[particle].duplicate_effect .. "'s " .. particle .. "."
+			end
 			//Cull bad effects from the table.
 			//If the player starts up the game in developer mode, effects aren't culled, but instead have a warning on the spawnicon telling the dev why they won't show up to players.
 			if t2[particle].shouldcull and GetConVarNumber("developer") < 1 then
@@ -5312,11 +5389,11 @@ function PartCtrl_ProcessPCF(filename)
 			end
 			//Store which PCFs this particle name is defined in - this is used to detect particles that are multiply defined and display a warning in the spawnicon
 			PartCtrl_PCFsByParticleName[particle] = PartCtrl_PCFsByParticleName[particle] or {}
-			if t2[particle] then
+			if t2[particle] and !t2[particle].shouldcull then
 				PartCtrl_PCFsByParticleName[particle][filename] = true
-			//TODO: rethink this? crash prevention doesn't actually need any extra info on these, this is just to add info to the 
-			//tooltip to *maybe* let the player know why this effect gets overwritten when they load another effect from this pcf.
 			else
+				//TODO: rethink this? crash prevention doesn't actually need any extra info on these, this is just to add info to the 
+				//tooltip to *maybe* let the player know why this effect gets overwritten when they load another effect from this pcf.
 				PartCtrl_PCFsByParticleName[particle][filename] = "culled"
 			end
 		end
@@ -5618,6 +5695,10 @@ function PartCtrl_ReadAndProcessPCFs()
 	PartCtrl_FindAllPCFPaths("particles/")
 	
 	PartCtrl_PCFsByParticleName = {}
+	PartCtrl_PCFsByParticleName_CurrentlyLoaded = {}
+	PartCtrl_DuplicateFx = {}
+	PartCtrl_PCFsWithConflicts = {}
+
 	PartCtrl_ProcessedPCFs = {}
 	for _, filename in pairs (PartCtrl_AllPCFPaths) do
 		PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
@@ -5625,13 +5706,24 @@ function PartCtrl_ReadAndProcessPCFs()
 
 	local dofirst = {}
 	local dosecond = {}
-	for filename, _ in pairs (PartCtrl_ProcessedPCFs) do
+	for pcf, pcftab in pairs (PartCtrl_ProcessedPCFs) do
 		//Run game.AddParticles on fallback pcfs before normal pcfs, so the normal ones override them by default;
 		//this prevents TF2's blood fx from becoming the default when you shoot an NPC, for instance
-		if string.StartsWith(filename, "particles/partctrl_fallbacks/") then
-			table.insert(dofirst, filename)
+		if string.StartsWith(pcf, "particles/partctrl_fallbacks/") then
+			table.insert(dofirst, pcf)
 		else
-			table.insert(dosecond, filename)
+			table.insert(dosecond, pcf)
+		end
+
+		//Build PartCtrl_PCFsWithConflicts for spawnicon conflicting pcf lists: if every single conflicting effect in
+		//a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
+		if CLIENT then
+			for name, _ in pairs (pcftab) do
+				if !(PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][name]) and table.Count(PartCtrl_PCFsByParticleName[name]) > 1 then
+					PartCtrl_PCFsWithConflicts[pcf] = true 
+					break
+				end
+			end
 		end
 	end
 	table.Add(dofirst, dosecond)
@@ -6275,20 +6367,25 @@ if CLIENT then
 			if effectname then
 				//If this function is being called by a spawnicon or particle entity, then only check its one effect for overrides.
 				//Otherwise, we don't care, and running game.AddParticles(pcf) again would just cause an unnecessary stutter.
-				for k, _ in pairs (PartCtrl_PCFsByParticleName[effectname]) do
-					tab[k] = true
+				if PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] != pcf 
+				and !(PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][effectname] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] == PartCtrl_DuplicateFx[pcf][effectname]) then
+					for k, _ in pairs (PartCtrl_PCFsByParticleName[effectname]) do
+						tab[k] = true
+					end
+					tab[pcf] = nil
+					//MsgN("tab for effect ", effectname, ":")
+					//PrintTable(tab)
 				end
-				tab[pcf] = nil
-				//MsgN("tab for effect ", effectname, ":")
-				//PrintTable(tab)
 			else
 				tab = PartCtrl_AddParticles_AddedParticles_Overrides[pcf]
 			end
-			for k, v in SortedPairs (PartCtrl_AddParticles_AddedParticles) do
-				if k > key and tab[v] then
-					//MsgN(k .. " " .. v .. " is greater than " .. key .. " " .. pcf .. ", time to do AddParticles")
-					doaddparticles = true
-					break
+			if table.Count(tab) > 0 then
+				for k, v in SortedPairs (PartCtrl_AddParticles_AddedParticles) do
+					if k > key and tab[v] then
+						//MsgN(k .. " " .. v .. " is greater than " .. key .. " " .. pcf .. ", time to do AddParticles")
+						doaddparticles = true
+						break
+					end
 				end
 			end
 		end
@@ -6310,6 +6407,14 @@ if CLIENT then
 				table.remove(PartCtrl_AddParticles_AddedParticles, key)
 			end
 			table.insert(PartCtrl_AddParticles_AddedParticles, pcf)
+
+			for effectname, _ in pairs (PartCtrl_ProcessedPCFs[pcf]) do
+				if PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][effectname] then
+					PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] = PartCtrl_DuplicateFx[pcf][effectname]
+				else
+					PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] = pcf
+				end
+			end
 
 			AddParticles_QueuedTime = CurTime()
 		end
