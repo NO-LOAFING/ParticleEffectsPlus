@@ -3626,6 +3626,84 @@ function PartCtrl_GetMapFx()
 end
 
 
+//test: try getting duplicate fx automatically through code
+//there's a few reasons this doesn't work well:
+//A: PartCtrl_PCFsOrdered is mostly alphabetical and doesn't reflect the hierarchy we'd actually want (fx from games can be duplicates of fx from gmod, and
+//fx from the tf2 map particles addon can be duplicates of fx from tf2, but otherwise we have to consider fx equal and can't make assumptions - for example,
+//if a portal2 and l4d2 effect are identical, then saves of those effects still need to work no matter which combination of games are mounted; we don't want
+//to make a save of a l4d2 effect, and then mount portal2, have it become considered a duplicate of a portal 2 effect, and no longer work, OR, inversely,
+//start off with both games mounted, save an effect that's considered a dupe, then unmount one game, and have it no longer work when it's no longer a dupe
+//because it's referencing the effect from the other game we unmounted instead)
+//B: this only detects fx that are 100% identical via a checksum. there are also fx that have omitted values but are still functionally identical (compare fx 
+//from the gmod, hl2, and portal2 versions of fire_01.pcf), and comparing those would be a lot more time-consuming, because we'd have to individually compare 
+//every set of non-nil values between the two effect tables (see PartCtrl_ComparePCFs), for *every potential combination of effects using the same name*.
+function PartCtrl_GetDuplicateFx()
+
+	local function SortedPairsByPCFOrder(pTable)
+		local keys = table.GetKeys(pTable) //use the global getkeys instead of the local one used in the SortedPairs code, so we don't have to copy as much
+		table.sort(keys, function(a, b)
+			return table.KeyFromValue(PartCtrl_PCFsOrdered, a) > table.KeyFromValue(PartCtrl_PCFsOrdered, b)
+		end)
+	
+		local i, key = 1, nil
+		return function()
+			key, i = keys[ i ], i + 1
+			return key, pTable[ key ]
+		end
+	end
+
+	local rawpcfs = {}
+	local dupes = {}
+	for name, effecttab in pairs (PartCtrl_PCFsByParticleName) do
+		if table.Count(effecttab) > 1 then
+			local checksums = {}
+			for pcf, _ in pairs (effecttab) do
+				rawpcfs[pcf] = rawpcfs[pcf] or PartCtrl_ReadPCF(pcf)
+				checksums[pcf] = util.SHA256(util.TableToJSON(rawpcfs[pcf][name]))
+			end
+			if name == "fire_large_01" then PrintTable(checksums) end
+			local checksum_dupes = {}
+			for pcf, checksum in SortedPairsByPCFOrder (checksums) do
+				checksum_dupes[checksum] = checksum_dupes[checksum] or {["original"] = pcf, ["count"] = 0}
+				checksum_dupes[checksum].count = checksum_dupes[checksum].count + 1
+				if checksum_dupes[checksum].count > 1 then
+					dupes[pcf] = dupes[pcf] or {}
+					dupes[pcf][name] = checksum_dupes[checksum].original
+				end
+			end
+		end
+	end
+	for pcf, pcftab in pairs (dupes) do
+		if !PartCtrl_ProcessedPCFs[pcf] then continue end
+		for name, _ in pairs (pcftab) do
+			if !PartCtrl_ProcessedPCFs[pcf][name] then continue end
+			for _, child in pairs (PartCtrl_ProcessedPCFs[pcf][name].children) do
+				//if an effect appears to be a dupe, but its child isn't, then it's not a dupe
+				if !dupes[pcf][child.child] then
+					dupes[pcf][name] = nil
+					break 
+				end
+			end
+		end
+	end
+	PrintTable(dupes)
+
+end
+//another test: try getting a list of all conflicting fx in a pcf, for reference; this table is too long to print unfortunately
+--[[if CLIENT then
+	local conflicts = {}
+	for name, effecttab in pairs (PartCtrl_PCFsByParticleName) do
+		if table.Count(effecttab) > 1 then
+			for pcf, _ in pairs (effecttab) do
+				conflicts[pcf] = conflicts[pcf] or {}
+				conflicts[pcf][name] = true
+			end
+		end
+	end
+	PrintTable(conflicts)
+end]]
+
+
 //For reference:
 //Orangebox particle code: https://github.com/nillerusr/source-engine/tree/master/particles
 //Newer (Portal 2/Alien Swarm/CSGO-era?) particle code: https://github.com/nillerusr/Kisak-Strike/tree/master/particles
@@ -5706,7 +5784,7 @@ function PartCtrl_ReadAndProcessPCFs()
 
 	local dofirst = {}
 	local dosecond = {}
-	for pcf, pcftab in pairs (PartCtrl_ProcessedPCFs) do
+	for pcf, pcftab in SortedPairs (PartCtrl_ProcessedPCFs) do
 		//Run game.AddParticles on fallback pcfs before normal pcfs, so the normal ones override them by default;
 		//this prevents TF2's blood fx from becoming the default when you shoot an NPC, for instance
 		if string.StartsWith(pcf, "particles/partctrl_fallbacks/") then
@@ -5727,7 +5805,10 @@ function PartCtrl_ReadAndProcessPCFs()
 		end
 	end
 	table.Add(dofirst, dosecond)
-	for _, filename in pairs (dofirst) do
+	PartCtrl_PCFsOrdered = dofirst
+
+	for _, filename in pairs (PartCtrl_PCFsOrdered) do
+		//MsgN(filename)
 		if CLIENT then
 			PartCtrl_AddParticles(filename)
 		else
