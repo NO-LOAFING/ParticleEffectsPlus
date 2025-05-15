@@ -94,8 +94,8 @@ function PANEL:Paint(w, h)
 
 	//If the icon's effect is currently being overridden by another pcf's effect of the same name, show a notification instead
 	if itab.MultiplyDefined
-	and PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] != self.pcf
-	and !(PartCtrl_DuplicateFx[self.pcf] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == PartCtrl_DuplicateFx[self.pcf][self.name]) then
+	and !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == self.pcf)
+	and !(PartCtrl_ProcessedPCFs[self.pcf][self.name].duplicate_effect and PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == PartCtrl_ProcessedPCFs[self.pcf][self.name].duplicate_effect) then
 		local mdef_width = math.min(w,h) * 0.5
 		surface.SetDrawColor(0,0,0,64)
 		surface.DrawRect(0 + bd, 0 + bd, w - (bd*2), h - (bd*2))
@@ -297,8 +297,8 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							for k, v in pairs (PartCtrl_PCFsByParticleName[name]) do
 								if PartCtrl_PCFsWithConflicts[k] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
 									text = text .. "\n" .. k
-									if PartCtrl_DuplicateFx[k] and PartCtrl_DuplicateFx[k][name] then
-										text = text .. " (duplicate of " .. PartCtrl_DuplicateFx[k][name] .. ")"
+									if PartCtrl_ProcessedPCFs[k][name] and PartCtrl_ProcessedPCFs[k][name].duplicate_effect then
+										text = text .. " (duplicate of " .. PartCtrl_ProcessedPCFs[k][name].duplicate_effect .. ")"
 									elseif isstring(v) then
 										text = text .. " (" .. v .. ")" //list pcfs where this effect is defined but culled
 									end
@@ -321,6 +321,11 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						end
 					else
 						tooltip = tooltip .. "\n(Scripted Effect)"
+					end
+
+					if PartCtrl_ProcessedPCFs[pcf][name].duplicate_effect then
+						tooltip = tooltip .. "\n\nThis effect is a duplicate of " .. PartCtrl_ProcessedPCFs[pcf][name].duplicate_effect .. "'s " .. name .. "."
+						table.insert(self.icons, {["icon"] = Material("icon16/page_paste.png")})
 					end
 			
 					local types = {}
@@ -391,13 +396,6 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					--[[for i = 1, 20 do
 						table.insert(self.icons, {["icon"] = icon_test, ["num"] = i})
 					end]]
-
-					//test: unique icon for duplicate fx to make sure we didn't miss any
-					if PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][name] then
-						table.insert(self.icons, {["icon"] = Material("icon16/page_paste.png")})
-					end
-
-			
 				end
 				self.tooltip = tooltip
 			end

@@ -505,6 +505,9 @@ hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
 	end
 	if default_blacklist[filename] then
 		for k, v in pairs (tab) do
+			//TODO: this whole method sucks, we really want to detect these through code instead of manually hard-coding a list of dupes.
+			//leaving this intact for now for the sake of comparison, so once auto-detection is implemented, it can be compared to the manual
+			//list to see which ones it fails to detect.
 			//if duplicates is present, flag all listed fx as dupes
 			if default_blacklist[filename].duplicates and default_blacklist[filename].duplicates[k] then
 				tab[k].duplicate_effect = default_blacklist[filename].duplicates[k]
@@ -5449,17 +5452,6 @@ function PartCtrl_ProcessPCF(filename)
 		//Now that the processed table is finished, let hook funcs modify it arbitrarily (including deciding which fx to cull)
 		hook.Call("PartCtrl_PostProcessPCF", nil, filename, t2)
 		for particle, _ in pairs (t2) do
-			if t2[particle].duplicate_effect then //this has to be set manually by the hook func above, since visually identical fx can still have minor pcf info differences
-				PartCtrl_DuplicateFx[filename] = PartCtrl_DuplicateFx[filename] or {}
-				PartCtrl_DuplicateFx[filename][particle] = t2[particle].duplicate_effect
-				local shouldcull = t2[particle].shouldcull
-				if shouldcull then
-					shouldcull = shouldcull .. "\n\n"
-				else
-					shouldcull = ""
-				end
-				t2[particle].shouldcull = shouldcull .. "This effect is a duplicate of " .. t2[particle].duplicate_effect .. "'s " .. particle .. "."
-			end
 			//Cull bad effects from the table.
 			//If the player starts up the game in developer mode, effects aren't culled, but instead have a warning on the spawnicon telling the dev why they won't show up to players.
 			if t2[particle].shouldcull and GetConVarNumber("developer") < 1 then
@@ -5774,7 +5766,6 @@ function PartCtrl_ReadAndProcessPCFs()
 	
 	PartCtrl_PCFsByParticleName = {}
 	PartCtrl_PCFsByParticleName_CurrentlyLoaded = {}
-	PartCtrl_DuplicateFx = {}
 	PartCtrl_PCFsWithConflicts = {}
 
 	PartCtrl_ProcessedPCFs = {}
@@ -5797,7 +5788,7 @@ function PartCtrl_ReadAndProcessPCFs()
 		//a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
 		if CLIENT then
 			for name, _ in pairs (pcftab) do
-				if !(PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][name]) and table.Count(PartCtrl_PCFsByParticleName[name]) > 1 then
+				if !pcftab[name].duplicate_effect and table.Count(PartCtrl_PCFsByParticleName[name]) > 1 then
 					PartCtrl_PCFsWithConflicts[pcf] = true 
 					break
 				end
@@ -6448,8 +6439,8 @@ if CLIENT then
 			if effectname then
 				//If this function is being called by a spawnicon or particle entity, then only check its one effect for overrides.
 				//Otherwise, we don't care, and running game.AddParticles(pcf) again would just cause an unnecessary stutter.
-				if PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] != pcf 
-				and !(PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][effectname] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] == PartCtrl_DuplicateFx[pcf][effectname]) then
+				if !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] == pcf)
+				and !(PartCtrl_ProcessedPCFs[pcf][effectname].duplicate_effect and PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] == PartCtrl_ProcessedPCFs[pcf][effectname].duplicate_effect) then
 					for k, _ in pairs (PartCtrl_PCFsByParticleName[effectname]) do
 						tab[k] = true
 					end
@@ -6490,8 +6481,8 @@ if CLIENT then
 			table.insert(PartCtrl_AddParticles_AddedParticles, pcf)
 
 			for effectname, _ in pairs (PartCtrl_ProcessedPCFs[pcf]) do
-				if PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][effectname] then
-					PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] = PartCtrl_DuplicateFx[pcf][effectname]
+				if PartCtrl_ProcessedPCFs[pcf][effectname].duplicate_effect then
+					PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] = PartCtrl_ProcessedPCFs[pcf][effectname].duplicate_effect
 				else
 					PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] = pcf
 				end
