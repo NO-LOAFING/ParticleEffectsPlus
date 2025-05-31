@@ -5816,6 +5816,116 @@ function PartCtrl_ReadAndProcessPCFs()
 
 end
 
+function PartCtrl_CategorizePCFs() //TODO: integrate this into the above func later, this will be used for duplicate fx detection
+
+	local allpcfs = {}
+	for _, v in pairs (PartCtrl_AllPCFPaths) do
+		allpcfs[v] = true
+	end
+
+	local function AddPCFsToSet(tab, dir, path)
+		local files, dirs = file.Find(dir .. "*", path)
+		if files then
+			local dir_clean = dir
+			//Legacy addons will have a file path starting with the addon folder instead of the particle folder, so trim that stuff out
+			//(i.e. turn addons/test_onlyparticles/particles/ukmovement.pcf into particles/ukmovement.pcf)
+			if !string.StartsWith(dir, "particles") then
+				local start, _, _ = string.find(dir, "/particles", 1, true) //this will break if someone names a legacy addon literally just "particles", OH WELL
+				if start then
+					dir_clean = string.sub(dir, start + 1)
+				end
+			end
+			for _, filename in SortedPairsByValue (files) do
+				local fallbacks = PartCtrl_FallbackPCFs[dir_clean .. filename]
+				if fallbacks and fallbacks[path] then
+					//For a game folder, add the fallback pcf for the file if applicable, instead of the mounted file
+					local path2 = fallbacks[path].path or path
+					filename = "particles/partctrl_fallbacks/" .. path2 .. "/" .. filename
+				else
+					filename = dir_clean .. filename
+				end
+				if allpcfs[filename] then
+					table.insert(tab, filename)
+					allpcfs[filename] = nil
+				end
+			end
+		end
+		if dirs then
+			for _, dirname in SortedPairsByValue (dirs) do
+				if dirname == "partctrl_fallbacks" then continue end //don't check this folder, instead we add fallback pcfs by checking per game above
+				AddPCFsToSet(tab, dir .. dirname .. "/", path)
+			end
+		end
+	end
+
+
+	//First, categorize all the pcfs by searching for them in load priority order
+
+	local pcfs_sorted = {}
+	for i = 1, 7 do
+		pcfs_sorted[i] = {}
+	end
+
+	//1: packed into bsp
+	AddPCFsToSet(pcfs_sorted[1], "particles/", "BSP")
+
+	//2: legacy addons
+	local addon_particles = {}
+	local _, particle_folders = file.Find("addons/*", "MOD")
+	for _, addon in SortedPairs(particle_folders) do
+		if !file.IsDir("addons/" .. addon .. "/particles/", "MOD") then continue end
+		table.insert(addon_particles, addon)
+	end
+	for _, addon in SortedPairsByValue(addon_particles) do
+		AddPCFsToSet(pcfs_sorted[2], "addons/" .. addon .. "/particles/", "MOD")
+	end
+
+	//3: workshop addons
+	for _, addon in SortedPairs(engine.GetAddons()) do
+		if !addon.downloaded then continue end
+		if !addon.mounted then continue end
+		if !table.HasValue(select(2, file.Find("*", addon.title)), "particles") then continue end
+		AddPCFsToSet(pcfs_sorted[3], "particles/", addon.title)
+	end
+
+	//4: garrysmod/particles/ folder
+	AddPCFsToSet(pcfs_sorted[4], "particles/", "garrysmod")
+
+	//5: mounted games
+	for _, game in SortedPairs(engine.GetGames()) do
+		if !game.mounted then continue end
+		AddPCFsToSet(pcfs_sorted[5], "particles/", game.folder)
+	end
+
+	//6: garrysmod/download/ folder
+	AddPCFsToSet(pcfs_sorted[6], "download/particles/", "MOD")
+
+	//7: anything we missed somehow (this shouldn't happen)
+	for k, _ in SortedPairs(allpcfs) do
+		table.insert(pcfs_sorted[7], k)
+	end
+
+
+	//TODO: sort sets into hierarchical order for dupe detection (the more "permanent" something is, the higher priority we should assign to it for 
+	//dupe detection; i.e. garrysmod/particles/ are always installed, so its fx should always be considered the "originals" in terms of dupe detection, 
+	//while on the other end of the spectrum, bsp particles and server downloads are transient and should never take priority over other sources)
+	//
+	//1: garrysmod/particles/ folder
+	//2: games
+	//3: legacy addons
+	//4: workshop addons
+	//5: garrysmod/download/ folder
+	//6: packed into bsp
+	//7: other
+
+
+	//TODO: run AddParticles in reverse pcfs_sorted order
+
+
+	PrintTable(pcfs_sorted)
+
+end
+
 
 
 
