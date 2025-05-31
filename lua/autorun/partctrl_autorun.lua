@@ -4916,6 +4916,7 @@ function PartCtrl_ProcessPCF(filename)
 	if !t then
 		if dodebug then MsgN("PartCtrl: ", filename, " couldn't be read") end
 	else
+		PartCtrl_CachedReadPCFs[filename] = t
 		local t2 = {}
 		for particle, ptab in pairs (t) do
 			local processed = {
@@ -5767,6 +5768,7 @@ function PartCtrl_ReadAndProcessPCFs()
 	PartCtrl_PCFsByParticleName = {}
 	PartCtrl_PCFsByParticleName_CurrentlyLoaded = {}
 	PartCtrl_PCFsWithConflicts = {}
+	PartCtrl_CachedReadPCFs = {} //cache these so that dupe detection doesn't have to waste several seconds reading all of them again
 
 	PartCtrl_ProcessedPCFs = {}
 	for _, filename in pairs (PartCtrl_AllPCFPaths) do
@@ -5819,9 +5821,10 @@ end
 function PartCtrl_CategorizePCFs() //TODO: integrate this into the above func later, this will be used for duplicate fx detection
 
 	local allpcfs = {}
-	for _, v in pairs (PartCtrl_AllPCFPaths) do
-		allpcfs[v] = true
+	for k, _ in pairs (PartCtrl_ProcessedPCFs) do
+		allpcfs[k] = true
 	end
+	allpcfs.UtilFx = nil
 
 	local function AddPCFsToSet(tab, dir, path)
 		local files, dirs = file.Find(dir .. "*", path)
@@ -5860,7 +5863,6 @@ function PartCtrl_CategorizePCFs() //TODO: integrate this into the above func la
 
 
 	//First, categorize all the pcfs by searching for them in load priority order
-
 	local pcfs_sorted = {}
 	for i = 1, 7 do
 		pcfs_sorted[i] = {}
@@ -5906,24 +5908,193 @@ function PartCtrl_CategorizePCFs() //TODO: integrate this into the above func la
 	end
 
 
-	//TODO: sort sets into hierarchical order for dupe detection (the more "permanent" something is, the higher priority we should assign to it for 
-	//dupe detection; i.e. garrysmod/particles/ are always installed, so its fx should always be considered the "originals" in terms of dupe detection, 
-	//while on the other end of the spectrum, bsp particles and server downloads are transient and should never take priority over other sources)
-	//
-	//1: garrysmod/particles/ folder
-	//2: games
-	//3: legacy addons
-	//4: workshop addons
-	//5: garrysmod/download/ folder
-	//6: packed into bsp
-	//7: other
+	//sort sets into hierarchical order for dupe detection (the more "permanent" something is, the higher priority we should assign to it for dupe 
+	//detection; i.e. garrysmod/particles/ are always installed, so its fx should always be considered the "originals" in terms of dupe detection,
+	//followed by mounted games, which are above addons because it would be absurd to consider a valve game to be derivative of a gmod addon; bsp 
+	//particles and server downloads are at the end because they're transient and should never take priority over other sources)
+	PartCtrl_PCFsByParticleName_New = {} //TODO: should replace the existing one once we integrate this into the function above
+	local pcfs_dupe_order = {}
+	table.Add(pcfs_dupe_order, pcfs_sorted[4]) //1: garrysmod/particles/ folder
+	table.Add(pcfs_dupe_order, pcfs_sorted[5]) //2: games
+	table.Add(pcfs_dupe_order, pcfs_sorted[2]) //3: legacy addons
+	table.Add(pcfs_dupe_order, pcfs_sorted[3]) //4: workshop addons
+	table.Add(pcfs_dupe_order, pcfs_sorted[6]) //5: garrysmod/download/ folder
+	table.Add(pcfs_dupe_order, pcfs_sorted[1]) //6: packed into bsp
+	table.Add(pcfs_dupe_order, pcfs_sorted[7]) //7: other
+
+	--[[PartCtrl_CachedReadPCFs = {}
+	for _, filename in pairs (pcfs_dupe_order) do
+		PartCtrl_CachedReadPCFs[filename] = PartCtrl_ReadPCF(filename)
+	end]]
+
+	for _, filename in SortedPairs (pcfs_dupe_order) do
+		local dupe_candidates = {}
+		for effect, _ in pairs (PartCtrl_ProcessedPCFs[filename]) do
+			PartCtrl_PCFsByParticleName_New[effect] = PartCtrl_PCFsByParticleName_New[effect] or {}
+			for _, filename2 in pairs (PartCtrl_PCFsByParticleName_New[effect]) do
+				//Compare the effect to all other fx of the same name (except the ones that we know 
+				//are dupes themselves) to determine if this effect is a duplicate of one of them
+				//if !PartCtrl_ProcessedPCFs[filename2][effect].duplicate_effect_new then
+				//if !dupe_candidates[effect] then
+				if dupe_candidates[effect] then break end
+				local is_dupe = true
+				local function CompareTables(t1, t2, level, table_name_for_debug)
+					if !is_dupe then return end
+					local operator_tables = {
+						["constraints"] = true,
+						["emitters"] = true,
+						["forces"] = true,
+						["initializers"] = true,
+						["operators"] = true,
+						["renderers"] = true,
+					}
+
+					local allkeys = {}
+					for k, _ in pairs (t1) do
+						allkeys[k] = true
+					end
+					for k, _ in pairs (t2) do
+						allkeys[k] = true
+					end
+					for k, _ in SortedPairsLower (allkeys) do
+						if !is_dupe then return end
+						if t1[k] and t2[k] then //if a value exists in one table but not another, then ignore it; newer pcf versions omit keys with default values, but older versions don't
+							if istable(t1[k]) and istable(t2[k]) then
+								if level == 1 and table.IsSequential(t1[k]) then
+									//if a sequential table (list of children or operators) has a mismatched count,
+									//then it's different, don't bother comparing them
+									if #t1[k] != #t2[k] then
+										MsgN(table_name_for_debug, ".", k, ": table count ", #t1[k], " != ", #t2[k])
+										is_dupe = false
+										return
+									end
+									//special handling for operator/child lists to order their subtables by functionName or child,
+									//to catch cases where fx have the same items listed in a different order
+									if operator_tables[k] then
+										table.SortByMember(t1[k], "functionName", true)
+										table.SortByMember(t2[k], "functionName", true)
+									elseif k == "children" then
+										table.SortByMember(t1[k], "child", true)
+										table.SortByMember(t2[k], "child", true)
+									end
+								end
+								local d = table_name_for_debug .. "." .. k
+								if t1[k].functionName then
+									d = d .. "(" .. t1[k].functionName .. ")"
+								elseif t1[k].child then
+									d = d .. "(" .. t1[k].child .. ")"
+								end
+								CompareTables(t1[k], t2[k], level + 1, d)
+							else
+								//catch cases where values refer to the same file path, but with mismatched slashes
+								if isstring(t1[k]) then
+									t1[k] = string.Replace(t1[k], "\\", "/")
+								end
+								if isstring(t2[k]) then
+									t2[k] = string.Replace(t2[k], "\\", "/")
+								end
+								//if values don't match, then it's not a dupe
+								if t1[k] != t2[k] then
+									MsgN(table_name_for_debug, ".", k, ": ", t1[k], " != ", t2[k])
+									is_dupe = false
+									return
+								end
+							end
+						end
+					end
+				end
+				CompareTables(PartCtrl_CachedReadPCFs[filename][effect], PartCtrl_CachedReadPCFs[filename2][effect], 1, filename .. "/" .. filename2 .. ": " .. effect)
+				if is_dupe then
+					dupe_candidates[effect] = filename2
+					break
+				end
+			end
+			table.insert(PartCtrl_PCFsByParticleName_New[effect], filename)
+		end
+		//Double check to make sure all the children of an effect are dupes as well
+		for effect, v in pairs (dupe_candidates) do
+			children_all_dupes = true
+			local function CheckIfChildrenAreDupes(effect2)
+				if !children_all_dupes then return end
+				for _, tab in pairs (PartCtrl_ProcessedPCFs[filename][effect2].children) do
+					if !dupe_candidates[tab.child] then
+						children_all_dupes = false
+						MsgN(filename .. "/" .. dupe_candidates[effect] .. ": " .. effect .. ": child " .. tab.child .. " isn't a dupe")
+						return
+					else
+						CheckIfChildrenAreDupes(tab.child)
+					end
+				end
+			end
+			CheckIfChildrenAreDupes(effect)
+			if children_all_dupes then
+				PartCtrl_ProcessedPCFs[filename][effect].duplicate_effect_new = v
+			end
+		end
+	end
 
 
 	//TODO: run AddParticles in reverse pcfs_sorted order
 
 
-	PrintTable(pcfs_sorted)
+	//PrintTable(pcfs_sorted)
 
+end
+
+//test func to compare old manual dupes and new auto-detected dupes
+function PartCtrl_CompareDupes()
+	local tab1 = {}
+	local tab2 = {}
+	for pcf, _ in SortedPairs (PartCtrl_ProcessedPCFs) do
+		for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do
+			if PartCtrl_ProcessedPCFs[pcf][particle].duplicate_effect then
+				tab1[pcf] = tab1[pcf] or {}
+				tab1[pcf][particle] = PartCtrl_ProcessedPCFs[pcf][particle].duplicate_effect
+			end
+			if PartCtrl_ProcessedPCFs[pcf][particle].duplicate_effect_new then
+				tab2[pcf] = tab2[pcf] or {}
+				tab2[pcf][particle] = PartCtrl_ProcessedPCFs[pcf][particle].duplicate_effect_new
+			end
+		end
+	end
+
+	local results = {}
+	local allkeys = {}
+	for k, _ in pairs (tab1) do
+		allkeys[k] = true
+	end
+	for k, _ in pairs (tab2) do
+		allkeys[k] = true
+	end
+	for k, _ in pairs (allkeys) do
+		local allkeys2 = {}
+		if tab1[k] then
+			for k2, _ in pairs (tab1[k]) do
+				allkeys2[k2] = true
+			end
+		end
+		if tab2[k] then
+			for k2, _ in pairs (tab2[k]) do
+				allkeys2[k2] = true
+			end
+		end
+		for k2, _ in pairs (allkeys2) do
+			local result1 = nil
+			local result2 = nil
+			if tab1[k] and tab1[k][k2] then
+				result1 = tab1[k][k2]
+			end
+			if tab2[k] and tab2[k][k2] then
+				result2 = tab2[k][k2]
+			end
+			if result1 != result2 then
+				results[k] = results[k] or {}
+				results[k][k2] = "old " .. tostring(result1) .. " != new " .. tostring(result2)
+			end
+		end
+	end
+
+	PrintTable(results)
 end
 
 
@@ -6405,6 +6576,8 @@ if CLIENT then
 		searchParticles = nil //force search to rebuild search cache so any new fx will be found
 		MsgN("Reloading ", str, " on client ", LocalPlayer())
 
+		//TODO: handle duplicate fx detection again
+
 		//refresh spawnicons (this is handled by the think hook in contenticon_partctrl.lua)
 		if PartCtrl_IconFx and PartCtrl_IconFx[str] then
 			for name, _ in pairs (PartCtrl_IconFx[str]) do
@@ -6440,6 +6613,8 @@ else
 		end
 		searchParticles = nil //force search to rebuild search cache so any new fx will be found
 		MsgN("Reloading ", str, " on server")
+
+		//TODO: handle duplicate fx detection again
 
 		//now send the update to all players
 		net.Start("PartCtrl_ReloadPCF_SendToCl")
