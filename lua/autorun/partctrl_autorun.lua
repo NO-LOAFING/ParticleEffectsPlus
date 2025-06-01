@@ -3629,84 +3629,6 @@ function PartCtrl_GetMapFx()
 end
 
 
-//test: try getting duplicate fx automatically through code
-//there's a few reasons this doesn't work well:
-//A: PartCtrl_PCFsOrdered is mostly alphabetical and doesn't reflect the hierarchy we'd actually want (fx from games can be duplicates of fx from gmod, and
-//fx from the tf2 map particles addon can be duplicates of fx from tf2, but otherwise we have to consider fx equal and can't make assumptions - for example,
-//if a portal2 and l4d2 effect are identical, then saves of those effects still need to work no matter which combination of games are mounted; we don't want
-//to make a save of a l4d2 effect, and then mount portal2, have it become considered a duplicate of a portal 2 effect, and no longer work, OR, inversely,
-//start off with both games mounted, save an effect that's considered a dupe, then unmount one game, and have it no longer work when it's no longer a dupe
-//because it's referencing the effect from the other game we unmounted instead)
-//B: this only detects fx that are 100% identical via a checksum. there are also fx that have omitted values but are still functionally identical (compare fx 
-//from the gmod, hl2, and portal2 versions of fire_01.pcf), and comparing those would be a lot more time-consuming, because we'd have to individually compare 
-//every set of non-nil values between the two effect tables (see PartCtrl_ComparePCFs), for *every potential combination of effects using the same name*.
-function PartCtrl_GetDuplicateFx()
-
-	local function SortedPairsByPCFOrder(pTable)
-		local keys = table.GetKeys(pTable) //use the global getkeys instead of the local one used in the SortedPairs code, so we don't have to copy as much
-		table.sort(keys, function(a, b)
-			return table.KeyFromValue(PartCtrl_PCFsOrdered, a) > table.KeyFromValue(PartCtrl_PCFsOrdered, b)
-		end)
-	
-		local i, key = 1, nil
-		return function()
-			key, i = keys[ i ], i + 1
-			return key, pTable[ key ]
-		end
-	end
-
-	local rawpcfs = {}
-	local dupes = {}
-	for name, effecttab in pairs (PartCtrl_PCFsByParticleName) do
-		if table.Count(effecttab) > 1 then
-			local checksums = {}
-			for pcf, _ in pairs (effecttab) do
-				rawpcfs[pcf] = rawpcfs[pcf] or PartCtrl_ReadPCF(pcf)
-				checksums[pcf] = util.SHA256(util.TableToJSON(rawpcfs[pcf][name]))
-			end
-			if name == "fire_large_01" then PrintTable(checksums) end
-			local checksum_dupes = {}
-			for pcf, checksum in SortedPairsByPCFOrder (checksums) do
-				checksum_dupes[checksum] = checksum_dupes[checksum] or {["original"] = pcf, ["count"] = 0}
-				checksum_dupes[checksum].count = checksum_dupes[checksum].count + 1
-				if checksum_dupes[checksum].count > 1 then
-					dupes[pcf] = dupes[pcf] or {}
-					dupes[pcf][name] = checksum_dupes[checksum].original
-				end
-			end
-		end
-	end
-	for pcf, pcftab in pairs (dupes) do
-		if !PartCtrl_ProcessedPCFs[pcf] then continue end
-		for name, _ in pairs (pcftab) do
-			if !PartCtrl_ProcessedPCFs[pcf][name] then continue end
-			for _, child in pairs (PartCtrl_ProcessedPCFs[pcf][name].children) do
-				//if an effect appears to be a dupe, but its child isn't, then it's not a dupe
-				if !dupes[pcf][child.child] then
-					dupes[pcf][name] = nil
-					break 
-				end
-			end
-		end
-	end
-	PrintTable(dupes)
-
-end
-//another test: try getting a list of all conflicting fx in a pcf, for reference; this table is too long to print unfortunately
---[[if CLIENT then
-	local conflicts = {}
-	for name, effecttab in pairs (PartCtrl_PCFsByParticleName) do
-		if table.Count(effecttab) > 1 then
-			for pcf, _ in pairs (effecttab) do
-				conflicts[pcf] = conflicts[pcf] or {}
-				conflicts[pcf][name] = true
-			end
-		end
-	end
-	PrintTable(conflicts)
-end]]
-
-
 //For reference:
 //Orangebox particle code: https://github.com/nillerusr/source-engine/tree/master/particles
 //Newer (Portal 2/Alien Swarm/CSGO-era?) particle code: https://github.com/nillerusr/Kisak-Strike/tree/master/particles
@@ -5667,11 +5589,6 @@ function PartCtrl_ReadAndProcessPCFs()
 	//- portal2's neurotoxins.pcf: this is portal 1's neurotoxins.pcf except neurotoxins_step2 spawns more particles, not worth it
 	//- portal2's water_leaks.pcf: this is hl2's water_leaks.pcf except WaterLeak_Pipe_1_TrailDrops_1 is different (and makes parent fx look worse); not worth it
 	//Notes:
-	//- left4dead2's electrical_fx.pcf has a lot of duplicate fx from hl2's electrical_fx.pcf, but that's not a stock gmod effect. so we can't blacklist the dupes 
-	//  and guarantee the player has hl2 installed, we'll just have to live with them
-	//- swarm's electrical_fx.pcf has a lot of duplicate fx from both hl2's and left4dead2's, but again, same problem, we can't guarantee which games are installed
-	//- just about all the fx in portal 1 that weren't updated in portal 2 are included somewhere in it as duplicates, but often in different pcf files, not much we 
-	//  can do there
 	//- portal2's environmental_fx.pcf is just a few fx copied from left4dead2's environmental_fx.pcf, and one unique one called case_bubbles; this sucks but having 
 	//  a fallback for it is better than having the pcf change drastically depending on what games you have installed
 	local _, dirs = file.Find("particles/partctrl_fallbacks/*", "GAME")
@@ -5767,7 +5684,6 @@ function PartCtrl_ReadAndProcessPCFs()
 	
 	PartCtrl_PCFsByParticleName = {}
 	PartCtrl_PCFsByParticleName_CurrentlyLoaded = {}
-	PartCtrl_PCFsWithConflicts = {}
 	PartCtrl_CachedReadPCFs = {} //cache these so that dupe detection doesn't have to waste several seconds reading all of them again
 
 	PartCtrl_ProcessedPCFs = {}
@@ -5775,51 +5691,8 @@ function PartCtrl_ReadAndProcessPCFs()
 		PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
 	end
 
-	local dofirst = {}
-	local dosecond = {}
-	for pcf, pcftab in SortedPairs (PartCtrl_ProcessedPCFs) do
-		//Run game.AddParticles on fallback pcfs before normal pcfs, so the normal ones override them by default;
-		//this prevents TF2's blood fx from becoming the default when you shoot an NPC, for instance
-		if string.StartsWith(pcf, "particles/partctrl_fallbacks/") then
-			table.insert(dofirst, pcf)
-		else
-			table.insert(dosecond, pcf)
-		end
 
-		//Build PartCtrl_PCFsWithConflicts for spawnicon conflicting pcf lists: if every single conflicting effect in
-		//a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
-		if CLIENT then
-			for name, _ in pairs (pcftab) do
-				if !pcftab[name].duplicate_effect and table.Count(PartCtrl_PCFsByParticleName[name]) > 1 then
-					PartCtrl_PCFsWithConflicts[pcf] = true 
-					break
-				end
-			end
-		end
-	end
-	table.Add(dofirst, dosecond)
-	PartCtrl_PCFsOrdered = dofirst
-
-	for _, filename in pairs (PartCtrl_PCFsOrdered) do
-		//MsgN(filename)
-		if CLIENT then
-			PartCtrl_AddParticles(filename)
-		else
-			game.AddParticles(filename)
-		end
-	end
-
-	//add util fx to this table as well, so that particle entities and spawnicons can use them natively
-	PartCtrl_ProcessUtilFx()
-
-	PartCtrl_ReadAndProcessPCFs_StartupHasRun = true
-
-	if dodebug then MsgN("PartCtrl: PartCtrl_ReadAndProcessPCFs took " , SysTime() - starttime, " secs") end
-
-end
-
-function PartCtrl_CategorizePCFs() //TODO: integrate this into the above func later, this will be used for duplicate fx detection
-
+	//Categorize all the pcfs by searching for them in load priority order
 	local allpcfs = {}
 	for k, _ in pairs (PartCtrl_ProcessedPCFs) do
 		allpcfs[k] = true
@@ -5861,8 +5734,6 @@ function PartCtrl_CategorizePCFs() //TODO: integrate this into the above func la
 		end
 	end
 
-
-	//First, categorize all the pcfs by searching for them in load priority order
 	local pcfs_sorted = {}
 	for i = 1, 7 do
 		pcfs_sorted[i] = {}
@@ -5906,29 +5777,64 @@ function PartCtrl_CategorizePCFs() //TODO: integrate this into the above func la
 	for k, _ in SortedPairs(allpcfs) do
 		table.insert(pcfs_sorted[7], k)
 	end
+	//PrintTable(pcfs_sorted)
 
 
 	//sort sets into hierarchical order for dupe detection (the more "permanent" something is, the higher priority we should assign to it for dupe 
 	//detection; i.e. garrysmod/particles/ are always installed, so its fx should always be considered the "originals" in terms of dupe detection,
 	//followed by mounted games, which are above addons because it would be absurd to consider a valve game to be derivative of a gmod addon; bsp 
 	//particles and server downloads are at the end because they're transient and should never take priority over other sources)
-	PartCtrl_PCFsByParticleName_New = {} //TODO: should replace the existing one once we integrate this into the function above
 	local pcfs_dupe_order = {}
-	table.Add(pcfs_dupe_order, pcfs_sorted[4]) //1: garrysmod/particles/ folder
-	table.Add(pcfs_dupe_order, pcfs_sorted[5]) //2: games
-	table.Add(pcfs_dupe_order, pcfs_sorted[2]) //3: legacy addons
-	table.Add(pcfs_dupe_order, pcfs_sorted[3]) //4: workshop addons
-	table.Add(pcfs_dupe_order, pcfs_sorted[6]) //5: garrysmod/download/ folder
-	table.Add(pcfs_dupe_order, pcfs_sorted[1]) //6: packed into bsp
-	table.Add(pcfs_dupe_order, pcfs_sorted[7]) //7: other
+	table.Add(pcfs_dupe_order, pcfs_sorted[4]) //garrysmod/particles/ folder
+	table.Add(pcfs_dupe_order, pcfs_sorted[5]) //games
+	table.Add(pcfs_dupe_order, pcfs_sorted[2]) //legacy addons
+	table.Add(pcfs_dupe_order, pcfs_sorted[3]) //workshop addons
+	table.Add(pcfs_dupe_order, pcfs_sorted[6]) //garrysmod/download/ folder
+	table.Add(pcfs_dupe_order, pcfs_sorted[1]) //packed into bsp
+	table.Add(pcfs_dupe_order, pcfs_sorted[7]) //other
+	PartCtrl_PCFsInDupeOrder = pcfs_dupe_order //global so that PartCtrl_GetDuplicateFx can be run again later without rebuilding this table
+	PartCtrl_GetDuplicateFx()
 
-	--[[PartCtrl_CachedReadPCFs = {}
-	for _, filename in pairs (pcfs_dupe_order) do
-		PartCtrl_CachedReadPCFs[filename] = PartCtrl_ReadPCF(filename)
-	end]]
 
-	for _, filename in SortedPairs (pcfs_dupe_order) do
-		local dodebug = filename == "particles/rain_fx_unused.pcf"
+	//Run AddParticles in another particular order, so things like gmod fx take priority by default;
+	//this prevents TF2's blood fx from becoming the default when you shoot an NPC, for instance
+	//NOTE: had to put gmod+games above addons to prevent an issue where tf2 map particles addon's 
+	//particles/brine_salmann_goop.pcf would unintentionally override the default blood fx, is this bad? 
+	//could this cause issues with other addons i'm not aware of that try to override gmod or game fx?
+	local pcfs_load_order = {}
+	table.Add(pcfs_load_order, pcfs_sorted[1]) //packed into bsp
+	table.Add(pcfs_load_order, pcfs_sorted[4]) //garrysmod/particles/ folder
+	table.Add(pcfs_load_order, pcfs_sorted[5]) //games
+	table.Add(pcfs_load_order, pcfs_sorted[2]) //legacy addons
+	table.Add(pcfs_load_order, pcfs_sorted[3]) //workshop addons
+	table.Add(pcfs_load_order, pcfs_sorted[6]) //garrysmod/download/ folder
+	table.Add(pcfs_load_order, pcfs_sorted[7]) //other
+	for _, filename in SortedPairs (pcfs_load_order, true) do
+		//MsgN("running AddParticles for ", filename)
+		if CLIENT then
+			PartCtrl_AddParticles(filename)
+		else
+			game.AddParticles(filename)
+		end
+	end
+
+
+	//add util fx to this table as well, so that particle entities and spawnicons can use them natively
+	PartCtrl_ProcessUtilFx()
+
+	PartCtrl_ReadAndProcessPCFs_StartupHasRun = true
+
+	if dodebug then MsgN("PartCtrl: PartCtrl_ReadAndProcessPCFs took " , SysTime() - starttime, " secs") end
+
+end
+
+
+function PartCtrl_GetDuplicateFx()
+
+	PartCtrl_PCFsByParticleName_New = {} //TODO: should replace the existing one once this is fully integrated
+
+	for _, filename in SortedPairs (PartCtrl_PCFsInDupeOrder) do
+		//local dodebug = filename == "particles/rain_fx_unused.pcf"
 		local dupe_candidates = {}
 		for effect, _ in SortedPairs (PartCtrl_ProcessedPCFs[filename]) do
 			//local dodebug = effect == "halloween_boss_foot_fire_customcolor"
@@ -6135,11 +6041,19 @@ function PartCtrl_CategorizePCFs() //TODO: integrate this into the above func la
 		end
 	end
 
-
-	//TODO: run AddParticles in reverse pcfs_sorted order
-
-
-	//PrintTable(pcfs_sorted)
+	//Build PartCtrl_PCFsWithConflicts for spawnicon conflicting pcf lists: if every single conflicting effect in
+	//a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
+	if CLIENT then
+		PartCtrl_PCFsWithConflicts = {}
+		for pcf, pcftab in pairs (PartCtrl_ProcessedPCFs) do
+			for name, _ in pairs (pcftab) do
+				if !pcftab[name].duplicate_effect and table.Count(PartCtrl_PCFsByParticleName[name]) > 1 then
+					PartCtrl_PCFsWithConflicts[pcf] = true 
+					break
+				end
+			end
+		end
+	end
 
 end
 
