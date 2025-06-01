@@ -291,16 +291,17 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					if !utilfx then
 						tooltip = tooltip .. "\n(" .. pcf .. ")"
 			
-						if table.Count(PartCtrl_PCFsByParticleName[name]) > 1 then
+						if #PartCtrl_PCFsByParticleName[name] > 1 then
 							local pcfs_added = 0
 							local text = "\n\nWarning: This particle effect name is defined in multiple files:"
-							for k, v in pairs (PartCtrl_PCFsByParticleName[name]) do
-								if PartCtrl_PCFsWithConflicts[k] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
-									text = text .. "\n" .. k
-									if PartCtrl_ProcessedPCFs[k][name] and PartCtrl_ProcessedPCFs[k][name].duplicate_effect then
-										text = text .. " (duplicate of " .. PartCtrl_ProcessedPCFs[k][name].duplicate_effect .. ")"
-									elseif isstring(v) then
-										text = text .. " (" .. v .. ")" //list pcfs where this effect is defined but culled
+							for _, v in pairs (PartCtrl_PCFsByParticleName[name]) do
+								if PartCtrl_PCFsWithConflicts[v] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
+									text = text .. "\n" .. v
+									if PartCtrl_ProcessedPCFs[v][name] and PartCtrl_ProcessedPCFs[v][name].duplicate_effect then
+										text = text .. " (duplicate of " .. PartCtrl_ProcessedPCFs[v][name].duplicate_effect .. ")"
+									end
+									if !PartCtrl_ProcessedPCFs[v] or !PartCtrl_ProcessedPCFs[v][name] or PartCtrl_ProcessedPCFs[v][name].shouldcull then
+										text = text .. " (culled)"
 									end
 									pcfs_added = pcfs_added + 1
 								end
@@ -593,7 +594,7 @@ function PANEL:OpenMenu()
 					if PartCtrl_ProcessedPCFs[self.pcf][child].shouldcull then //in developer mode, add warnings to culled fx
 						option2:SetImage("icon16/error.png")
 						//duplicate of text string from this panel's setup func, whatever
-						option2:SetTooltip("ERROR: This effect will not be loaded outside of developer mode.\n\n" .. tostring(PartCtrl_ProcessedPCFs[self.pcf][child].shouldcull))
+						option2:SetTooltip("NOTE: This effect will not be loaded outside of developer mode.\n\n" .. tostring(PartCtrl_ProcessedPCFs[self.pcf][child].shouldcull))
 					end
 				end
 			end

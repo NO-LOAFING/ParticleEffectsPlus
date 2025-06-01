@@ -42,135 +42,9 @@ local tf2_unusual_wep_pcfs = {
 	["particles/weapon_unusual_hot.pcf"] = true,
 	["particles/weapon_unusual_isotope.pcf"] = true
 }
-local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all useless duplicates with conflicting names"
+local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all useless duplicates of other unusual weapon fx with conflicting names"
 local crash_blacklist_text = "Blacklisted: causes crash when spawned"
-local dupe_fire = "particles/fire_01.pcf" //so many duplicates from this pcf
 local default_blacklist = {
-	//Half-Life 2 + Episodes
-	["particles/partctrl_fallbacks/hl2/fire_01.pcf"] = {
-		//file is functionally identical to gmod's fire_01.pcf, except for 2 new fx
-		duplicates_whitelist = {
-			smoke_skybox_01a = true,
-			smoke_skybox_01b = true,
-		},
-		duplicates_whitelist_fail = dupe_fire
-	},
-	["particles/partctrl_fallbacks/hl2/vortigaunt_fx.pcf"] = {
-		//some fx are slightly different from gmod's vortigaunt_fx.pcf
-		duplicates_whitelist = {
-			//vortigaunt_beam = true, //doesn't have child vortigaunt_glow_beam_cp0, so it's technically different, but who's going to use this?
-			//vortigaunt_charge_token = true,  //children are different
-			//vortigaunt_charge_token_b = true, //higher particle limit; can't tell if this is different honestly
-			//vortigaunt_charge_token_c = true, //higher particle limit; subtly brighter?
-			//vortigaunt_charge_token_d = true, //much higher particle limit, still barely visible unless it's dark
-			vortigaunt_hand_glow = true, //noticeably smaller, might actually be useful
-			vortigaunt_hand_glow_b = true, //^
-			vortigaunt_hand_glow_c = true, //^
-		},
-		duplicates_whitelist_fail = "particles/vortigaunt_fx.pcf"
-	},
-	//Counter-Strike: Source
-	["particles/partctrl_fallbacks/cstrike/fire_01.pcf"] = {
-		//file is functionally identical to gmod's fire_01.pcf, except for 1 new effect
-		duplicates_whitelist = {
-			bomb_explosion_huge = true,
-		},
-		duplicates_whitelist_fail = dupe_fire
-	},
-	//Team Fortress 2
-	["particles/partctrl_fallbacks/tf/impact_fx.pcf"] = {
-		duplicates = {
-			impact_generic_smoke = "particles/impact_fx.pcf", //dupe from gmod impact_fx.pcf; the rest of the effects in this pcf are unique
-		}
-	},
-	//Left 4 Dead 2
-	["particles/partctrl_fallbacks/left4dead2/fire_01.pcf"] = {
-		//contains a ton of duplicate fx from gmod's fire_01.pcf as well as a ton of unique ones; 
-		//there's slightly more good ones than bad, so doing a blacklist is shorter
-		duplicates = {
-			burning_gib_01_drag = dupe_fire,
-			burning_gib_01_follower2 = dupe_fire,
-			burning_gib_01b = dupe_fire,
-			burning_vehicle = dupe_fire,
-			burning_wood_01b = dupe_fire,
-			burning_wood_01c = dupe_fire,
-			embers_large_01 = dupe_fire,
-			embers_large_02 = dupe_fire,
-			embers_medium_01 = dupe_fire,
-			embers_medium_03 = dupe_fire,
-			embers_small_01 = dupe_fire,
-			env_embers_large = dupe_fire,
-			env_embers_medium = dupe_fire,
-			env_embers_medium_spread = dupe_fire,
-			env_embers_small = dupe_fire,
-			env_embers_small_spread = dupe_fire,
-			env_embers_tiny = dupe_fire,
-			env_fire_medium_spread_b = dupe_fire,
-			//explosion_huge = dupe_fire, //child explosion_huge_k (plume of flames) is different, so this isn't a dupe
-			explosion_huge_b = dupe_fire,
-			explosion_huge_burning_chunks = dupe_fire,
-			explosion_huge_c = dupe_fire,
-			explosion_huge_d = dupe_fire,
-			explosion_huge_e = dupe_fire,
-			explosion_huge_f = dupe_fire,
-			explosion_huge_g = dupe_fire,
-			explosion_huge_h = dupe_fire,
-			explosion_huge_j = dupe_fire,
-			explosion_huge_smoking_chunks = dupe_fire,
-			//explosion_silo = dupe_fire, //children explosion_huge_flames, explosion_huge_flames_b are different, so this isn't a dupe
-			//fire_large_01 = dupe_fire, //child smoke_large_01 is different, so this isn't a dupe
-			fire_large_02_filler = dupe_fire,
-			fire_large_02_fillerb = dupe_fire,
-			fire_large_base = dupe_fire,
-			fire_medium_01_glow = dupe_fire,
-			//fire_medium_02 = dupe_fire, //child smoke_medium_02 uses a different texture; it's very subtle, but it counts, so not a dupe
-			fire_medium_02_nosmoke = dupe_fire,
-			//fire_medium_03 = = dupe_fire, //child smoke_medium_02 uses a different texture; it's very subtle, but it counts, so not a dupe
-			//fire_medium_03_brownsmoke = dupe_fire, //child smoke_medium_02c has slightly fewer particles; it's very subtle, but it counts, so not a dupe
-			fire_medium_base = dupe_fire,
-			fire_medium_burst = dupe_fire,
-			fire_medium_heatwave = dupe_fire,
-			//fire_small_01 = dupe_fire, operator Oscillate Vector has different values that don't seem to make a difference, but child smoke_small_01 uses a different texture, so not a dupe
-			fire_small_02 = dupe_fire,
-			//fire_small_03 = dupe_fire, //child smoke_small_01 uses a different texture, so not a dupe
-			fire_small_base = dupe_fire,
-			fire_small_flameouts = dupe_fire,
-			fire_verysmall_01 = dupe_fire,
-			smoke_burning_engine_01 = dupe_fire, //has different bounding box size; no visible difference
-			smoke_exhaust_01a = dupe_fire, //lower max particle count, but no visible difference since it never gets near the cap
-			smoke_exhaust_01b = dupe_fire, //lower max particle count, but no visible difference since it never gets near the cap
-			smoke_large_01b = dupe_fire,
-			smoke_large_02b = dupe_fire,
-			smoke_medium_01 = dupe_fire,
-			Smoke_medium_02b = dupe_fire,
-			["Smoke_medium_02b Version #2"] = dupe_fire,
-			smoke_small_01b = dupe_fire,
-		}
-	},
-	["particles/fire_fx.pcf"] = {
-		//many unique fx, but a few dupes from gmod's fire_01.pcf
-		duplicates = {
-			burning_gib_01_drag = dupe_fire,
-			burning_gib_01_follower2 = dupe_fire,
-			embers_large_01 = dupe_fire,
-			fire_large_base = dupe_fire,
-			fire_medium_01_glow = dupe_fire,
-			fire_small_02 = dupe_fire,
-			fire_small_base = dupe_fire,
-			fire_small_flameouts = dupe_fire,
-			fire_verysmall_01 = dupe_fire,
-			smoke_large_01b = dupe_fire,
-			smoke_large_02b = dupe_fire,
-			smoke_medium_01 = dupe_fire,
-			["Smoke_medium_02b Version #2"] = dupe_fire,
-			smoke_small_01b = dupe_fire,
-		}
-	},
-	["particles/fire_infected_fx.pcf"] = {
-		duplicates = {
-			smoke_gib_01 = dupe_fire, //another gmod fire_01.pcf dupe
-		}
-	},
 	//Portal 2
 	["particles/chicken.pcf"] = {
 		blacklist = {
@@ -179,320 +53,16 @@ local default_blacklist = {
 			feathers_small = crash_blacklist_text,
 		}
 	},
-	["particles/partctrl_fallbacks/portal2/fire_01.pcf"] = {
-		//contains mostly duplicate fx from gmod's fire_01.pcf, except for the following:
-		duplicates_whitelist = {
-			burning_gib_01 = true,
-			burning_gib_01b = true,
-			fire_jet_01 = true,
-			fire_jet_01_flame = true,
-			fire_jet_02 = true,
-			fire_jet_billow = true,
-			fire_jet_billow2 = true,
-			fire_jet_billow_steam = true,
-			huge_flames = true,
-			huge_flames_b = true,
-			smoke_gib_01 = true,
-			smoke_small_01b = true,
-			turret_burning_gib_01 = true,
-			turret_smoke_gib1 = true,
-			turret_smoke_gib2 = true,
-		},
-		duplicates_whitelist_fail = dupe_fire
-	},
-	["particles/fire_01_unused.pcf"] = {
-		//contains mostly duplicate fx from gmod's fire_01.pcf, except for the following:
-		duplicates_whitelist = {
-			burning_engine_01 = true, //child burning_engine_fire is different
-			burning_engine_fire = true,
-			burning_gib_01 = true, //child smoke_gib_01 is different
-			burning_gib_01_follower1 = true, //child smoke_gib_01 is different
-			burning_gib_01_follower2 = true,
-			burning_gib_01b = true,
-			burning_wood_01b = true,
-			explosion_huge = true, //children explosion_huge_d and explosion_huge_g are different
-			explosion_huge_d = true,
-			explosion_huge_g = true,
-			explosion_silo = true, //children explosion_huge_d and explosion_huge_g are different
-			fire_jet_01 = true, //child fire_jet_01_flame is different
-			fire_jet_01_flame = true,
-			fire_large_01 = true, //child smoke_large_01 is different
-			fire_medium_02 = true, //child smoke_medium_02 is different
-			fire_medium_03 = true, //child smoke_medium_02 is different
-			fire_small_01 = true, //child smoke_small_01 is different
-			fire_small_03 = true, //child smoke_small_01 is different
-			smoke_gib_01 = true,
-			smoke_large_01 = true,
-			smoke_large_02 = true,
-			smoke_medium_02 = true,
-			["smoke_medium_02 Version #2"] = true,
-			smoke_small_01 = true,
-		},
-		duplicates_whitelist_fail = dupe_fire
-	},
-	["particles/partctrl_fallbacks/portal2/water_impact.pcf"] = {
-		//some dupes from gmod water_impact.pcf
-		duplicates = {
-			slime_splash_01 = "particles/water_impact.pcf",
-			slime_splash_01_droplets = "particles/water_impact.pcf",
-			slime_splash_01_reversed = "particles/water_impact.pcf",
-			slime_splash_01_surface = "particles/water_impact.pcf",
-			slime_splash_02 = "particles/water_impact.pcf",
-			slime_splash_03 = "particles/water_impact.pcf",
-			water_splash_02_droplets = "particles/water_impact.pcf",
-			water_splash_02_vertical = "particles/water_impact.pcf",
-		}
-	},
-	["particles/water_impact_unused.pcf"] = {
-		duplicates_whitelist = {
-			//mostly dupes from gmod's water_impact.pcf, but a few fx are slightly different or unique
-			water_foam_line_long = true,
-			water_foam_line_longb = true,
-			water_foam_line_longc = true,
-			water_foam_line_longd = true,
-			water_foam_line_medium = true,
-			water_foam_line_mediumb = true,
-			water_foam_line_mediumc = true,
-			water_foam_line_mediumd = true,
-			water_splash_01_surface4_impact = true,
-			water_splash_02_animated = true,
-		},
-		duplicates_whitelist_fail = "particles/water_impact.pcf"
-	},
-	//Alien Swarm 
-	["particles/vindincendgrenade.pcf"] = {
-		duplicates = {
-			explosion_huge_e = dupe_fire, //duplicate of effect from gmod's fire_01_pcf; the rest of the fx in this pcf with conflicting names are all unique
-		}
-	},
 	//TF2 map particles addon
 	["particles/nucleus_event_effects.pcf"] = {
 		blacklist = {
 			nucleus_core_steady = "Blacklisted: dupe of nucleus_event_core_steady, except it conflicts with a stock tf2 effect" //note: only reason this doesn't override the desired effect on koth_nucleus is because the game arbitrarily reads particles/level_fx.pcf after this one, which sucks; this isn't an issue on pd_circus because it doesn't actually use this effect
 		}
 	},
-	["particles/particles_vsh_abilities (vsh_maul).pcf"] = {
-		duplicates = {
-			vsh_megapunch_shockwave_embers_bg = "particles/particles_vsh_abilities.pcf",
-			vsh_megapunch_shockwave_embers_fg = "particles/particles_vsh_abilities.pcf",
-			vsh_megapunch_shockwave_plasma_2 = "particles/particles_vsh_abilities.pcf",
-			vsh_megapunch_shockwave_plasma_3 = "particles/particles_vsh_abilities.pcf",
-			vsh_megapunch_shockwave_wave_fg = "particles/particles_vsh_abilities.pcf",
-		}
-	},
-	["particles/particles_vsh_auras (vsh_outburst).pcf"] = {
-		duplicates = {
-			vsh_arm_rt_aura_chargedash_smoke = "particles/particles_vsh_auras.pcf",
-			vsh_arm_rt_aura_chargedash_trail_fg = "particles/particles_vsh_auras.pcf",
-		}
-	},
-	["particles/particles_vsh_auras (vsh_maul).pcf"] = {
-		duplicates = {
-			vsh_arm_lt_aura_megapunch_warp = "particles/particles_vsh_auras.pcf",
-			vsh_arm_lt_aura_normal_bg_1 = "particles/particles_vsh_auras.pcf",
-			vsh_arm_lt_aura_normal_bg_2 = "particles/particles_vsh_auras.pcf",
-			vsh_arm_lt_aura_normal_trail_bg = "particles/particles_vsh_auras.pcf",
-			vsh_arm_rt_aura_chargedash_bg_1 = "particles/particles_vsh_auras.pcf",
-			vsh_arm_rt_aura_chargedash_bg_2 = "particles/particles_vsh_auras.pcf",
-			vsh_arm_rt_aura_chargedash_fg = "particles/particles_vsh_auras.pcf",
-			vsh_arm_rt_aura_chargedash_smoke = "particles/particles_vsh_auras.pcf",
-			vsh_arm_rt_aura_chargedash_trail_bg = "particles/particles_vsh_auras.pcf",
-			vsh_arm_rt_aura_chargedash_warp = "particles/particles_vsh_auras.pcf",
-			vsh_arm_rt_aura_normal_bg_1 = "particles/particles_vsh_auras.pcf",
-			vsh_arm_rt_aura_normal_bg_2 = "particles/particles_vsh_auras.pcf",
-			vsh_arm_rt_aura_normal_fg = "particles/particles_vsh_auras.pcf",
-			vsh_arm_rt_aura_normal_trail_bg = "particles/particles_vsh_auras.pcf",
-			vsh_body_aura_bg_1 = "particles/particles_vsh_auras.pcf",
-			vsh_body_aura_bg_2 = "particles/particles_vsh_auras.pcf",
-			vsh_body_aura_fg = "particles/particles_vsh_auras.pcf",
-			vsh_body_aura_trail_bg = "particles/particles_vsh_auras.pcf",
-			vsh_body_trail = "particles/particles_vsh_auras.pcf",
-			vsh_hand_effect_chargedash = "particles/particles_vsh_auras.pcf",
-			vsh_hand_effect_chargedash_glow_1 = "particles/particles_vsh_auras.pcf",
-			vsh_hand_effect_chargedash_glow_2 = "particles/particles_vsh_auras.pcf",
-			vsh_hand_effect_chargedash_tracers = "particles/particles_vsh_auras.pcf",
-			vsh_hand_effect_chargedash_vacuum_bits = "particles/particles_vsh_auras.pcf",
-			vsh_hand_effect_chargedash_vacuum_smoke = "particles/particles_vsh_auras.pcf",
-			vsh_hand_effect_megapunch_spawn = "particles/particles_vsh_auras.pcf",
-			vsh_hand_effect_premegapunch = "particles/particles_vsh_auras.pcf",
-			vsh_hand_effect_premegapunch_tracers = "particles/particles_vsh_auras.pcf",
-		}
-	},
-	["particles/particles_vsh_overrides (vsh_outburst).pcf"] = {
-		duplicates = {
-			mark_for_death = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_bg_1 = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_bg_1_repeat = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_bg_2 = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_bg_2_repeat = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_bg_3_repeat = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_icon_fg = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_icon_fg_repeat = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_icon_spawn = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_bg = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_burst_repeating_child = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_paper = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_rock = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_scissors = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_win_flash = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_win_flash_bg = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_win_flash_core = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_win_flash_glow = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_win_sparks = "particles/particles_vsh_overrides.pcf",
-			peejar_drips = "particles/particles_vsh_overrides.pcf",
-			peejar_drips_milk = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_bg_1 = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_bg_1_repeat = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_bg_2 = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_bg_2_repeat = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_bg_3_repeat = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_fg = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_fg_repeat = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_spawn = "particles/particles_vsh_overrides.pcf",
-		}
-	},
-	["particles/particles_vsh_overrides (vsh_maul).pcf"] = {
-		duplicates = {
-			mark_for_death = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_bg_1 = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_bg_1_repeat = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_bg_2 = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_bg_2_repeat = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_bg_3_repeat = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_icon_fg = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_icon_fg_repeat = "particles/particles_vsh_overrides.pcf",
-			mark_for_death_icon_spawn = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_bg = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_burst_repeating_child = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_paper = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_rock = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_scissors = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_win_flash = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_win_flash_bg = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_win_flash_core = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_win_flash_glow = "particles/particles_vsh_overrides.pcf",
-			overwrite_rps_win_sparks = "particles/particles_vsh_overrides.pcf",
-			peejar_drips = "particles/particles_vsh_overrides.pcf",
-			peejar_drips_milk = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_bg_1 = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_bg_1_repeat = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_bg_2 = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_bg_2_repeat = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_bg_3_repeat = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_fg = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_fg_repeat = "particles/particles_vsh_overrides.pcf",
-			peejar_icon_spawn = "particles/particles_vsh_overrides.pcf",
-
-			burningplayer_rainbow_red = "particles/particles_vsh_overrides (vsh_outburst).pcf",
-			burningplayer_rainbow_red_stars01 = "particles/particles_vsh_overrides (vsh_outburst).pcf",
-			burningplayer_rainbow_red_stars02 = "particles/particles_vsh_overrides (vsh_outburst).pcf",
-			burningplayer_rainbow_red_stars03 = "particles/particles_vsh_overrides (vsh_outburst).pcf",
-			burningplayer_rainbow_red_stars04 = "particles/particles_vsh_overrides (vsh_outburst).pcf",
-			burningplayer_red = "particles/particles_vsh_overrides (vsh_outburst).pcf",
-			burningplayer_red_flyingbits = "particles/particles_vsh_overrides (vsh_outburst).pcf",
-			burningplayer_red_smoke = "particles/particles_vsh_overrides (vsh_outburst).pcf",
-			speech_taunt_red = "particles/particles_vsh_overrides (vsh_outburst).pcf",
-			speech_taunt_red_repeat = "particles/particles_vsh_overrides (vsh_outburst).pcf",
-		}
-	},
-	["particles/asylum_particles.pcf"] = {
-		duplicates_whitelist = {
-			env_rain_gutterdrip_collision = true, //the only unique effect in this pcf
-		},
-		duplicates_whitelist_fail = "particles/water.pcf"
-	},
-	["particles/snowville_particles.pcf"] = {
-		//aurora_02b is unique
-		duplicates = {
-			aurora_3a = "particles/aurora_borealis.pcf",
-			aurora_3b = "particles/aurora_borealis.pcf",
-			aurora_4a = "particles/aurora_borealis.pcf",
-			aurora_4b = "particles/aurora_borealis.pcf",
-		}
-	},
 	["particles/brine_salmann_goop.pcf"] = {
 		blacklist = {
 			blood_impact_green_01 = "Blacklisted: override that's actually a copy of tf2's blood_impact_red_01, for salmann skeleton reskins"
 		},
-		duplicates = {
-			blood_impact_red_01_chunk = "particles/partctrl_fallbacks/tf/blood_impact.pcf",
-			blood_impact_red_01_droplets =  "particles/partctrl_fallbacks/tf/blood_impact.pcf",
-			blood_impact_red_01_goop = "particles/partctrl_fallbacks/tf/blood_impact.pcf",
-			bonzo_vomit_bones2_red = "particles/halloween.pcf",
-			bonzo_vomit_bones_red = "particles/halloween.pcf",
-		}
-	},
-	["particles/camp_fx.pcf"] = {
-		duplicates = {
-			waterfall_bottomsplash = "particles/water.pcf"
-		}
-	},
-	["particles/eotl_lights.pcf"] = {
-		duplicates = {
-			//red lights have different radius
-			cart_flashinglight =  "particles/flag_particles.pcf",
-			cart_flashinglight_glow = "particles/flag_particles.pcf",
-			cart_flashinglight_light = "particles/flag_particles.pcf",
-		}
-	},
-	["particles/slaughter_fx.pcf"] = {
-		duplicates = {
-			radioactive_drip = "particles/farmageddon_underworld_fx.pcf", //arbitrary which one gets blacklisted, actually i think slaughter might be the original? farmageddon has more radioactive fx though,
-			radioactive_goop = "particles/farmageddon_underworld_fx.pcf", //and this way we only need to add 1 more table to the blacklist instead of 2, since slaughter has to have one anyway
-			xms_snowburst_child01 = "particles/xms.pcf"
-		}
-	},
-	["particles/vineyard_rain.pcf"] = {
-		duplicates = {
-			env_rain_256_streaks = "particles/rain_custom.pcf"
-		}
-	},
-	["particles/pier_fx.pcf"] = {
-		duplicates_whitelist = {
-			firework_blue_stars = true,
-			firework_green_stars = true,
-			firework_orange_stars = true,
-			firework_purple_stars = true,
-			firework_red_stars = true,
-			firework_white_stars = true,
-			firework_yellow_stars = true,
-		},
-		duplicates_whitelist_fail = "particles/taunt_fx.pcf"
-	},
-	["particles/precipice_spooky_fx.pcf"] = {
-		duplicates = {
-			//water_splash01_droplets is different, which means so is its parent water_splash01
-			water_splash01_bullet = "particles/water.pcf",
-			water_splash01_cluster = "particles/water.pcf",
-			water_splash01_column = "particles/water.pcf",
-			water_splash01_playerripple = "particles/water.pcf",
-			water_splash01_ripple = "particles/water.pcf",
-		}
-	},
-	["particles/scary_ghost (plr_hacksaw_event).pcf"] = {
-		duplicates = {
-			ghost_flash = "particles/scary_ghost.pcf",
-			ghost_glow = "particles/scary_ghost.pcf",
-			ghost_glow_red = "particles/scary_ghost.pcf",
-			ghost_smoke = "particles/scary_ghost.pcf",
-			ghost_sparkle = "particles/scary_ghost.pcf",
-			ghost_sparkle_red = "particles/scary_ghost.pcf",
-			halloween_boss_axe_hit_sparks = "particles/scary_ghost.pcf",
-			halloween_boss_axe_hit_world = "particles/scary_ghost.pcf",
-			halloween_boss_death = "particles/scary_ghost.pcf",
-			halloween_boss_death_bits = "particles/scary_ghost.pcf",
-			halloween_boss_death_cloud = "particles/scary_ghost.pcf",
-			halloween_boss_death_floatybits = "particles/scary_ghost.pcf",
-			halloween_boss_foot_fire_customcolor = "particles/scary_ghost.pcf",
-			halloween_boss_foot_impact_customcolor = "particles/scary_ghost.pcf",
-			halloween_boss_shape_glow = "particles/scary_ghost.pcf",
-			//the rest of the fx also conflict, but they're recolors, so they're unique
-		}
-	},
-	["particles/toxic.pcf"] = {
-		duplicates = {
-			hwn_cart_cap_neutral = "particles/halloween.pcf"
-		}
 	},
 }
 hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
@@ -505,18 +75,6 @@ hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
 	end
 	if default_blacklist[filename] then
 		for k, v in pairs (tab) do
-			//TODO: this whole method sucks, we really want to detect these through code instead of manually hard-coding a list of dupes.
-			//leaving this intact for now for the sake of comparison, so once auto-detection is implemented, it can be compared to the manual
-			//list to see which ones it fails to detect.
-			//if duplicates is present, flag all listed fx as dupes
-			if default_blacklist[filename].duplicates and default_blacklist[filename].duplicates[k] then
-				tab[k].duplicate_effect = default_blacklist[filename].duplicates[k]
-			end
-			//if duplicates_whitelist is present, flag all fx in the pcf as dupes *except* the ones listed
-			if default_blacklist[filename].duplicates_whitelist and !default_blacklist[filename].duplicates_whitelist[k] then
-				tab[k].duplicate_effect = default_blacklist[filename].duplicates_whitelist_fail
-			end
-
 			//if blacklist is present, blacklist all listed fx
 			if default_blacklist[filename].blacklist and default_blacklist[filename].blacklist[k] then
 				tab[k].shouldcull = default_blacklist[filename].blacklist[k]
@@ -3617,11 +3175,11 @@ function PartCtrl_GetMapFx()
 	for k, v in pairs (ents.FindByClass("info_particle_system")) do
 		local name = v:GetInternalVariable("effect_name")
 		MsgN(name)
-		for k2, _ in pairs (PartCtrl_PCFsByParticleName[name]) do
+		for _, v2 in pairs (PartCtrl_PCFsByParticleName[name]) do
 			//wanted to use this to figure out which instance of this effect is currently mounted,
 			//but info_particle_system ents are only serverside and this table is only clientside, argh
-			//MsgN(k2, " ", table.KeyFromValue(PartCtrl_AddParticles_AddedParticles, k2))
-			MsgN(k2)
+			//MsgN(v2, " ", table.KeyFromValue(PartCtrl_AddParticles_AddedParticles, v2))
+			MsgN(v2)
 		end
 		MsgN("")
 	end
@@ -5380,15 +4938,6 @@ function PartCtrl_ProcessPCF(filename)
 			if t2[particle].shouldcull and GetConVarNumber("developer") < 1 then
 				t2[particle] = nil
 			end
-			//Store which PCFs this particle name is defined in - this is used to detect particles that are multiply defined and display a warning in the spawnicon
-			PartCtrl_PCFsByParticleName[particle] = PartCtrl_PCFsByParticleName[particle] or {}
-			if t2[particle] and !t2[particle].shouldcull then
-				PartCtrl_PCFsByParticleName[particle][filename] = true
-			else
-				//TODO: rethink this? crash prevention doesn't actually need any extra info on these, this is just to add info to the 
-				//tooltip to *maybe* let the player know why this effect gets overwritten when they load another effect from this pcf.
-				PartCtrl_PCFsByParticleName[particle][filename] = "culled"
-			end
 		end
 		//Remove culled children and empty entries from child lists, add parents to parent lists
 		for particle, _ in pairs (t2) do
@@ -5682,7 +5231,6 @@ function PartCtrl_ReadAndProcessPCFs()
 	end
 	PartCtrl_FindAllPCFPaths("particles/")
 	
-	PartCtrl_PCFsByParticleName = {}
 	PartCtrl_PCFsByParticleName_CurrentlyLoaded = {}
 	PartCtrl_CachedReadPCFs = {} //cache these so that dupe detection doesn't have to waste several seconds reading all of them again
 
@@ -5829,9 +5377,13 @@ function PartCtrl_ReadAndProcessPCFs()
 end
 
 
+//Determine which fx are actually identical copies of another effect of the same name.
+//This is used to prevent unnecessary AddParticles loading and bad "effect is unloaded, click to load" info in spawnicons (dupes are considered 
+//equivalent to the effect they're a copy of), and also to prevent search results from getting clogged up with multiple identical effects.
 function PartCtrl_GetDuplicateFx()
 
-	PartCtrl_PCFsByParticleName_New = {} //TODO: should replace the existing one once this is fully integrated
+	//this is global because it's also used to detect particles that are multiply defined and display a warning in the spawnicon
+	PartCtrl_PCFsByParticleName = {}
 
 	for _, filename in SortedPairs (PartCtrl_PCFsInDupeOrder) do
 		//local dodebug = filename == "particles/rain_fx_unused.pcf"
@@ -5839,13 +5391,13 @@ function PartCtrl_GetDuplicateFx()
 		for effect, _ in SortedPairs (PartCtrl_ProcessedPCFs[filename]) do
 			//local dodebug = effect == "halloween_boss_foot_fire_customcolor"
 			if dodebug then MsgN(effect) end
-			if dodebug and effect == "ash_eddy_b" then PrintTable(PartCtrl_PCFsByParticleName_New[effect]) end
-			PartCtrl_PCFsByParticleName_New[effect] = PartCtrl_PCFsByParticleName_New[effect] or {}
-			for _, filename2 in SortedPairs (PartCtrl_PCFsByParticleName_New[effect]) do
+			if dodebug and effect == "ash_eddy_b" then PrintTable(PartCtrl_PCFsByParticleName[effect]) end
+			PartCtrl_PCFsByParticleName[effect] = PartCtrl_PCFsByParticleName[effect] or {}
+			for _, filename2 in SortedPairs (PartCtrl_PCFsByParticleName[effect]) do
 				//Compare the effect to all other fx of the same name (except the ones that we know 
 				//are dupes themselves) to determine if this effect is a duplicate of one of them
-				if PartCtrl_ProcessedPCFs[filename2][effect].duplicate_effect_new then
-					if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " this potential candidate is a dupe of ", PartCtrl_ProcessedPCFs[filename2][effect].duplicate_effect_new, ", skipping") end
+				if PartCtrl_ProcessedPCFs[filename2][effect].duplicate_effect then
+					if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " this potential candidate is a dupe of ", PartCtrl_ProcessedPCFs[filename2][effect].duplicate_effect, ", skipping") end
 					continue
 				end
 				//if dupe_candidates[effect] then break end
@@ -5943,7 +5495,7 @@ function PartCtrl_GetDuplicateFx()
 					//break
 				end
 			end
-			table.insert(PartCtrl_PCFsByParticleName_New[effect], filename)
+			table.insert(PartCtrl_PCFsByParticleName[effect], filename)
 		end
 		//Double check to make sure all the children of an effect are dupes as well
 		if dodebug then PrintTable(dupe_candidates) end
@@ -5988,26 +5540,26 @@ function PartCtrl_GetDuplicateFx()
 							if !table.HasValue(dupe_candidates[tab.child], v) then
 								local dupecheck = false
 								//for k2, v2 in pairs (dupe_candidates[tab.child]) do
-								//if tab.child == "embers_large_01" then PrintTable(PartCtrl_PCFsByParticleName_New[tab.child]) end
-								--[[for k2, v2 in pairs (PartCtrl_PCFsByParticleName_New[tab.child]) do
+								//if tab.child == "embers_large_01" then PrintTable(PartCtrl_PCFsByParticleName[tab.child]) end
+								--[[for k2, v2 in pairs (PartCtrl_PCFsByParticleName[tab.child]) do
 									if dodebug and tab.child == "embers_large_01" then
-										MsgN("DUPECHECK: v = ", v, ", duplicate_effect_new = ", PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect_new, ", v2 = ", v2)
+										MsgN("DUPECHECK: v = ", v, ", duplicate_effect = ", PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect, ", v2 = ", v2)
 									end
-									//if PartCtrl_ProcessedPCFs[v2][tab.child].duplicate_effect_new == v then
+									//if PartCtrl_ProcessedPCFs[v2][tab.child].duplicate_effect == v then
 										//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found ", v, ", should remain in candidates") end
-									if PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect_new == v2 then //this seems like nonsense but it works, argh
+									if PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect == v2 then //this seems like nonsense but it works, argh
 										if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found that ", v, " is a dupe of ", v2, ", so the former should remain in candidates") end
 										dupecheck = true
 										break
 									end
 								end]]
-								//and !(PartCtrl_ProcessedPCFs[v][tab.child] and !table.HasValue(dupe_candidates[tab.child], PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect_new)) then
+								//and !(PartCtrl_ProcessedPCFs[v][tab.child] and !table.HasValue(dupe_candidates[tab.child], PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect)) then
 								if dodebug --[[and tab.child == "embers_large_01"]] then PrintTable(dupe_candidates[tab.child]) end
 								for k2, v2 in pairs (dupe_candidates[tab.child]) do
 									if dodebug --[[and tab.child == "embers_large_01"]] then
-										MsgN("DUPECHECK: v = ", v, ", duplicate_effect_new = ", PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect_new, ", v2 = ", v2)
+										MsgN("DUPECHECK: v = ", v, ", duplicate_effect = ", PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect, ", v2 = ", v2)
 									end
-									if PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect_new == v2 then //this seems like nonsense but it works, argh
+									if PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect == v2 then //this seems like nonsense but it works, argh
 										if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found that ", v, " is a dupe of ", v2, ", so the former should remain in candidates") end
 										dupecheck = true
 										break
@@ -6033,9 +5585,9 @@ function PartCtrl_GetDuplicateFx()
 
 			CheckIfChildrenAreDupes(effect)
 			if children_all_dupes then
-				//PartCtrl_ProcessedPCFs[filename][effect].duplicate_effect_new = v
+				//PartCtrl_ProcessedPCFs[filename][effect].duplicate_effect = v
 				//if dodebug then MsgN(filename .. "/" .. v .. ": " .. effect .. ": dupe found!") end
-				PartCtrl_ProcessedPCFs[filename][effect].duplicate_effect_new = dupe_candidates[effect][1]
+				PartCtrl_ProcessedPCFs[filename][effect].duplicate_effect = dupe_candidates[effect][1]
 				if dodebug then MsgN(filename .. "/" .. dupe_candidates[effect][1] .. ": " .. effect .. ": dupe found!") end
 			end
 		end
@@ -6047,7 +5599,7 @@ function PartCtrl_GetDuplicateFx()
 		PartCtrl_PCFsWithConflicts = {}
 		for pcf, pcftab in pairs (PartCtrl_ProcessedPCFs) do
 			for name, _ in pairs (pcftab) do
-				if !pcftab[name].duplicate_effect and table.Count(PartCtrl_PCFsByParticleName[name]) > 1 then
+				if !pcftab[name].duplicate_effect and #PartCtrl_PCFsByParticleName[name] > 1 then
 					PartCtrl_PCFsWithConflicts[pcf] = true 
 					break
 				end
@@ -6055,64 +5607,6 @@ function PartCtrl_GetDuplicateFx()
 		end
 	end
 
-end
-
-//test func to compare old manual dupes and new auto-detected dupes
-function PartCtrl_CompareDupes()
-	local tab1 = {}
-	local tab2 = {}
-	for pcf, _ in SortedPairs (PartCtrl_ProcessedPCFs) do
-		for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do
-			if PartCtrl_ProcessedPCFs[pcf][particle].duplicate_effect then
-				tab1[pcf] = tab1[pcf] or {}
-				tab1[pcf][particle] = PartCtrl_ProcessedPCFs[pcf][particle].duplicate_effect
-			end
-			if PartCtrl_ProcessedPCFs[pcf][particle].duplicate_effect_new then
-				tab2[pcf] = tab2[pcf] or {}
-				tab2[pcf][particle] = PartCtrl_ProcessedPCFs[pcf][particle].duplicate_effect_new
-			end
-		end
-	end
-
-	local results = {}
-	local allkeys = {}
-	for k, _ in pairs (tab1) do
-		allkeys[k] = true
-	end
-	for k, _ in pairs (tab2) do
-		allkeys[k] = true
-	end
-	for k, _ in pairs (allkeys) do
-		local allkeys2 = {}
-		if tab1[k] then
-			for k2, _ in pairs (tab1[k]) do
-				allkeys2[k2] = true
-			end
-		end
-		if tab2[k] then
-			for k2, _ in pairs (tab2[k]) do
-				allkeys2[k2] = true
-			end
-		end
-		for k2, _ in pairs (allkeys2) do
-			local result1 = nil
-			local result2 = nil
-			if tab1[k] and tab1[k][k2] then
-				result1 = tab1[k][k2]
-			end
-			if tab2[k] and tab2[k][k2] then
-				result2 = tab2[k][k2]
-			end
-			if result1 != result2 then
-			//if result1 and result1 != result2 then
-			//if !result1 and result1 != result2 then
-				results[k] = results[k] or {}
-				results[k][k2] = "old " .. tostring(result1) .. " != new " .. tostring(result2)
-			end
-		end
-	end
-
-	PrintTable(results)
 end
 
 
@@ -6729,8 +6223,8 @@ if CLIENT then
 		if !istable(PartCtrl_AddParticles_AddedParticles_Overrides[pcf]) then
 			local tab = {}
 			for name, _ in pairs (PartCtrl_ProcessedPCFs[pcf]) do
-				for k, _ in pairs (PartCtrl_PCFsByParticleName[name]) do
-					tab[k] = true
+				for _, v in pairs (PartCtrl_PCFsByParticleName[name]) do
+					tab[v] = true
 				end
 			end
 			tab[pcf] = nil
@@ -6744,8 +6238,8 @@ if CLIENT then
 				//Otherwise, we don't care, and running game.AddParticles(pcf) again would just cause an unnecessary stutter.
 				if !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] == pcf)
 				and !(PartCtrl_ProcessedPCFs[pcf][effectname].duplicate_effect and PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] == PartCtrl_ProcessedPCFs[pcf][effectname].duplicate_effect) then
-					for k, _ in pairs (PartCtrl_PCFsByParticleName[effectname]) do
-						tab[k] = true
+					for _, v in pairs (PartCtrl_PCFsByParticleName[effectname]) do
+						tab[v] = true
 					end
 					tab[pcf] = nil
 					//MsgN("tab for effect ", effectname, ":")
