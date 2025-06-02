@@ -55,21 +55,6 @@ function PANEL:Paint(w, h)
 		return
 	end
 
-	//When hovered over with the mouse, check AddParticles again.
-	//(i.e. hover over an effect being overridden to make it show the correct one)
-	//This only runs if hovered over for *two* frames in a row, to get around an issue where upon opening the 
-	//spawnmenu, the cursor is considered to be hovering over the panel in the center of the screen for 1 frame.
-	self.LastHovered = self.LastHovered or 0
-	if self:IsHovered() then
-		self.LastHovered = self.LastHovered + 1
-	else
-		self.LastHovered = 0
-	end
-	if self.LastHovered == 2 and self.pcf != "UtilFx" then
-		//surface.PlaySound("vo/ravenholm/engage02.wav")
-		PartCtrl_AddParticles(self.pcf, self.name) //crash prevention
-	end
-
 	//Add this effect to PartCtrl_IconFx - even if we're not showing a particle in this panel, 
 	//we still want it to populate other stuff like icons and tooltips
 	PartCtrl_IconFx[self.pcf] = PartCtrl_IconFx[self.pcf] or {}
@@ -93,9 +78,7 @@ function PANEL:Paint(w, h)
 	local showparticle = true
 
 	//If the icon's effect is currently being overridden by another pcf's effect of the same name, show a notification instead
-	if itab.MultiplyDefined
-	and !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == self.pcf)
-	and !(PartCtrl_DuplicateFx[self.pcf][self.name] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == PartCtrl_DuplicateFx[self.pcf][self.name]) then
+	if self:IsCurrentlyOverridden() then
 		local mdef_width = math.min(w,h) * 0.5
 		surface.SetDrawColor(0,0,0,64)
 		surface.DrawRect(0 + bd, 0 + bd, w - (bd*2), h - (bd*2))
@@ -106,7 +89,7 @@ function PANEL:Paint(w, h)
 		surface.SetMaterial(icon_multiplydefined_2)
 		surface.DrawTexturedRect((w-mdef_width)/2, (h-mdef_width)/2, mdef_width, mdef_width)
 
-		local text = "(hover to load)"
+		local text = "(click to load)"
 		draw.SimpleTextOutlined(text, "DermaDefaultBold", w/2, h/2, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0,0,0,255))
 		showparticle = nil
 	end
@@ -190,6 +173,17 @@ function PANEL:Paint(w, h)
 			end
 		end
 	end
+
+end
+
+function PANEL:IsCurrentlyOverridden()
+
+	if PartCtrl_IconFx[self.pcf][self.name].MultiplyDefined
+	and !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == self.pcf)
+	and !(PartCtrl_DuplicateFx[self.pcf][self.name] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == PartCtrl_DuplicateFx[self.pcf][self.name]) then
+		return true
+	end
+
 end
 
 PartCtrl_IconFx = {}
@@ -549,8 +543,14 @@ end)
 
 function PANEL:DoClick()
 
-	RunConsoleCommand("partctrl_spawnparticle", self.name, self.pcf)
-	surface.PlaySound("ui/buttonclickrelease.wav")
+	//If the icon's effect is currently being overridden by another pcf's effect of the same name, reload the pcf on click instead
+	if self:IsCurrentlyOverridden() then
+		surface.PlaySound("common/wpn_select.wav") //TODO: is this a good sound? needs to be different enough from the spawn sound so players can tell that clicking didn't spawn an effect yet.
+		PartCtrl_AddParticles(self.pcf, self.name) //crash prevention
+	else
+		RunConsoleCommand("partctrl_spawnparticle", self.name, self.pcf)
+		surface.PlaySound("ui/buttonclickrelease.wav")
+	end
 
 end
 
