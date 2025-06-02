@@ -20,6 +20,8 @@ else
 	//so these features are disabled by default.
 	CreateClientConVar("cl_partctrl_childfx_in_autospawnlists", 2, false, false, "Sets how child particle effects appear in auto-generated .pcf spawnlists.\n0: Child effects are hidden\n1: Child effects are sorted into a separate category\n2: Child effects are listed alongside parent effects", 0, 2)
 	CreateClientConVar("cl_partctrl_childfx_in_search", 1, false, false, "If 0, prevents child particle effects from being shown in search results.", 0, 1)
+
+	CreateClientConVar("cl_partctrl_dupes_in_search", 0, false, false, "If 0, prevents duplicate effects from being shown in search results.", 0, 1)
 end
 
  
@@ -6037,6 +6039,7 @@ if CLIENT then
 	end) end)
 
 	local cv_childfx_search = GetConVar("cl_partctrl_childfx_in_search")
+	local cv_dupes_search = GetConVar("cl_partctrl_dupes_in_search")
 
 	search.AddProvider(function(str)
 
@@ -6054,7 +6057,8 @@ if CLIENT then
 		local results = {}
 
 		for k, v in ipairs (searchParticles) do
-			if cv_childfx_search:GetBool() or !PartCtrl_ProcessedPCFs[v.pcf][v.name].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.name].parents) < 1 then
+			if (cv_childfx_search:GetBool() or !PartCtrl_ProcessedPCFs[v.pcf][v.name].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.name].parents) < 1) 
+			and (cv_dupes_search:GetBool() or !PartCtrl_ProcessedPCFs[v.pcf][v.name].duplicate_effect) then
 				for k2, v2 in ipairs (searchTerms) do
 					if !(v.name_lower:find(v2, nil, true) or v.pcf:find(v2, nil, true)) then
 						break
