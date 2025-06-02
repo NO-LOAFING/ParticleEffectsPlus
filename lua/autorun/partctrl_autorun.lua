@@ -5384,10 +5384,11 @@ end
 //equivalent to the effect they're a copy of), and also to prevent search results from getting clogged up with multiple identical effects.
 function PartCtrl_GetDuplicateFx()
 
-	//this is global because it's also used to detect particles that are multiply defined and display a warning in the spawnicon
-	PartCtrl_PCFsByParticleName = {}
+	PartCtrl_DuplicateFx = {}
+	PartCtrl_PCFsByParticleName = {} //this is global because it's also used to detect particles that are multiply defined and display a warning in the spawnicon
 
 	for _, filename in SortedPairs (PartCtrl_PCFsInDupeOrder) do
+		PartCtrl_DuplicateFx[filename] = {}
 		//local dodebug = filename == "particles/rain_fx_unused.pcf"
 		local dupe_candidates = {}
 		for effect, _ in SortedPairs (PartCtrl_ProcessedPCFs[filename]) do
@@ -5398,8 +5399,8 @@ function PartCtrl_GetDuplicateFx()
 			for _, filename2 in SortedPairs (PartCtrl_PCFsByParticleName[effect]) do
 				//Compare the effect to all other fx of the same name (except the ones that we know 
 				//are dupes themselves) to determine if this effect is a duplicate of one of them
-				if PartCtrl_ProcessedPCFs[filename2][effect].duplicate_effect then
-					if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " this potential candidate is a dupe of ", PartCtrl_ProcessedPCFs[filename2][effect].duplicate_effect, ", skipping") end
+				if PartCtrl_DuplicateFx[filename2][effect] then
+					if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " this potential candidate is a dupe of ", PartCtrl_DuplicateFx[filename2][effect], ", skipping") end
 					continue
 				end
 				//if dupe_candidates[effect] then break end
@@ -5545,23 +5546,23 @@ function PartCtrl_GetDuplicateFx()
 								//if tab.child == "embers_large_01" then PrintTable(PartCtrl_PCFsByParticleName[tab.child]) end
 								--[[for k2, v2 in pairs (PartCtrl_PCFsByParticleName[tab.child]) do
 									if dodebug and tab.child == "embers_large_01" then
-										MsgN("DUPECHECK: v = ", v, ", duplicate_effect = ", PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect, ", v2 = ", v2)
+										MsgN("DUPECHECK: v = ", v, ", PartCtrl_DuplicateFx = ", PartCtrl_DuplicateFx[v][tab.child], ", v2 = ", v2)
 									end
-									//if PartCtrl_ProcessedPCFs[v2][tab.child].duplicate_effect == v then
+									//if PartCtrl_DuplicateFx[v2][tab.child] == v then
 										//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found ", v, ", should remain in candidates") end
-									if PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect == v2 then //this seems like nonsense but it works, argh
+									if PartCtrl_DuplicateFx[v][tab.child] == v2 then //this seems like nonsense but it works, argh
 										if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found that ", v, " is a dupe of ", v2, ", so the former should remain in candidates") end
 										dupecheck = true
 										break
 									end
 								end]]
-								//and !(PartCtrl_ProcessedPCFs[v][tab.child] and !table.HasValue(dupe_candidates[tab.child], PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect)) then
+								//and !(PartCtrl_ProcessedPCFs[v][tab.child] and !table.HasValue(dupe_candidates[tab.child], PartCtrl_DuplicateFx[v][tab.child])) then
 								if dodebug --[[and tab.child == "embers_large_01"]] then PrintTable(dupe_candidates[tab.child]) end
 								for k2, v2 in pairs (dupe_candidates[tab.child]) do
 									if dodebug --[[and tab.child == "embers_large_01"]] then
-										MsgN("DUPECHECK: v = ", v, ", duplicate_effect = ", PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect, ", v2 = ", v2)
+										MsgN("DUPECHECK: v = ", v, ", PartCtrl_DuplicateFx = ", PartCtrl_DuplicateFx[v][tab.child], ", v2 = ", v2)
 									end
-									if PartCtrl_ProcessedPCFs[v][tab.child].duplicate_effect == v2 then //this seems like nonsense but it works, argh
+									if PartCtrl_DuplicateFx[v][tab.child] == v2 then //this seems like nonsense but it works, argh
 										if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found that ", v, " is a dupe of ", v2, ", so the former should remain in candidates") end
 										dupecheck = true
 										break
@@ -5587,9 +5588,9 @@ function PartCtrl_GetDuplicateFx()
 
 			CheckIfChildrenAreDupes(effect)
 			if children_all_dupes then
-				//PartCtrl_ProcessedPCFs[filename][effect].duplicate_effect = v
+				//PartCtrl_DuplicateFx[filename][effect] = v
 				//if dodebug then MsgN(filename .. "/" .. v .. ": " .. effect .. ": dupe found!") end
-				PartCtrl_ProcessedPCFs[filename][effect].duplicate_effect = dupe_candidates[effect][1]
+				PartCtrl_DuplicateFx[filename][effect] = dupe_candidates[effect][1]
 				if dodebug then MsgN(filename .. "/" .. dupe_candidates[effect][1] .. ": " .. effect .. ": dupe found!") end
 			end
 		end
@@ -5599,9 +5600,11 @@ function PartCtrl_GetDuplicateFx()
 	//a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
 	if CLIENT then
 		PartCtrl_PCFsWithConflicts = {}
-		for pcf, pcftab in pairs (PartCtrl_ProcessedPCFs) do
-			for name, _ in pairs (pcftab) do
-				if !pcftab[name].duplicate_effect and #PartCtrl_PCFsByParticleName[name] > 1 then
+		for _, pcf in pairs (PartCtrl_PCFsInDupeOrder) do
+			for name, _ in pairs (PartCtrl_ProcessedPCFs[pcf]) do
+				if !PartCtrl_DuplicateFx[pcf] then MsgN(pcf, " bad") end
+				if !PartCtrl_PCFsByParticleName[name] then MsgN(pcf, " bad") end
+				if !PartCtrl_DuplicateFx[pcf][name] and #PartCtrl_PCFsByParticleName[name] > 1 then
 					PartCtrl_PCFsWithConflicts[pcf] = true 
 					break
 				end
@@ -6058,7 +6061,7 @@ if CLIENT then
 
 		for k, v in ipairs (searchParticles) do
 			if (cv_childfx_search:GetBool() or !PartCtrl_ProcessedPCFs[v.pcf][v.name].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.name].parents) < 1) 
-			and (cv_dupes_search:GetBool() or !PartCtrl_ProcessedPCFs[v.pcf][v.name].duplicate_effect) then
+			and (cv_dupes_search:GetBool() or !PartCtrl_DuplicateFx[v.pcf][v.name]) then
 				for k2, v2 in ipairs (searchTerms) do
 					if !(v.name_lower:find(v2, nil, true) or v.pcf:find(v2, nil, true)) then
 						break
@@ -6092,12 +6095,24 @@ if CLIENT then
 		searchParticles = nil //force search to rebuild search cache so any new fx will be found
 		MsgN("Reloading ", str, " on client ", LocalPlayer())
 
-		//TODO: handle duplicate fx detection again
+		if str != "UtilFx" then
+			//Handle duplicate fx detection again; it's possible that an effect was updated to start/stop being a dupe, OR that an 
+			//effect being updated made an effect from a lower-priority PCF start/stop being considered a dupe of this pcf's effect
+			PartCtrl_GetDuplicateFx()
 
-		//refresh spawnicons (this is handled by the think hook in contenticon_partctrl.lua)
-		if PartCtrl_IconFx and PartCtrl_IconFx[str] then
-			for name, _ in pairs (PartCtrl_IconFx[str]) do
-				PartCtrl_IconFx[str][name].reset = true
+			//Make sure the reloaded pcf is highest priority
+			//(try to prevent oddness with PartCtrl_PCFsByParticleName_CurrentlyLoaded on fx that change dupe status)
+			PartCtrl_AddParticles(str)
+		end
+
+		//Refresh spawnicons (this is handled by the think hook in contenticon_partctrl.lua)
+		//Do this for all spawnicons, not just the ones for the pcf we updated (i.e. in case 
+		//updating one of this pcf's fx made a lower priority pcf's effect no longer a dupe of it)
+		if PartCtrl_IconFx then
+			for pcf, _ in pairs (PartCtrl_IconFx) do
+				for name, _ in pairs (PartCtrl_IconFx[pcf]) do
+					PartCtrl_IconFx[pcf][name].reset = true
+				end
 			end
 		end
 
@@ -6130,7 +6145,15 @@ else
 		searchParticles = nil //force search to rebuild search cache so any new fx will be found
 		MsgN("Reloading ", str, " on server")
 
-		//TODO: handle duplicate fx detection again
+		if str != "UtilFx" then
+			//Handle duplicate fx detection again; it's possible that an effect was updated to start/stop being a dupe, OR that an 
+			//effect being updated made an effect from a lower-priority PCF start/stop being considered a dupe of this pcf's effect
+			PartCtrl_GetDuplicateFx()
+
+			//Make sure the reloaded effect is highest priority
+			//(not sure if this matters serverside, but better safe than sorry)
+			game.AddParticles(str)
+		end
 
 		//now send the update to all players
 		net.Start("PartCtrl_ReloadPCF_SendToCl")
@@ -6241,7 +6264,7 @@ if CLIENT then
 				//If this function is being called by a spawnicon or particle entity, then only check its one effect for overrides.
 				//Otherwise, we don't care, and running game.AddParticles(pcf) again would just cause an unnecessary stutter.
 				if !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] == pcf)
-				and !(PartCtrl_ProcessedPCFs[pcf][effectname].duplicate_effect and PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] == PartCtrl_ProcessedPCFs[pcf][effectname].duplicate_effect) then
+				and !(PartCtrl_DuplicateFx[pcf][effectname] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] == PartCtrl_DuplicateFx[pcf][effectname]) then
 					for _, v in pairs (PartCtrl_PCFsByParticleName[effectname]) do
 						tab[v] = true
 					end
@@ -6282,8 +6305,8 @@ if CLIENT then
 			table.insert(PartCtrl_AddParticles_AddedParticles, pcf)
 
 			for effectname, _ in pairs (PartCtrl_ProcessedPCFs[pcf]) do
-				if PartCtrl_ProcessedPCFs[pcf][effectname].duplicate_effect then
-					PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] = PartCtrl_ProcessedPCFs[pcf][effectname].duplicate_effect
+				if PartCtrl_DuplicateFx[pcf][effectname] then
+					PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] = PartCtrl_DuplicateFx[pcf][effectname]
 				else
 					PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] = pcf
 				end

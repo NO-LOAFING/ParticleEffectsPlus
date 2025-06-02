@@ -95,7 +95,7 @@ function PANEL:Paint(w, h)
 	//If the icon's effect is currently being overridden by another pcf's effect of the same name, show a notification instead
 	if itab.MultiplyDefined
 	and !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == self.pcf)
-	and !(PartCtrl_ProcessedPCFs[self.pcf][self.name].duplicate_effect and PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == PartCtrl_ProcessedPCFs[self.pcf][self.name].duplicate_effect) then
+	and !(PartCtrl_DuplicateFx[self.pcf][self.name] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == PartCtrl_DuplicateFx[self.pcf][self.name]) then
 		local mdef_width = math.min(w,h) * 0.5
 		surface.SetDrawColor(0,0,0,64)
 		surface.DrawRect(0 + bd, 0 + bd, w - (bd*2), h - (bd*2))
@@ -297,8 +297,8 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							for _, v in pairs (PartCtrl_PCFsByParticleName[name]) do
 								if PartCtrl_PCFsWithConflicts[v] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
 									text = text .. "\n" .. v
-									if PartCtrl_ProcessedPCFs[v][name] and PartCtrl_ProcessedPCFs[v][name].duplicate_effect then
-										text = text .. " (duplicate of " .. PartCtrl_ProcessedPCFs[v][name].duplicate_effect .. ")"
+									if PartCtrl_ProcessedPCFs[v][name] and PartCtrl_DuplicateFx[v][name] then
+										text = text .. " (duplicate of " .. PartCtrl_DuplicateFx[v][name] .. ")"
 									end
 									if !PartCtrl_ProcessedPCFs[v] or !PartCtrl_ProcessedPCFs[v][name] or PartCtrl_ProcessedPCFs[v][name].shouldcull then
 										text = text .. " (culled)"
@@ -324,8 +324,8 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						tooltip = tooltip .. "\n(Scripted Effect)"
 					end
 
-					if PartCtrl_ProcessedPCFs[pcf][name].duplicate_effect then
-						tooltip = tooltip .. "\n\nThis effect is a duplicate of " .. PartCtrl_ProcessedPCFs[pcf][name].duplicate_effect .. "'s " .. name .. "."
+					if PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][name] then
+						tooltip = tooltip .. "\n\nThis effect is a duplicate of " .. PartCtrl_DuplicateFx[pcf][name] .. "'s " .. name .. "."
 						table.insert(self.icons, {["icon"] = Material("icon16/page_paste.png")})
 					end
 			
