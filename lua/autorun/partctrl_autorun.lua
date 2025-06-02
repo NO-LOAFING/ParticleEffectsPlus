@@ -5391,22 +5391,24 @@ if CLIENT then
 	function PartCtrl_GetDuplicateFx()
 
 		PartCtrl_DuplicateFx = {}
-		PartCtrl_PCFsByParticleName = {} //this is global because it's also used to detect particles that are multiply defined and display a warning in the spawnicon
-
+		PartCtrl_PCFsByParticleName = {}
+		//TODO: can't do debug spew for everything when developer mode is on, since there's too much stuff per pcf, so currently this is all done 
+		//for a single pcf and/or effect defined manually in code. i guess this could be moved to some convars in case other devs want to use it?
+		
 		for _, filename in SortedPairs (PartCtrl_PCFsInDupeOrder) do
 			PartCtrl_DuplicateFx[filename] = {}
 			//local dodebug = filename == "particles/rain_fx_unused.pcf"
 			local dupe_candidates = {}
 			for effect, _ in SortedPairs (PartCtrl_ProcessedPCFs[filename]) do
 				//local dodebug = effect == "halloween_boss_foot_fire_customcolor"
-				if dodebug then MsgN(effect) end
+				//if dodebug then MsgN(effect) end
 				//if dodebug and effect == "ash_eddy_b" then PrintTable(PartCtrl_PCFsByParticleName[effect]) end
 				PartCtrl_PCFsByParticleName[effect] = PartCtrl_PCFsByParticleName[effect] or {}
 				for _, filename2 in SortedPairs (PartCtrl_PCFsByParticleName[effect]) do
 					//Compare the effect to all other fx of the same name (except the ones that we know 
 					//are dupes themselves) to determine if this effect is a duplicate of one of them
 					if PartCtrl_DuplicateFx[filename2][effect] then
-						if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " this potential candidate is a dupe of ", PartCtrl_DuplicateFx[filename2][effect], ", skipping") end
+						//if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " this potential candidate is a dupe of ", PartCtrl_DuplicateFx[filename2][effect], ", skipping") end
 						continue
 					end
 					//if dupe_candidates[effect] then break end
@@ -5454,7 +5456,7 @@ if CLIENT then
 										//if a sequential table (list of children or operators) has a mismatched count,
 										//then it's different, don't bother comparing them
 										if #t1[k] != #t2[k] then
-											if dodebug then MsgN(table_name_for_debug, ".", k, ": table count ", #t1[k], " != ", #t2[k]) end
+											//if dodebug then MsgN(table_name_for_debug, ".", k, ": table count ", #t1[k], " != ", #t2[k]) end
 											is_dupe = false
 											return
 										end
@@ -5468,12 +5470,12 @@ if CLIENT then
 											table.SortByMember(t2[k], "child", true)
 										end
 									end
-									local d = table_name_for_debug .. "." .. k
+									--[[local d = table_name_for_debug .. "." .. k
 									if t1[k].functionName then
 										d = d .. "(" .. t1[k].functionName .. ")"
 									elseif t1[k].child then
 										d = d .. "(" .. t1[k].child .. ")"
-									end
+									end]]
 									CompareTables(t1[k], t2[k], level + 1, d)
 								else
 									//catch cases where values refer to the same file path, but with mismatched slashes
@@ -5485,7 +5487,7 @@ if CLIENT then
 									end
 									//if values don't match, then it's not a dupe
 									if t1[k] != t2[k] then
-										if dodebug then MsgN(table_name_for_debug, ".", k, ": ", t1[k], " != ", t2[k]) end
+										//if dodebug then MsgN(table_name_for_debug, ".", k, ": ", t1[k], " != ", t2[k]) end
 										is_dupe = false
 										return
 									end
@@ -5500,27 +5502,18 @@ if CLIENT then
 					if is_dupe then
 						dupe_candidates[effect] = dupe_candidates[effect] or {}
 						table.insert(dupe_candidates[effect], filename2)
-						if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " dupe candidate found") end
+						//if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " dupe candidate found") end
 						//break
 					end
 				end
 				table.insert(PartCtrl_PCFsByParticleName[effect], filename)
 			end
 			//Double check to make sure all the children of an effect are dupes as well
-			if dodebug then PrintTable(dupe_candidates) end
+			//if dodebug then PrintTable(dupe_candidates) end
 			for effect, v in pairs (dupe_candidates) do
 				children_all_dupes = true
 				local function CheckIfChildrenAreDupes(effect2)
 					if !children_all_dupes then return end
-					--[[for _, tab in pairs (PartCtrl_ProcessedPCFs[filename][effect2].children) do
-						if dupe_candidates[tab.child] != v then
-							children_all_dupes = false
-							if dodebug then MsgN(filename .. "/" .. v .. ": " .. effect .. ": child " .. tab.child .. " isn't a dupe of " .. v) end
-							return
-						else
-							CheckIfChildrenAreDupes(tab.child)
-						end
-					end]]
 					//local dodebug = effect == "fire_large_01"
 					//Q: What's all this complicated nonsense for?
 					//
@@ -5541,48 +5534,33 @@ if CLIENT then
 					//   dupe candidates.
 					for _, tab in pairs (PartCtrl_ProcessedPCFs[filename][effect2].children) do
 						if !dupe_candidates[tab.child] then
-							if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " has no dupe candidates, discarding") end
+							//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " has no dupe candidates, discarding") end
 							children_all_dupes = false
 							return
 						else
 							for k, v in pairs (dupe_candidates[effect]) do
 								if !table.HasValue(dupe_candidates[tab.child], v) then
 									local dupecheck = false
-									//for k2, v2 in pairs (dupe_candidates[tab.child]) do
-									//if tab.child == "embers_large_01" then PrintTable(PartCtrl_PCFsByParticleName[tab.child]) end
-									--[[for k2, v2 in pairs (PartCtrl_PCFsByParticleName[tab.child]) do
-										if dodebug and tab.child == "embers_large_01" then
-											MsgN("DUPECHECK: v = ", v, ", PartCtrl_DuplicateFx = ", PartCtrl_DuplicateFx[v][tab.child], ", v2 = ", v2)
-										end
-										//if PartCtrl_DuplicateFx[v2][tab.child] == v then
-											//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found ", v, ", should remain in candidates") end
-										if PartCtrl_DuplicateFx[v][tab.child] == v2 then //this seems like nonsense but it works, argh
-											if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found that ", v, " is a dupe of ", v2, ", so the former should remain in candidates") end
-											dupecheck = true
-											break
-										end
-									end]]
-									//and !(PartCtrl_ProcessedPCFs[v][tab.child] and !table.HasValue(dupe_candidates[tab.child], PartCtrl_DuplicateFx[v][tab.child])) then
-									if dodebug --[[and tab.child == "embers_large_01"]] then PrintTable(dupe_candidates[tab.child]) end
+									//if dodebug --[[and tab.child == "embers_large_01"]] then PrintTable(dupe_candidates[tab.child]) end
 									for k2, v2 in pairs (dupe_candidates[tab.child]) do
-										if dodebug --[[and tab.child == "embers_large_01"]] then
-											MsgN("DUPECHECK: v = ", v, ", PartCtrl_DuplicateFx = ", PartCtrl_DuplicateFx[v][tab.child], ", v2 = ", v2)
-										end
+										//if dodebug --[[and tab.child == "embers_large_01"]] then
+										//	MsgN("DUPECHECK: v = ", v, ", PartCtrl_DuplicateFx = ", PartCtrl_DuplicateFx[v][tab.child], ", v2 = ", v2)
+										//end
 										if PartCtrl_DuplicateFx[v][tab.child] == v2 then //this seems like nonsense but it works, argh
-											if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found that ", v, " is a dupe of ", v2, ", so the former should remain in candidates") end
+											//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found that ", v, " is a dupe of ", v2, ", so the former should remain in candidates") end
 											dupecheck = true
 											break
 										end
 									end
 
 									if !dupecheck then
-										if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " does not have dupe candidate ", v, ", removing from candidates") end
+										//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " does not have dupe candidate ", v, ", removing from candidates") end
 										table.RemoveByValue(dupe_candidates[effect], v)
 									end
 								end
 							end
 							if #dupe_candidates[effect] == 0 then
-								if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " has no dupe candidates left, discarding") end
+								//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " has no dupe candidates left, discarding") end
 								children_all_dupes = false
 								return
 							else
@@ -5594,10 +5572,8 @@ if CLIENT then
 
 				CheckIfChildrenAreDupes(effect)
 				if children_all_dupes then
-					//PartCtrl_DuplicateFx[filename][effect] = v
-					//if dodebug then MsgN(filename .. "/" .. v .. ": " .. effect .. ": dupe found!") end
 					PartCtrl_DuplicateFx[filename][effect] = dupe_candidates[effect][1]
-					if dodebug then MsgN(filename .. "/" .. dupe_candidates[effect][1] .. ": " .. effect .. ": dupe found!") end
+					//if dodebug then MsgN(filename .. "/" .. dupe_candidates[effect][1] .. ": " .. effect .. ": dupe found!") end
 				end
 			end
 		end
@@ -6067,7 +6043,7 @@ if CLIENT then
 
 		for k, v in ipairs (searchParticles) do
 			if (cv_childfx_search:GetBool() or !PartCtrl_ProcessedPCFs[v.pcf][v.name].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.name].parents) < 1) 
-			and (cv_dupes_search:GetBool() or !PartCtrl_DuplicateFx[v.pcf][v.name]) then
+			and (cv_dupes_search:GetBool() or !PartCtrl_DuplicateFx[v.pcf] or !PartCtrl_DuplicateFx[v.pcf][v.name]) then
 				for k2, v2 in ipairs (searchTerms) do
 					if !(v.name_lower:find(v2, nil, true) or v.pcf:find(v2, nil, true)) then
 						break
