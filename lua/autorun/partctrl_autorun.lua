@@ -3172,18 +3172,20 @@ end
 
 
 //Test: Get all particle effects used by info_particle_system ents on the map
+//TODO: should rework this from scratch, can we get a list of ents from the server but then do PartCtrl_PCFsByParticleName for each of them on client?
 function PartCtrl_GetMapFx()
 
 	for k, v in pairs (ents.FindByClass("info_particle_system")) do
 		local name = v:GetInternalVariable("effect_name")
 		MsgN(name)
-		for _, v2 in pairs (PartCtrl_PCFsByParticleName[name]) do
+		//this no longer works now that we only build PartCtrl_PCFsByParticleName clientside to save time
+		--[[for _, v2 in pairs (PartCtrl_PCFsByParticleName[name]) do 
 			//wanted to use this to figure out which instance of this effect is currently mounted,
 			//but info_particle_system ents are only serverside and this table is only clientside, argh
 			//MsgN(v2, " ", table.KeyFromValue(PartCtrl_AddParticles_AddedParticles, v2))
 			MsgN(v2)
 		end
-		MsgN("")
+		MsgN("")]]
 	end
 
 end
@@ -5330,20 +5332,22 @@ function PartCtrl_ReadAndProcessPCFs()
 	//PrintTable(pcfs_sorted)
 
 
-	//sort sets into hierarchical order for dupe detection (the more "permanent" something is, the higher priority we should assign to it for dupe 
-	//detection; i.e. garrysmod/particles/ are always installed, so its fx should always be considered the "originals" in terms of dupe detection,
-	//followed by mounted games, which are above addons because it would be absurd to consider a valve game to be derivative of a gmod addon; bsp 
-	//particles and server downloads are at the end because they're transient and should never take priority over other sources)
-	local pcfs_dupe_order = {}
-	table.Add(pcfs_dupe_order, pcfs_sorted[4]) //garrysmod/particles/ folder
-	table.Add(pcfs_dupe_order, pcfs_sorted[5]) //games
-	table.Add(pcfs_dupe_order, pcfs_sorted[2]) //legacy addons
-	table.Add(pcfs_dupe_order, pcfs_sorted[3]) //workshop addons
-	table.Add(pcfs_dupe_order, pcfs_sorted[6]) //garrysmod/download/ folder
-	table.Add(pcfs_dupe_order, pcfs_sorted[1]) //packed into bsp
-	table.Add(pcfs_dupe_order, pcfs_sorted[7]) //other
-	PartCtrl_PCFsInDupeOrder = pcfs_dupe_order //global so that PartCtrl_GetDuplicateFx can be run again later without rebuilding this table
-	PartCtrl_GetDuplicateFx()
+	if CLIENT then
+		//sort sets into hierarchical order for dupe detection (the more "permanent" something is, the higher priority we should assign to it for dupe 
+		//detection; i.e. garrysmod/particles/ are always installed, so its fx should always be considered the "originals" in terms of dupe detection,
+		//followed by mounted games, which are above addons because it would be absurd to consider a valve game to be derivative of a gmod addon; bsp 
+		//particles and server downloads are at the end because they're transient and should never take priority over other sources)
+		local pcfs_dupe_order = {}
+		table.Add(pcfs_dupe_order, pcfs_sorted[4]) //garrysmod/particles/ folder
+		table.Add(pcfs_dupe_order, pcfs_sorted[5]) //games
+		table.Add(pcfs_dupe_order, pcfs_sorted[2]) //legacy addons
+		table.Add(pcfs_dupe_order, pcfs_sorted[3]) //workshop addons
+		table.Add(pcfs_dupe_order, pcfs_sorted[6]) //garrysmod/download/ folder
+		table.Add(pcfs_dupe_order, pcfs_sorted[1]) //packed into bsp
+		table.Add(pcfs_dupe_order, pcfs_sorted[7]) //other
+		PartCtrl_PCFsInDupeOrder = pcfs_dupe_order //global so that PartCtrl_GetDuplicateFx can be run again later without rebuilding this table
+		PartCtrl_GetDuplicateFx()
+	end
 
 
 	//Run AddParticles in another particular order, so things like gmod fx take priority by default;
@@ -5379,226 +5383,227 @@ function PartCtrl_ReadAndProcessPCFs()
 end
 
 
-//Determine which fx are actually identical copies of another effect of the same name.
-//This is used to prevent unnecessary AddParticles loading and bad "effect is unloaded, click to load" info in spawnicons (dupes are considered 
-//equivalent to the effect they're a copy of), and also to prevent search results from getting clogged up with multiple identical effects.
-function PartCtrl_GetDuplicateFx()
+if CLIENT then
 
-	PartCtrl_DuplicateFx = {}
-	PartCtrl_PCFsByParticleName = {} //this is global because it's also used to detect particles that are multiply defined and display a warning in the spawnicon
+	//Determine which fx are actually identical copies of another effect of the same name.
+	//This is used to prevent unnecessary AddParticles loading and bad "effect is unloaded, click to load" info in spawnicons (dupes are considered 
+	//equivalent to the effect they're a copy of), and also to prevent search results from getting clogged up with multiple identical effects.
+	function PartCtrl_GetDuplicateFx()
 
-	for _, filename in SortedPairs (PartCtrl_PCFsInDupeOrder) do
-		PartCtrl_DuplicateFx[filename] = {}
-		//local dodebug = filename == "particles/rain_fx_unused.pcf"
-		local dupe_candidates = {}
-		for effect, _ in SortedPairs (PartCtrl_ProcessedPCFs[filename]) do
-			//local dodebug = effect == "halloween_boss_foot_fire_customcolor"
-			if dodebug then MsgN(effect) end
-			if dodebug and effect == "ash_eddy_b" then PrintTable(PartCtrl_PCFsByParticleName[effect]) end
-			PartCtrl_PCFsByParticleName[effect] = PartCtrl_PCFsByParticleName[effect] or {}
-			for _, filename2 in SortedPairs (PartCtrl_PCFsByParticleName[effect]) do
-				//Compare the effect to all other fx of the same name (except the ones that we know 
-				//are dupes themselves) to determine if this effect is a duplicate of one of them
-				if PartCtrl_DuplicateFx[filename2][effect] then
-					if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " this potential candidate is a dupe of ", PartCtrl_DuplicateFx[filename2][effect], ", skipping") end
-					continue
-				end
-				//if dupe_candidates[effect] then break end
-				local is_dupe = true
-				local function CompareTables(t1, t2, level, table_name_for_debug)
-					if !is_dupe then return end
-					local operator_tables = {
-						["constraints"] = true,
-						["emitters"] = true,
-						["forces"] = true,
-						["initializers"] = true,
-						["operators"] = true,
-						["renderers"] = true,
-					}
+		PartCtrl_DuplicateFx = {}
+		PartCtrl_PCFsByParticleName = {} //this is global because it's also used to detect particles that are multiply defined and display a warning in the spawnicon
 
-					local allkeys = {}
-					for k, _ in pairs (t1) do
-						allkeys[k] = true
+		for _, filename in SortedPairs (PartCtrl_PCFsInDupeOrder) do
+			PartCtrl_DuplicateFx[filename] = {}
+			//local dodebug = filename == "particles/rain_fx_unused.pcf"
+			local dupe_candidates = {}
+			for effect, _ in SortedPairs (PartCtrl_ProcessedPCFs[filename]) do
+				//local dodebug = effect == "halloween_boss_foot_fire_customcolor"
+				if dodebug then MsgN(effect) end
+				//if dodebug and effect == "ash_eddy_b" then PrintTable(PartCtrl_PCFsByParticleName[effect]) end
+				PartCtrl_PCFsByParticleName[effect] = PartCtrl_PCFsByParticleName[effect] or {}
+				for _, filename2 in SortedPairs (PartCtrl_PCFsByParticleName[effect]) do
+					//Compare the effect to all other fx of the same name (except the ones that we know 
+					//are dupes themselves) to determine if this effect is a duplicate of one of them
+					if PartCtrl_DuplicateFx[filename2][effect] then
+						if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " this potential candidate is a dupe of ", PartCtrl_DuplicateFx[filename2][effect], ", skipping") end
+						continue
 					end
-					for k, _ in pairs (t2) do
-						allkeys[k] = true
-					end
-					if level == 1 then
-						for _, v in pairs ({
-							//these definitely don't matter at all
-							"bounding_box_max", 
-							"bounding_box_min",
-							//less sure about this one; there are plenty of false positives where the change in max_particles doesn't matter at all
-							//since it never actually reaches the cap (particles/partctrl_fallbacks/left4dead2/fire_01.pcf's smoke_exhaust_01a/smoke_exhaust_01b), 
-							//but a few where it actually does make it visibly different by cutting off particle emission (particles/mvm.pcf's mini_fireworks, 
-							//particles/partctrl_fallbacks/left4dead2/fire_01.pcf's smoke_medium_02c). in the cases where it does make a difference, 
-							//it's still pretty subtle, so i'm making an executive decision here to treat those as dupes anyway, to err of the side 
-							//of not clogging up searches.
-							"max_particles",
-						}) do
-							allkeys[v] = nil
-						end
-					end
-
-					for k, _ in SortedPairsLower (allkeys) do
+					//if dupe_candidates[effect] then break end
+					local is_dupe = true
+					local function CompareTables(t1, t2, level, table_name_for_debug)
 						if !is_dupe then return end
-						if t1[k] and t2[k] then //if a value exists in one table but not another, then ignore it; newer pcf versions omit keys with default values, but older versions don't
-							if istable(t1[k]) and istable(t2[k]) then
-								if level == 1 and table.IsSequential(t1[k]) then
-									//if a sequential table (list of children or operators) has a mismatched count,
-									//then it's different, don't bother comparing them
-									if #t1[k] != #t2[k] then
-										if dodebug then MsgN(table_name_for_debug, ".", k, ": table count ", #t1[k], " != ", #t2[k]) end
+						local operator_tables = {
+							["constraints"] = true,
+							["emitters"] = true,
+							["forces"] = true,
+							["initializers"] = true,
+							["operators"] = true,
+							["renderers"] = true,
+						}
+
+						local allkeys = {}
+						for k, _ in pairs (t1) do
+							allkeys[k] = true
+						end
+						for k, _ in pairs (t2) do
+							allkeys[k] = true
+						end
+						if level == 1 then
+							for _, v in pairs ({
+								//these definitely don't matter at all
+								"bounding_box_max", 
+								"bounding_box_min",
+								//less sure about this one; there are plenty of false positives where the change in max_particles doesn't matter at all
+								//since it never actually reaches the cap (particles/partctrl_fallbacks/left4dead2/fire_01.pcf's smoke_exhaust_01a/smoke_exhaust_01b), 
+								//but a few where it actually does make it visibly different by cutting off particle emission (particles/mvm.pcf's mini_fireworks, 
+								//particles/partctrl_fallbacks/left4dead2/fire_01.pcf's smoke_medium_02c). in the cases where it does make a difference, 
+								//it's still pretty subtle, so i'm making an executive decision here to treat those as dupes anyway, to err of the side 
+								//of not clogging up searches.
+								"max_particles",
+							}) do
+								allkeys[v] = nil
+							end
+						end
+
+						for k, _ in SortedPairsLower (allkeys) do
+							if !is_dupe then return end
+							if t1[k] and t2[k] then //if a value exists in one table but not another, then ignore it; newer pcf versions omit keys with default values, but older versions don't
+								if istable(t1[k]) and istable(t2[k]) then
+									if level == 1 and table.IsSequential(t1[k]) then
+										//if a sequential table (list of children or operators) has a mismatched count,
+										//then it's different, don't bother comparing them
+										if #t1[k] != #t2[k] then
+											if dodebug then MsgN(table_name_for_debug, ".", k, ": table count ", #t1[k], " != ", #t2[k]) end
+											is_dupe = false
+											return
+										end
+										//special handling for operator/child lists to order their subtables by functionName or child,
+										//to catch cases where fx have the same items listed in a different order
+										if operator_tables[k] then
+											table.SortByMember(t1[k], "functionName", true)
+											table.SortByMember(t2[k], "functionName", true)
+										elseif k == "children" then
+											table.SortByMember(t1[k], "child", true)
+											table.SortByMember(t2[k], "child", true)
+										end
+									end
+									local d = table_name_for_debug .. "." .. k
+									if t1[k].functionName then
+										d = d .. "(" .. t1[k].functionName .. ")"
+									elseif t1[k].child then
+										d = d .. "(" .. t1[k].child .. ")"
+									end
+									CompareTables(t1[k], t2[k], level + 1, d)
+								else
+									//catch cases where values refer to the same file path, but with mismatched slashes
+									if isstring(t1[k]) then
+										t1[k] = string.Replace(t1[k], "\\", "/")
+									end
+									if isstring(t2[k]) then
+										t2[k] = string.Replace(t2[k], "\\", "/")
+									end
+									//if values don't match, then it's not a dupe
+									if t1[k] != t2[k] then
+										if dodebug then MsgN(table_name_for_debug, ".", k, ": ", t1[k], " != ", t2[k]) end
 										is_dupe = false
 										return
 									end
-									//special handling for operator/child lists to order their subtables by functionName or child,
-									//to catch cases where fx have the same items listed in a different order
-									if operator_tables[k] then
-										table.SortByMember(t1[k], "functionName", true)
-										table.SortByMember(t2[k], "functionName", true)
-									elseif k == "children" then
-										table.SortByMember(t1[k], "child", true)
-										table.SortByMember(t2[k], "child", true)
-									end
-								end
-								local d = table_name_for_debug .. "." .. k
-								if t1[k].functionName then
-									d = d .. "(" .. t1[k].functionName .. ")"
-								elseif t1[k].child then
-									d = d .. "(" .. t1[k].child .. ")"
-								end
-								CompareTables(t1[k], t2[k], level + 1, d)
-							else
-								//catch cases where values refer to the same file path, but with mismatched slashes
-								if isstring(t1[k]) then
-									t1[k] = string.Replace(t1[k], "\\", "/")
-								end
-								if isstring(t2[k]) then
-									t2[k] = string.Replace(t2[k], "\\", "/")
-								end
-								//if values don't match, then it's not a dupe
-								if t1[k] != t2[k] then
-									if dodebug then MsgN(table_name_for_debug, ".", k, ": ", t1[k], " != ", t2[k]) end
-									is_dupe = false
-									return
 								end
 							end
 						end
 					end
+					//note: this needs to use copies of the cached tables, not the originals, otherwise table.SortByMember above will modify the 
+					//cached table and cause inconsistent results (i.e. operators with the same functionName no longer being in the same order) 
+					//if this function is run multiple times in a session
+					CompareTables(table.Copy(PartCtrl_CachedReadPCFs[filename][effect]), table.Copy(PartCtrl_CachedReadPCFs[filename2][effect]), 1, filename .. "/" .. filename2 .. ": " .. effect)
+					if is_dupe then
+						dupe_candidates[effect] = dupe_candidates[effect] or {}
+						table.insert(dupe_candidates[effect], filename2)
+						if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " dupe candidate found") end
+						//break
+					end
 				end
-				//note: this needs to use copies of the cached tables, not the originals, otherwise table.SortByMember above will modify the 
-				//cached table and cause inconsistent results (i.e. operators with the same functionName no longer being in the same order) 
-				//if this function is run multiple times in a session
-				CompareTables(table.Copy(PartCtrl_CachedReadPCFs[filename][effect]), table.Copy(PartCtrl_CachedReadPCFs[filename2][effect]), 1, filename .. "/" .. filename2 .. ": " .. effect)
-				if is_dupe then
-					dupe_candidates[effect] = dupe_candidates[effect] or {}
-					table.insert(dupe_candidates[effect], filename2)
-					if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " dupe candidate found") end
-					//break
-				end
+				table.insert(PartCtrl_PCFsByParticleName[effect], filename)
 			end
-			table.insert(PartCtrl_PCFsByParticleName[effect], filename)
-		end
-		//Double check to make sure all the children of an effect are dupes as well
-		if dodebug then PrintTable(dupe_candidates) end
-		for effect, v in pairs (dupe_candidates) do
-			children_all_dupes = true
-			local function CheckIfChildrenAreDupes(effect2)
-				if !children_all_dupes then return end
-				--[[for _, tab in pairs (PartCtrl_ProcessedPCFs[filename][effect2].children) do
-					if dupe_candidates[tab.child] != v then
-						children_all_dupes = false
-						if dodebug then MsgN(filename .. "/" .. v .. ": " .. effect .. ": child " .. tab.child .. " isn't a dupe of " .. v) end
-						return
-					else
-						CheckIfChildrenAreDupes(tab.child)
-					end
-				end]]
-				//local dodebug = effect == "fire_large_01"
-				//Q: What's all this complicated nonsense for?
-				//
-				//A: This is for complex cases like particles/fire_01_unused.pcf's fire_large_01. This effect has multiple children:
-				//
-				//   Some, like smoke_large_01, are dupes of particles/partctrl_fallbacks/left4dead2/fire_01.pcf, but are DIFFERENT from
-				//   the effect of the same name in particles/fire_01.pcf.
-				//
-				//   Others, like embers_large_01, are dupes of particles/fire_01.pcf, and the effect of the same name in the left4dead2 pcf
-				//   is ALSO a dupe of fire_01.pcf, but embers_large_01 doesn't catch it as a dupe candidate, because the compare code doesn't
-				//   compare it with effects we've already confirmed to be dupes - that would be redundant.
-				//
-				//   fire_large_01 itself has no differences on its own, and returns as a dupe of both fire_01.pcf and the left4dead2 pcf.
-				//
-				//   In this case, we want fire_large_01 to return as a dupe of the left4dead2 pcf, but not fire_01.pcf, because smoke_large_01
-				//   is different. This requires us to keep a whole list of potential dupe candidates instead of just the first we find, and
-				//   then also associate the child embers_large_01 with the left4dead2 pcf, despite that pcf not being in the child's list of
-				//   dupe candidates.
-				for _, tab in pairs (PartCtrl_ProcessedPCFs[filename][effect2].children) do
-					if !dupe_candidates[tab.child] then
-						if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " has no dupe candidates, discarding") end
-						children_all_dupes = false
-						return
-					else
-						for k, v in pairs (dupe_candidates[effect]) do
-							if !table.HasValue(dupe_candidates[tab.child], v) then
-								local dupecheck = false
-								//for k2, v2 in pairs (dupe_candidates[tab.child]) do
-								//if tab.child == "embers_large_01" then PrintTable(PartCtrl_PCFsByParticleName[tab.child]) end
-								--[[for k2, v2 in pairs (PartCtrl_PCFsByParticleName[tab.child]) do
-									if dodebug and tab.child == "embers_large_01" then
-										MsgN("DUPECHECK: v = ", v, ", PartCtrl_DuplicateFx = ", PartCtrl_DuplicateFx[v][tab.child], ", v2 = ", v2)
-									end
-									//if PartCtrl_DuplicateFx[v2][tab.child] == v then
-										//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found ", v, ", should remain in candidates") end
-									if PartCtrl_DuplicateFx[v][tab.child] == v2 then //this seems like nonsense but it works, argh
-										if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found that ", v, " is a dupe of ", v2, ", so the former should remain in candidates") end
-										dupecheck = true
-										break
-									end
-								end]]
-								//and !(PartCtrl_ProcessedPCFs[v][tab.child] and !table.HasValue(dupe_candidates[tab.child], PartCtrl_DuplicateFx[v][tab.child])) then
-								if dodebug --[[and tab.child == "embers_large_01"]] then PrintTable(dupe_candidates[tab.child]) end
-								for k2, v2 in pairs (dupe_candidates[tab.child]) do
-									if dodebug --[[and tab.child == "embers_large_01"]] then
-										MsgN("DUPECHECK: v = ", v, ", PartCtrl_DuplicateFx = ", PartCtrl_DuplicateFx[v][tab.child], ", v2 = ", v2)
-									end
-									if PartCtrl_DuplicateFx[v][tab.child] == v2 then //this seems like nonsense but it works, argh
-										if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found that ", v, " is a dupe of ", v2, ", so the former should remain in candidates") end
-										dupecheck = true
-										break
-									end
-								end
-
-								if !dupecheck then
-									if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " does not have dupe candidate ", v, ", removing from candidates") end
-									table.RemoveByValue(dupe_candidates[effect], v)
-								end
-							end
-						end
-						if #dupe_candidates[effect] == 0 then
-							if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " has no dupe candidates left, discarding") end
+			//Double check to make sure all the children of an effect are dupes as well
+			if dodebug then PrintTable(dupe_candidates) end
+			for effect, v in pairs (dupe_candidates) do
+				children_all_dupes = true
+				local function CheckIfChildrenAreDupes(effect2)
+					if !children_all_dupes then return end
+					--[[for _, tab in pairs (PartCtrl_ProcessedPCFs[filename][effect2].children) do
+						if dupe_candidates[tab.child] != v then
 							children_all_dupes = false
+							if dodebug then MsgN(filename .. "/" .. v .. ": " .. effect .. ": child " .. tab.child .. " isn't a dupe of " .. v) end
 							return
 						else
 							CheckIfChildrenAreDupes(tab.child)
 						end
+					end]]
+					//local dodebug = effect == "fire_large_01"
+					//Q: What's all this complicated nonsense for?
+					//
+					//A: This is for complex cases like particles/fire_01_unused.pcf's fire_large_01. This effect has multiple children:
+					//
+					//   Some, like smoke_large_01, are dupes of particles/partctrl_fallbacks/left4dead2/fire_01.pcf, but are DIFFERENT from
+					//   the effect of the same name in particles/fire_01.pcf.
+					//
+					//   Others, like embers_large_01, are dupes of particles/fire_01.pcf, and the effect of the same name in the left4dead2 pcf
+					//   is ALSO a dupe of fire_01.pcf, but embers_large_01 doesn't catch it as a dupe candidate, because the compare code doesn't
+					//   compare it with effects we've already confirmed to be dupes - that would be redundant.
+					//
+					//   fire_large_01 itself has no differences on its own, and returns as a dupe of both fire_01.pcf and the left4dead2 pcf.
+					//
+					//   In this case, we want fire_large_01 to return as a dupe of the left4dead2 pcf, but not fire_01.pcf, because smoke_large_01
+					//   is different. This requires us to keep a whole list of potential dupe candidates instead of just the first we find, and
+					//   then also associate the child embers_large_01 with the left4dead2 pcf, despite that pcf not being in the child's list of
+					//   dupe candidates.
+					for _, tab in pairs (PartCtrl_ProcessedPCFs[filename][effect2].children) do
+						if !dupe_candidates[tab.child] then
+							if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " has no dupe candidates, discarding") end
+							children_all_dupes = false
+							return
+						else
+							for k, v in pairs (dupe_candidates[effect]) do
+								if !table.HasValue(dupe_candidates[tab.child], v) then
+									local dupecheck = false
+									//for k2, v2 in pairs (dupe_candidates[tab.child]) do
+									//if tab.child == "embers_large_01" then PrintTable(PartCtrl_PCFsByParticleName[tab.child]) end
+									--[[for k2, v2 in pairs (PartCtrl_PCFsByParticleName[tab.child]) do
+										if dodebug and tab.child == "embers_large_01" then
+											MsgN("DUPECHECK: v = ", v, ", PartCtrl_DuplicateFx = ", PartCtrl_DuplicateFx[v][tab.child], ", v2 = ", v2)
+										end
+										//if PartCtrl_DuplicateFx[v2][tab.child] == v then
+											//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found ", v, ", should remain in candidates") end
+										if PartCtrl_DuplicateFx[v][tab.child] == v2 then //this seems like nonsense but it works, argh
+											if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found that ", v, " is a dupe of ", v2, ", so the former should remain in candidates") end
+											dupecheck = true
+											break
+										end
+									end]]
+									//and !(PartCtrl_ProcessedPCFs[v][tab.child] and !table.HasValue(dupe_candidates[tab.child], PartCtrl_DuplicateFx[v][tab.child])) then
+									if dodebug --[[and tab.child == "embers_large_01"]] then PrintTable(dupe_candidates[tab.child]) end
+									for k2, v2 in pairs (dupe_candidates[tab.child]) do
+										if dodebug --[[and tab.child == "embers_large_01"]] then
+											MsgN("DUPECHECK: v = ", v, ", PartCtrl_DuplicateFx = ", PartCtrl_DuplicateFx[v][tab.child], ", v2 = ", v2)
+										end
+										if PartCtrl_DuplicateFx[v][tab.child] == v2 then //this seems like nonsense but it works, argh
+											if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found that ", v, " is a dupe of ", v2, ", so the former should remain in candidates") end
+											dupecheck = true
+											break
+										end
+									end
+
+									if !dupecheck then
+										if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " does not have dupe candidate ", v, ", removing from candidates") end
+										table.RemoveByValue(dupe_candidates[effect], v)
+									end
+								end
+							end
+							if #dupe_candidates[effect] == 0 then
+								if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " has no dupe candidates left, discarding") end
+								children_all_dupes = false
+								return
+							else
+								CheckIfChildrenAreDupes(tab.child)
+							end
+						end
 					end
 				end
-			end
 
-			CheckIfChildrenAreDupes(effect)
-			if children_all_dupes then
-				//PartCtrl_DuplicateFx[filename][effect] = v
-				//if dodebug then MsgN(filename .. "/" .. v .. ": " .. effect .. ": dupe found!") end
-				PartCtrl_DuplicateFx[filename][effect] = dupe_candidates[effect][1]
-				if dodebug then MsgN(filename .. "/" .. dupe_candidates[effect][1] .. ": " .. effect .. ": dupe found!") end
+				CheckIfChildrenAreDupes(effect)
+				if children_all_dupes then
+					//PartCtrl_DuplicateFx[filename][effect] = v
+					//if dodebug then MsgN(filename .. "/" .. v .. ": " .. effect .. ": dupe found!") end
+					PartCtrl_DuplicateFx[filename][effect] = dupe_candidates[effect][1]
+					if dodebug then MsgN(filename .. "/" .. dupe_candidates[effect][1] .. ": " .. effect .. ": dupe found!") end
+				end
 			end
 		end
-	end
 
-	//Build PartCtrl_PCFsWithConflicts for spawnicon conflicting pcf lists: if every single conflicting effect in
-	//a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
-	if CLIENT then
+		//Build PartCtrl_PCFsWithConflicts for spawnicon conflicting pcf lists: if every single conflicting effect in
+		//a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
 		PartCtrl_PCFsWithConflicts = {}
 		for _, pcf in pairs (PartCtrl_PCFsInDupeOrder) do
 			for name, _ in pairs (PartCtrl_ProcessedPCFs[pcf]) do
@@ -5610,6 +5615,7 @@ function PartCtrl_GetDuplicateFx()
 				end
 			end
 		end
+
 	end
 
 end
@@ -6146,10 +6152,6 @@ else
 		MsgN("Reloading ", str, " on server")
 
 		if str != "UtilFx" then
-			//Handle duplicate fx detection again; it's possible that an effect was updated to start/stop being a dupe, OR that an 
-			//effect being updated made an effect from a lower-priority PCF start/stop being considered a dupe of this pcf's effect
-			PartCtrl_GetDuplicateFx()
-
 			//Make sure the reloaded effect is highest priority
 			//(not sure if this matters serverside, but better safe than sorry)
 			game.AddParticles(str)
