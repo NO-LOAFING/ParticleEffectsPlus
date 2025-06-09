@@ -5450,7 +5450,7 @@ if CLIENT then
 
 						for k, _ in SortedPairsLower (allkeys) do
 							if !is_dupe then return end
-							if t1[k] and t2[k] then //if a value exists in one table but not another, then ignore it; newer pcf versions omit keys with default values, but older versions don't
+							if t1[k] != nil and t2[k] != nil then //if a value exists in one table but not another, then ignore it; newer pcf versions omit keys with default values, but older versions don't
 								if istable(t1[k]) and istable(t2[k]) then
 									if level == 1 and table.IsSequential(t1[k]) then
 										//if a sequential table (list of children or operators) has a mismatched count,
