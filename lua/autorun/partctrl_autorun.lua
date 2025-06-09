@@ -4936,13 +4936,16 @@ function PartCtrl_ProcessPCF(filename)
 		end
 		//Now that the processed table is finished, let hook funcs modify it arbitrarily (including deciding which fx to cull)
 		hook.Call("PartCtrl_PostProcessPCF", nil, filename, t2)
+		local culledfx = {}
 		for particle, _ in pairs (t2) do
 			//Cull bad effects from the table.
 			//If the player starts up the game in developer mode, effects aren't culled, but instead have a warning on the spawnicon telling the dev why they won't show up to players.
 			if t2[particle].shouldcull and GetConVarNumber("developer") < 1 then
 				t2[particle] = nil
+				culledfx[particle] = true
 			end
 		end
+		PartCtrl_CulledFx[filename] = culledfx
 		//Remove culled children and empty entries from child lists, add parents to parent lists
 		for particle, _ in pairs (t2) do
 			local shouldclean = false
@@ -5237,6 +5240,7 @@ function PartCtrl_ReadAndProcessPCFs()
 	
 	PartCtrl_PCFsByParticleName_CurrentlyLoaded = {}
 	PartCtrl_CachedReadPCFs = {} //cache these so that dupe detection doesn't have to waste several seconds reading all of them again
+	PartCtrl_CulledFx = {} //also build a list of fx that are culled from ProcessedPCFs, because we still need them for pcf conflict/dupe detection (i.e. load a pcf, it has culled fx with the same name as non-culled fx, so we want to detect that the latter got overwritten by the former, and tell the player about it in spawnicons)
 
 	PartCtrl_ProcessedPCFs = {}
 	for _, filename in pairs (PartCtrl_AllPCFPaths) do
@@ -5399,7 +5403,16 @@ if CLIENT then
 			PartCtrl_DuplicateFx[filename] = {}
 			//local dodebug = filename == "particles/rain_fx_unused.pcf"
 			local dupe_candidates = {}
-			for effect, _ in SortedPairs (PartCtrl_ProcessedPCFs[filename]) do
+
+			local allfx = {}
+			for k, _ in pairs (PartCtrl_ProcessedPCFs[filename]) do
+				allfx[k] = true
+			end
+			for k, _ in pairs (PartCtrl_CulledFx[filename]) do
+				allfx[k] = true
+			end
+
+			for effect, _ in SortedPairs (allfx) do
 				//local dodebug = effect == "halloween_boss_foot_fire_customcolor"
 				//if dodebug then MsgN(effect) end
 				//if dodebug and effect == "ash_eddy_b" then PrintTable(PartCtrl_PCFsByParticleName[effect]) end
@@ -5532,7 +5545,7 @@ if CLIENT then
 					//   is different. This requires us to keep a whole list of potential dupe candidates instead of just the first we find, and
 					//   then also associate the child embers_large_01 with the left4dead2 pcf, despite that pcf not being in the child's list of
 					//   dupe candidates.
-					for _, tab in pairs (PartCtrl_ProcessedPCFs[filename][effect2].children) do
+					for _, tab in pairs (PartCtrl_CachedReadPCFs[filename][effect2].children) do
 						if !dupe_candidates[tab.child] then
 							//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " has no dupe candidates, discarding") end
 							children_all_dupes = false
@@ -6233,6 +6246,11 @@ if CLIENT then
 					tab[v] = true
 				end
 			end
+			for name, _ in pairs (PartCtrl_CulledFx[pcf]) do
+				for _, v in pairs (PartCtrl_PCFsByParticleName[name]) do
+					tab[v] = true
+				end
+			end
 			tab[pcf] = nil
 			PartCtrl_AddParticles_AddedParticles_Overrides[pcf] = tab
 			//PrintTable(tab)
@@ -6283,7 +6301,14 @@ if CLIENT then
 			end
 			table.insert(PartCtrl_AddParticles_AddedParticles, pcf)
 
-			for effectname, _ in pairs (PartCtrl_ProcessedPCFs[pcf]) do
+			local allfx = {}
+			for k, _ in pairs (PartCtrl_ProcessedPCFs[pcf]) do
+				allfx[k] = true
+			end
+			for k, _ in pairs (PartCtrl_CulledFx[pcf]) do
+				allfx[k] = true
+			end
+			for effectname, _ in pairs (allfx) do
 				if PartCtrl_DuplicateFx[pcf][effectname] then
 					PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] = PartCtrl_DuplicateFx[pcf][effectname]
 				else
