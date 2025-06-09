@@ -289,16 +289,19 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							local pcfs_added = 0
 							local text = "\n\nWarning: This particle effect name is defined in multiple files:"
 							for _, v in pairs (PartCtrl_PCFsByParticleName[name]) do
-								if PartCtrl_PCFsWithConflicts[v] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
+								//if PartCtrl_PCFsWithConflicts[v] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
 									text = text .. "\n" .. v
 									if PartCtrl_ProcessedPCFs[v][name] and PartCtrl_DuplicateFx[v][name] then
 										text = text .. " (duplicate of " .. PartCtrl_DuplicateFx[v][name] .. ")"
+										//Don't add conflict warnings for dupes unless there's at least 2 non-dupe fx with that name 
+										//(no point in conflict warning if every version of the effect is the same)
+									else
+										pcfs_added = pcfs_added + 1
 									end
 									if !PartCtrl_ProcessedPCFs[v] or !PartCtrl_ProcessedPCFs[v][name] or PartCtrl_ProcessedPCFs[v][name].shouldcull then
 										text = text .. " (culled)"
 									end
-									pcfs_added = pcfs_added + 1
-								end
+								//end
 							end
 							text = text .. "\n\nOnly one effect called \"" .. name .. "\" can be loaded at a time.\nIf you reload effects from any of these files, even in spawnicons,\nit will use the \"" .. name .. "\" from the most recently loaded file." 
 							if pcfs_added > 1 then

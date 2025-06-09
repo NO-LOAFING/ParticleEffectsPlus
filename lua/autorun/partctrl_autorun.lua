@@ -5578,9 +5578,10 @@ if CLIENT then
 			end
 		end
 
+		//TODO: used for old conflict detection, do we still need this? keeping this here until 100% sure it's unnecessary.
 		//Build PartCtrl_PCFsWithConflicts for spawnicon conflicting pcf lists: if every single conflicting effect in
 		//a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
-		PartCtrl_PCFsWithConflicts = {}
+		--[[PartCtrl_PCFsWithConflicts = {}
 		for _, pcf in pairs (PartCtrl_PCFsInDupeOrder) do
 			for name, _ in pairs (PartCtrl_ProcessedPCFs[pcf]) do
 				if !PartCtrl_DuplicateFx[pcf] then MsgN(pcf, " bad") end
@@ -5590,7 +5591,7 @@ if CLIENT then
 					break
 				end
 			end
-		end
+		end]]
 
 	end
 
