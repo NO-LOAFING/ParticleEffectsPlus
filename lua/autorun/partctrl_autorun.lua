@@ -13,6 +13,7 @@ if SERVER then
 	end
 	CreateConVar("sv_partctrl_allowserverprojectiles", int_sp, FCVAR_REPLICATED, "If 0, disables the serverside projectiles option on projectile effects.", 0, 1)
 	CreateConVar("sv_partctrl_cachereadpcf", int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, the results of PartCtrl_ReadPCF are cached to the data folder. This makes subsequent startups 2-3x faster, but the first time quite a bit slower as it saves ~50MB to the data folder.", 0, 1)
+	CreateConVar("sv_partctrl_blacklist_screenspace", 1-int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, effects with the var \"screen space effect\" are blacklisted from being loaded.\nNote: Blacklisted fx are only updated when the game reloads their PCF file - i.e. on map load, when changing mounted content, or when reloading pcf files manually.", 0, 1)
 else
 	//Some convars to separate child fx from others; in practice, this doesn't work well because there are 
 	//A: lots of normal fx that are also used as children, and would be excluded (i.e. eye_powerup_green_lvl_3, rocket_explosion_classic, rocket_trail_classic_crit_red, many more) 
@@ -44,7 +45,7 @@ local tf2_unusual_wep_pcfs = {
 	["particles/weapon_unusual_hot.pcf"] = true,
 	["particles/weapon_unusual_isotope.pcf"] = true
 }
-local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all useless duplicates of other unusual weapon fx with conflicting names"
+local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all conflicting duplicates of other unusual weapon fx"
 local crash_blacklist_text = "Blacklisted: causes crash when spawned"
 local default_blacklist = {
 	//Portal 2
@@ -58,7 +59,7 @@ local default_blacklist = {
 	//TF2 map particles addon
 	["particles/nucleus_event_effects.pcf"] = {
 		blacklist = {
-			nucleus_core_steady = "Blacklisted: dupe of nucleus_event_core_steady, except it conflicts with a stock tf2 effect" //note: only reason this doesn't override the desired effect on koth_nucleus is because the game arbitrarily reads particles/level_fx.pcf after this one, which sucks; this isn't an issue on pd_circus because it doesn't actually use this effect
+			nucleus_core_steady = "Blacklisted: duplicate of nucleus_event_core_steady, except it conflicts with a stock tf2 effect" //note: only reason this doesn't override the desired effect on koth_nucleus is because the game arbitrarily reads particles/level_fx.pcf after this one, which sucks; this isn't an issue on pd_circus because it doesn't actually use this effect
 		}
 	},
 	["particles/brine_salmann_goop.pcf"] = {
@@ -4389,6 +4390,7 @@ local processfuncs = {
 		//["prevent passing through static part of world"] = function(processed, attrib) PartCtrl_CPoint_AddToProcessed(processed, 0, attrib._categoryName .. " " .. attrib.functionName .. ": always uses cpoint 0", nil, nil, attrib) end,
 	}
 }
+local blacklist_screenfx = GetConVar("sv_partctrl_blacklist_screenspace")
 function PartCtrl_ProcessPCF(filename)
 	if hook.Call("PartCtrl_PreProcessPCF", nil, filename) == false then return end //Let hook funcs prevent PCFs from being read by returning false
 
@@ -4447,6 +4449,10 @@ function PartCtrl_ProcessPCF(filename)
 				processed["has_emitter"] = true
 			end
 			t2[particle] = processed
+			//Also store "screen space effect" here
+			if ptab["screen space effect"] then
+				processed.screenspace = true
+			end
 		end
 		for particle, _ in pairs (t2) do
 			if !t2[particle]["has_renderer"] then
@@ -4713,6 +4719,11 @@ function PartCtrl_ProcessPCF(filename)
 				if particle2 != particle and t2[particle2].min_length_raw_hasdecay and t2[particle2].min_length_raw then
 					t2[particle].min_length_raw_child = math.max((t2[particle].min_length_raw_child or 0), t2[particle2].min_length_raw)
 				end
+
+				//Also inherit screenspace flag from children here
+				if particle2 != particle and t2[particle2].screenspace then
+					t2[particle].screenspace_from_child = true
+				end
 			end
 			SetCPointModes(particle)
 			//Cpoints that haven't been filled in yet should inherit from children
@@ -4928,11 +4939,45 @@ function PartCtrl_ProcessPCF(filename)
 				end
 				shouldcull = shouldcull .. "This particle effect has the value preventNameBasedLookup set to true, which prevents\nthe game from spawning it directly, though other effects can still use it as a child."
 			end
-			t2[particle].shouldcull = shouldcull
-			//Also add info text for viewmodel effects here, because this isn't inherited
-			if t[particle]["view model effect"] then
+			
+			//Handle screenspace fx
+			//TODO: this isn't perfectly 1-to-1 with which screenspace fx actually display fx on the screen (generally, these fx don't render on their 
+			//own unless they're also a viewmodel effect, but if they're a child of another effect, then *usually* their parent will render them anyway? 
+			//not 100% sure what the criteria is here.) All the fx that still render here but get flagged as "unable to render properly" are still
+			//various flavors of broken anyway, so this is what we're going with.
+			local screenspace = false
+			local vm = t[particle]["view model effect"]
+			if t2[particle].screenspace_from_child then
+				screenspace = true
+			elseif t2[particle].screenspace then
+				if vm then
+					screenspace = true
+				else
+					if shouldcull then
+						shouldcull = shouldcull .. "\n\n"
+					else
+						shouldcull = ""
+					end
+					shouldcull = shouldcull .. "This particle effect has the value \"screen space effect\" set to true, but isn't set as a view model effect, which prevents it from rendering properly."
+				end
+			end
+			if screenspace then
+				if blacklist_screenfx:GetBool() then
+					if shouldcull then
+						shouldcull = shouldcull .. "\n\n"
+					else
+						shouldcull = ""
+					end
+					shouldcull = shouldcull .. "sv_partctrl_blacklist_screenspace is 1, blocking all fx with \"screen space effect\""
+				else
+					PartCtrl_AppendInfoText(t2[particle], "Screenspace effect: draws an overlay directly onto the screen")
+				end
+			elseif vm then
+				//Also add info text for viewmodel effects here, because this isn't inherited and doesn't apply to screenspace fx
 				PartCtrl_AppendInfoText(t2[particle], "Viewmodel effect: draws in front of everything, and has a distorted position unless attached to a model on a non-0 attachment.")
 			end
+
+			t2[particle].shouldcull = shouldcull
 		end
 		//Now that the processed table is finished, let hook funcs modify it arbitrarily (including deciding which fx to cull)
 		hook.Call("PartCtrl_PostProcessPCF", nil, filename, t2)
