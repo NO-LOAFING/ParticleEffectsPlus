@@ -4172,7 +4172,7 @@ local processfuncs = {
 			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["label"] = label})
 		end,
 		["remap scalar to vector"] = function(processed, attrib)
-			if (attrib["output field"] or 0) then //cpoint is only used by position vector (0) to make the position relative to that cpoint (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3155)
+			if (attrib["output field"] or 0) == PARTCTRL_PARTICLE_ATTRIBUTE_XYZ then //cpoint is only used by position vector (0) to make the position relative to that cpoint (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3155)
 				cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, {["sets_particle_pos"] = true}) //yes, this sets particle pos, see unusual_poseidon_light_ fx
 			end
 		end,
