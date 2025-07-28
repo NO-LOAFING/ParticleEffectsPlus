@@ -3924,8 +3924,12 @@ local processfuncs = {
 				local endp = attrib["end control point number"] or 0
 				local name = attrib._categoryName .. " " .. attrib.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 				for i = startp, endp do
-					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {["sets_particle_pos"] = true}, attrib)
+					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {
+						["sets_particle_pos"] = true, 
+						["pathseqcheck_min_particles"] = ((attrib["particles to map from start to end"] or 100) / (endp - startp)) * (i - startp - 1)
+					}, attrib)
 				end
+				processed["pathseqcheck"] = true
 			else
 				//uses start and end cpoint only
 				cpoint_from_attrib_value(processed, attrib, "start control point number", 0, nil, {["sets_particle_pos"] = true})
@@ -4298,6 +4302,7 @@ local processfuncs = {
 			if (attrib["emission minimum"] or 0) > 0 or (attrib["emission maximum"] or 100) > 0 then
 				processed["has_emitter"] = true
 			end
+			processed["pathseqcheck_disable"] = true
 		end,
 		["emit to maintain count"] = function(processed, attrib)
 			if (attrib["count to maintain"] or 100) > 0 then
@@ -4314,6 +4319,7 @@ local processfuncs = {
 					["default"] = 1,
 				})
 			end
+			processed["pathseqcheck_disable"] = true
 		end,
 		["emit_continuously"] = function(processed, attrib)
 			if (attrib["emission_rate"] or 100) > 0 then
@@ -4330,11 +4336,13 @@ local processfuncs = {
 					["default"] = 1,
 				})
 			end
+			processed["pathseqcheck_disable"] = true
 		end,
 		//"emit noise" and "emit_continuously" have "scale emission to used control points", which wiki claims is a cpoint id, but it's actually a float that's multiplied by the number of cpoints the effect has, we don't care about this (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_emitters.cpp#L449)
 		["emit_instantaneously"] = function(processed, attrib)
 			if (attrib["num_to_emit_minimum"] or -1) > 0 or (attrib["num_to_emit"] or 100) > 0 then
 				processed["has_emitter"] = true
+				processed["pathseqcheck_particles"] = (attrib["num_to_emit"] or 100) //TODO: do we need to account for num_to_emit_minimum here?
 			end
 			local axis = attrib["emission count scale control point field"] or 0
 			if axis > -1 then
@@ -4449,9 +4457,24 @@ function PartCtrl_ProcessPCF(filename)
 				processed["has_emitter"] = true
 			end
 			t2[particle] = processed
-			//Also store "screen space effect" here
+			//Also store "screen space effect" here (so we can disable these with a convar)
 			if ptab["screen space effect"] then
 				processed.screenspace = true
+			end
+			//"pathseqcheck": cull cpoints added by initializer "position along path sequential" that emitter "emit_instantaneously" doesn't emit enough particles to actually use; 
+			//we have to do this here because the initializer's processfunc doesn't have a way to get the emitted particle count, and we want to do all this before inheritance.
+			//(for particles/summer2025_unusuals.pcf's utaunt_waterwave_lensflare child fx)
+			if processed["pathseqcheck"] and !processed["pathseqcheck_disable"] then
+				local count = processed["pathseqcheck_particles"] or -math.huge
+				for k, _ in pairs (processed.cpoints) do
+					if processed.cpoints[k].position then
+						for k2, v2 in pairs (processed.cpoints[k].position) do
+							if v2.pathseqcheck_min_particles != nil and v2.pathseqcheck_min_particles > count then
+								processed.cpoints[k].position[k2].pathseqcheck_fail = true
+							end
+						end
+					end
+				end
 			end
 		end
 		for particle, _ in pairs (t2) do
@@ -4621,6 +4644,7 @@ function PartCtrl_ProcessPCF(filename)
 								end
 							end
 							for k2, v2 in pairs (newtab) do
+								if v2["pathseqcheck_fail"] then continue end
 								if (t2[particle2].has_renderer and t2[particle2].has_emitter) or v2["doesnt_need_renderer_or_emitter"] then
 									if modes[k] == nil or modes[k] == PARTCTRL_CPOINT_MODE_POSITION_COMBINE or (did_output and ignore_outputs) then
 										if t2[particle2].constraint_does_override and v2["overridable_by_constraint"]
