@@ -3923,7 +3923,7 @@ local processfuncs = {
 				local startp = attrib["start control point number"] or 0
 				local endp = attrib["end control point number"] or 0
 				local name = attrib._categoryName .. " " .. attrib.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
-				for i = startp, endp do
+				for i = startp, endp-startp do //note: if the starting cpoint is non-0, it behaves oddly and deducts that many cpoints from the other end, see portal2 particles/debug.pcf debug_sc_square; this is almost certainly a bug, but a valve effect was designed with it in mind, so we're going with it
 					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {
 						["sets_particle_pos"] = true, 
 						["pathseqcheck_min_particles"] = ((attrib["particles to map from start to end"] or 100) / (endp - startp)) * (i - startp - 1)
