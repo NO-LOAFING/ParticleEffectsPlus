@@ -3731,7 +3731,10 @@ local processfuncs = {
 			//some fx (i.e. utaunt_tornado_oscillate_) emit invisible particles (no renderer) and then use them to set the position of a child control point. ordinarily, we'd cull the
 			//cpoint data from fx with no renderer, because their attribs don't do anything that the player can see, but in this case, we don't want to do that, so mark as having a renderer.
 			//TODO: this might be bad if the children don't have a renderer either, can we catch those?
-			if #processed["children"] > 0 then processed["has_renderer"] = true end
+			if #processed["children"] > 0 then
+				processed["has_renderer"] = true
+				processed["ignore_zero_alpha"] = true //for particles/infection_particles.pcf: zombie_lightning_controller
+			end
 			//processed["sets_particle_pos_on_children"] = groupid
 		end,
 		["set control point positions"] = function(processed, attrib)
@@ -3861,6 +3864,13 @@ local processfuncs = {
 		end,
 	},
 	["initializers"] = {
+		["alpha random"] = function(processed, attrib)
+			//some fx use an alpha of 0 to make it invisible?? who does that??
+			//(particles/scary_ghost (plr_hacksaw_event).pcf: halloween_boss_eye_glow)
+			if (attrib["alpha_max"] or 255) == 0 and (attrib["alpha_min"] or 255) == 0 then
+				processed["has_zero_alpha"] = true
+			end
+		end,
 		["color random"] = function(processed, attrib)
 			if (attrib["tint_perc"] or 0) > 0 then //by default, the value of "tint control point" is 0, not -1, so pet adds a control for it by default, but in code, this isn't used unless tint_perc is non-zero (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L1705)
 				cpoint_from_attrib_value(processed, attrib, "tint control point", 0, "position_combine") //samples the lighting from this cpoint's position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Color_Random)
@@ -4175,6 +4185,14 @@ local processfuncs = {
 			local label = ParticleAttributeNames[attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS] //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
 			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["label"] = label})
 		end,
+		["remap noise to scalar"] = function(processed, attrib)
+			//for particles/blood_impact.pcf blood_impact_synth_01_short: ignore the initializer "alpha random" zero alpha check if the zero alpha is being
+			//overwritten by the scalar. TODO: there's almost certainly a lot of other scalar operators that could potentially do the same thing, but we'll
+			//just add those if we run into them. there's really no good reason for fx to be set up this way, it just makes alpha random do nothing.
+			if (attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS) == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA then
+				processed["ignore_zero_alpha"] = true
+			end
+		end,
 		["remap scalar to vector"] = function(processed, attrib)
 			if (attrib["output field"] or 0) == PARTCTRL_PARTICLE_ATTRIBUTE_XYZ then //cpoint is only used by position vector (0) to make the position relative to that cpoint (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3155)
 				cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, {["sets_particle_pos"] = true}) //yes, this sets particle pos, see unusual_poseidon_light_ fx
@@ -4475,6 +4493,10 @@ function PartCtrl_ProcessPCF(filename)
 						end
 					end
 				end
+			end
+			//Don't count fx as having a renderer if it has 0 alpha
+			if processed["has_zero_alpha"] and !processed["ignore_zero_alpha"] then
+				processed["has_renderer"] = false
 			end
 		end
 		for particle, _ in pairs (t2) do
@@ -4943,7 +4965,15 @@ function PartCtrl_ProcessPCF(filename)
 			local shouldcull = nil
 			//Cull empty effects
 			if t2[particle].renderer_emitter_shouldcull then
-				shouldcull = "This particle effect has no valid renderer and/or no valid emitter, and no control points\ninherited from children, which means it's probably empty or blank. If this effect was\nflagged in error (it actually has a visible component of some kind), then report this bug!"
+				if t2[particle].has_zero_alpha then
+					shouldcull = "This particle has an alpha of 0, preventing it from rendering. If this effect was flagged\nin error (it's actually visible), then report this bug!"
+				end
+				if shouldcull then
+					shouldcull = shouldcull .. "\n\n"
+				else
+					shouldcull = ""
+				end
+				shouldcull = shouldcull .. "This particle effect has no valid renderer and/or no valid emitter, and no control points\ninherited from children, which means it's probably empty or blank. If this effect was\nflagged in error (it's actually visible), then report this bug!"
 			end
 			//Cull effects that are stuck at the world origin because they don't have any cpoints setting their particle pos
 			if !t2[particle].sets_particle_pos then
@@ -4952,7 +4982,7 @@ function PartCtrl_ProcessPCF(filename)
 				else
 					shouldcull = ""
 				end
-				shouldcull = shouldcull .. "This particle effect doesn't have any control point attributes setting the particles' spawn\nposition (i.e. 'Position Within Box Random'), which means it will always spawn particles\nat the world origin. This isn't useful to players 99% of the time, and would just clutter up\nspawnlists and searches with unusable effects. If this effect was flagged in error (it\nactually *does* control where particles spawn with a control point, it doesn't spawn them\nat 0,0,0), then report this bug!"
+				shouldcull = shouldcull .. "This particle effect doesn't have any control point attributes setting the particles' spawn\nposition (i.e. 'Position Within Box Random'), which means it will always spawn particles\nat the world origin. This isn't useful to players 99% of the time, and would just clutter up\nspawnlists and searches with unusable effects. If this effect was flagged in error (it\ndoesn't spawn particles at 0,0,0), then report this bug!"
 			end
 			//Also, now that their parents have inherited cpoint data from them, cull effects with preventNameBasedLookup, since we can't spawn them on their own.
 			if t2[particle].prevent_name_based_lookup then
