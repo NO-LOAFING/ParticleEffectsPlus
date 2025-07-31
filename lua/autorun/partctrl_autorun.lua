@@ -4242,7 +4242,7 @@ local processfuncs = {
 		["velocity repulse from world"] = function(processed, attrib)
 			if !attrib["Per Particle World Collision Tests"] then //according to code, neither the cpoint nor broadcast-to-children are used with per-particle collision on (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3421)
 				if !attrib["Inherit from Parent"] then
-					cpoint_from_attrib_value(processed, attrib, "control_point_number", 0)
+					cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, "position_combine") //this cpoint is used to detect nearby world geometry to apply countervelocity away from; no reason this needs to use its own separate grip point, so position_combine it
 					local i = attrib["control points to broadcast to children (n + 1)"] or -1 //this also isn't used if inheriting
 					if i != -1 then
 						local groupid = attrib["Child Group ID to affect"] or 0
