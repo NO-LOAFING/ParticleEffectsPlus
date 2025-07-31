@@ -46,16 +46,7 @@ local tf2_unusual_wep_pcfs = {
 	["particles/weapon_unusual_isotope.pcf"] = true
 }
 local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all conflicting duplicates of other unusual weapon fx"
-local crash_blacklist_text = "Blacklisted: causes crash when spawned"
 local default_blacklist = {
-	//Portal 2
-	["particles/chicken.pcf"] = {
-		blacklist = {
-			feathers_large = crash_blacklist_text,
-			feathers_single = crash_blacklist_text,
-			feathers_small = crash_blacklist_text,
-		}
-	},
 	//TF2 map particles addon
 	["particles/nucleus_event_effects.pcf"] = {
 		blacklist = {
@@ -4416,6 +4407,7 @@ local processfuncs = {
 		//["prevent passing through static part of world"] = function(processed, attrib) PartCtrl_CPoint_AddToProcessed(processed, 0, attrib._categoryName .. " " .. attrib.functionName .. ": always uses cpoint 0", nil, nil, attrib) end,
 	}
 }
+local PartCtrl_BadMaterials = PartCtrl_BadMaterials or {}
 local blacklist_screenfx = GetConVar("sv_partctrl_blacklist_screenspace")
 function PartCtrl_ProcessPCF(filename)
 	if hook.Call("PartCtrl_PreProcessPCF", nil, filename) == false then return end //Let hook funcs prevent PCFs from being read by returning false
@@ -4494,8 +4486,15 @@ function PartCtrl_ProcessPCF(filename)
 					end
 				end
 			end
-			//Don't count fx as having a renderer if it has 0 alpha
-			if processed["has_zero_alpha"] and !processed["ignore_zero_alpha"] then
+			//Don't count fx as having a renderer if their material is invalid (the majority of fx with invalid materials don't render at all; 
+			//there's a few exceptions like trails, ropes, and sprites with a different orientation_type, but these aren't worth preserving)
+			local mat = "materials/" .. (ptab.material or "vgui/white")
+			if !string.EndsWith(mat, ".vmt") then mat = mat .. ".vmt" end
+			if PartCtrl_BadMaterials[mat] == nil then PartCtrl_BadMaterials[mat] = file.Exists(mat, "GAME") end
+			if !PartCtrl_BadMaterials[mat] then
+				t2[particle].has_renderer = false
+			//Don't count fx as having a renderer if they have 0 alpha, since they won't render visibly
+			elseif processed["has_zero_alpha"] and !processed["ignore_zero_alpha"] then
 				processed["has_renderer"] = false
 			end
 		end
@@ -4973,7 +4972,7 @@ function PartCtrl_ProcessPCF(filename)
 				else
 					shouldcull = ""
 				end
-				shouldcull = shouldcull .. "This particle effect has no valid renderer and/or no valid emitter, and no control points\ninherited from children, which means it's probably empty or blank. If this effect was\nflagged in error (it's actually visible), then report this bug!"
+				shouldcull = shouldcull .. "This particle effect is missing a renderer, emitter, or texture, and has no control points\ninherited from children, which means it's probably empty, blank, or invisible. If this effect\nwas flagged in error (it's actually visible), then report this bug!"
 			end
 			//Cull effects that are stuck at the world origin because they don't have any cpoints setting their particle pos
 			if !t2[particle].sets_particle_pos then
