@@ -4100,6 +4100,11 @@ local processfuncs = {
 						default = math.min(inMin, inMax)
 					end
 				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER or field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 then
+					//don't let sequence number scalars set the value to 64, or it'll crash (for particles/asw_order_fx.pcf order_use_item)
+					if outMax > 63 then
+						inMax = math.Remap(63, outMin, outMax, inMin, inMax)
+						outMax = 63
+					end
 					//sequence number scalars should be whole numbers, and default to 0 (first sequence)
 					default = math.Remap(0, outMin, outMax, inMin, inMax)
 					decimals = 0
