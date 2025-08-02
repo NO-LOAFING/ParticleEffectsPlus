@@ -836,7 +836,8 @@ function ENT:SpecialEffectThink()
 						local wait = false
 						if CLIENT then
 							for child, _ in pairs (self.SpecialEffectChildren) do
-								if !child.ParticleInfo then
+								if istable(PartCtrl_ProcessedPCFs[child:GetPCF()]) and istable(PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+								and !child.ParticleInfo then
 									wait = true
 									break
 								end

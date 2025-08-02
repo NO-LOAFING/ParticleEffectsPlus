@@ -1,20 +1,19 @@
 //Convars:
 
-if SERVER then
-	CreateConVar("sv_partctrl_particlesperent", 32, FCVAR_REPLICATED, "Max number of effect instances (or projectiles) that a single particle effect entity can have active at once.", 1)
-	//Assume that most servers won't want serverside projectile fx because they're too easy to grief with, 
-	//and won't want ReadPCF caching because we can't assume connecting clients will use this addon more than once.
-	//Is this right? No idea, I don't run a server.
-	local int_sp
-	if game.SinglePlayer() then
-		int_sp = 1
-	else
-		int_sp = 0
-	end
-	CreateConVar("sv_partctrl_allowserverprojectiles", int_sp, FCVAR_REPLICATED, "If 0, disables the serverside projectiles option on projectile effects.", 0, 1)
-	CreateConVar("sv_partctrl_cachereadpcf", int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, the results of PartCtrl_ReadPCF are cached to the data folder. This makes subsequent startups 2-3x faster, but the first time quite a bit slower as it saves ~50MB to the data folder.", 0, 1)
-	CreateConVar("sv_partctrl_blacklist_screenspace", 1-int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, effects with the var \"screen space effect\" are blacklisted from being loaded.\nNote: Blacklisted fx are only updated when the game reloads their PCF file - i.e. on map load, when changing mounted content, or when reloading pcf files manually.", 0, 1)
+CreateConVar("sv_partctrl_particlesperent", 32, FCVAR_REPLICATED, "Max number of effect instances (or projectiles) that a single particle effect entity can have active at once.", 1)
+//Assume that most servers won't want serverside projectile fx because they're too easy to grief with, 
+//and won't want ReadPCF caching because we can't assume connecting clients will use this addon more than once.
+//Is this right? No idea, I don't run a server.
+local int_sp
+if game.SinglePlayer() then
+	int_sp = 1
 else
+	int_sp = 0
+end
+CreateConVar("sv_partctrl_allowserverprojectiles", int_sp, FCVAR_REPLICATED, "If 0, disables the serverside projectiles option on projectile effects.", 0, 1)
+CreateConVar("sv_partctrl_cachereadpcf", int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, the results of PartCtrl_ReadPCF are cached to the data folder. This makes subsequent startups 2-3x faster, but the first time quite a bit slower as it saves ~50MB to the data folder.", 0, 1)
+CreateConVar("sv_partctrl_blacklist_screenspace", 1-int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, effects with the var \"screen space effect\" are blacklisted from being loaded.\nNote: Blacklisted fx are only updated when the game reloads their PCF file - i.e. on map load, when changing mounted content, or when reloading pcf files manually.", 0, 1)
+if CLIENT then
 	//Some convars to separate child fx from others; in practice, this doesn't work well because there are 
 	//A: lots of normal fx that are also used as children, and would be excluded (i.e. eye_powerup_green_lvl_3, rocket_explosion_classic, rocket_trail_classic_crit_red, many more) 
 	//and B: lots of unused child fx that were removed from their parents, and so end up cluttering up the parent fx lists anyway (too many to list), 

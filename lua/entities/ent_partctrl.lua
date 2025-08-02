@@ -1863,19 +1863,12 @@ if SERVER then
 
 	end
 
-end
-
-concommand.Add("partctrl_spawnparticle", function(ply, cmd, args)
-	//Note: this callback function runs on the SERVER only
-	PartCtrl_SpawnParticle(ply, nil, args[1], args[2])
-end, nil, "Spawns a particle effect; first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf")
-
-if SERVER then
-
-	//MsgN("in ent_partctrl, GM = ", GM, ", GAMEMODE = ", GAMEMODE)
+	//Console commaed by contenticon_partctrl to spawn particles
+	concommand.Add("partctrl_spawnparticle", function(ply, cmd, args)
+		PartCtrl_SpawnParticle(ply, nil, args[1], args[2])
+	end, nil, "Spawns a particle effect; first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf")
 
 	//Add hooks for these, in case someone wants to selectively prevent players from spawning particles
-
 	function GAMEMODE:PlayerSpawnParticle(ply, name, pcf)
 
 		local function LimitReachedProcess()
@@ -1900,6 +1893,7 @@ end
 //Function override for SetColor: set all color vector cpoints to the color value, so players can recolor them with the color tool instead of the edit window
 
 if SERVER then
+
 	local meta = FindMetaTable("Entity")
 
 	local old_SetColor = meta.SetColor

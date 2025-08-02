@@ -140,6 +140,7 @@ function PANEL:RebuildControls()
 	self.betweenitems_help = betweenitems_help
 
 	local icon_info = Material("icon16/information.png")
+	local icon_invalid = Material("icon16/cancel.png")
 
 	//make this other stuff externally accessible too
 	self.SliderValueChangedUnclampedMax = SliderValueChangedUnclampedMax
@@ -150,6 +151,37 @@ function PANEL:RebuildControls()
 	self.CPointCategories = {} //make these externally accessible so that the entity can change them upon receiving inputs from the server
 
 	local function BuildParticleEntControls(ent2, container)
+
+		//don't throw a lua error if a special effect contains an invalid particle effect
+		//(i.e. we're a client connected to a server, and the server has the effect but we don't)
+		if !istable(PartCtrl_ProcessedPCFs[ent2:GetPCF()]) or !istable(PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()]) then
+			local pnl = vgui.Create("DSizeToContents", container)
+			pnl:SetSizeX(false)
+			pnl:Dock(FILL)
+			container:AddItem(pnl)
+			pnl.Paint = function(self, w, h) 
+				draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
+				//draw info icon
+				surface.SetDrawColor(255,255,255,255)
+				surface.SetMaterial(icon_invalid)
+				//surface.DrawTexturedRect(padding,betweenitems,16,16)
+				surface.DrawTexturedRect(padding,(h/2)-8,16,16)
+			end
+			pnl:DockPadding(16+padding,0,0,padding) //extra left to make room for the info icon; DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+			pnl:DockMargin(3,3,3,3-2) //-2 bottom because there's too much space between this and the next category otherwise
+	
+			local text = vgui.Create("DLabel", pnl)
+			text:SetDark(true)
+			text:SetWrap(true)
+			text:SetTextInset(0, 0)
+			text:SetText("Invalid particle effect (from game/addon that isn't mounted?)")
+			text:SetContentAlignment(5)
+			text:SetAutoStretchVertical(true)
+			text:DockMargin(padding,padding-1,padding,0) //padding-1 for top is trial and error, results in nice 16px spacing on both top and bottom of text
+			text:Dock(TOP)
+
+			return
+		end
 	
 		--[[//category for general settings
 		local cat = vgui.Create("DCollapsibleCategory", container)
