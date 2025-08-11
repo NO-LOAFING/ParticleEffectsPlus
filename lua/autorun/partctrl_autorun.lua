@@ -1,5 +1,3 @@
-//Convars:
-
 CreateConVar("sv_partctrl_particlesperent", 32, FCVAR_REPLICATED, "Max number of effect instances (or projectiles) that a single particle effect entity can have active at once.", 1)
 //Assume that most servers won't want serverside projectile fx because they're too easy to grief with, 
 //and won't want ReadPCF caching because we can't assume connecting clients will use this addon more than once.
@@ -3758,11 +3756,19 @@ local processfuncs = {
 			if !attrib["Set positions in world space"] then //according to code, only used if not setting in world space (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_ops.cpp#L2725)
 				cpoint_from_attrib_value(processed, attrib, "Control Point to offset positions from", 0, nil, {["doesnt_need_renderer_or_emitter"] = true})
 				used_cpoint = attrib["Control Point to offset positions from"] or 0
+				if used_cpoint == -1 then used_cpoint = nil end //TODO: nothing actually does this?
 			end
 
 			for k, tab in pairs (cpoints) do
 				//do inputs - add position controls for the "parent" cpoints that move things around
-				cpoint_from_attrib_value(processed, attrib, tab.input, tab.input_def, nil, {["doesnt_need_renderer_or_emitter"] = true, ["remove_if_other_cpoint_is_empty"] = attrib[tab.output] or tab.output_def})
+				if used_cpoint == nil then //if "control point to offset positions from" is being used, then control point parents are not used, see L4D2 storm_lightning_0#_branch_# fx and our test effect test_cpointpos_2
+					cpoint_from_attrib_value(processed, attrib, tab.input, tab.input_def, nil, {["doesnt_need_renderer_or_emitter"] = true, ["remove_if_other_cpoint_is_empty"] = attrib[tab.output] or tab.output_def})
+				--[[else
+					if !processed["test"] then
+						processed["test"] = {}
+					end
+					processed["test"][attrib[tab.input] or tab.input_def] = true]]
+				end
 				//then do outputs - remove position controls from the "child" cpoints that are having their positions overridden
 				if (attrib[tab.output] or tab.output_def) != used_cpoint then
 					cpoint_from_attrib_value(processed, attrib, tab.output, tab.output_def, "output")
