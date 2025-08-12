@@ -3754,7 +3754,14 @@ local processfuncs = {
 			}
 			local used_cpoint //fix some fx that have an output set to the main cpoint they're all offset from (tfc_sniper_charge_blue) - in these cases, the cpoint is not overridden
 			if !attrib["Set positions in world space"] then //according to code, only used if not setting in world space (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_ops.cpp#L2725)
-				cpoint_from_attrib_value(processed, attrib, "Control Point to offset positions from", 0, nil, {["doesnt_need_renderer_or_emitter"] = true})
+				local tab2 = {}
+				for k, tab in pairs (cpoints) do
+					tab2[attrib[tab.output] or tab.output_def] = true
+				end
+				cpoint_from_attrib_value(processed, attrib, "Control Point to offset positions from", 0, nil, {
+					["doesnt_need_renderer_or_emitter"] = true, 
+					["copy_sets_particle_pos"] = tab2}
+				)
 				used_cpoint = attrib["Control Point to offset positions from"] or 0
 				if used_cpoint == -1 then used_cpoint = nil end //TODO: nothing actually does this?
 			end
@@ -3763,11 +3770,6 @@ local processfuncs = {
 				//do inputs - add position controls for the "parent" cpoints that move things around
 				if used_cpoint == nil then //if "control point to offset positions from" is being used, then control point parents are not used, see L4D2 storm_lightning_0#_branch_# fx and our test effect test_cpointpos_2
 					cpoint_from_attrib_value(processed, attrib, tab.input, tab.input_def, nil, {["doesnt_need_renderer_or_emitter"] = true, ["remove_if_other_cpoint_is_empty"] = attrib[tab.output] or tab.output_def})
-				--[[else
-					if !processed["test"] then
-						processed["test"] = {}
-					end
-					processed["test"][attrib[tab.input] or tab.input_def] = true]]
 				end
 				//then do outputs - remove position controls from the "child" cpoints that are having their positions overridden
 				if (attrib[tab.output] or tab.output_def) != used_cpoint then
@@ -3787,7 +3789,11 @@ local processfuncs = {
 			//there's also a "Local Space Control Point" we could position_combine, but again, not useful.
 		end,]]
 		["set control point to impact point"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "Control Point to Trace From", 1, "position_combine")
+			cpoint_from_attrib_value(processed, attrib, "Control Point to Trace From", 1, "position_combine", 
+				{["copy_sets_particle_pos"] = {
+					[attrib["Control Point to Set"] or 1] = true
+				}}
+			)
 			cpoint_from_attrib_value(processed, attrib, "Control Point to Set", 1, "output") 
 			//note: if we have a control for the output cpoint (i.e. output doesn't get set because of fadein or something), 
 			//then this operator's changes get squashed completely, even for the window of time where it *should* be doing something.
@@ -4588,6 +4594,7 @@ function PartCtrl_ProcessPCF(filename)
 			local output_axis = {}
 			local on_model = nil
 			local sets_particle_pos = nil
+			local copy_sets_particle_pos = nil
 			local remove_if_other_cpoint_is_empty = {}
 			local function SetCPointModes(particle2, parent)
 				//a little heavy-handed? maybe. might result in some false positives in complex hierarchy trees. haven't found any actual examples of this causing problems,
@@ -4705,6 +4712,11 @@ function PartCtrl_ProcessPCF(filename)
 									sets_particle_pos = sets_particle_pos or {}
 									sets_particle_pos[k] = true
 								end
+								if v2["copy_sets_particle_pos"] then
+									copy_sets_particle_pos = copy_sets_particle_pos or {}
+									copy_sets_particle_pos[k] = copy_sets_particle_pos[k] or {}
+									table.Merge(copy_sets_particle_pos[k], v2["copy_sets_particle_pos"]) 
+								end
 							end
 						end
 						if v["position_combine"] then
@@ -4743,6 +4755,11 @@ function PartCtrl_ProcessPCF(filename)
 								if v2["sets_particle_pos"] and !t2[particle2].sets_particle_pos_forcedisable then
 									sets_particle_pos = sets_particle_pos or {}
 									sets_particle_pos[k] = true
+								end
+								if v2["copy_sets_particle_pos"] then
+									copy_sets_particle_pos = copy_sets_particle_pos or {}
+									copy_sets_particle_pos[k] = copy_sets_particle_pos[k] or {}
+									table.Merge(copy_sets_particle_pos[k], v2["copy_sets_particle_pos"])
 								end
 							end
 						end
@@ -4868,7 +4885,60 @@ function PartCtrl_ProcessPCF(filename)
 				t2[particle].cpoints_with_children[k].mode = v
 			end
 
-			t2[particle]["sets_particle_pos"] = sets_particle_pos
+			//TODO: remove once archived
+			--[[if copy_sets_particle_pos and sets_particle_pos then
+				for k, v in pairs (copy_sets_particle_pos) do
+					for k2, _ in pairs (v) do
+						if sets_particle_pos[k2] then
+							sets_particle_pos[k] = true
+						end
+					end
+				end
+			end]]
+			//Handle copy_sets_particle_pos - this is used by operators "Set Control Point Positions" and "Set Control Point to Impact Point" to inherit the
+			//sets_particle_pos value of the cpoints they're overriding. (i.e. if cpoint 0 controls the position of particles, and then cpoint 1 overrides 
+			//the position of cpoint 0, then that means cpoint 1 should be counted as controlling the position of particles) This matters because 
+			//sets_particle_pos then filters out cpoints that the player can't control (in our example, cpoint 0, because it's being overwritten).
+			//
+			//This works in a funky two-stage process to handle an edge case where there are *two* operator "Set Control Point Positions" on one effect, the 
+			//first setting other cpoints relative to its own cpoint, and then the second one setting the position of *that* cpoint to *its* own (see cstrike 
+			//particles/achievement.pcf: achieved). I say "first" and "second" here, but according to testing, the order of the operators doesn't actually 
+			//matter, so we have to handle this in a way that lets the copy succeed even if we handle the cpoints out of order, hence the two-stage process.
+			if copy_sets_particle_pos and sets_particle_pos then
+				for k, v in pairs (copy_sets_particle_pos) do
+					if !sets_particle_pos[k] then
+						sets_particle_pos[k] = "copy"
+					end
+				end
+				for k, v in pairs (sets_particle_pos) do
+					if v == "copy" then
+						local copy_succeeded = nil
+						for k2, _ in pairs (copy_sets_particle_pos[k]) do
+							if sets_particle_pos[k2] then //make sure it still counts if the other value is a "copy" we haven't gone over yet; not 100% satisfied with this solution but so far it seems to work
+								copy_succeeded = true
+								break 
+							end
+						end
+						sets_particle_pos[k] = copy_succeeded
+					end
+				end
+			end
+
+			//Filter out cpoints that set particle positions, but are overwritten by an output so the player can't control them 
+			//(examples: l4d2 storm_lightning_01_branch_parent_01), which sets child cpoints to the positions of its particles, but its own particles don't have
+			//anything to set their position because this effect is meant to be the child of something else; tf2 map particles embargo_shore_center_heli_fg,
+			//which sets its cpoints to specific coordinates on the map that cannot be moved by the player)
+			//This is used a bit later to filter out fx that are unusable because the player can't move them at all.
+			local sets_particle_pos_2 = nil
+			if sets_particle_pos then
+				for k, v in pairs (sets_particle_pos) do
+					if modes[k] == PARTCTRL_CPOINT_MODE_POSITION or modes[k] == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+						sets_particle_pos_2 = sets_particle_pos_2 or {}
+						sets_particle_pos_2[k] = true
+					end
+				end
+			end
+			t2[particle]["sets_particle_pos"] = sets_particle_pos_2
 
 			//Do info text for on_model
 			if on_model then
