@@ -3728,26 +3728,26 @@ local processfuncs = {
 		["set control point positions"] = function(processed, attrib)
 			local cpoints = {
 				[1] = {
-					["input"] = "First Control Point Parent",
-					["input_def"] = 0,
+					//["input"] = "First Control Point Parent",
+					//["input_def"] = 0,
 					["output"] = "First Control Point Number",
 					["output_def"] = 1,
 				},
 				[2] = {
-					["input"] = "Second Control Point Parent",
-					["input_def"] = 0,
+					//["input"] = "Second Control Point Parent",
+					//["input_def"] = 0,
 					["output"] = "Second Control Point Number",
 					["output_def"] = 2,
 				},
 				[3] = {
-					["input"] = "Third Control Point Parent",
-					["input_def"] = 0,
+					//["input"] = "Third Control Point Parent",
+					//["input_def"] = 0,
 					["output"] = "Third Control Point Number",
 					["output_def"] = 3,
 				},
 				[4] = {
-					["input"] = "Fourth Control Point Parent",
-					["input_def"] = 0,
+					//["input"] = "Fourth Control Point Parent",
+					//["input_def"] = 0,
 					["output"] = "Fourth Control Point Number",
 					["output_def"] = 4,
 				},
@@ -3767,10 +3767,13 @@ local processfuncs = {
 			end
 
 			for k, tab in pairs (cpoints) do
-				//do inputs - add position controls for the "parent" cpoints that move things around
+				//after testing, i can't find any evidence that these "parent" cpoints actually do anything. if we're setting positions in world space, then 
+				//the positions are relative to the world, not the parent cpoints. if they're not being set in world space, then they're relative to used_cpoint, 
+				//not the parent cpoints. leaving this here just in case we find an exception later.
+				--[[//do inputs - add position controls for the "parent" cpoints that move things around
 				if used_cpoint == nil then //if "control point to offset positions from" is being used, then control point parents are not used, see L4D2 storm_lightning_0#_branch_# fx and our test effect test_cpointpos_2
 					cpoint_from_attrib_value(processed, attrib, tab.input, tab.input_def, nil, {["doesnt_need_renderer_or_emitter"] = true, ["remove_if_other_cpoint_is_empty"] = attrib[tab.output] or tab.output_def})
-				end
+				end]]
 				//then do outputs - remove position controls from the "child" cpoints that are having their positions overridden
 				if (attrib[tab.output] or tab.output_def) != used_cpoint then
 					cpoint_from_attrib_value(processed, attrib, tab.output, tab.output_def, "output")
@@ -4885,16 +4888,6 @@ function PartCtrl_ProcessPCF(filename)
 				t2[particle].cpoints_with_children[k].mode = v
 			end
 
-			//TODO: remove once archived
-			--[[if copy_sets_particle_pos and sets_particle_pos then
-				for k, v in pairs (copy_sets_particle_pos) do
-					for k2, _ in pairs (v) do
-						if sets_particle_pos[k2] then
-							sets_particle_pos[k] = true
-						end
-					end
-				end
-			end]]
 			//Handle copy_sets_particle_pos - this is used by operators "Set Control Point Positions" and "Set Control Point to Impact Point" to inherit the
 			//sets_particle_pos value of the cpoints they're overriding. (i.e. if cpoint 0 controls the position of particles, and then cpoint 1 overrides 
 			//the position of cpoint 0, then that means cpoint 1 should be counted as controlling the position of particles) This matters because 
@@ -5052,7 +5045,7 @@ function PartCtrl_ProcessPCF(filename)
 				else
 					shouldcull = ""
 				end
-				shouldcull = shouldcull .. "This particle effect is missing a renderer, emitter, or material, and has no control points\ninherited from children, which means it's probably empty, blank, or invisible. If this effect\nwas flagged in error (it's actually visible), then report this bug!"
+				shouldcull = shouldcull .. "This particle effect is missing a valid renderer, emitter, or material, and has no control\npoints inherited from children, which means it's probably empty, blank, or invisible. If\nthis effect was flagged in error (it's actually visible), then report this bug!"
 			end
 			//Cull effects that are stuck at the world origin because they don't have any cpoints setting their particle pos
 			if !t2[particle].sets_particle_pos then
@@ -5061,7 +5054,7 @@ function PartCtrl_ProcessPCF(filename)
 				else
 					shouldcull = ""
 				end
-				shouldcull = shouldcull .. "This particle effect doesn't have any control point attributes setting the particles' spawn\nposition (i.e. 'Position Within Box Random'), which means it will always spawn particles\nat the world origin. This isn't useful to players 99% of the time, and would just clutter up\nspawnlists and searches with unusable effects. If this effect was flagged in error (it\ndoesn't spawn particles at 0,0,0), then report this bug!"
+				shouldcull = shouldcull .. "This particle effect doesn't have any operators setting the particles' spawn position\n(i.e. 'Position Within Box Random'), or their position is being overwritten by another\noperator (i.e. 'Set Control Point Positions') which means it will always spawn particles\nin the same immovable location on the map. This isn't useful to players 99% of the time,\nand would just clutter up spawnlists and searches with unusable effects. If this effect\nwas flagged in error (it's not stuck in one place), then report this bug!"
 			end
 			//Also, now that their parents have inherited cpoint data from them, cull effects with preventNameBasedLookup, since we can't spawn them on their own.
 			if t2[particle].prevent_name_based_lookup then
