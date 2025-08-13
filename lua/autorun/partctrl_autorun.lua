@@ -1125,7 +1125,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact1", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
-			["label"] = "Transparency",
+			["label"] = "Alpha",
 			["min"] = 0,
 			["max"] = 255, //this uses the "damage" value of the gauss beam, which is from 1-200, but it still functions up to 255 https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_weapon_gauss.cpp#L521
 			["default"] = 200,
@@ -1175,7 +1175,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
-			["label"] = "Transparency, Spark Count Multiplier",
+			["label"] = "Alpha, Spark Count Multiplier",
 			["min"] = 0,
 			["max"] = 255/1.2, //again, this uses the gauss damage value, but the alpha for the impact sprite uses magnitude*1.2, so we have to cap this at 255/1.2 so the alpha won't overflow and glitch out
 			["default"] = 200,
@@ -1198,7 +1198,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
-			["label"] = "Transparency, Lifetime Multiplier", //still uses the damage value for alpha, but also controls the lifetime of the sprite (flMagnitude * 0.05) 
+			["label"] = "Alpha, Lifetime Multiplier", //still uses the damage value for alpha, but also controls the lifetime of the sprite (flMagnitude * 0.05) 
 			["min"] = 0,
 			["max"] = 255,
 			["default"] = 100, //for this effect, gauss code scales the damage by the angle of the reflect, and the highest possible scalar for a reflect is 0.5 https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_weapon_gauss.cpp#L485-L506
@@ -2227,7 +2227,7 @@ local ParticleAttributeNames = { //names and comments from https://github.com/So
 	[PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION] = "Roll", // ROTATION, 4 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION_SPEED] = "Roll Speed", // ROTATION_SPEED, 5 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB] = "Color", // TINT_RGB, 6 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA] = "Transparency", //better display name, more intuitive to players; original: "Alpha", // ALPHA, 7 );
+	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA] = "Alpha", // ALPHA, 7 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_CREATION_TIME] = "Creation Time", // CREATION_TIME, 8 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER] = "Texture", //better display name, technically inaccurate but players are more likely to understand what this means; original: "Sequence Number", // SEQUENCE_NUMBER, 9 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_TRAIL_LENGTH] = "Trail Length", // TRAIL_LENGTH, 10 );
@@ -2236,7 +2236,7 @@ local ParticleAttributeNames = { //names and comments from https://github.com/So
 	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Texture", //better display name, technically inaccurate but players are more likely to understand what this means; original: "Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
 	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_INDEX] = "Hitbox Index", // HITBOX_INDEX, 14
 	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ] = "Hitbox Offset Position", // HITBOX_XYZ_RELATIVE 15
-	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2] = "Transparency", //better display name, more intuitive to players; original: "Alpha", //better display name, there's no difference between the two alphas as far as players are concerned; original: "Alpha Alternate", // ALPHA2, 16
+	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2] = "Alpha", //better display name, there's no difference between the two alphas as far as players are concerned; original: "Alpha Alternate", // ALPHA2, 16
 	[PARTCTRL_PARTICLE_ATTRIBUTE_SCRATCH_VEC] = "Scratch Vector", // SCRATCH_VEC 17
 	[PARTCTRL_PARTICLE_ATTRIBUTE_SCRATCH_FLOAT] = "Scratch Float", // SCRATCH_FLOAT 18
 	[PARTCTRL_PARTICLE_ATTRIBUTE_UNUSED] = "Unused Particle Attribute", //NULL,

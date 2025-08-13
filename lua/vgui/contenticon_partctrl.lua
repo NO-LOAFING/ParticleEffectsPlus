@@ -232,6 +232,12 @@ local function DoPosCPoints(self, p)
 		end
 	end
 
+	//test: vector/axis cpoints that are overridden by the effect to some position are stuck there and stretch the bounds, see if we can move them back.
+	//(example: many fx in tf2's particles/rps.pcf) unfortunately this doesn't work at all on those cpoints, they're stuck there.
+	//for i = 0, 10 do
+	//	p:SetControlPoint(i, origin)
+	//end
+
 end
 
 local function DoColorCPoints(self)
