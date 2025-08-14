@@ -232,11 +232,19 @@ local function DoPosCPoints(self, p)
 		end
 	end
 
-	//test: vector/axis cpoints that are overridden by the effect to some position are stuck there and stretch the bounds, see if we can move them back.
+	//test: cpoints that are overridden by the effect to a fixed position in worldspace are stuck there and stretch the bounds, see if we can move them back.
 	//(example: many fx in tf2's particles/rps.pcf) unfortunately this doesn't work at all on those cpoints, they're stuck there.
 	//for i = 0, 10 do
 	//	p:SetControlPoint(i, origin)
 	//end
+	--[[p:AddControlPoint(9, game.GetWorld(), PATTACH_ABSORIGIN)
+	p:SetControlPoint(9, origin)
+	p:AddControlPoint(4, game.GetWorld(), PATTACH_ABSORIGIN)
+	p:SetControlPoint(4, origin)
+	p:AddControlPoint(2, game.GetWorld(), PATTACH_ABSORIGIN)
+	p:SetControlPoint(2, origin)
+	p:AddControlPoint(3, game.GetWorld(), PATTACH_ABSORIGIN)
+	p:SetControlPoint(3, origin)]]
 
 end
 
@@ -277,6 +285,14 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 			for panel, _ in pairs (effecttab.panels) do
 				if !IsValid(panel) or (autohide or !panel:GetParent():GetParent():GetParent():IsVisible()) then //this dumb nested parent is the spawnlist containing the spawnicon (or a container for it or something), which becomes non-visible when another spawnlist is selected
 					self.panels[panel] = nil
+				else
+					//Remove panels from list and clean up their particles when they scroll offscreen (IsVisible doesn't catch these)
+					//This fixes scrolling down really long spawnlists tanking FPS, and potentially fixes an out-of-memory crash?
+					local _, a = panel:LocalToScreen(0,0)
+					local _, b = panel:LocalToScreen(w, h)
+					if a > ScrH() or b < 0 then //if top of panel is below bottom of screen, or bottom of panel is above top of screen
+						self.panels[panel] = nil
+					end
 				end
 			end
 
