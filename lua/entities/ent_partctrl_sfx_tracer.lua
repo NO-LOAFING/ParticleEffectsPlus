@@ -64,14 +64,16 @@ function ENT:SetSpecialEffectDefaults()
 	self:SetTracerDir(0)
 	self:SetTracerHitDir(0)
 
-	local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Tracer", "UtilFx")
-	if IsValid(p) then
-		p:AttachToSpecialEffect(self, self:GetPlayer(), false)
-	end
+	if !self.IsBlank then
+		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Tracer", "UtilFx")
+		if IsValid(p) then
+			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
+		end
 
-	local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Impact_GMOD", "UtilFx")
-	if IsValid(p) then
-		p:AttachToSpecialEffect(self, self:GetPlayer(), false)
+		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Impact_GMOD", "UtilFx")
+		if IsValid(p) then
+			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
+		end
 	end
 
 end
@@ -709,3 +711,5 @@ duplicator.RegisterEntityClass("ent_partctrl_sfx_tracer", function(ply, data)
 	return ent
 
 end, "Data")
+
+PartCtrl_AddBlankSpecialEffect(ENT) //Add blank variant to spawnmenu

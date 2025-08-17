@@ -552,3 +552,56 @@ else
 	end)
 
 end
+
+
+
+
+//For blank variants in spawnmenu
+
+function PartCtrl_AddBlankSpecialEffect(enttab)
+
+	local class = string.TrimLeft(enttab.Folder, "entities/")
+	if !class or class == "" then return end
+
+	scripted_ents.Register({
+		Base = class,
+		Spawnable = enttab.Spawnable,
+		Category = enttab.Category,
+		Information = enttab.Information,
+		PrintName = enttab.PrintName .. " (blank)",
+		IconOverride = "entities/"..class..".png",
+		IsBlank = true,
+		SpawnFunction = function(self, ply, tr, ClassName)
+			//spawn the same entity as the non-blank version; the only difference is that it'll have IsBlank set to true below
+			return scripted_ents.GetMember(class, "SpawnFunction")(self, ply, tr, class)
+		end
+	}, class .. "_blank")
+
+end
+
+if SERVER then
+
+	function ENT:SpawnFunction(ply, tr, ClassName)
+
+		if (!tr.Hit) then return end
+
+		local SpawnPos = tr.HitPos + tr.HitNormal * 10
+		local SpawnAng = ply:EyeAngles()
+		SpawnAng.p = 0
+		SpawnAng.y = SpawnAng.y + 180
+
+		local ent = ents.Create(ClassName)
+		ent:SetCreator(ply)
+		ent:SetPos(SpawnPos)
+		ent:SetAngles(SpawnAng)
+		ent.IsBlank = self.IsBlank //this is the only functional change from base_entity's SpawnFunction; used by blank variants
+		ent:Spawn()
+		ent:Activate()
+
+		ent:DropToFloor()
+
+	return ent
+
+end
+
+end

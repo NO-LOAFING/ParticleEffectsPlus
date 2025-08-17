@@ -89,33 +89,37 @@ function ENT:SetSpecialEffectDefaults()
 	if IsMounted("tf") then
 		self:SetModel("models/weapons/w_models/w_rocket.mdl")
 
-		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "rockettrail", "particles/rockettrail.pcf")
-		if IsValid(p) then
-			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
-			p.ParticleInfo[0].attach = 1
-			p.ParticleInfo[0].sfx_role = 1
-		end
+		if !self.IsBlank then
+			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "rockettrail", "particles/rockettrail.pcf")
+			if IsValid(p) then
+				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
+				p.ParticleInfo[0].attach = 1
+				p.ParticleInfo[0].sfx_role = 1
+			end
 
-		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "ExplosionCore_Wall", "particles/partctrl_fallbacks/tf/explosion.pcf")
-		if IsValid(p) then
-			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
-			p.ParticleInfo[0].sfx_role = 2
+			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "ExplosionCore_Wall", "particles/partctrl_fallbacks/tf/explosion.pcf")
+			if IsValid(p) then
+				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
+				p.ParticleInfo[0].sfx_role = 2
+			end
 		end
 	else
 		//fallback HL2 fx; these trails in particular are pretty bad but they're the best we've got
 		self:SetModel("models/weapons/w_missile.mdl")
 
-		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Rocket_Smoke", "particles/rocket_fx.pcf")
-		if IsValid(p) then
-			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
-			p.ParticleInfo[0].attach = 1
-			p.ParticleInfo[0].sfx_role = 1
-		end
+		if !self.IsBlank then
+			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Rocket_Smoke", "particles/rocket_fx.pcf")
+			if IsValid(p) then
+				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
+				p.ParticleInfo[0].attach = 1
+				p.ParticleInfo[0].sfx_role = 1
+			end
 
-		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Explosion", "UtilFx")
-		if IsValid(p) then
-			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
-			p.ParticleInfo[0].sfx_role = 2
+			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Explosion", "UtilFx")
+			if IsValid(p) then
+				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
+				p.ParticleInfo[0].sfx_role = 2
+			end
 		end
 	end
 
@@ -1610,3 +1614,5 @@ duplicator.RegisterEntityClass("ent_partctrl_sfx_proj", function(ply, data)
 	return ent
 
 end, "Data")
+
+PartCtrl_AddBlankSpecialEffect(ENT) //Add blank variant to spawnmenu

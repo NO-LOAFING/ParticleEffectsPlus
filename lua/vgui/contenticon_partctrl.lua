@@ -289,7 +289,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					//Remove panels from list and clean up their particles when they scroll offscreen (IsVisible doesn't catch these)
 					//This fixes scrolling down really long spawnlists tanking FPS, and potentially fixes an out-of-memory crash?
 					local _, a = panel:LocalToScreen(0,0)
-					local _, b = panel:LocalToScreen(w, h)
+					local _, b = panel:LocalToScreen(0, panel:GetTall())
 					if a > ScrH() or b < 0 then //if top of panel is below bottom of screen, or bottom of panel is above top of screen
 						self.panels[panel] = nil
 					end
