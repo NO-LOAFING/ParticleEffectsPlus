@@ -3291,19 +3291,25 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 			processedv.outMax = max
 			processedv.decimals = 0
 		elseif processedv.colorpicker then
-			//the color picker only supports colors from 0-255, which correspond to vectors from 0-1.
-			//this means the picker only lets us access the entire color range if outMin/outMax are 0-1, which isn't ideal for color scalars
-			//with a max above 1, like the ones on a bunch of alien swarm fx. so, for the color picker, rescale it all into a new 0-1 value space.
+			//the color picker only supports colors from 0-255, which correspond to a vector value on the particle effect from 0-1.
+			//- some color controls have a narrower color range (outMin greater than 0, or outMax less than 1), and in those cases, the color picker
+			//  would just arbitrarily stop changing the color once it goes past the min/max value, so instead we rescale those so that the picker
+			//  always displays the min value as 0,0,0 and the max value as 255,255,255. (example: many portal2 colorable portalgun fx)
+			//- some color controls also have a broader color range than 0-1 (outMin less than 0, or outMax greater than 1), but supporting these
+			//  in the color picker in the same way proved not to be useful because they'd either A: stop doing anything past a value of 1, or even 
+			//  B: overflow into an entirely different color value, producing nonsense colors (example: portal2 paintgun fx)
 			//cache these here because a bunch of stuff uses this (color picker, color tool setcolor, spawnicons)
+			//TODO: this completely breaks on a test effect where outMin has a narrower range but outMax has a broader range, or vice versa;
+			//can't wrap my head around the math it would take to fix this, but thankfully i can't find any real fx that have this issue
 			processedv.outMin2 = Vector(
-				math.Remap(processedv.outMin.x, processedv.outMin.x, processedv.outMax.x, 0, 1),
-				math.Remap(processedv.outMin.y, processedv.outMin.y, processedv.outMax.y, 0, 1),
-				math.Remap(processedv.outMin.z, processedv.outMin.z, processedv.outMax.z, 0, 1)
+				math.Min(processedv.outMin.x, 0),
+				math.Min(processedv.outMin.y, 0),
+				math.Min(processedv.outMin.z, 0)
 			)
 			processedv.outMax2 = Vector(
-				math.Remap(processedv.outMax.x, processedv.outMin.x, processedv.outMax.x, 0, 1),
-				math.Remap(processedv.outMax.y, processedv.outMin.y, processedv.outMax.y, 0, 1),
-				math.Remap(processedv.outMax.z, processedv.outMin.z, processedv.outMax.z, 0, 1)
+				math.Max(processedv.outMax.x, 1),
+				math.Max(processedv.outMax.y, 1),
+				math.Max(processedv.outMax.z, 1)
 			)
 		end
 	end
