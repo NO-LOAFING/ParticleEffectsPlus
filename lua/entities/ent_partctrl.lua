@@ -1130,7 +1130,9 @@ if CLIENT then
 
 			elseif input == "cpoint_vector_val_all" then
 
-				net.WriteVector(args[2]) //new value for all 3 axes
+				net.WriteFloat(args[2].x) //new value for all 3 axes; we network vectors as 3 floats so that compression doesn't mess up precise values
+				net.WriteFloat(args[2].y)
+				net.WriteFloat(args[2].z)
 
 			elseif input == "cpoint_vector_val_axis" then
 
@@ -1246,7 +1248,7 @@ else
 
 		elseif input == "cpoint_vector_val_all" then
 
-			local new = net.ReadVector()
+			local new = Vector(net.ReadFloat(), net.ReadFloat(), net.ReadFloat())
 
 			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_VECTOR then return end
 
@@ -1408,10 +1410,12 @@ if SERVER then
 					net.WriteEntity(v.ent or NULL)
 					net.WriteUInt(v.attach or 0, 8) //don't know what the max attachment number is, assume 255
 					net.WriteUInt(v.sfx_role or 0, 2) //max of 3, since we don't need any more so far (projectile effect has 0-2)
-				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
-					net.WriteVector(v.val or Vector())
-				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
-					net.WriteVector(v.val or Vector())
+				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR or mode == PARTCTRL_CPOINT_MODE_AXIS then
+					//we network vectors as 3 floats so that compression doesn't mess up precise values
+					local val = v.val or Vector()
+					net.WriteFloat(val.x)
+					net.WriteFloat(val.y)
+					net.WriteFloat(val.z)
 				end
 			end
 
@@ -1440,9 +1444,9 @@ else
 				v.attach = net.ReadUInt(8)
 				v.sfx_role = net.ReadUInt(2)
 			elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
-				v.val = net.ReadVector()
+				v.val = Vector(net.ReadFloat(), net.ReadFloat(), net.ReadFloat())
 			elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
-				v.val = net.ReadVector()
+				v.val = Vector(net.ReadFloat(), net.ReadFloat(), net.ReadFloat())
 				for i = 0, 2 do
 					//Sanity check: for some axis controls ("Emission Count Scale"), going out of range causes a crash, so make sure that doesn't happen
 					local tab2 = ptab.cpoints[k].axis[ptab.cpoints[k]["which_" .. i]]

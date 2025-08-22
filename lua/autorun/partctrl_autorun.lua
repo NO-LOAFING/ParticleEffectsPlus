@@ -4232,8 +4232,7 @@ local processfuncs = {
 			//and axis 2 shows an exclamation point for every digit. this means axis 1 just displays whichever number you give it, 
 			//while the other two are less intuitive.
 
-			//local max = Vector(99999999, 99999999, 99999999)
-			local max = Vector(16384, 16384, 16384) //limit due to technical limitations of net.WriteVector (https://wiki.facepunch.com/gmod/net.WriteVector)
+			local max = Vector(16777216, 16777216, 16777216) //largest integer value we can network as a float until we start running into precision issues
 			local min = Vector(0,0,0)
 			cpoint_from_attrib_value(processed, attrib, "control point", 1, "vector", {
 				["label"] = "Sprites",
