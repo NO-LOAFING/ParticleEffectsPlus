@@ -57,11 +57,12 @@ function PANEL:Paint(w, h)
 
 	//Add this effect to PartCtrl_IconFx - even if we're not showing a particle in this panel, 
 	//we still want it to populate other stuff like icons and tooltips
+	local name = self.childname or self.name //when the player hovers over a child effect in the dropdown, override the spawnicon to display that effect instead
 	PartCtrl_IconFx[self.pcf] = PartCtrl_IconFx[self.pcf] or {}
-	PartCtrl_IconFx[self.pcf][self.name] = PartCtrl_IconFx[self.pcf][self.name] or {}
-	PartCtrl_IconFx[self.pcf][self.name].panels = PartCtrl_IconFx[self.pcf][self.name].panels or {}
+	PartCtrl_IconFx[self.pcf][name] = PartCtrl_IconFx[self.pcf][name] or {}
+	PartCtrl_IconFx[self.pcf][name].panels = PartCtrl_IconFx[self.pcf][name].panels or {}
 	
-	local itab = PartCtrl_IconFx[self.pcf][self.name]
+	local itab = PartCtrl_IconFx[self.pcf][name]
 	self:SetTooltip(itab.tooltip)
 
 	if self.invalid != itab.invalid then
@@ -78,7 +79,7 @@ function PANEL:Paint(w, h)
 	local showparticle = true
 
 	//If the icon's effect is currently being overridden by another pcf's effect of the same name, show a notification instead
-	if self:IsCurrentlyOverridden() then
+	if self:IsCurrentlyOverridden(name) then
 		local mdef_width = math.min(w,h) * 0.5
 		surface.SetDrawColor(0,0,0,64)
 		surface.DrawRect(0 + bd, 0 + bd, w - (bd*2), h - (bd*2))
@@ -176,11 +177,11 @@ function PANEL:Paint(w, h)
 
 end
 
-function PANEL:IsCurrentlyOverridden()
+function PANEL:IsCurrentlyOverridden(name)
 
-	if PartCtrl_IconFx[self.pcf][self.name].MultiplyDefined
-	and !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == self.pcf)
-	and !(PartCtrl_DuplicateFx[self.pcf][self.name] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[self.name] == PartCtrl_DuplicateFx[self.pcf][self.name]) then
+	if PartCtrl_IconFx[self.pcf][name].MultiplyDefined
+	and !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[name] == self.pcf)
+	and !(PartCtrl_DuplicateFx[self.pcf][name] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[name] == PartCtrl_DuplicateFx[self.pcf][name]) then
 		return true
 	end
 
@@ -569,7 +570,7 @@ end)
 function PANEL:DoClick()
 
 	//If the icon's effect is currently being overridden by another pcf's effect of the same name, reload the pcf on click instead
-	if self:IsCurrentlyOverridden() then
+	if self:IsCurrentlyOverridden(self.name) then
 		surface.PlaySound("common/wpn_select.wav") //TODO: is this a good sound? needs to be different enough from the spawn sound so players can tell that clicking didn't spawn an effect yet.
 		PartCtrl_AddParticles(self.pcf, self.name) //crash prevention
 	else
@@ -620,6 +621,28 @@ function PANEL:OpenMenu()
 						option2:SetImage("icon16/error.png")
 						//duplicate of text string from this panel's setup func, whatever
 						option2:SetTooltip("NOTE: This effect will not be loaded outside of developer mode.\n\n" .. tostring(PartCtrl_ProcessedPCFs[self.pcf][child].shouldcull))
+					end
+					//When the player hovers over a child effect, override the spawnicon to display that effect instead
+					local old_OnCursorEntered = option2.OnCursorEntered
+					function option2.OnCursorEntered()
+						old_OnCursorEntered(option2)
+						self.childname = child
+					end
+					local old_OnCursorExited = option2.OnCursorExited
+					function option2.OnCursorExited()
+						old_OnCursorExited(option2)
+						self.childname = nil
+						if PartCtrl_IconFx[self.pcf] and PartCtrl_IconFx[self.pcf][child] and PartCtrl_IconFx[self.pcf][child].panels then
+							PartCtrl_IconFx[self.pcf][child].panels[self] = nil
+						end
+					end
+					//local old_OnRemove = option2.OnRemove
+					function option2.OnRemove()
+						//old_OnRemove(option2)
+						self.childname = nil
+						if PartCtrl_IconFx[self.pcf] and PartCtrl_IconFx[self.pcf][child] and PartCtrl_IconFx[self.pcf][child].panels then
+							PartCtrl_IconFx[self.pcf][child].panels[self] = nil
+						end
 					end
 				end
 			end
