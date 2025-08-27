@@ -626,22 +626,28 @@ function PANEL:OpenMenu()
 					local old_OnCursorEntered = option2.OnCursorEntered
 					function option2.OnCursorEntered()
 						old_OnCursorEntered(option2)
-						self.childname = child
+						if IsValid(self) then
+							self.childname = child
+						end
 					end
 					local old_OnCursorExited = option2.OnCursorExited
 					function option2.OnCursorExited()
 						old_OnCursorExited(option2)
-						self.childname = nil
-						if PartCtrl_IconFx[self.pcf] and PartCtrl_IconFx[self.pcf][child] and PartCtrl_IconFx[self.pcf][child].panels then
-							PartCtrl_IconFx[self.pcf][child].panels[self] = nil
+						if IsValid(self) then
+							self.childname = nil
+							if PartCtrl_IconFx[self.pcf] and PartCtrl_IconFx[self.pcf][child] and PartCtrl_IconFx[self.pcf][child].panels then
+								PartCtrl_IconFx[self.pcf][child].panels[self] = nil
+							end
 						end
 					end
 					//local old_OnRemove = option2.OnRemove
 					function option2.OnRemove()
 						//old_OnRemove(option2)
-						self.childname = nil
-						if PartCtrl_IconFx[self.pcf] and PartCtrl_IconFx[self.pcf][child] and PartCtrl_IconFx[self.pcf][child].panels then
-							PartCtrl_IconFx[self.pcf][child].panels[self] = nil
+						if IsValid(self) then
+							self.childname = nil
+							if PartCtrl_IconFx[self.pcf] and PartCtrl_IconFx[self.pcf][child] and PartCtrl_IconFx[self.pcf][child].panels then
+								PartCtrl_IconFx[self.pcf][child].panels[self] = nil
+							end
 						end
 					end
 				end
