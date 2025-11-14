@@ -1,0 +1,466 @@
+AddCSLuaFile()
+
+//Populate the spawn menu with a list of all the .pcf files, sorted by the game or addon they're from
+	
+if CLIENT then
+
+	local browseAddonParticles
+	local browseGameParticles
+	local searchParticles = nil
+	local RefreshAddonParticles
+	local RefreshGameParticles
+
+	local cv_childfx_spawnlist = GetConVar("cl_partctrl_childfx_in_autospawnlists")
+
+	local function OnParticleNodeSelected(pcf, ViewPanel, pnlContent)
+
+		ViewPanel:Clear(true)
+
+		if !istable(PartCtrl_ProcessedPCFs[pcf]) then
+			MsgN("OnParticleNodeSelected tried to make spawnlist for invalid pcf ", pcf)
+		else
+			local dochildfx = cv_childfx_spawnlist:GetInt()
+			if dochildfx == 0 then
+				//No child fx
+				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do //sort them in alphabetical order
+					if !PartCtrl_ProcessedPCFs[pcf][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf][particle].parents) < 1 then
+						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+					end
+				end
+			elseif dochildfx == 1 then
+				local tab = {}
+				//Separate child fx
+				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do //sort them in alphabetical order
+					if !PartCtrl_ProcessedPCFs[pcf][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf][particle].parents) < 1 then
+						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+					else
+						table.insert(tab, particle)
+					end
+				end
+				if table.Count(tab) > 0 then
+					spawnmenu.CreateContentIcon("header", ViewPanel, {["text"] = "Child effects"})
+					for k, particle in pairs (tab) do
+						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+					end
+				end
+			else
+				//All fx sorted alphabetically
+				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do //sort them in alphabetical order
+					spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+				end
+			end
+		end
+
+		pnlContent:SwitchPanel(ViewPanel)
+		ViewPanel.CurrentPCF = pcf //used by developer click-to-refresh-pcf function
+
+	end
+
+	local function OnUtilFxNodeSelected(name, ViewPanel, pnlContent)
+
+		ViewPanel:Clear(true)
+
+		if !istable(PartCtrl_UtilFxByTitle[name]) then
+			MsgN("OnUtilFxNodeSelected tried to make spawnlist for invalid title ", name)
+		else
+			for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
+				spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = "UtilFx", ["nicename"] = particle})
+			end
+		end
+
+		pnlContent:SwitchPanel(ViewPanel)
+		ViewPanel.CurrentPCF = "UtilFx" //used by developer click-to-refresh-pcf function
+		ViewPanel.CurrentUtilFxName = name //^
+
+	end
+
+	function PartCtrl_CreateCustomSpawnlist(tab, name, icon) //globally available so we can use it to make arbitrary spawnlists for testing
+
+		local tab2 = {}
+
+		local dochildfx = cv_childfx_spawnlist:GetInt()
+		if dochildfx == 0 then
+			//No child fx
+			for k, v in pairs (tab) do
+				if !PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents) < 1 then
+					table.insert(tab2, {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle})
+				end
+			end
+		elseif dochildfx == 1 then
+			//Separate child fx
+			local tab3 = {}
+			for k, v in pairs (tab) do
+				if !PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents) < 1 then
+					table.insert(tab2, {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle})
+				else
+					table.insert(tab3, {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle})
+				end
+			end
+			if table.Count(tab3) > 0 then
+				table.insert(tab2, {["type"] = "header", ["text"] = "Child effects"})
+				table.Add(tab2, tab3)
+			end
+		else
+			//All fx sorted alphabetically
+			for k, v in pairs (tab) do
+				tab2[k] = {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle}
+			end
+		end
+
+		AddPropsOfParent(g_SpawnMenu.CustomizableSpawnlistNode.SMContentPanel, g_SpawnMenu.CustomizableSpawnlistNode, 0, {[name] = {
+			icon = icon or "icon16/page.png",
+			id = math.random( 0, 999999 ), -- Eeehhhh
+			name = name,
+			parentid = 0,
+			contents = tab2
+		}})
+	
+		-- We added a new spawnlist, show the save changes button
+		hook.Run("SpawnlistContentChanged")
+
+	end
+
+	//Most of the spawnmenu code here this is ripped off wholesale from the Enhanced Spawnmenu addon - this is lame but I've gone over all the code and there's really no reason
+	//to reinvent the wheel here, it does everything we need it to do
+
+	local function AddBrowseContentParticle(node, name, icon, path, pathid, wsid)
+
+		local ViewPanel = node.ViewPanel
+		local pnlContent = node.pnlContent
+
+		if !string.EndsWith(path, "/") && string.len(path) > 1 then path = path .. "/" end
+
+		local fi, fo = file.Find(path .. "particles", pathid)
+		if (!fi && !fo) and !PartCtrl_UtilFxByTitle[name] then return end
+
+		local particles = node:AddFolder(name, path .. "particles", pathid, true, false, "*.*") //unlike ES, the arg after pathid is true, which adds nodes for files as well
+		particles:SetIcon(icon)
+
+		particles.FilePopulateCallback = function(self, files, folders, foldername, path, bAndChildren, wildcard) //based on DTree_Node.FilePopulateCallback (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/vgui/dtree_node.lua#L448)
+			local showfiles = self:GetShowFiles()
+
+			self.ChildNodes:InvalidateLayout(true)
+		
+			local FileCount = 0
+		
+			if folders then
+				for k, File in SortedPairsByValue (folders) do
+					if File == "partctrl_fallbacks" then continue end //don't show this folder, instead we add fallback pcfs to the appropriate game folders below
+		
+					local Node = self:AddNode(File)
+					Node:MakeFolder(string.Trim( foldername .. "/" .. File, "/" ), path, showfiles, wildcard, true)
+					Node.FilePopulateCallback = particles.FilePopulateCallback
+					FileCount = FileCount + 1
+				end
+			end
+		
+			if showfiles then
+				//Create unique node for utilfx
+				if !particles.utilfxnode and PartCtrl_UtilFxByTitle[name] then
+					//MsgN("making utilfx node for ", name)
+					particles.utilfxnode = particles:AddNode("Scripted Effects", "icon16/page_gear.png")
+					particles.utilfxnode.utilfx = true
+					FileCount = FileCount + 1
+					particles.utilfxnode.DoRightClick = function()
+						if !IsValid(particles.utilfxnode) then return end
+						local menu = DermaMenu()
+
+						menu:AddOption("#spawnmenu.createautospawnlist", function()
+							local tab = {}
+							for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
+								table.insert(tab, {["pcf"] = "UtilFx", ["particle"] = particle})
+							end
+							PartCtrl_CreateCustomSpawnlist(tab, "Scripted Effects", "icon16/page_gear.png")
+						end):SetIcon("icon16/page_add.png")
+
+						//developer control to reload a .pcf file manually; we want this for utilfx too just in case one of the list entries was edited
+						if GetConVarNumber("developer") >= 1 then
+							menu:AddOption("Reload PartCtrl_UtilFx", function()
+								net.Start("PartCtrl_ReloadPCF_SendToSv")
+									net.WriteString("UtilFx")
+								net.SendToServer()
+							end)
+						end
+
+						menu:Open()
+					end
+				end
+
+				//Legacy addons will have a file path starting with the addon folder instead of the particle folder, so trim that stuff out
+				//(i.e. turn addons/test_onlyparticles/particles/ukmovement.pcf into particles/ukmovement.pcf)
+				if !string.StartsWith(foldername, "particles") then
+					local start, _, _ = string.find(foldername, "/particles", 1, true) //this will break if someone names a legacy addon literally just "particles", OH WELL
+					if start == nil then
+						//if we got a nonsense folder somehow, then back out now
+						showfiles = false
+						self:SetShowFiles(nil)
+					else
+						foldername = string.sub(foldername, start + 1)
+					end
+				end
+
+				if showfiles then
+					local function AddFile(name, filename)
+						//Clear out .txt file particle manifests and such, also clear out bad .pcf files that weren't processed
+						if !istable(PartCtrl_ProcessedPCFs[filename]) then return end
+
+						local Node = self:AddNode(name, "icon16/page.png")
+						Node:SetFileName(filename)
+						FileCount = FileCount + 1
+						Node.DoRightClick = function()
+							if !IsValid(Node) then return end
+							local menu = DermaMenu()
+
+							menu:AddOption("Copy .pcf file path to clipboard", function() SetClipboardText(filename) end):SetIcon("icon16/page_copy.png")
+
+							menu:AddOption("#spawnmenu.createautospawnlist", function()
+								local tab = {}
+								for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[filename]) do //sort them in alphabetical order
+									table.insert(tab, {["pcf"] = filename, ["particle"] = particle})
+								end
+								PartCtrl_CreateCustomSpawnlist(tab, name)
+							end):SetIcon("icon16/page_add.png")
+
+							//developer control to reload a .pcf file manually
+							if GetConVarNumber("developer") >= 1 then
+								menu:AddOption("Reload .pcf file", function()
+									net.Start("PartCtrl_ReloadPCF_SendToSv")
+										net.WriteString(filename)
+									net.SendToServer()
+								end)
+							end
+
+							menu:Open()
+						end
+					end
+			
+					for k, File in SortedPairs (files) do
+						local fallbacks = PartCtrl_FallbackPCFs[foldername .. "/" .. File]
+						if fallbacks and fallbacks[path] then
+							//For a game folder, add the fallback pcf for the file if applicable, instead of the mounted file
+							local path2 = fallbacks[path].path or path
+							AddFile(File .. " (" .. path2 .. ")", "particles/partctrl_fallbacks/" .. path2 .. "/" .. File)
+							continue
+						end
+
+						AddFile(File, string.Trim(foldername .. "/" .. File, "/"))
+
+						if fallbacks and path == "GAME" then
+							//For the "All" folder, add every fallback pcf for this file, in addition to the mounted file
+							local fallbacks_to_add = {}
+							for Game, tab in pairs (fallbacks) do
+								local path2 = tab.path or Game
+								//add these to a table first, to make sure we don't add duplicate nodes for fallbacks that apply to more than 1 game
+								fallbacks_to_add[File .. " (" .. path2 .. ")"] = "particles/partctrl_fallbacks/" .. path2 .. "/" .. File
+							end
+							for k, v in pairs (fallbacks_to_add) do
+								AddFile(k, v)
+							end
+						end
+					end
+				end
+			end
+		
+			if FileCount == 0 then
+				if name != "#spawnmenu.category.downloads" then
+					//clear out folders that generate empty - checking fi/fo up above doesn't work because some games (ep1) have empty tables even though they have files(??)
+					//this looks kind of bad because you can see the folders appear and then disappear, but i don't know what a better solution would be
+					self:Remove()
+				else
+					//default empty folder behavior
+					self.ChildNodes:Remove()
+					self.ChildNodes = nil
+			
+					self:SetNeedsPopulating(false)
+					self:SetShowFiles(nil)
+					self:SetWildCard(nil)
+			
+					self:InvalidateLayout()
+			
+					self.Expander:SetExpanded(true)
+		
+					return
+				end
+			end
+		
+			self:InvalidateLayout()
+		end
+
+		particles.OnNodeSelected = function(self, node_sel)
+			local name2 = node_sel:GetFileName() //returns nil if the selected node was a folder - we only want files to be selectable
+			if name2 != nil and string.find(name2, ".pcf") then
+				OnParticleNodeSelected(name2, ViewPanel, pnlContent)
+			elseif node_sel.utilfx then
+				OnUtilFxNodeSelected(name, ViewPanel, pnlContent)
+			end
+		end
+
+		if wsid then
+			particles.DoRightClick = function()
+				local menu = DermaMenu()
+				menu:AddOption("#spawnmenu.openaddononworkshop", function()
+					steamworks.ViewFile(wsid)
+				end):SetIcon("icon16/link_go.png")
+				menu:Open()
+			end
+		end
+
+	end
+
+	language.Add("spawnmenu.category.browseparticles", "Browse Particles")
+
+	RefreshAddonParticles = function(node)
+		for _, addon in SortedPairsByMemberValue(engine.GetAddons(), "title") do
+			if !addon.downloaded then continue end
+			if !addon.mounted then continue end
+			if !table.HasValue(select(2, file.Find("*", addon.title)), "particles") and !PartCtrl_UtilFxByTitle[addon.title] then continue end
+			AddBrowseContentParticle(node, addon.title, "icon16/bricks.png", "", addon.title, addon.wsid)
+		end
+	end
+	RefreshGameParticles = function(node)
+		local games = engine.GetGames()
+		table.insert(games, {
+			title = "All",
+			folder = "GAME",
+			icon = "all",
+			mounted = true
+		})
+		table.insert(games, {
+			title = "Garry's Mod",
+			folder = "garrysmod",
+			mounted = true
+		})
+		for _, game in SortedPairsByMemberValue(games, "title") do
+			if !game.mounted then continue end
+			AddBrowseContentParticle(node, game.title, "games/16/" .. (game.icon or game.folder) .. ".png", "", game.folder)
+		end
+	end
+
+	hook.Add("PopulateContent", "PartCtrl_PopulateContent", function(pnlContent, tree, browseNode) timer.Simple(0.5, function()
+
+		if (!IsValid(tree) or !IsValid(pnlContent) or !istable(PartCtrl_ProcessedPCFs)) then //check to make sure PartCtrl_ProcessedPCFs exists because AddBrowseContentParticle needs it
+			print("ParticleControl: Failed to initialize PopulateContent hook")
+			return
+		end
+
+		local ViewPanel = vgui.Create("ContentContainer", pnlContent)
+		ViewPanel:SetVisible(false)
+		ViewPanel.IconList:SetReadOnly(true) //not in enhanced spawnmenu; prevents contenticons in pcf spawnlists from being deleted using dropdown
+		//Make these globally accessible so the developer pcf refresh button can access them
+		PartCtrl_ViewPanel = ViewPanel
+		ViewPanel.pnlContent = pnlContent
+
+		local browseParticles = tree:AddNode("#spawnmenu.category.browseparticles", "icon16/fire.png")
+		browseParticles.ViewPanel = ViewPanel
+		browseParticles.pnlContent = pnlContent
+
+
+		browseAddonParticles = browseParticles:AddNode("#spawnmenu.category.addons", "icon16/folder_database.png")
+		browseAddonParticles.ViewPanel = ViewPanel
+		browseAddonParticles.pnlContent = pnlContent
+
+		RefreshAddonParticles(browseAddonParticles)
+
+
+		local addon_particles = {}
+		local _, particle_folders = file.Find("addons/*", "MOD")
+		for _, addon in SortedPairs(particle_folders) do
+			if !file.IsDir("addons/" .. addon .. "/particles/", "MOD") and !PartCtrl_UtilFxByTitle[addon] then continue end
+			table.insert(addon_particles, addon)
+		end
+
+		local browseLegacyParticles = browseParticles:AddNode("#spawnmenu.category.addonslegacy", "icon16/folder_database.png")
+		browseLegacyParticles.ViewPanel = ViewPanel
+		browseLegacyParticles.pnlContent = pnlContent
+
+		for _, addon in SortedPairsByValue(addon_particles) do
+			AddBrowseContentParticle(browseLegacyParticles, addon, "icon16/bricks.png", "addons/" .. addon .. "/", "MOD")
+		end
+
+
+		AddBrowseContentParticle(browseParticles, "#spawnmenu.category.downloads", "icon16/folder_database.png", "download/", "MOD")
+
+
+		browseGameParticles = browseParticles:AddNode("#spawnmenu.category.games", "icon16/folder_database.png")
+		browseGameParticles.ViewPanel = ViewPanel
+		browseGameParticles.pnlContent = pnlContent
+
+		RefreshGameParticles(browseGameParticles)
+
+
+		browseParticles:SetExpanded(true)
+
+		if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running PopulateContent") end
+
+	end) end)
+
+	local cv_childfx_search = GetConVar("cl_partctrl_childfx_in_search")
+	local cv_dupes_search = GetConVar("cl_partctrl_dupes_in_search")
+
+	search.AddProvider(function(str)
+
+		local searchTerms = string.Explode(" ", str)
+
+		if searchParticles == nil then
+			searchParticles = {}
+			for pcf, _ in SortedPairs (PartCtrl_ProcessedPCFs) do
+				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do
+					table.insert(searchParticles, {["name"] = particle, ["name_lower"] = particle:lower(), ["pcf"] = pcf}) //lowercase needs to be separate, because effect names are case-sensitive when spawning them
+				end
+			end
+		end
+
+		local results = {}
+
+		for k, v in ipairs (searchParticles) do
+			if (cv_childfx_search:GetBool() or !PartCtrl_ProcessedPCFs[v.pcf][v.name].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.name].parents) < 1) 
+			and (cv_dupes_search:GetBool() or !PartCtrl_DuplicateFx[v.pcf] or !PartCtrl_DuplicateFx[v.pcf][v.name]) then
+				for k2, v2 in ipairs (searchTerms) do
+					if !(v.name_lower:find(v2, nil, true) or v.pcf:find(v2, nil, true)) then
+						break
+					elseif k2 == #searchTerms then
+						local entry = {
+							text = v.name,
+							icon = spawnmenu.CreateContentIcon("partctrl", g_SpawnMenu.SearchPropPanel, {["spawnname"] = v.pcf, ["nicename"] = v.name}),
+							words = {v.name}
+						}
+						table.insert(results, entry)
+						//entry.icon.IsInSearch = true //used by spawnicon code; TODO: stops working when the search is refreshed by the model search
+						//MsgN("according to addprovider, g_SpawnMenu.SearchPropPanel is ", g_SpawnMenu.SearchPropPanel, " and icon is ", entry.icon)
+					end
+				end
+			end
+			if #results >= GetConVarNumber("sbox_search_maxresults") / 2 then break end
+		end
+
+		return results
+
+	end, "partctrl")
+
+	hook.Add("GameContentChanged", "PartCtrl_GameContentChanged_SpawnMenu", function()
+ 
+		//Spawnlist stuff from enhanced spawnmenu
+		if IsValid(browseAddonParticles) then
+			-- TODO: Maybe be more advaced and do not delete => recreate all the nodes, only delete nodes for addons that were removed, add only the new ones?
+			browseAddonParticles:Clear()
+			browseAddonParticles.ViewPanel:Clear(true)
+
+			RefreshAddonParticles(browseAddonParticles)
+		end
+		if IsValid(browseGameParticles) then
+			-- TODO: Maybe be more advaced and do not delete => recreate all the nodes, only delete nodes for addons that were removed, add only the new ones?
+			browseGameParticles:Clear()
+			browseGameParticles.ViewPanel:Clear(true)
+
+			RefreshGameParticles(browseGameParticles)
+		end
+
+		//Search stuff
+		searchParticles = nil
+
+
+		if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running GameContentChanged_SpawnMenu") end
+
+	end)
+
+end
