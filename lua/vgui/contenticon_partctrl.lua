@@ -67,9 +67,9 @@ function PANEL:Paint(w, h)
 
 	if self.invalid != itab.invalid then
 		if itab.invalid then
-			self:SetMaterial("icon16/cancel.png") //icon_invalid) //why doesn't this one take a Material()? whatever
+			self.Image:SetMaterial(icon_invalid) //manually set our image instead of using self:SetMaterial, because that func saves it as (potentially wrong) info to the spawnlist (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/spawnmenu/creationmenu/content/contenticon.lua#L66-L88)
 		else
-			self:SetMaterial("")
+			self.Image:SetMaterial() //^ also, self:SetMaterial won't let us clear the image after an update
 		end
 		self.invalid = itab.invalid
 	end

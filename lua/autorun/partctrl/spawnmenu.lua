@@ -484,17 +484,6 @@ if CLIENT then
 				//(try to prevent oddness with PartCtrl_PCFsByParticleName_CurrentlyLoaded on fx that change dupe status)
 				PartCtrl_AddParticles(str)
 			end
-		
-			//Refresh spawnicons (this is handled by the think hook in contenticon_partctrl.lua)
-			//Do this for all spawnicons, not just the ones for the pcf we updated (i.e. in case 
-			//updating one of this pcf's fx made a lower priority pcf's effect no longer a dupe of it)
-			if PartCtrl_IconFx then
-				for pcf, _ in pairs (PartCtrl_IconFx) do
-					for name, _ in pairs (PartCtrl_IconFx[pcf]) do
-						PartCtrl_IconFx[pcf][name].reset = true
-					end
-				end
-			end
 
 			//if this pcf's auto-generated spawnlist is currently open, then rebuild it (to handle fx being added to or removed from the list)
 			if IsValid(PartCtrl_ViewPanel) and IsValid(PartCtrl_ViewPanel.pnlContent) then
@@ -505,6 +494,17 @@ if CLIENT then
 					else
 						OnUtilFxNodeSelected(PartCtrl_ViewPanel.CurrentUtilFxName, PartCtrl_ViewPanel, PartCtrl_ViewPanel.pnlContent)
 					end
+				end
+			end
+		end
+
+		//Refresh spawnicons (this is handled by the think hook in contenticon_partctrl.lua)
+		//Do this for all spawnicons, not just the ones for the pcf we updated (i.e. in case 
+		//updating one of this pcf's fx made a lower priority pcf's effect no longer a dupe of it)
+		if PartCtrl_IconFx then
+			for pcf, _ in pairs (PartCtrl_IconFx) do
+				for name, _ in pairs (PartCtrl_IconFx[pcf]) do
+					PartCtrl_IconFx[pcf][name].reset = true
 				end
 			end
 		end

@@ -10,7 +10,15 @@ else
 end
 CreateConVar("sv_partctrl_allowserverprojectiles", int_sp, FCVAR_REPLICATED, "If 0, disables the serverside projectiles option on projectile effects.", 0, 1)
 CreateConVar("sv_partctrl_cachereadpcf", int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, the results of PartCtrl_ReadPCF are cached to the data folder. This makes subsequent startups 2-3x faster, but the first time quite a bit slower as it saves ~50MB to the data folder.", 0, 1)
-CreateConVar("sv_partctrl_blacklist_screenspace", 1-int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, effects with the var \"screen space effect\" are blacklisted from being loaded.\nNote: Blacklisted fx are only updated when the game reloads their PCF file - i.e. on map load, when changing mounted content, or when reloading pcf files manually.", 0, 1)
+CreateConVar("sv_partctrl_blacklist_screenspace", 1-int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, effects with the var \"screen space effect\" are blacklisted from being loaded.\nNote: Changing this value will reload *all* PCF files, temporarily freezing the game for all clients. Be careful!", 0, 1)
+if SERVER then
+	cvars.AddChangeCallback("sv_partctrl_blacklist_screenspace", function(cvname, old, new)
+		if old != new then
+			PartCtrl_ReloadPCF("all")
+		end
+	end, "PartCtrl_ReloadPCFsOnChange")
+end
+
 if CLIENT then
 	//Some convars to separate child fx from others; in practice, this doesn't work well because there are 
 	//A: lots of normal fx that are also used as children, and would be excluded (i.e. eye_powerup_green_lvl_3, rocket_explosion_classic, rocket_trail_classic_crit_red, many more) 
