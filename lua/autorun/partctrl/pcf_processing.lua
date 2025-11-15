@@ -3312,15 +3312,6 @@ function PartCtrl_ReadAndProcessPCFs()
 end
 
 
-hook.Add("GameContentChanged", "PartCtrl_GameContentChanged_PCFs", function()
- 
-	if PartCtrl_ReadAndProcessPCFs_StartupIsOver or !PartCtrl_ReadAndProcessPCFs_StartupHasRun then
-		PartCtrl_ReadAndProcessPCFs()
-	end
-
-	if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running GameContentChanged_PCFs") end
-
-end)
 
 
 if CLIENT then
