@@ -688,12 +688,8 @@ function PANEL:OpenMenu()
 	if GetConVarNumber("developer") >= 1 then
 		menu:AddSpacer()
 
-		local text = "Reload .pcf file"
-		if self.pcf == "UtilFx" then text = "Reload PartCtrl_UtilFx" end
-		menu:AddOption(text, function()
-			net.Start("PartCtrl_ReloadPCF_SendToSv")
-				net.WriteString(self.pcf)
-			net.SendToServer()
+		menu:AddOption("Reload " .. self.pcf, function()
+			RunConsoleCommand("partctrl_reloadpcf", self.pcf)
 		end)
 
 		if self.pcf != "UtilFx" then

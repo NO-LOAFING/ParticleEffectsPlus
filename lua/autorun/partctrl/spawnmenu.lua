@@ -1,7 +1,7 @@
 AddCSLuaFile()
 
 //Populate the spawn menu with a list of all the .pcf files, sorted by the game or addon they're from
-	
+
 if CLIENT then
 
 	local browseAddonParticles
@@ -175,10 +175,8 @@ if CLIENT then
 
 						//developer control to reload a .pcf file manually; we want this for utilfx too just in case one of the list entries was edited
 						if GetConVarNumber("developer") >= 1 then
-							menu:AddOption("Reload PartCtrl_UtilFx", function()
-								net.Start("PartCtrl_ReloadPCF_SendToSv")
-									net.WriteString("UtilFx")
-								net.SendToServer()
+							menu:AddOption("Reload UtilFx", function()
+								RunConsoleCommand("partctrl_reloadpcf", "UtilFx")
 							end)
 						end
 
@@ -223,10 +221,8 @@ if CLIENT then
 
 							//developer control to reload a .pcf file manually
 							if GetConVarNumber("developer") >= 1 then
-								menu:AddOption("Reload .pcf file", function()
-									net.Start("PartCtrl_ReloadPCF_SendToSv")
-										net.WriteString(filename)
-									net.SendToServer()
+								menu:AddOption("Reload " .. filename, function()
+									RunConsoleCommand("partctrl_reloadpcf", filename)
 								end)
 							end
 
@@ -463,4 +459,91 @@ if CLIENT then
 
 	end)
 
+
+
+
+	function PartCtrl_ReloadPCF(str) //this should probably be in pcf_processing, except it has to be able to access this file's "searchParticles" local var
+
+		if str != "UtilFx" then
+			PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
+		else
+			PartCtrl_ProcessUtilFx()
+		end
+		searchParticles = nil //force search to rebuild search cache so any new fx will be found
+		MsgN("Reloading ", str, " on client ", LocalPlayer())
+
+		if str != "UtilFx" then
+			//Handle duplicate fx detection again; it's possible that an effect was updated to start/stop being a dupe, OR that an 
+			//effect being updated made an effect from a lower-priority PCF start/stop being considered a dupe of this pcf's effect
+			PartCtrl_GetDuplicateFx()
+
+			//Make sure the reloaded pcf is highest priority
+			//(try to prevent oddness with PartCtrl_PCFsByParticleName_CurrentlyLoaded on fx that change dupe status)
+			PartCtrl_AddParticles(str)
+		end
+	
+		//Refresh spawnicons (this is handled by the think hook in contenticon_partctrl.lua)
+		//Do this for all spawnicons, not just the ones for the pcf we updated (i.e. in case 
+		//updating one of this pcf's fx made a lower priority pcf's effect no longer a dupe of it)
+		if PartCtrl_IconFx then
+			for pcf, _ in pairs (PartCtrl_IconFx) do
+				for name, _ in pairs (PartCtrl_IconFx[pcf]) do
+					PartCtrl_IconFx[pcf][name].reset = true
+				end
+			end
+		end
+
+		//if this pcf's auto-generated spawnlist is currently open, then rebuild it (to handle fx being added to or removed from the list)
+		if IsValid(PartCtrl_ViewPanel) and IsValid(PartCtrl_ViewPanel.pnlContent) then
+			if PartCtrl_ViewPanel.pnlContent.SelectedPanel == PartCtrl_ViewPanel and PartCtrl_ViewPanel.CurrentPCF == str then
+				//MsgN("we doin this")
+				if str != "UtilFx" then
+					OnParticleNodeSelected(str, PartCtrl_ViewPanel, PartCtrl_ViewPanel.pnlContent)
+				else
+					OnUtilFxNodeSelected(PartCtrl_ViewPanel.CurrentUtilFxName, PartCtrl_ViewPanel, PartCtrl_ViewPanel.pnlContent)
+				end
+			end
+		end
+
+	end
+
+	net.Receive("PartCtrl_ReloadPCF_SendToCl", function()
+		PartCtrl_ReloadPCF(net.ReadString())
+	end)
+
+else
+	
+	function PartCtrl_ReloadPCF(str) //also gotta have two of these instead of one func with "if CLIENT then" conditionals, again, because one has to be in the same scope as some clientside local vars
+
+		if str != "UtilFx" then
+			PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
+		else
+			PartCtrl_ProcessUtilFx()
+		end
+		MsgN("Reloading ", str, " on server")
+
+		if str != "UtilFx" then
+			//Make sure the reloaded effect is highest priority
+			//(not sure if this matters serverside, but better safe than sorry)
+			game.AddParticles(str)
+		end
+		
+		//now send the update to all players
+		net.Start("PartCtrl_ReloadPCF_SendToCl")
+			net.WriteString(str)
+		net.Broadcast()
+
+	end
+
+	util.AddNetworkString("PartCtrl_ReloadPCF_SendToCl")
+
+	concommand.Add("partctrl_reloadpcf", function(ply, cmd, args)
+		//Only let server owners run this command cause it'll lag everyone
+		//Mostly copied from gmod's lua/autorun/developer_functions.lua (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/autorun/developer_functions.lua#L79)
+		if !game.SinglePlayer() and IsValid(ply) and !ply:IsListenServerHost() and !ply:IsSuperAdmin() then
+			return false
+		end
+		PartCtrl_ReloadPCF(args[1])
+	end, nil, "Reloads a .pcf file on the server and all clients")
+	
 end

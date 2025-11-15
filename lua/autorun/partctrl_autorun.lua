@@ -36,88 +36,9 @@ include("partctrl/properties.lua")
 
 
 
-if CLIENT then
-
-	net.Receive("PartCtrl_ReloadPCF_SendToCl", function()
-		local str = net.ReadString()
-		//if GetConVarNumber("developer") < 1 then return false end
-		if str != "UtilFx" then
-			PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
-		else
-			PartCtrl_ProcessUtilFx()
-		end
-		searchParticles = nil //force search to rebuild search cache so any new fx will be found
-		MsgN("Reloading ", str, " on client ", LocalPlayer())
-
-		if str != "UtilFx" then
-			//Handle duplicate fx detection again; it's possible that an effect was updated to start/stop being a dupe, OR that an 
-			//effect being updated made an effect from a lower-priority PCF start/stop being considered a dupe of this pcf's effect
-			PartCtrl_GetDuplicateFx()
-
-			//Make sure the reloaded pcf is highest priority
-			//(try to prevent oddness with PartCtrl_PCFsByParticleName_CurrentlyLoaded on fx that change dupe status)
-			PartCtrl_AddParticles(str)
-		end
-
-		//Refresh spawnicons (this is handled by the think hook in contenticon_partctrl.lua)
-		//Do this for all spawnicons, not just the ones for the pcf we updated (i.e. in case 
-		//updating one of this pcf's fx made a lower priority pcf's effect no longer a dupe of it)
-		if PartCtrl_IconFx then
-			for pcf, _ in pairs (PartCtrl_IconFx) do
-				for name, _ in pairs (PartCtrl_IconFx[pcf]) do
-					PartCtrl_IconFx[pcf][name].reset = true
-				end
-			end
-		end
-
-		//if this pcf's auto-generated spawnlist is currently open, then rebuild it (to handle fx being added to or removed from the list)
-		if IsValid(PartCtrl_ViewPanel) and IsValid(PartCtrl_ViewPanel.pnlContent) then
-			if PartCtrl_ViewPanel.pnlContent.SelectedPanel == PartCtrl_ViewPanel and PartCtrl_ViewPanel.CurrentPCF == str then
-				//MsgN("we doin this")
-				if str != "UtilFx" then
-					OnParticleNodeSelected(str, PartCtrl_ViewPanel, PartCtrl_ViewPanel.pnlContent)
-				else
-					OnUtilFxNodeSelected(PartCtrl_ViewPanel.CurrentUtilFxName, PartCtrl_ViewPanel, PartCtrl_ViewPanel.pnlContent)
-				end
-			end
-		end
-	end)
-
-else
-
-	util.AddNetworkString("PartCtrl_ReloadPCF_SendToSv")
-	util.AddNetworkString("PartCtrl_ReloadPCF_SendToCl")
-
-	net.Receive("PartCtrl_ReloadPCF_SendToSv", function(_, ply)
-		local str = net.ReadString()
-		if GetConVarNumber("developer") < 1 then return false end
-		if str != "UtilFx" then
-			PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
-		else
-			PartCtrl_ProcessUtilFx()
-		end
-		searchParticles = nil //force search to rebuild search cache so any new fx will be found
-		MsgN("Reloading ", str, " on server")
-
-		if str != "UtilFx" then
-			//Make sure the reloaded effect is highest priority
-			//(not sure if this matters serverside, but better safe than sorry)
-			game.AddParticles(str)
-		end
-
-		//now send the update to all players
-		net.Start("PartCtrl_ReloadPCF_SendToCl")
-			net.WriteString(str)
-		net.Broadcast()
-	end)
-	
-end
-
-
-
-
 //Custom version of SortedPairs to sort by table key, but caps-agnostically (see original: https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/extensions/table.lua#L539-L576)
 //This is used to match how the particle editor sorts particle names, so we don't sort capitalized particles above uncapitalized ones.
+
 function PartCtrl_SortedPairsLower(pTable)
 
 	local keys = table.GetKeys(pTable) //use the global getkeys instead of the local one used in the SortedPairs code, so we don't have to copy as much

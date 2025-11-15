@@ -1867,7 +1867,7 @@ if SERVER then
 
 	end
 
-	//Console commaed by contenticon_partctrl to spawn particles
+	//Console command for contenticon_partctrl to spawn particles
 	concommand.Add("partctrl_spawnparticle", function(ply, cmd, args)
 		PartCtrl_SpawnParticle(ply, nil, args[1], args[2])
 	end, nil, "Spawns a particle effect; first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf")
