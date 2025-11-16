@@ -2267,6 +2267,7 @@ function PartCtrl_ProcessPCF(filename)
 		if dodebug then MsgN("PartCtrl: ", filename, " couldn't be read") end
 	else
 		PartCtrl_CachedReadPCFs[filename] = t
+		PartCtrl_CulledFx[filename] = {}
 		local t2 = {}
 		for particle, ptab in pairs (t) do
 			local processed = {
@@ -2776,7 +2777,7 @@ function PartCtrl_ProcessPCF(filename)
 				else
 					text = text .. " are attached."
 				end
-				PartCtrl_AppendInfoText(t2[particle], text)
+				PartCtrl_AddInfoText(t2[particle], text)
 			end
 
 			//Do min_length for tracer fx
@@ -2860,44 +2861,29 @@ function PartCtrl_ProcessPCF(filename)
 				end
 			end
 
-			//Flag effects for culling - we do this before calling the PostProcessPCF hook, so the hook can override it
-			local shouldcull = nil
+			//Flag effects for culling - we do this before calling the PostProcessPCF hook, so that the hook can override it
 			//Cull empty effects
 			if t2[particle].renderer_emitter_shouldcull then
 				if t2[particle].has_zero_alpha then
-					shouldcull = "This particle has an alpha of 0, preventing it from rendering. If this effect was flagged\nin error (it's actually visible), then report this bug!"
-				end
-				if shouldcull then
-					shouldcull = shouldcull .. "\n\n"
+					PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_ZeroAlpha")
 				else
-					shouldcull = ""
+					PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_NoRendererOrEmitter")
 				end
-				shouldcull = shouldcull .. "This particle effect is missing a valid renderer, emitter, or material, and has no control\npoints inherited from children, which means it's probably empty, blank, or invisible. If\nthis effect was flagged in error (it's actually visible), then report this bug!"
 			end
 			//Cull effects that are stuck at the world origin because they don't have any cpoints setting their particle pos
 			if !t2[particle].sets_particle_pos then
-				if shouldcull then
-					shouldcull = shouldcull .. "\n\n"
-				else
-					shouldcull = ""
-				end
-				shouldcull = shouldcull .. "This particle effect doesn't have any operators setting the particles' spawn position\n(i.e. 'Position Within Box Random'), or their position is being overwritten by another\noperator (i.e. 'Set Control Point Positions') which means it will always spawn particles\nin the same immovable location on the map. This isn't useful to players 99% of the time,\nand would just clutter up spawnlists and searches with unusable effects. If this effect\nwas flagged in error (it's not stuck in one place), then report this bug!"
+				PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_NoParticlePos")
 			end
 			//Also, now that their parents have inherited cpoint data from them, cull effects with preventNameBasedLookup, since we can't spawn them on their own.
 			if t2[particle].prevent_name_based_lookup then
-				if shouldcull then
-					shouldcull = shouldcull .. "\n\n"
-				else
-					shouldcull = ""
-				end
-				shouldcull = shouldcull .. "This particle effect has the value preventNameBasedLookup set to true, which prevents\nthe game from spawning it directly, though other effects can still use it as a child."
+				PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_PreventNameBasedLookup")
 			end
 			
 			//Handle screenspace fx
 			//TODO: this isn't perfectly 1-to-1 with which screenspace fx actually display fx on the screen (generally, these fx don't render on their 
 			//own unless they're also a viewmodel effect, but if they're a child of another effect, then *usually* their parent will render them anyway? 
 			//not 100% sure what the criteria is here.) All the fx that still render here but get flagged as "unable to render properly" are still
-			//various flavors of broken anyway, so this is what we're going with.
+			//various flavors of broken anyway, so this is what we're going with for now.
 			local screenspace = false
 			local vm = t[particle]["view model effect"]
 			if t2[particle].screenspace_from_child then
@@ -2906,44 +2892,29 @@ function PartCtrl_ProcessPCF(filename)
 				if vm then
 					screenspace = true
 				else
-					if shouldcull then
-						shouldcull = shouldcull .. "\n\n"
-					else
-						shouldcull = ""
-					end
-					shouldcull = shouldcull .. "This particle effect has the value \"screen space effect\" set to true, but isn't set as a view model effect, which prevents it from rendering properly."
+					PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_ScreenSpace_NotViewModel")
 				end
 			end
 			if screenspace then
 				if blacklist_screenfx:GetBool() then
-					if shouldcull then
-						shouldcull = shouldcull .. "\n\n"
-					else
-						shouldcull = ""
-					end
-					shouldcull = shouldcull .. "sv_partctrl_blacklist_screenspace is 1, blocking all fx with \"screen space effect\""
+					PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_ScreenSpace_Blacklisted")
 				else
-					PartCtrl_AppendInfoText(t2[particle], "Screenspace effect: draws an overlay directly onto the screen")
+					PartCtrl_AddInfoText(t2[particle], "Screenspace effect: draws an overlay directly onto the screen")
 				end
 			elseif vm then
 				//Also add info text for viewmodel effects here, because this isn't inherited and doesn't apply to screenspace fx
-				PartCtrl_AppendInfoText(t2[particle], "Viewmodel effect: draws in front of everything, and has a distorted position unless attached to a model on a non-0 attachment.")
+				PartCtrl_AddInfoText(t2[particle], "Viewmodel effect: draws in front of everything, and has a distorted position unless attached to a model on a non-0 attachment.")
 			end
-
-			t2[particle].shouldcull = shouldcull
 		end
 		//Now that the processed table is finished, let hook funcs modify it arbitrarily (including deciding which fx to cull)
 		hook.Call("PartCtrl_PostProcessPCF", nil, filename, t2)
-		local culledfx = {}
 		for particle, _ in pairs (t2) do
 			//Cull bad effects from the table.
-			//If the player starts up the game in developer mode, effects aren't culled, but instead have a warning on the spawnicon telling the dev why they won't show up to players.
-			if t2[particle].shouldcull and GetConVarNumber("developer") < 1 then
+			//If the player starts up the game in developer mode, effects aren't culled, but instead have a warning in the spawnicon telling the dev why they won't show up to players.
+			if PartCtrl_CulledFx[filename][particle] and GetConVarNumber("developer") < 1 then
 				t2[particle] = nil
-				culledfx[particle] = true
 			end
 		end
-		PartCtrl_CulledFx[filename] = culledfx
 		//Remove culled children and empty entries from child lists, add parents to parent lists
 		for particle, _ in pairs (t2) do
 			local shouldclean = false
@@ -2966,6 +2937,16 @@ function PartCtrl_ProcessPCF(filename)
 			return t2
 		end
 	end
+end
+
+function PartCtrl_AddCullReason(pcf, effect, str)
+	PartCtrl_CulledFx[pcf][effect] = PartCtrl_CulledFx[pcf][effect] or {}
+	table.insert(PartCtrl_CulledFx[pcf][effect], str)
+end
+
+function PartCtrl_AddInfoText(tab, str)
+	tab.info = tab.info or {}
+	table.insert(tab.info, str)
 end
 
 //Comprehensive output testing: 

@@ -1950,13 +1950,14 @@ function PartCtrl_ProcessUtilFx()
 		for k, v in pairs (utilfx) do
 			local t = {
 				["cpoints"] = {},
-				["info"] = v.info,
-				["info_sfx"] = v.info_sfx,
 				["utilfx"] = true,
 				["default_time"] = v.default_time,
 				["min_length"] = v.min_length
 			}
 			if t.default_time == nil then t.default_time = 1 end
+			//everything else expects the info to be a table of strings
+			if v.info then t.info = {v.info} end
+			if v.info_sfx then t.info_sfx = {v.info_sfx} end
 
 			//Use the effect's DoProcess func to set up cpoints
 			v.DoProcess(t, v.DoProcessExtras)

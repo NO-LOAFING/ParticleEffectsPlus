@@ -1,15 +1,25 @@
+//TODO: should these be somewhere else? they're all assigned in pcf_processing.lua, but that file is super bloated, and this is the panel that actually displays them.
+language.Add("PartCtrl_Cull_ZeroAlpha",			"This effect has an alpha of 0, preventing it from rendering. If this effect was flagged\nin error (it's actually visible), then report this bug!")
+language.Add("PartCtrl_Cull_ZeroAlpha_Short",		"Effect doesn't render")
+language.Add("PartCtrl_Cull_NoRendererOrEmitter",	"This effect is missing a valid renderer, emitter, or material, and has no control points\ninherited from children, which means it's probably empty, blank, or invisible. If this\neffect was flagged in error (it's actually visible), then report this bug!")
+language.Add("PartCtrl_Cull_NoRendererOrEmitter_Short",	"Effect doesn't render")
+language.Add("PartCtrl_Cull_NoParticlePos",		"This effect doesn't have any operators setting the particles' spawn position (i.e. 'Position\nWithin Box Random'), or their position is being overwritten by another operator (i.e.\n'Set Control Point Positions') which means it will always spawn particles in the same\nimmovable location on the map. This isn't useful to players 99% of the time, and would\njust clutter up spawnlists and searches with unusable effects. If this effect was flagged\nin error (it's not actually stuck in one place), then report this bug!")
+language.Add("PartCtrl_Cull_NoParticlePos_Short",	"Effect is immovable")
+language.Add("PartCtrl_Cull_PreventNameBasedLookup",	"This effect has the value preventNameBasedLookup set to true, which prevents the game\nfrom spawning it directly, though other effects can still use it as a child.")
+language.Add("PartCtrl_Cull_PreventNameBasedLookup_Short","Effect is non-spawnable")
+language.Add("PartCtrl_Cull_ScreenSpace_NotViewModel",	"This effect has the value \"screen space effect\" set to true, but isn't set\nas a view model effect, which prevents it from rendering properly.")
+language.Add("PartCtrl_Cull_ScreenSpace_NotViewModel_Short","Effect doesn't render")
+language.Add("PartCtrl_Cull_ScreenSpace_Blacklisted",	"sv_partctrl_blacklist_screenspace is 1, blocking all fx with \"screen space effect\"")
+
 local PANEL = {}
 
 local icon_invalid = Material("icon16/cancel.png")
-//local icon_multiplydefined = Material("icon16/exclamation.png")
 local icon_multiplydefined = Material("icon16/page_copy.png")
 local icon_multiplydefined_2 = Material("icon16/bullet_error.png")
-local icon_position = Material("icon16/arrow_right.png")//Material("sprites/grip") //Material("icon16/arrow_inout.png")
-//local icon_position_none = Material("icon16/bullet_delete.png")
+local icon_position = Material("icon16/arrow_right.png") //Material("sprites/grip") //Material("icon16/arrow_inout.png")
 local icon_edit = Material("icon16/pencil.png")
 local icon_color = Material("icon16/color_wheel.png")
 local icon_test = Material("icon16/color_wheel.png")
-local icon_deverror = Material("icon16/error.png")
 local icon_utilfx = Material("icon16/cog.png")
 local icon_info = Material("icon16/information.png")
 
@@ -278,12 +288,12 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 
 	for pcf, pcftab in pairs (PartCtrl_IconFx) do
 		local utilfx = (pcf == "UtilFx")
-		for name, effecttab in pairs (pcftab) do
+		for name, _ in pairs (pcftab) do
 
 			local self = PartCtrl_IconFx[pcf][name] //this works??
 
 			//First, go through the list of panels using this effect, and remove any that are invalid or not visible
-			for panel, _ in pairs (effecttab.panels) do
+			for panel, _ in pairs (self.panels) do
 				if !IsValid(panel) or (autohide or !panel:GetParent():GetParent():GetParent():IsVisible()) then //this dumb nested parent is the spawnlist containing the spawnicon (or a container for it or something), which becomes non-visible when another spawnlist is selected
 					self.panels[panel] = nil
 				else
@@ -298,55 +308,47 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 			end
 
 			//Store first-time info
-			if !effecttab.tooltip then
+			if !self.tooltip then
 				local tooltip = name
 				self.icons = {}
 				if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) or !istable(PartCtrl_ProcessedPCFs[pcf][name].cpoints) then
-					tooltip = tooltip .. "\n(" .. pcf .. ")\n\nInvalid particle effect (from game/addon that isn't mounted?)"
+					if PartCtrl_CulledFx[pcf] and PartCtrl_CulledFx[pcf][name] then
+						//If effect was culled, add list of cull reasons to the tooltip, but use short non-technical reasons if possible
+						local text = ""
+						local docomma = false
+						for _, v in pairs (PartCtrl_CulledFx[pcf][name]) do
+							local v1 = language.GetPhrase(v)
+							if v1 != v then
+								local v2 = language.GetPhrase(v .. "_Short")
+								if v2 != v .. "_Short" then
+									v = v2
+								else
+									v = v1
+								end
+							end
+							if docomma then
+								text = text .. "; "
+							end
+							text = text .. v
+							docomma = true
+						end
+						tooltip = tooltip .. "\n(" .. pcf .. ")\n\n\nERROR: Invalid particle effect (" .. text .. ")"
+					elseif !istable(PartCtrl_ProcessedPCFs[pcf]) then
+						tooltip = tooltip .. "\n(" .. pcf .. ")\n\n\nERROR: Invalid particle effect (No loaded .pcf file with this name)"
+					else
+						tooltip = tooltip .. "\n(" .. pcf .. ")\n\n\nERROR: Invalid particle effect (No effect with this name in this .pcf)"
+					end
 					self.invalid = true
 				else
 					if !utilfx then
 						tooltip = tooltip .. "\n(" .. pcf .. ")"
-			
-						if #PartCtrl_PCFsByParticleName[name] > 1 then
-							local pcfs_added = 0
-							local text = "\n\nWarning: This particle effect name is defined in multiple files:"
-							for _, v in pairs (PartCtrl_PCFsByParticleName[name]) do
-								//if PartCtrl_PCFsWithConflicts[v] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
-									text = text .. "\n" .. v
-									if PartCtrl_ProcessedPCFs[v][name] and PartCtrl_DuplicateFx[v][name] then
-										text = text .. " (duplicate of " .. PartCtrl_DuplicateFx[v][name] .. ")"
-										//Don't add conflict warnings for dupes unless there's at least 2 non-dupe fx with that name 
-										//(no point in conflict warning if every version of the effect is the same)
-									else
-										pcfs_added = pcfs_added + 1
-									end
-									if !PartCtrl_ProcessedPCFs[v] or !PartCtrl_ProcessedPCFs[v][name] or PartCtrl_ProcessedPCFs[v][name].shouldcull then
-										text = text .. " (culled)"
-									end
-								//end
-							end
-							text = text .. "\n\nOnly one effect called \"" .. name .. "\" can be loaded at a time.\nIf you reload effects from any of these files, even in spawnicons,\nit will use the \"" .. name .. "\" from the most recently loaded file." 
-							if pcfs_added > 1 then
-								tooltip = tooltip .. text
-								table.insert(self.icons, {["icon"] = icon_multiplydefined, ["icon2"] = icon_multiplydefined_2})
-								self.MultiplyDefined = true
-							end
-						end
-			
-						//developer warnings for culled fx
-						if PartCtrl_ProcessedPCFs[pcf][name].shouldcull then
-							tooltip = tooltip .. "\n\nERROR: This effect will not be loaded outside of developer mode.\n\n" .. tostring(PartCtrl_ProcessedPCFs[pcf][name].shouldcull) //just in case some doofus makes it a bool
-							//tooltip reaches max length if all 3 errors are on one effect, but whatever
-							table.insert(self.icons, {["icon"] = icon_deverror})
+
+						if PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][name] then
+							tooltip = tooltip .. "\n\nThis is a duplicate of \"" .. name .. "\" from \"" .. PartCtrl_DuplicateFx[pcf][name] .. "\"."
+							table.insert(self.icons, {["icon"] = Material("icon16/page_paste.png")})
 						end
 					else
 						tooltip = tooltip .. "\n(Scripted Effect)"
-					end
-
-					if PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][name] then
-						tooltip = tooltip .. "\n\nThis effect is a duplicate of " .. PartCtrl_DuplicateFx[pcf][name] .. "'s " .. name .. "."
-						table.insert(self.icons, {["icon"] = Material("icon16/page_paste.png")})
 					end
 			
 					local types = {}
@@ -410,7 +412,44 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					end
 					if PartCtrl_ProcessedPCFs[pcf][name].info then
 						table.insert(self.icons, {["icon"] = icon_info})
-						tooltip = tooltip .. "\n\nInfo:\n" .. PartCtrl_ProcessedPCFs[pcf][name].info
+						tooltip = tooltip .. "\n\nInfo:\n" .. table.concat(PartCtrl_ProcessedPCFs[pcf][name].info, "\n")
+					end
+
+					//developer warnings for culled fx
+					if PartCtrl_CulledFx[pcf] and PartCtrl_CulledFx[pcf][name] then
+						tooltip = tooltip .. "\n\n\nERROR: This effect is invalid, and won't be loaded outside of developer mode."
+						for _, v in pairs (PartCtrl_CulledFx[pcf][name]) do
+							tooltip = tooltip .. "\n\n" .. language.GetPhrase(v) //use verbose cull reasons for this one
+						end
+						//tooltip reaches max length if lots of errors are on one effect, but whatever
+						table.insert(self.icons, {["icon"] = icon_invalid})
+					end
+
+					//warning for multiply defined fx
+					if !utilfx and #PartCtrl_PCFsByParticleName[name] > 1 then
+						local pcfs_added = 0
+						local text = "\n\n\nWarning: This particle effect name is defined in multiple files:"
+						for _, v in pairs (PartCtrl_PCFsByParticleName[name]) do
+							//if PartCtrl_PCFsWithConflicts[v] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
+								text = text .. "\n" .. v
+								if PartCtrl_ProcessedPCFs[v][name] and PartCtrl_DuplicateFx[v][name] then
+									text = text .. " (duplicate of " .. PartCtrl_DuplicateFx[v][name] .. ")"
+									//Don't add conflict warnings for dupes unless there's at least 2 non-dupe fx with that name 
+									//(no point in conflict warning if every version of the effect is the same)
+								else
+									pcfs_added = pcfs_added + 1
+								end
+								if PartCtrl_CulledFx[v] and PartCtrl_CulledFx[v][name] then
+									text = text .. " (invalid)"
+								end
+							//end
+						end
+						text = text .. "\n\nOnly one effect called \"" .. name .. "\" can be loaded at a time.\nIf you reload effects from any of these files, even in spawnicons,\nit will use the \"" .. name .. "\" from the most recently loaded file." 
+						if pcfs_added > 1 then
+							tooltip = tooltip .. text
+							table.insert(self.icons, {["icon"] = icon_multiplydefined, ["icon2"] = icon_multiplydefined_2})
+							self.MultiplyDefined = true
+						end
 					end
 			
 					//test lots of icons
@@ -423,10 +462,10 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 
 			//Manage the particle
 			if !utilfx and !PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] then //if this effect is being throttled, then we want the crash prevention func to handle removing it, not remove it here
-				if !effecttab.reset and table.Count(effecttab.panels) > 0
+				if !self.reset and table.Count(self.panels) > 0
 				and istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][name]) //run remove particle check if these fail, because it's possible for a pcf or effect to become invalid after refreshing a pcf file
 				and !PartCtrl_ProcessedPCFs[pcf][name].prevent_name_based_lookup then //don't bother trying to create fx with this attribute, even in developer mode, it'll just fail and spam the console with errors
-					if !(effecttab.particle and effecttab.particle.IsValid and effecttab.particle:IsValid()) then
+					if !(self.particle and self.particle.IsValid and self.particle:IsValid()) then
 
 						//Create the particle
 
@@ -532,22 +571,22 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 
 					//Remove the particle
 
-					if effecttab.particle then
-						if effecttab.particle.IsValid and effecttab.particle:IsValid() then
-							effecttab.particle:StopEmissionAndDestroyImmediately()
-						//elseif PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][effecttab.particle] then
+					if self.particle then
+						if self.particle.IsValid and self.particle:IsValid() then
+							self.particle:StopEmissionAndDestroyImmediately()
+						//elseif PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle] then
 						//	//Remove now-invalid particles from the crashcheck list
-						//	PartCtrl_AddParticles_CrashCheck[pcf][effecttab.particle] = nil
+						//	PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = nil
 						else
 							self.particle = nil
 						end
 					end
-					if effecttab.particle2 then
-						if effecttab.particle2.IsValid and effecttab.particle2:IsValid() then
-							effecttab.particle2:StopEmissionAndDestroyImmediately()
-						//elseif PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][effecttab.particle2] then
+					if self.particle2 then
+						if self.particle2.IsValid and self.particle2:IsValid() then
+							self.particle2:StopEmissionAndDestroyImmediately()
+						//elseif PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle2] then
 						//	//Remove now-invalid particles from the crashcheck list
-						//	PartCtrl_AddParticles_CrashCheck[pcf][effecttab.particle2] = nil
+						//	PartCtrl_AddParticles_CrashCheck[pcf][self.particle2] = nil
 						else
 							self.particle2 = nil
 						end
@@ -556,9 +595,9 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 				end
 			end
 
-			if effecttab.reset then
+			if self.reset then
 				//Remove all info for this particle, recreate it from scratch next frame
-				//(this is set by reloading a pcf with the extra dev dropdown options)
+				//(this is set by reloading a pcf with the partctrl_reloadpcf concommand)
 				PartCtrl_IconFx[pcf][name] = nil
 			end
 
@@ -617,10 +656,14 @@ function PANEL:OpenMenu()
 					else
 						option2 = submenu:AddOption(child, OnClick)
 					end
-					if PartCtrl_ProcessedPCFs[self.pcf][child].shouldcull then //in developer mode, add warnings to culled fx
-						option2:SetImage("icon16/error.png")
+					if PartCtrl_CulledFx[self.pcf] and PartCtrl_CulledFx[self.pcf][child] then //in developer mode, add warnings to culled fx
+						option2:SetMaterial(icon_invalid)
 						//duplicate of text string from this panel's setup func, whatever
-						option2:SetTooltip("NOTE: This effect will not be loaded outside of developer mode.\n\n" .. tostring(PartCtrl_ProcessedPCFs[self.pcf][child].shouldcull))
+						local tooltip = "ERROR: This effect is invalid, and won't be loaded outside of developer mode."
+						for _, v in pairs (PartCtrl_CulledFx[self.pcf][child]) do
+							tooltip = tooltip .. "\n\n" .. language.GetPhrase(v)
+						end
+						option2:SetTooltip(tooltip)
 					end
 					//When the player hovers over a child effect, override the spawnicon to display that effect instead
 					local old_OnCursorEntered = option2.OnCursorEntered
