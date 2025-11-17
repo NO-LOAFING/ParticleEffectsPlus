@@ -137,13 +137,40 @@ function PANEL:Paint(w, h)
 
 				if cv_debugicons:GetBool() then
 					if itab.mins and itab.maxs then
-						render.DrawWireframeBox(vector_origin, angle_zero, itab.mins, itab.maxs, Color(0,0,255), true)
+						render.DrawWireframeBox(vector_origin, angle_zero, itab.mins, itab.maxs, Color(255,255,255), true)
 					end
 					local mn, mx = itab.particle:GetRenderBounds()
 					render.DrawWireframeBox(vector_origin, angle_zero, mn, mx, Color(255,0,0), true)
 					if itab.particle2 and itab.particle2:IsValid() then
 						local mn_, mx_ = itab.particle2:GetRenderBounds()
 						render.DrawWireframeBox(vector_origin, angle_zero, mn_, mx_, Color(0,255,0), true)
+					end
+					if itab.particle3 then
+						for k, v in pairs (itab.particle3) do
+							if v:IsValid() then
+								local mn_, mx_ = v:GetRenderBounds()
+								if k == 1 then
+									mn_.x = mn_.x - itab.particle3_forcedpositions[k]
+									mx_.x = mn_.x
+								elseif k == 2 then
+									mn_.y = mn_.y - itab.particle3_forcedpositions[k]
+									mx_.y = mn_.y
+								elseif k == 3 then
+									mn_.z = mn_.z - itab.particle3_forcedpositions[k]
+									mx_.z = mn_.z
+								elseif k == 4 then
+									mx_.x = mx_.x - itab.particle3_forcedpositions[k]
+									mn_.x = mx_.x
+								elseif k == 5 then
+									mx_.y = mx_.y - itab.particle3_forcedpositions[k]
+									mn_.y = mx_.y
+								else
+									mx_.z = mx_.z - itab.particle3_forcedpositions[k]
+									mn_.z = mx_.z
+								end
+								render.DrawWireframeBox(vector_origin, angle_zero, mn_, mx_, Color(0,0,255), true)
+							end
+						end
 					end
 				end
 
@@ -206,30 +233,23 @@ end
 
 PartCtrl_IconFx = {}
 
-local function DoPosCPoints(self, p)
+local function DoPosCPoints(self, p, particle3_k)
 
 	//Handle position cpoints by placing them all in a fixed-length line, with the cpoints distributed evenly from one end of the line to another
 
 	local origin = vector_origin
 	if p == self.particle2 and self.particle2_playerposfix then
-		//In addition to not setting vector/axis cpoints that would stretch out the renderbounds, we also account for certain fx with "set control point to player", which have a cpoint 
-		//that always sets its position to the player. We can't stop the cpoint from moving there, so instead we move all the other cpoints to be relative to the player as well. This 
-		//isn't perfect, because the position updates are sort of choppy, so a moving player will still stretch out the bounds a bit in the direction they're currently moving, but it's 
-		//better than the alternative of the renderbounds being stretched all the way from the origin to the player pos.
 		origin = LocalPlayer():GetPos()
-	elseif self.particle_forcedpositions then
-		//Try to account for fx with "set control point positions" set to "Set positions in world space", which permanently moves some cpoints to fixed positions in the world and
-		//stretches the renderbounds. We don't have any way to move these cpoints back, so instead, take the remaining cpoints we *can* move, and place those in the same average location 
-		//as the fixed points, so as to not stretch the bounds any more. Unfortunately, this doesn't help a whole lot - the "set control point positions" operator moves 4 cpoints, but most 
-		//effects only use 1 of them, leaving the other 3 in default fixed positions 128 units away from the origin, stretching the renderbounds into a big box that we can't shrink much, 
-		//only keep centered. This works perfectly on a test effect that sets all the unused positions to 0 0 0, but that's not how all the real effects are set up. Oh well, worth a try!
+	elseif particle3_k != nil then
+		//TODO: should particle3 compensate for playerposfix too? don't think there are any fx that require this
 		origin = Vector()
-		local count = 0
-		for _, v in pairs (self.particle_forcedpositions) do
-			origin = origin + v
-			count = count + 1
+		if particle3_k == 1 or particle3_k == 4 then
+			origin.x = self.particle3_forcedpositions[particle3_k]
+		elseif particle3_k == 2 or particle3_k == 5 then
+			origin.y = self.particle3_forcedpositions[particle3_k]
+		else
+			origin.z = self.particle3_forcedpositions[particle3_k]
 		end
-		origin = origin / count
 	end
 
 	done_position_combine = false
@@ -366,7 +386,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					end
 			
 					self.particle2_playerposfix = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_playerposfix //particle operator "set control point to player" sets this to true
-					self.particle_forcedpositions = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_forcedpositions //particle operator "set control point positions" creates this table
+					self.particle3_forcedpositions = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_forcedpositions //particle operator "set control point positions" creates this table
 					self.doparticle2 = self.particle2_playerposfix
 					self.length = PartCtrl_ProcessedPCFs[pcf][name].min_length or 100
 					self.EditCPoints = {}
@@ -481,10 +501,15 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 
 						self.particle = CreateParticleSystemNoEntity(name, vector_origin)
 						if self.particle and self.particle:IsValid() then
-							//For effects using a color or edit cpoint, their renderbounds will be stretched out by the cpoint if they're too far away,
-							//so create a second particlesystem without those cpoints, so we can use its renderbounds instead
 							if self.doparticle2 then
+								//For effects using a color or edit cpoint, their renderbounds will be stretched out by the cpoint if they're too far away,
+								//so create a second particlesystem without those cpoints, so we can use its renderbounds instead
 								if self.particle2_playerposfix then
+									//In addition, we also account for certain fx with "set control point to player", which have a cpoint that always 
+									//sets its position to the player. We can't stop the cpoint from moving there, so instead we move all the other 
+									//cpoints to be relative to the player as well. This isn't perfect, because the position updates are sort of choppy, 
+									//so a moving player will still stretch out the bounds a bit in the direction they're currently moving, but it's 
+									//better than the alternative of the renderbounds being stretched all the way from the origin to the player pos.
 									self.particle2 = CreateParticleSystem(LocalPlayer(), name, PATTACH_ABSORIGIN_FOLLOW)
 								else
 									self.particle2 = CreateParticleSystemNoEntity(name, vector_origin)
@@ -494,6 +519,21 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 									self.particle2 = nil
 								end
 								self.particle2:SetShouldDraw(false)
+							end
+							if self.particle3_forcedpositions then
+								//For effects with with cpoints using "set control point positions" set to "Set positions in world space", create another
+								//particlesystem in each direction they stretch the renderbounds in, so we can use those to determine how much the bounds 
+								//are stretched by, and resize the final bounds accordingly
+								self.particle3 = {}
+								for i = 1, 6 do
+									if math.abs(self.particle3_forcedpositions[i]) > 0 then
+										self.particle3[i] = CreateParticleSystemNoEntity(name, vector_origin)
+										if self.particle3[i] and (!self.particle3[i].IsValid or !self.particle3[i]:IsValid()) then
+											self.particle3[i] = nil
+										end
+										self.particle3[i]:SetShouldDraw(false)
+									end
+								end
 							end
 							self.particle:SetShouldDraw(false)
 							self.mins = nil
@@ -511,6 +551,11 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							if self.particle2 then
 								DoPosCPoints(self, self.particle2)
 							end
+							if self.particle3 then
+								for k, v in pairs (self.particle3) do
+									DoPosCPoints(self, v, k)
+								end
+							end
 							//Handle axis cpoints and vector cpoints other than colors by just setting them to their default value
 							for k, v in pairs (self.EditCPoints) do
 								self.particle:SetControlPoint(k, v)
@@ -521,14 +566,19 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							if self.particle2 then
 								PartCtrl_AddParticles_CrashCheck[pcf][self.particle2] = true
 							end
+							if self.particle3 then
+								for _, v in pairs (self.particle3) do
+									PartCtrl_AddParticles_CrashCheck[pcf][v] = true
+								end
+							end
 						end
 
 					else
 
-						//Update the particle
-
+						//Update the particle and render bounds
 						//Based off PositionSpawnIcon (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/util/client.lua#L208)
 						//as called by IconEditor:BestGuessLayout (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/gui/iconeditor.lua#L362)
+						
 						local mn, mx
 						if self.particle2 and self.particle2:IsValid() then
 							if self.particle2_playerposfix then
@@ -538,11 +588,32 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						else
 							mn, mx = self.particle:GetRenderBounds()
 						end
-						//MsgN(mn, ",     ", mx)
-						//Clamp the up/down axis so that rising smoke, falling debris, etc. don't move the camera totally out of position
-						local width = math.max((math.abs(mn.x) + math.abs(mx.x)), (math.abs(mn.y) + math.abs(mx.y)), 100) / 2 //minimum 50 so that certain really small effects (tf2 medic bubbles) don't end up with no height at all
-						mn.z = math.max(mn.z, -width)
-						mx.z = math.min(mx.z, width)
+						if self.particle3 then
+							local function DoParticle3(i, use_mx, axis)
+								local p = self.particle3[i]
+								if p and p:IsValid() then
+									local mn2, mx2 = p:GetRenderBounds()
+									if !use_mx then
+										mn[axis] = mn2[axis] - self.particle3_forcedpositions[i]
+									else
+										mx[axis] = mx2[axis] - self.particle3_forcedpositions[i]
+									end
+								end
+							end
+							DoParticle3(1, false, "x")
+							DoParticle3(2, false, "y")
+							DoParticle3(3, false, "z")
+							DoParticle3(4, true, "x")
+							DoParticle3(5, true, "y")
+							DoParticle3(6, true, "z")
+						end
+
+						//Don't let the bounds be any taller than they are wide, so that rising smoke, falling debris, etc. don't move the camera totally out of position
+						local width = math.max((math.abs(mn.x) + math.abs(mx.x)), (math.abs(mn.y) + math.abs(mx.y)))
+						local height = -mn.z + mx.z
+						height = width/height
+						mn.z = math.max(mn.z, mn.z * height)
+						mx.z = math.min(mx.z, mx.z * height)
 
 						//Expand our bounds using the new bounds, and only recreate all the view info if the bounds have changed
 						//Because the particle's render bounds are constantly fluctuating as more particles are added, destroyed, and moved, this behavior lets us keep expanding our bounds
@@ -579,9 +650,6 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					if self.particle then
 						if self.particle.IsValid and self.particle:IsValid() then
 							self.particle:StopEmissionAndDestroyImmediately()
-						//elseif PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle] then
-						//	//Remove now-invalid particles from the crashcheck list
-						//	PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = nil
 						else
 							self.particle = nil
 						end
@@ -589,11 +657,20 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					if self.particle2 then
 						if self.particle2.IsValid and self.particle2:IsValid() then
 							self.particle2:StopEmissionAndDestroyImmediately()
-						//elseif PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle2] then
-						//	//Remove now-invalid particles from the crashcheck list
-						//	PartCtrl_AddParticles_CrashCheck[pcf][self.particle2] = nil
 						else
 							self.particle2 = nil
+						end
+					end
+					if self.particle3 then
+						for k, v in pairs (self.particle3) do
+							if v.IsValid and v:IsValid() then
+								v:StopEmissionAndDestroyImmediately()
+							else
+								self.particle3[k]  = nil
+							end
+						end
+						if table.IsEmpty(self.particle3) then
+							self.particle3 = nil
 						end
 					end
 

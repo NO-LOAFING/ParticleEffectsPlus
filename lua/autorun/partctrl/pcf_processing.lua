@@ -1602,9 +1602,23 @@ local processfuncs = {
 				if used_cpoint == -1 then used_cpoint = nil end //TODO: nothing actually does this?
 			else
 				//If set to positions in worldspace, these cpoints can break spawnicon renderbounds, so tell it to account for that
-				processed["spawnicon_forcedpositions"] = processed["spawnicon_forcedpositions"] or {}
+				processed["spawnicon_forcedpositions"] = processed["spawnicon_forcedpositions"] or {0,0,0,0,0,0}
 				for k, tab in pairs (cpoints) do
-					processed["spawnicon_forcedpositions"][attrib[tab.output] or tab.output_def] = attrib[tab.location] or tab.location_def
+					//Create a table of 6 numbers, the mins and maxs of the forced positions
+					local function DoParticle3(i, domax, axis)
+						local val = attrib[tab.location] or tab.location_def
+						if !domax then
+							processed["spawnicon_forcedpositions"][i] = math.min(processed["spawnicon_forcedpositions"][i], val[axis])
+						else
+							processed["spawnicon_forcedpositions"][i] = math.max(processed["spawnicon_forcedpositions"][i], val[axis])
+						end
+					end
+					DoParticle3(1, false, "x")
+					DoParticle3(2, false, "y")
+					DoParticle3(3, false, "z")
+					DoParticle3(4, true, "x")
+					DoParticle3(5, true, "y")
+					DoParticle3(6, true, "z")
 				end
 			end
 
