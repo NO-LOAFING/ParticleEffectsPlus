@@ -58,6 +58,7 @@ end
 
 local ViewAngle = Angle(25, 220, 0)
 local icon_loading = Material("vgui/loading-rotate.vmt") //TODO: replace this with a custom texture eventually, something bulkier that looks better when it's drawn small like this
+local cv_debugicons = GetConVar("cl_partctrl_debug_spawnicons")
 function PANEL:Paint(w, h)
 
 	if !self.DoneSetup then
@@ -133,13 +134,19 @@ function PANEL:Paint(w, h)
 
 				cam.StartOrthoView(-itab.view.ortho, itab.view.ortho, itab.view.ortho, -itab.view.ortho) //we use an orthogonal view instead of how RenderSpawnIcon does it, because RenderSpawnIcon's FOV code sucks really bad for icons that zoom out a lot
 				itab.particle:Render()
-				--[[render.DrawWireframeBox(vector_origin, angle_zero, itab.mins, itab.maxs, color_white, true)
-				if itab.particle2 then
-					local mn_, mx_ = itab.particle2:GetRenderBounds()
-					render.DrawWireframeBox(vector_origin, angle_zero, mn_, mx_, Color(255,0,0), true)
-				end]]
-				//render.DrawWireframeBox(Vector(mn.x, mx.y, mn.z), angle_zero, Vector(-1,-1,-1), Vector(1,1,1), Color(255,0,0), false)
-				//render.DrawWireframeBox(Vector(mx.x, mn.y, mx.z), angle_zero, Vector(-1,-1,-1), Vector(1,1,1), Color(0,0,255), false)
+
+				if cv_debugicons:GetBool() then
+					if itab.mins and itab.maxs then
+						render.DrawWireframeBox(vector_origin, angle_zero, itab.mins, itab.maxs, Color(0,0,255), true)
+					end
+					local mn, mx = itab.particle:GetRenderBounds()
+					render.DrawWireframeBox(vector_origin, angle_zero, mn, mx, Color(255,0,0), true)
+					if itab.particle2 and itab.particle2:IsValid() then
+						local mn_, mx_ = itab.particle2:GetRenderBounds()
+						render.DrawWireframeBox(vector_origin, angle_zero, mn_, mx_, Color(0,255,0), true)
+					end
+				end
+
 				render.SetScissorRect(0, 0, 0, 0, false) //also from DModelPanel:DrawModel
 				cam.End3D()
 				cam.EndOrthoView()
@@ -203,15 +210,26 @@ local function DoPosCPoints(self, p)
 
 	//Handle position cpoints by placing them all in a fixed-length line, with the cpoints distributed evenly from one end of the line to another
 
-	//In addition to not setting vector/axis cpoints that would stretch out the renderbounds, we also account for certain fx with "set control point to player", which have a cpoint that always 
-	//sets its position to the player. We can't stop the cpoint from moving there, so instead we move all the other cpoints to be relative to the player as well. This isn't perfect, because the
-	//position updates are sort of choppy, so a moving player will still stretch out the bounds a bit in the direction they're currently moving, but it's better than the alternative of the 
-	//renderbounds being stretched all the way from the origin to the player pos.
-	local origin = nil
+	local origin = vector_origin
 	if p == self.particle2 and self.particle2_playerposfix then
+		//In addition to not setting vector/axis cpoints that would stretch out the renderbounds, we also account for certain fx with "set control point to player", which have a cpoint 
+		//that always sets its position to the player. We can't stop the cpoint from moving there, so instead we move all the other cpoints to be relative to the player as well. This 
+		//isn't perfect, because the position updates are sort of choppy, so a moving player will still stretch out the bounds a bit in the direction they're currently moving, but it's 
+		//better than the alternative of the renderbounds being stretched all the way from the origin to the player pos.
 		origin = LocalPlayer():GetPos()
-	else
-		origin = vector_origin
+	elseif self.particle_forcedpositions then
+		//Try to account for fx with "set control point positions" set to "Set positions in world space", which permanently moves some cpoints to fixed positions in the world and
+		//stretches the renderbounds. We don't have any way to move these cpoints back, so instead, take the remaining cpoints we *can* move, and place those in the same average location 
+		//as the fixed points, so as to not stretch the bounds any more. Unfortunately, this doesn't help a whole lot - the "set control point positions" operator moves 4 cpoints, but most 
+		//effects only use 1 of them, leaving the other 3 in default fixed positions 128 units away from the origin, stretching the renderbounds into a big box that we can't shrink much, 
+		//only keep centered. This works perfectly on a test effect that sets all the unused positions to 0 0 0, but that's not how all the real effects are set up. Oh well, worth a try!
+		origin = Vector()
+		local count = 0
+		for _, v in pairs (self.particle_forcedpositions) do
+			origin = origin + v
+			count = count + 1
+		end
+		origin = origin / count
 	end
 
 	done_position_combine = false
@@ -242,20 +260,6 @@ local function DoPosCPoints(self, p)
 			done_position_combine = true
 		end
 	end
-
-	//test: cpoints that are overridden by the effect to a fixed position in worldspace are stuck there and stretch the bounds, see if we can move them back.
-	//(example: many fx in tf2's particles/rps.pcf) unfortunately this doesn't work at all on those cpoints, they're stuck there.
-	//for i = 0, 10 do
-	//	p:SetControlPoint(i, origin)
-	//end
-	--[[p:AddControlPoint(9, game.GetWorld(), PATTACH_ABSORIGIN)
-	p:SetControlPoint(9, origin)
-	p:AddControlPoint(4, game.GetWorld(), PATTACH_ABSORIGIN)
-	p:SetControlPoint(4, origin)
-	p:AddControlPoint(2, game.GetWorld(), PATTACH_ABSORIGIN)
-	p:SetControlPoint(2, origin)
-	p:AddControlPoint(3, game.GetWorld(), PATTACH_ABSORIGIN)
-	p:SetControlPoint(3, origin)]]
 
 end
 
@@ -361,7 +365,8 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						table.insert(self.icons, {["icon"] = icon_position, ["num"] = types[PARTCTRL_CPOINT_MODE_POSITION]})
 					end
 			
-					self.particle2_playerposfix = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_playerposfix //particle attrib "set control point to player" sets this to true
+					self.particle2_playerposfix = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_playerposfix //particle operator "set control point to player" sets this to true
+					self.particle_forcedpositions = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_forcedpositions //particle operator "set control point positions" creates this table
 					self.doparticle2 = self.particle2_playerposfix
 					self.length = PartCtrl_ProcessedPCFs[pcf][name].min_length or 100
 					self.EditCPoints = {}
@@ -524,8 +529,6 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 
 						//Based off PositionSpawnIcon (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/util/client.lua#L208)
 						//as called by IconEditor:BestGuessLayout (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/gui/iconeditor.lua#L362)
-						self.mins = self.mins or vector_origin
-						self.maxs = self.maxs or vector_origin
 						local mn, mx
 						if self.particle2 and self.particle2:IsValid() then
 							if self.particle2_playerposfix then
@@ -544,6 +547,8 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						//Expand our bounds using the new bounds, and only recreate all the view info if the bounds have changed
 						//Because the particle's render bounds are constantly fluctuating as more particles are added, destroyed, and moved, this behavior lets us keep expanding our bounds
 						//bit by bit until we can settle down at the maximum potential bounds.
+						self.mins = self.mins or mn
+						self.maxs = self.maxs or mx
 						mn = Vector(math.min(mn.x, self.mins.x), math.min(mn.y, self.mins.y), math.min(mn.z, self.mins.z))
 						mx = Vector(math.max(mx.x, self.maxs.x), math.max(mx.y, self.maxs.y), math.max(mx.z, self.maxs.z))
 						if mn != self.mins or mx != self.maxs then

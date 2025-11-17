@@ -28,6 +28,7 @@ if CLIENT then
 	CreateClientConVar("cl_partctrl_childfx_in_search", 1, false, false, "If 0, prevents child particle effects from being shown in search results.", 0, 1)
 
 	CreateClientConVar("cl_partctrl_dupes_in_search", 0, false, false, "If 0, prevents duplicate effects from being shown in search results.", 0, 1)
+	CreateClientConVar("cl_partctrl_debug_spawnicons", 0, false, false, "If 1, show bounds used to calculate spawnicon camera position.\nred = particle renderbounds\ngreen = particle2 renderbounds (if applicable)\nblue = final spawnicon bounds", 0, 1)
 end
 
 

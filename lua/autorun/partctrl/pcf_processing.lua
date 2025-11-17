@@ -1560,24 +1560,32 @@ local processfuncs = {
 					//["input_def"] = 0,
 					["output"] = "First Control Point Number",
 					["output_def"] = 1,
+					["location"] = "First Control Point Location",
+					["location_def"] = Vector(128, 0, 0),
 				},
 				[2] = {
 					//["input"] = "Second Control Point Parent",
 					//["input_def"] = 0,
 					["output"] = "Second Control Point Number",
 					["output_def"] = 2,
+					["location"] = "Second Control Point Location",
+					["location_def"] = Vector(0, 128, 0),
 				},
 				[3] = {
 					//["input"] = "Third Control Point Parent",
 					//["input_def"] = 0,
 					["output"] = "Third Control Point Number",
 					["output_def"] = 3,
+					["location"] = "Third Control Point Location",
+					["location_def"] = Vector(-128, 0, 0),
 				},
 				[4] = {
 					//["input"] = "Fourth Control Point Parent",
 					//["input_def"] = 0,
 					["output"] = "Fourth Control Point Number",
 					["output_def"] = 4,
+					["location"] = "Fourth Control Point Location",
+					["location_def"] = Vector(0, -128, 0),
 				},
 			}
 			local used_cpoint //fix some fx that have an output set to the main cpoint they're all offset from (tfc_sniper_charge_blue) - in these cases, the cpoint is not overridden
@@ -1592,6 +1600,12 @@ local processfuncs = {
 				)
 				used_cpoint = attrib["Control Point to offset positions from"] or 0
 				if used_cpoint == -1 then used_cpoint = nil end //TODO: nothing actually does this?
+			else
+				//If set to positions in worldspace, these cpoints can break spawnicon renderbounds, so tell it to account for that
+				processed["spawnicon_forcedpositions"] = processed["spawnicon_forcedpositions"] or {}
+				for k, tab in pairs (cpoints) do
+					processed["spawnicon_forcedpositions"][attrib[tab.output] or tab.output_def] = attrib[tab.location] or tab.location_def
+				end
 			end
 
 			for k, tab in pairs (cpoints) do
