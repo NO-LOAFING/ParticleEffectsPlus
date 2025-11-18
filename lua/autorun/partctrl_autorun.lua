@@ -224,7 +224,7 @@ if CLIENT then
 								//surface.PlaySound("vo/ravenholm/monk_danger01.wav")
 							else
 								//Don't remove fx from the list until we're absolutely sure they're gone; some of them can
-								//be really stubborn, try swapping between spawnlists for blood_impact.pcf and its tf2 fallback
+								//be really stubborn, try swapping between spawnlists for blood_impact.pcf and its tf2 version
 								PartCtrl_AddParticles_CrashCheck[v][k2] = nil
 							end
 						end

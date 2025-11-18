@@ -133,7 +133,7 @@ table.insert(a, "ATTRIBUTE_MATRIX_ARRAY")
 local cache_version = "1" //update this in case ReadPCF is updated to return a different table
 local docache = GetConVar("sv_partctrl_cachereadpcf")
 
-function PartCtrl_ReadPCF(filename, path)
+function PartCtrl_ReadPCF(filename, path) 
 
 	//don't print non-critical messages unless we're in developer mode; 
 	//always print messages for bugs that player should report
@@ -436,8 +436,8 @@ function PartCtrl_ReadPCF(filename, path)
 			local dirs = string.Explode("/", "partctrl_cache_" .. cache_version ..  "/" .. filename)
 			local d = ""
 			for k,v in ipairs(dirs) do
-			d = (d..v.."/")
-			if !file.IsDir(d, "DATA") then file.CreateDir(d) end
+				d = (d..v.."/")
+				if !file.IsDir(d, "DATA") then file.CreateDir(d) end
 			end
 			if file.Write("partctrl_cache_" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", str) then
 				if dodebug then MsgN("PartCtrl: ", filename, " saved to cache") end
@@ -778,13 +778,11 @@ end
 //Test: Get a list of all pcfs that are defined by multiple games, and for each one, print the checksums of each copy of the file, along with the checksum
 //of the one actually being loaded by the game. This lets us determine which games have unique instances of a pcf as opposed to identical copies, and also 
 //tells us which ones are getting loaded vs. getting clobbered by mount order.
+//TODO: almost certainly not necessary any more with the new data pcfs system
 function PartCtrl_GetPCFConflicts(alternate)
 	
 	local particles = {}
 	for k, v in pairs (PartCtrl_AllPCFPaths) do
-		particles[v] = {}
-	end
-	for k, v in pairs (PartCtrl_SkippedPCFPaths) do
 		particles[v] = {}
 	end
 	local games = engine.GetGames()
@@ -842,7 +840,7 @@ function PartCtrl_GetPCFConflicts(alternate)
 end
 
 
-//Test: Intended for use with a fallback pcf and the pcf it overrides; prints all differences between 2 raw pcf data tables.
+//Test: Prints all differences between 2 raw pcf data tables.
 function PartCtrl_ComparePCFs(file1, file2, shownil)
 
 	local checksum1 = util.SHA256(file.Read(file1, "GAME"))
@@ -3039,135 +3037,38 @@ end
 PartCtrl_ReadAndProcessPCFs_StartupHasRun = PartCtrl_ReadAndProcessPCFs_StartupHasRun
 PartCtrl_ReadAndProcessPCFs_StartupIsOver = PartCtrl_ReadAndProcessPCFs_StartupIsOver
 
+local badendings = {
+	["_dx80.pcf"] = true,
+	["_dx90_slow.pcf"] = true,
+	["_high.pcf"] = true,
+}
+local function HasBadEnding(filename, path)
+	if !string.EndsWith(filename, ".pcf") then return true end
+	//if a file has one of these suffixes, then it's probably a copy of another pcf, loaded based on dxlevel;
+	//make sure this is the case by checking if a file without the suffix exists, to avoid false positives.
+	for ending, _ in pairs (badendings) do
+		if string.EndsWith(filename, ending) and file.Exists(string.Replace(filename, ending, ".pcf"), path) then
+			return true
+		end
+	end
+end
+
 function PartCtrl_ReadAndProcessPCFs()
 
 	local dodebug = (GetConVarNumber("developer") >= 1)
 	local starttime = SysTime()
 
 	PartCtrl_AllPCFPaths = {}
-	PartCtrl_SkippedPCFPaths = {} //also keep a list of skipped pcfs, so that PartCtrl_GetPCFConflicts() can still check them
-
-	//First, get a list of conflicting pcf fallback files.
-	//
-	//The purpose of these is to resolve conflicts where multiple mounted games have different, unique pcf files sharing the same file path.
-	//For example, TF2 has an "explosion.pcf" which shares a name with a pcf from HL2, and a "blood_impact.pcf" which shares a name with a pcf
-	//included in gmod by default. The former will always be overridden if HL2 is mounted, and the latter will always be overridden no matter what.
-	//Both of the TF2 pcfs contain unique effects that we don't want the player to be locked out of using, so this addon includes copies of TF2's 
-	//"explosion.pcf" and "blood_impact.pcf" under a different file path, which this addon then handles by seamlessly including them alongside the 
-	//other pcfs actually being loaded from TF2.
-	//
-	//This addon *only* includes copies of pcf files, *not* their textures/materials, so we only load fallbacks for games that are mounted.
-	//
-	//Currently includes fallback pcfs for the following games mounted: hl2, cstrike, tf, hl2mp, hl1, portal, left4dead2, portal2, swarm; retrieved 4/13/25
-	//To check all pcf file conflicts (i.e. with more games mounted, or after a game update) run PartCtrl_GetPCFConflicts().
-	//
-	//Omissions:
-	//- portal+portal2 blood_impact.pcf: contains completely blank overrides for blood_impact_red/green/yellow_01, seemingly as a brute-force way of removing 
-	//  blood fx from portal. this is problematic for players, because loading this pcf overrides these fx, but the player won't be able to tell why because 
-	//  blank fx are culled from the list. only other fx are 3 orphaned children of blood_impact_red, 2 of which are visually identical to stock. 
-	//  blood_impact_red_01_goop is actually unique from stock, but people aren't likely to use it anyway, and it's not worth the trouble with the blank ones.
-	//- hl2+cstrike burning_fx.pcf: functionally identical to gmod's except burning_character's initializer Position on Model Random hitbox scale is 1 instead 
-	//  of 2. if this makes a difference, it's so subtle i couldn't tell you what it is.
-	//- swarm burningplayer.pcf: this is just tf2's burningplayer.pcf with a lot of fx missing, except burningplayer_corpse(glow) emit slightly more particles. 
-	//  not worth it.
-	//- portal2 cleansers.pcf: this is just portal 1's cleansers.pcf with a lot of fx missing, except for one new effect human_cleanser_cheap, which is just a 
-	//  copy of human_cleanser with a few optimization params set that isn't visibly any different.
-	//- left4dead2's default.pcf: functionally identical to hl2/tf's, just in a newer pcf format
-	//- left4dead2's error.pcf: functionally identical to gmod's, just in a newer pcf format
-	//- portal2's finale_fx.pcf: this is portal 1's finale_fx.pcf except finale_gasescape1/finale_gasescape_initial spawn more particles and have a different 
-	//  texture. not worth it
-	//- portal2's neurotoxins.pcf: this is portal 1's neurotoxins.pcf except neurotoxins_step2 spawns more particles, not worth it
-	//- portal2's water_leaks.pcf: this is hl2's water_leaks.pcf except WaterLeak_Pipe_1_TrailDrops_1 is different (and makes parent fx look worse); not worth it
-	//Notes:
-	//- portal2's environmental_fx.pcf is just a few fx copied from left4dead2's environmental_fx.pcf, and one unique one called case_bubbles; this sucks but having 
-	//  a fallback for it is better than having the pcf change drastically depending on what games you have installed
-	local _, dirs = file.Find("particles/partctrl_fallbacks/*", "GAME")
-	PartCtrl_FallbackPCFs = {}
-	for _, str in pairs (dirs) do
-		local games = string.Split(str, "+")
-		for _, _game in pairs (games) do
-			if IsMounted(_game) then
-				local files, _ = file.Find("particles/partctrl_fallbacks/" .. str .. "/*", "GAME")
-				for _, filename in pairs (files) do
-					local f = file.Read("particles/partctrl_fallbacks/" .. str .. "/" .. filename, "GAME")
-					if f then
-						PartCtrl_FallbackPCFs["particles/" .. filename] = PartCtrl_FallbackPCFs["particles/" .. filename] or {}
-						PartCtrl_FallbackPCFs["particles/" .. filename][_game] = {["checksum"] = util.SHA256(f)}
-						if str != _game then 
-							PartCtrl_FallbackPCFs["particles/" .. filename][_game].path = str
-						end
-						//Only add fallback pcfs for mounted games to PartCtrl_AllPCFPaths
-						table.insert(PartCtrl_AllPCFPaths, "particles/partctrl_fallbacks/" .. str .. "/" .. filename)
-					end
-				end
-			end
-		end
-	end
-
-	local badendings = {
-		["_dx80.pcf"] = true,
-		["_dx90_slow.pcf"] = true,
-		["_high.pcf"] = true,
-	}
-
 	local function PartCtrl_FindAllPCFPaths(dir)
 		local files, dirs = file.Find(dir .. "*", "GAME")
 		for _, filename in pairs (files) do
-			if string.EndsWith(filename, ".pcf") then
-				filename = dir .. filename
-
-				//if a file has one of these suffixes, then it's probably a copy of another pcf, loaded based on dxlevel;
-				//make sure this is the case by checking if a file without the suffix exists, to avoid false positives.
-				local dofile = true
-				for ending, _ in pairs (badendings) do
-					if string.EndsWith(filename, ending) and file.Exists(string.Replace(filename, ending, ".pcf"), "GAME") then
-						dofile = false
-						break
-					end
-				end
-				
-				if dofile then
-					//If the currently mounted instance of this pcf is identical to one of its fallback pcfs, then don't load it, only the 
-					//fallback. This prevents the browse tree and searches from getting cluttered up with two identical copies of everything.
-					//Making the fallback pcf's file path take priority also helps prevent the creation of bad saves (otherwise, you could make 
-					//a save with an effect, then mount a game that overrides that effect's pcf, and then the effect in the save would become 
-					//unusable because it's not associated with the fallback pcf's file path)
-					if PartCtrl_FallbackPCFs[filename] then
-						local f = file.Read(filename, "GAME")
-						if f then
-							local checksum = util.SHA256(f)
-							local skip = false
-							for k, v in pairs (PartCtrl_FallbackPCFs[filename]) do
-								if checksum == v.checksum then
-									if dodebug then MsgN("PartCtrl: ", filename, " identical to fallback from game ", k) end
-									skip = true
-									//break
-								end
-								//Check to make sure fallback pcfs are actually identical to the ones from the games; complain if not
-								local f2 = file.Read(filename, k)
-								if f2 then
-									local checksum2 = util.SHA256(f2)
-									if checksum2 != v.checksum then
-										MsgN("PartCtrl: Fallback pcf for ", filename, " (", k, ") is mismatched (", checksum2, " != ", v.checksum, "); this probably means the fallback file needs to be updated, report this bug!")
-									end
-								end
-							end
-							//PartCtrl_FallbackPCFs[filename].mounted = checksum
-							if dodebug then MsgN("PartCtrl: ", filename, " skip due to identical fallback pcf = ", skip) end
-							if skip then
-								table.insert(PartCtrl_SkippedPCFPaths, filename)
-								continue
-							end
-						end
-					end
-					table.insert(PartCtrl_AllPCFPaths, filename)
-				end
+			filename = dir .. filename
+			if !HasBadEnding(filename, "GAME") then
+				table.insert(PartCtrl_AllPCFPaths, filename)
 			end
 		end
 		for _, dirname in pairs (dirs) do
-			if dirname != "partctrl_fallbacks" then //don't do fallback pcfs here, we handled those selectively earlier
-				PartCtrl_FindAllPCFPaths(dir .. dirname .. "/")
-			end
+			PartCtrl_FindAllPCFPaths(dir .. dirname .. "/")
 		end
 	end
 	PartCtrl_FindAllPCFPaths("particles/")
@@ -3189,7 +3090,9 @@ function PartCtrl_ReadAndProcessPCFs()
 	end
 	allpcfs.UtilFx = nil
 
-	local function AddPCFsToSet(tab, dir, path)
+	PartCtrl_GamePCFs = {}
+	PartCtrl_AllDataPCFs = {}
+	local function AddPCFsToSet(tab, dir, path, do_game_pcfs)
 		local files, dirs = file.Find(dir .. "*", path)
 		if files then
 			local dir_clean = dir
@@ -3202,14 +3105,65 @@ function PartCtrl_ReadAndProcessPCFs()
 				end
 			end
 			for _, filename in SortedPairsByValue (files) do
-				local fallbacks = PartCtrl_FallbackPCFs[dir_clean .. filename]
-				if fallbacks and fallbacks[path] then
-					//For a game folder, add the fallback pcf for the file if applicable, instead of the mounted file
-					local path2 = fallbacks[path].path or path
-					filename = "particles/partctrl_fallbacks/" .. path2 .. "/" .. filename
-				else
-					filename = dir_clean .. filename
+				filename = dir_clean .. filename
+
+				//Do extra stuff for game pcfs
+				if do_game_pcfs and !HasBadEnding(filename, path) then
+					local original_filename = filename
+					local f1 = file.Read(filename, "GAME")
+					local f2 = file.Read(filename, path)
+					//Resolve conflicts where multiple mounted games have different, unique pcf files sharing the same file path. 
+					//For example, TF2 has an "explosion.pcf" which shares a name with a pcf from HL2, and a "blood_impact.pcf" 
+					//which shares a name with a pcf included in gmod by default. The former will always be overridden if HL2 is 
+					//mounted, and the latter will always be overridden no matter what. All of the inaccessible pcfs contain
+					//unique effects that we don't want the player to be locked out of using, so write copies of these files to
+					//the data folder, and load them instead.
+					if f1 and f2 and util.SHA256(f1) != util.SHA256(f2) then
+						local writepath = "partctrl_datapcfs/" .. path .. "/" .. filename
+						writepath = string.Replace(writepath, ".pcf", ".txt")
+						local write_new_file = true
+						if file.Exists(writepath, "DATA") then
+							local f3 = file.Read(writepath, "DATA")
+							if f3 and util.SHA256(f2) == util.SHA256(f3) then
+							//	MsgN("loading existing ", writepath)
+								filename = "data/" .. writepath
+								write_new_file = false
+							//else
+							//	MsgN("overwriting outdated ", writepath)
+							end
+						end
+						if write_new_file then
+							local dirs = string.Explode("/", writepath)
+							local d = ""
+							for k,v in ipairs(dirs) do
+								d = (d..v.."/")
+								if !string.EndsWith(d, ".txt/") then
+									if !file.IsDir(d, "DATA") then file.CreateDir(d) end
+								end
+							end
+
+							if file.Write(writepath, f2) then
+							//	MsgN("successfully wrote ", writepath)
+								filename = "data/" .. writepath
+							//else
+							//	MsgN("failed to write ", writepath)
+							end
+						end
+						if !PartCtrl_ProcessedPCFs[filename] then
+							PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
+							PartCtrl_AllPCFPaths[filename] = true
+							allpcfs[filename] = true
+							PartCtrl_AllDataPCFs[filename] = true
+						end
+					end
+					//Always associate pcfs from games with a game path, whether they're currently using a data pcf or not. This is 
+					//used by particle ents and spawnicons, which store the *original* filename and the game path, and then use this 
+					//table to retrieve the right pcf for the game. This ensures that that saves/spawnlists continue to work 
+					//seamlessly between sessions, even as different combinations of mounted games change which ones use data pcfs.
+					PartCtrl_GamePCFs[original_filename] = PartCtrl_GamePCFs[original_filename] or {}
+					PartCtrl_GamePCFs[original_filename][path] = filename
 				end
+				
 				if allpcfs[filename] then
 					table.insert(tab, filename)
 					allpcfs[filename] = nil
@@ -3218,7 +3172,6 @@ function PartCtrl_ReadAndProcessPCFs()
 		end
 		if dirs then
 			for _, dirname in SortedPairsByValue (dirs) do
-				if dirname == "partctrl_fallbacks" then continue end //don't check this folder, instead we add fallback pcfs by checking per game above
 				AddPCFsToSet(tab, dir .. dirname .. "/", path)
 			end
 		end
@@ -3256,8 +3209,9 @@ function PartCtrl_ReadAndProcessPCFs()
 
 	//5: mounted games
 	for _, game in SortedPairs(engine.GetGames()) do
+		//TODO: make sure this is handling hl2/css fallback vpks correctly
 		if !game.mounted then continue end
-		AddPCFsToSet(pcfs_sorted[5], "particles/", game.folder)
+		AddPCFsToSet(pcfs_sorted[5], "particles/", game.folder, true)
 	end
 
 	//6: garrysmod/download/ folder
@@ -3292,7 +3246,7 @@ function PartCtrl_ReadAndProcessPCFs()
 	//this prevents TF2's blood fx from becoming the default when you shoot an NPC, for instance
 	//NOTE: had to put gmod+games above addons to prevent an issue where tf2 map particles addon's 
 	//particles/brine_salmann_goop.pcf would unintentionally override the default blood fx, is this bad? 
-	//could this cause issues with other addons i'm not aware of that try to override gmod or game fx?
+	//TODO: could this cause issues with other addons i'm not aware of that try to override gmod or game fx?
 	local pcfs_load_order = {}
 	table.Add(pcfs_load_order, pcfs_sorted[1]) //packed into bsp
 	table.Add(pcfs_load_order, pcfs_sorted[4]) //garrysmod/particles/ folder
@@ -3386,11 +3340,10 @@ if CLIENT then
 								"bounding_box_max", 
 								"bounding_box_min",
 								//less sure about this one; there are plenty of false positives where the change in max_particles doesn't matter at all
-								//since it never actually reaches the cap (particles/partctrl_fallbacks/left4dead2/fire_01.pcf's smoke_exhaust_01a/smoke_exhaust_01b), 
-								//but a few where it actually does make it visibly different by cutting off particle emission (particles/mvm.pcf's mini_fireworks, 
-								//particles/partctrl_fallbacks/left4dead2/fire_01.pcf's smoke_medium_02c). in the cases where it does make a difference, 
-								//it's still pretty subtle, so i'm making an executive decision here to treat those as dupes anyway, to err of the side 
-								//of not clogging up searches.
+								//since it never actually reaches the cap (left4dead2 fire_01.pcf's smoke_exhaust_01a/smoke_exhaust_01b), but a few where
+								//it actually does make it visibly different by cutting off particle emission (particles/mvm.pcf's mini_fireworks, 
+								//left4dead2 fire_01.pcf's smoke_medium_02c). in the cases where it does make a difference, it's still pretty subtle, so 
+								//i'm making an executive decision here to treat those as dupes anyway, to err of the side of not clogging up searches.
 								"max_particles",
 							}) do
 								allkeys[v] = nil
@@ -3468,8 +3421,8 @@ if CLIENT then
 					//
 					//A: This is for complex cases like particles/fire_01_unused.pcf's fire_large_01. This effect has multiple children:
 					//
-					//   Some, like smoke_large_01, are dupes of particles/partctrl_fallbacks/left4dead2/fire_01.pcf, but are DIFFERENT from
-					//   the effect of the same name in particles/fire_01.pcf.
+					//   Some, like smoke_large_01, are dupes of left4dead2 fire_01.pcf, but are DIFFERENT from the effect of the same name
+					//   in particles/fire_01.pcf.
 					//
 					//   Others, like embers_large_01, are dupes of particles/fire_01.pcf, and the effect of the same name in the left4dead2 pcf
 					//   is ALSO a dupe of fire_01.pcf, but embers_large_01 doesn't catch it as a dupe candidate, because the compare code doesn't

@@ -145,8 +145,6 @@ if CLIENT then
 		
 			if folders then
 				for k, File in SortedPairsByValue (folders) do
-					if File == "partctrl_fallbacks" then continue end //don't show this folder, instead we add fallback pcfs to the appropriate game folders below
-		
 					local Node = self:AddNode(File)
 					Node:MakeFolder(string.Trim( foldername .. "/" .. File, "/" ), path, showfiles, wildcard, true)
 					Node.FilePopulateCallback = particles.FilePopulateCallback
@@ -231,17 +229,19 @@ if CLIENT then
 					end
 			
 					for k, File in SortedPairs (files) do
-						local fallbacks = PartCtrl_FallbackPCFs[foldername .. "/" .. File]
+						//TODO: convert to new GamePCFs system
+						--[[local fallbacks = PartCtrl_FallbackPCFs[foldername .. "/" .. File]
 						if fallbacks and fallbacks[path] then
 							//For a game folder, add the fallback pcf for the file if applicable, instead of the mounted file
 							local path2 = fallbacks[path].path or path
 							AddFile(File .. " (" .. path2 .. ")", "particles/partctrl_fallbacks/" .. path2 .. "/" .. File)
 							continue
-						end
+						end]]
 
 						AddFile(File, string.Trim(foldername .. "/" .. File, "/"))
 
-						if fallbacks and path == "GAME" then
+						//TODO: convert to new GamePCFs system
+						--[[if fallbacks and path == "GAME" then
 							//For the "All" folder, add every fallback pcf for this file, in addition to the mounted file
 							local fallbacks_to_add = {}
 							for Game, tab in pairs (fallbacks) do
@@ -252,7 +252,7 @@ if CLIENT then
 							for k, v in pairs (fallbacks_to_add) do
 								AddFile(k, v)
 							end
-						end
+						end]]
 					end
 				end
 			end
