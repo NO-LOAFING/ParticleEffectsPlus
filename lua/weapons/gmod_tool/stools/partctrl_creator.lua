@@ -1,7 +1,8 @@
 TOOL.AddToMenu = false
 
-TOOL.ClientConVar["pcf"] = "0"
-TOOL.ClientConVar["name"] = "0"
+TOOL.ClientConVar["pcf"] = "particles/fire_01.pcf"
+TOOL.ClientConVar["name"] = "env_fire_large"
+TOOL.ClientConVar["path"] = ""
 
 TOOL.Information = { { name = "left" } }
 
@@ -17,8 +18,9 @@ function TOOL:LeftClick()
 	if SERVER then
 		local pcf = self:GetClientInfo("pcf")
 		local name = self:GetClientInfo("name")
+		local path = self:GetClientInfo("path")
 
-		PartCtrl_SpawnParticle(self:GetOwner(), nil, name, pcf)
+		PartCtrl_SpawnParticle(self:GetOwner(), nil, name, pcf, path)
 	end
 
 	return true

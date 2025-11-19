@@ -96,7 +96,9 @@ local function GetParticleName(ent)
 	if ent.PartCtrl_Ent then
 		//return "Particle Controller [" .. tostring(ent:EntIndex()) .. "]: " .. ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")")
 		if !ent.utilfx then
-			return ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")"
+			local str = ent:GetPCF()
+			if str != PartCtrl_GetPCFPath(ent:GetPCF(), ent:GetPath()) then str = str .. " (" .. ent:GetPath() .. ")" end
+			return ent:GetParticleName() .. " (" .. str .. ")"
 		else
 			return ent:GetParticleName() .. " (Scripted Effect)"
 		end
@@ -152,9 +154,12 @@ function PANEL:RebuildControls()
 
 	local function BuildParticleEntControls(ent2, container)
 
+		local pcf = PartCtrl_GetPCFPath(ent2:GetPCF(), ent2:GetPath())
+		local name = ent2:GetParticleName()
+
 		//don't throw a lua error if a special effect contains an invalid particle effect
 		//(i.e. we're a client connected to a server, and the server has the effect but we don't)
-		if !istable(PartCtrl_ProcessedPCFs[ent2:GetPCF()]) or !istable(PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()]) then
+		if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then
 			local pnl = vgui.Create("DSizeToContents", container)
 			pnl:SetSizeX(false)
 			pnl:Dock(FILL)
@@ -174,7 +179,7 @@ function PANEL:RebuildControls()
 			text:SetDark(true)
 			text:SetWrap(true)
 			text:SetTextInset(0, 0)
-			text:SetText("Invalid particle effect (from game/addon that isn't mounted?)")
+			text:SetText("Invalid particle effect (from game/addon that isn't mounted?)") //TODO: this is outdated, whoops
 			text:SetContentAlignment(5)
 			text:SetAutoStretchVertical(true)
 			text:DockMargin(padding,padding-1,padding,0) //padding-1 for top is trial and error, results in nice 16px spacing on both top and bottom of text
@@ -215,8 +220,8 @@ function PANEL:RebuildControls()
 	
 	
 		//category for info; no header for this one
-		local info = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].info
-		local info2 = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].info_sfx
+		local info = PartCtrl_ProcessedPCFs[pcf][name].info
+		local info2 = PartCtrl_ProcessedPCFs[pcf][name].info_sfx
 		if ent != ent2 and info2 then info = info2 end //use alt info text for special effect children, if applicable
 		if info then
 	
@@ -260,7 +265,7 @@ function PANEL:RebuildControls()
 			cat:Dock(FILL)
 			container:AddItem(cat)
 		
-			local default_looptime = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].default_time or 0
+			local default_looptime = PartCtrl_ProcessedPCFs[pcf][name].default_time or 0
 			local default_loopmode = 1
 			if ent2.utilfx then
 				if default_looptime < 0 then
@@ -588,7 +593,7 @@ function PANEL:RebuildControls()
 				filler:SetHeight(0)
 	
 				//Add mode-specific options
-				local mode = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].cpoints[k].mode
+				local mode = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k].mode
 				if mode == PARTCTRL_CPOINT_MODE_POSITION then
 					if ent == ent2 then
 						local modelent = v2.ent
@@ -688,7 +693,7 @@ function PANEL:RebuildControls()
 						if ent.SpecialEffectAddRoleControls then ent:SpecialEffectAddRoleControls(self, pnl, k, v2, ent2) end
 					end
 				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
-					local tab1 = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].cpoints[k]
+					local tab1 = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k]
 					local tab = tab1.vector[tab1.which]
 					if istable(tab) then
 						//Roll sets the angle of the particle, with the putput measured in radians (pi radians = 180 degrees). Output maximum/minimum sets how many radians it can be rotated up to, 
@@ -863,7 +868,7 @@ function PANEL:RebuildControls()
 				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 					local slidercount = 0
 					for i = 1, 3 do
-						local tab = PartCtrl_ProcessedPCFs[ent2:GetPCF()][ent2:GetParticleName()].cpoints[k]
+						local tab = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k]
 						tab = tab.axis[tab["which_" .. i-1]]
 						if istable(tab) then
 							//For axis controls, min/max are optional. If a value isn't supplied, then use an arbitrary value and unclamp the slider in that direction.

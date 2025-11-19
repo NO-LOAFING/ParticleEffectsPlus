@@ -90,14 +90,14 @@ function ENT:SetSpecialEffectDefaults()
 		self:SetModel("models/weapons/w_models/w_rocket.mdl")
 
 		if !self.IsBlank then
-			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "rockettrail", "particles/rockettrail.pcf")
+			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "rockettrail", "particles/rockettrail.pcf", "tf")
 			if IsValid(p) then
 				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 				p.ParticleInfo[0].attach = 1
 				p.ParticleInfo[0].sfx_role = 1
 			end
 
-			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "ExplosionCore_Wall", "particles/partctrl_fallbacks/tf/explosion.pcf")
+			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "ExplosionCore_Wall", "particles/explosion.pcf", "tf")
 			if IsValid(p) then
 				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 				p.ParticleInfo[0].sfx_role = 2
@@ -840,7 +840,8 @@ function ENT:SpecialEffectThink()
 						local wait = false
 						if CLIENT then
 							for child, _ in pairs (self.SpecialEffectChildren) do
-								if istable(PartCtrl_ProcessedPCFs[child:GetPCF()]) and istable(PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+								local pcf = PartCtrl_GetPCFPath(child:GetPCF(), child:GetPath())
+								if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
 								and !child.ParticleInfo then
 									wait = true
 									break
@@ -1172,7 +1173,8 @@ if CLIENT then
 
 		for child, _ in pairs (self.SpecialEffectChildrenSorted[tobool(hitpos)]) do
 			if child.PartCtrl_Ent then
-				local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
+				local pcf = PartCtrl_GetPCFPath(child:GetPCF(), child:GetPath())
+				local cpointtab = PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
 				local addtotarget = false
 				for k, v in pairs (child.ParticleInfo) do
 					if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
@@ -1221,7 +1223,8 @@ function ENT:SpecialEffectRefresh()
 				if child.ParticleInfo then
 					local attach_to_proj = nil
 					local attach_to_expire = nil
-					local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
+					local pcf = PartCtrl_GetPCFPath(child:GetPCF(), child:GetPath())
+					local cpointtab = PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
 					for k, v in pairs (child.ParticleInfo) do
 						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
 							if v.sfx_role == 1 then

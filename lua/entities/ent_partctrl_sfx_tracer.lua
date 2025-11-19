@@ -319,7 +319,8 @@ if CLIENT then
 					local wait = false
 					for child, _ in pairs (self.SpecialEffectChildren) do
 						child.MaxOldParticlesOverride = max
-						if istable(PartCtrl_ProcessedPCFs[child:GetPCF()]) and istable(PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+						local pcf = PartCtrl_GetPCFPath(child:GetPCF(), child:GetPath())
+						if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
 						and !child.ParticleInfo then
 							wait = true
 							break
@@ -469,8 +470,10 @@ if CLIENT then
 
 			for child, _ in pairs (self.SpecialEffectChildren) do
 				if child.PartCtrl_Ent then
-					if !istable(PartCtrl_ProcessedPCFs[child:GetPCF()]) or !istable(PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()]) then continue end //skip invalid fx
-					local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
+					local pcf = PartCtrl_GetPCFPath(child:GetPCF(), child:GetPath())
+					local name = child:GetParticleName()
+					if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then continue end //skip invalid fx
+					local cpointtab = PartCtrl_ProcessedPCFs[pcf][name].cpoints
 					local addtotarget = false
 					for k, v in pairs (child.ParticleInfo) do
 						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then

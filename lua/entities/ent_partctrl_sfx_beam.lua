@@ -43,7 +43,7 @@ function ENT:SetSpecialEffectDefaults()
 
 	if !self.IsBlank then
 		if IsMounted("tf") then
-			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "laser_sight_beam", "particles/class_fx.pcf")
+			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "laser_sight_beam", "particles/class_fx.pcf", "tf")
 			if IsValid(p) then
 				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 			end
@@ -318,7 +318,8 @@ if CLIENT then
 			//Just set the entity values on the child fx, and let them do the rest of the work themselves
 			for child, _ in pairs (self.SpecialEffectChildren) do
 				if child.PartCtrl_Ent and child.ParticleInfo then
-					local cpointtab = PartCtrl_ProcessedPCFs[child:GetPCF()][child:GetParticleName()].cpoints
+					local pcf = PartCtrl_GetPCFPath(child:GetPCF(), child:GetPath())
+					local cpointtab = PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
 					for k, v in pairs (child.ParticleInfo) do
 						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
 							if v.sfx_role == 0 then

@@ -3149,6 +3149,7 @@ function PartCtrl_ReadAndProcessPCFs()
 							//	MsgN("failed to write ", writepath)
 							end
 						end
+						//Add the data pcf to all the tables
 						if !PartCtrl_ProcessedPCFs[filename] then
 							PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
 							PartCtrl_AllPCFPaths[filename] = true
@@ -3272,6 +3273,14 @@ function PartCtrl_ReadAndProcessPCFs()
 
 	if dodebug then MsgN("PartCtrl: PartCtrl_ReadAndProcessPCFs took " , SysTime() - starttime, " secs") end
 
+end
+
+//Takes a pcf filepath and a game path. If the game has a pcf at this filepath, but it's being overridden by a conflicting pcf at the same filepath, this
+//will instead return a filepath for a data pcf (a copy of the overridden pcf, located in the data folder). Otherwise, returns the same pcf we gave it.
+//(see the part of PartCtrl_ReadAndProcessPCFs() where we populate PartCtrl_GamePCFs for details)
+function PartCtrl_GetPCFPath(pcf, path)
+	if !path or !PartCtrl_GamePCFs[pcf] or !PartCtrl_GamePCFs[pcf][path] then return pcf end
+	return PartCtrl_GamePCFs[pcf][path]
 end
 
 
