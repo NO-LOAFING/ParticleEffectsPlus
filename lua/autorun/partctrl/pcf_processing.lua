@@ -3091,7 +3091,8 @@ function PartCtrl_ReadAndProcessPCFs()
 	allpcfs.UtilFx = nil
 
 	PartCtrl_GamePCFs = {}
-	PartCtrl_AllDataPCFs = {}
+	PartCtrl_AllDataPCFs = {} //spawnlists and spawnicons use this table to quickly get a data pcf's original filename and path
+	PartCtrl_GamePCFs_DefaultPaths = {} //which game is each pcf currently loaded from? nil if not currently loaded from a game.
 	local function AddPCFsToSet(tab, dir, path, do_game_pcfs)
 		local files, dirs = file.Find(dir .. "*", path)
 		if files then
@@ -3154,7 +3155,10 @@ function PartCtrl_ReadAndProcessPCFs()
 							PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
 							PartCtrl_AllPCFPaths[filename] = true
 							allpcfs[filename] = true
-							PartCtrl_AllDataPCFs[filename] = true
+							PartCtrl_AllDataPCFs[filename] = {
+								["original_filename"] = original_filename,
+								["path"] = path
+							}
 						end
 					end
 					//Always associate pcfs from games with a game path, whether they're currently using a data pcf or not. This is 
@@ -3163,6 +3167,11 @@ function PartCtrl_ReadAndProcessPCFs()
 					//seamlessly between sessions, even as different combinations of mounted games change which ones use data pcfs.
 					PartCtrl_GamePCFs[original_filename] = PartCtrl_GamePCFs[original_filename] or {}
 					PartCtrl_GamePCFs[original_filename][path] = filename
+					PartCtrl_GamePCFs_DefaultPaths[original_filename] = PartCtrl_GamePCFs_DefaultPaths[original_filename] or path
+				else
+					//If the currently loaded instance of this pcf isn't from a game at all, put a blank entry in here for now
+					//so that game paths can't overwrite it later
+					PartCtrl_GamePCFs_DefaultPaths[filename] = PartCtrl_GamePCFs_DefaultPaths[filename] or ""
 				end
 				
 				if allpcfs[filename] then
@@ -3266,7 +3275,14 @@ function PartCtrl_ReadAndProcessPCFs()
 	end
 
 
-	//add util fx to this table as well, so that particle entities and spawnicons can use them natively
+	//clean unnecessary entries out of this table now that we're done building it
+	for k, v in pairs (PartCtrl_GamePCFs_DefaultPaths) do
+		if v == "" then //if PartCtrl_GamePCFs[k] == nil then
+			PartCtrl_GamePCFs_DefaultPaths[k] = nil
+		end
+	end
+
+	//add util fx to processedpcfs as well, so that particle entities and spawnicons can use them natively
 	PartCtrl_ProcessUtilFx()
 
 	PartCtrl_ReadAndProcessPCFs_StartupHasRun = true
@@ -3275,12 +3291,18 @@ function PartCtrl_ReadAndProcessPCFs()
 
 end
 
-//Takes a pcf filepath and a game path. If the game has a pcf at this filepath, but it's being overridden by a conflicting pcf at the same filepath, this
-//will instead return a filepath for a data pcf (a copy of the overridden pcf, located in the data folder). Otherwise, returns the same pcf we gave it.
-//(see the part of PartCtrl_ReadAndProcessPCFs() where we populate PartCtrl_GamePCFs for details)
-function PartCtrl_GetPCFPath(pcf, path)
+//If this game has this pcf, but it's not currently loadable because it's being overridden by a conflicting pcf of the same name, this returns 
+//the filepath for a copy of the inaccessible pcf, located in the data folder (a "data pcf"). Otherwise, returns the same pcf we gave it.
+//(for details, see the part of PartCtrl_ReadAndProcessPCFs() where we populate PartCtrl_GamePCFs)
+function PartCtrl_GetGamePCF(pcf, path)
 	if !path or !PartCtrl_GamePCFs[pcf] or !PartCtrl_GamePCFs[pcf][path] then return pcf end
 	return PartCtrl_GamePCFs[pcf][path]
+end
+
+function PartCtrl_GetDataPCFNiceName(pcf)
+	local tab = PartCtrl_AllDataPCFs[pcf]
+	if !tab then return pcf end
+	return tab.original_filename .. " (" .. tab.path .. ")"
 end
 
 

@@ -49,7 +49,7 @@ function ENT:Initialize()
 	self:DrawShadow(false) //make sure the ent's shadow doesn't render, just in case RENDERGROUP_NONE/SetNoDraw don't work and we have to rely on the blank draw function
 	self:SetCollisionBounds(vector_origin,vector_origin) //stop this ent from bloating up duplicator bounds
 
-	local pcf = PartCtrl_GetPCFPath(self:GetPCF(), self:GetPath())
+	local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
 	local name = self:GetParticleName()
 	if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then
 		MsgN(self, " particle ", pcf, " ", name, " is invalid")
@@ -106,7 +106,7 @@ function ENT:Think()
 
 	if CLIENT then
 
-		local pcf = PartCtrl_GetPCFPath(self:GetPCF(), self:GetPath())
+		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
 		local name = self:GetParticleName()
 		if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then return end
 		local ptab = PartCtrl_ProcessedPCFs[pcf][name]
@@ -405,7 +405,7 @@ if CLIENT then
 
 		if self.ParticleInfo and !IsValid(self:GetSpecialEffectParent()) then
 			local window = IsValid(self.PartCtrlWindow) and g_ContextMenu:IsVisible()
-			local pcf = PartCtrl_GetPCFPath(self:GetPCF(), self:GetPath())
+			local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
 			local ptab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()]
 
 			local view = LocalPlayer():GetViewEntity()
@@ -522,7 +522,7 @@ if CLIENT then
 
 	function ENT:RemoveParticle()
 
-		local pcf = PartCtrl_GetPCFPath(self:GetPCF(), self:GetPath())
+		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
 		if self.particle and self.particle.IsValid and self.particle:IsValid() then
 			self.particle:StopEmissionAndDestroyImmediately()
 			--[[if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle] then
@@ -553,7 +553,7 @@ if CLIENT then
 		if !IsValid(sfxpar) or !sfxpar.DisableChildAutoplay then
 			self:StartParticle()
 		end
-		local pcf = PartCtrl_GetPCFPath(self:GetPCF(), self:GetPath())
+		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
 		if !self.utilfx and !self.particle and PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] then
 			self.particle = partctrl_wait	//ordinarily, ENT:Think won't try to recreate the particle if self.particle is nil, which is what we want. however, if crash prevention
 		end					//prevented us from creating our effect here, then make this value non-nil so ENT:Think will try to create it once crash prevention is over.
@@ -594,7 +594,7 @@ if CLIENT then
 	function ENT:StartParticle()
 
 		if !self.ParticleInfo then return end
-		local pcf = PartCtrl_GetPCFPath(self:GetPCF(), self:GetPath())
+		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
 		local name = self:GetParticleName()
 
 		//If doing utilfx, then do that and stop here
@@ -893,7 +893,7 @@ if SERVER then
 
 		local const = constraint.PartCtrl_SpecialEffect(ent, self, ply)
 		constraint.RemoveConstraints(self, "PartCtrl_Ent")
-		local pcf = PartCtrl_GetPCFPath(self:GetPCF(), self:GetPath())
+		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
 		local cpointtab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()].cpoints
 		local cpoints_for_defaults = {}
 		for k, v in pairs (self.ParticleInfo) do
@@ -1021,7 +1021,7 @@ if SERVER then
 		//Detaches EVERY cpoint from the special effect parent, and spawns new grips for all of them to attach to instead
 
 		if !istable(self.ParticleInfo) then return false end
-		local pcf = PartCtrl_GetPCFPath(self:GetPCF(), self:GetPath())
+		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
 		local ptab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()]
 		if !ptab then return end
 		local parentent = self:GetSpecialEffectParent()
@@ -1200,7 +1200,7 @@ else
 		local cpointtab = nil
 		if string.StartsWith(input, "cpoint_") then
 			k = net.ReadInt(partctrl_cpointbits) //cpoint id, can be -1
-			local pcf = PartCtrl_GetPCFPath(self:GetPCF(), self:GetPath())
+			local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
 			cpointtab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()].cpoints[k]
 		end
 		local refreshtable = false
@@ -1377,7 +1377,7 @@ if SERVER then
 	net.Receive("PartCtrl_InfoTable_GetFromSv", function(_, ply)
 		local ent = net.ReadEntity()
 		if !IsValid(ent) or !istable(ent.ParticleInfo) then return end
-		local pcf = PartCtrl_GetPCFPath(ent:GetPCF(), ent:GetPath())
+		local pcf = PartCtrl_GetGamePCF(ent:GetPCF(), ent:GetPath())
 		if !istable(PartCtrl_ProcessedPCFs[pcf]) then return end
 		local ptab = PartCtrl_ProcessedPCFs[pcf][ent:GetParticleName()]
 		if !istable(ptab) then return end
@@ -1440,7 +1440,7 @@ else
 
 		local self = net.ReadEntity()
 		if !IsValid(self) or !self.PartCtrl_Ent then return end 
-		local pcf = PartCtrl_GetPCFPath(self:GetPCF(), self:GetPath())
+		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
 		if !istable(PartCtrl_ProcessedPCFs[pcf]) then return end
 		local ptab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()]
 		if !istable(ptab) then return end
@@ -1565,7 +1565,7 @@ if SERVER then
 	function constraint.PartCtrl_Ent(Ent1, Ent2, CPoint, DoParent, ply)
 
 		if !Ent1 or !Ent2 or !Ent1.PartCtrl_Ent then return end
-		local pcf = PartCtrl_GetPCFPath(Ent1:GetPCF(), Ent1:GetPath())
+		local pcf = PartCtrl_GetGamePCF(Ent1:GetPCF(), Ent1:GetPath())
 		//if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][Ent1:GetParticleName()]) then return end //causes grip ents from dupes with invalid fx to delete themselves due to having no particle
 		
 		//create a dummy ent for the constraint functions to use
@@ -1770,7 +1770,7 @@ if SERVER then
 			MsgN("partctrl_spawnparticle: failed, missing name or pcf (first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf)")
 			return
 		end
-		local pcf = PartCtrl_GetPCFPath(pcf_original, path)
+		local pcf = PartCtrl_GetGamePCF(pcf_original, path)
 		if !istable(PartCtrl_ProcessedPCFs) then
 			MsgN("partctrl_spawnparticle: failed, no PartCtrl_ProcessedPCFs table (this shouldn't happen, report this bug!)")
 			return
@@ -1931,7 +1931,7 @@ if SERVER then
 				if istable(tab) then
 					local ent = tab.Ent1
 					if IsValid(ent) and ent.PartCtrl_Ent and istable(ent.ParticleInfo) and istable(PartCtrl_ProcessedPCFs) then
-						local pcf = PartCtrl_GetPCFPath(ent:GetPCF(), ent:GetPath())
+						local pcf = PartCtrl_GetGamePCF(ent:GetPCF(), ent:GetPath())
 						local name = ent:GetParticleName()
 						if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then return end
 						local ptab = PartCtrl_ProcessedPCFs[pcf][name]

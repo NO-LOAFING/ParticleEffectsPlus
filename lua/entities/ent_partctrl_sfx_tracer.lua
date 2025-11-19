@@ -319,7 +319,7 @@ if CLIENT then
 					local wait = false
 					for child, _ in pairs (self.SpecialEffectChildren) do
 						child.MaxOldParticlesOverride = max
-						local pcf = PartCtrl_GetPCFPath(child:GetPCF(), child:GetPath())
+						local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
 						if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
 						and !child.ParticleInfo then
 							wait = true
@@ -470,7 +470,7 @@ if CLIENT then
 
 			for child, _ in pairs (self.SpecialEffectChildren) do
 				if child.PartCtrl_Ent then
-					local pcf = PartCtrl_GetPCFPath(child:GetPCF(), child:GetPath())
+					local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
 					local name = child:GetParticleName()
 					if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then continue end //skip invalid fx
 					local cpointtab = PartCtrl_ProcessedPCFs[pcf][name].cpoints

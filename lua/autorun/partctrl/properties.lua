@@ -142,7 +142,7 @@ properties.Add("partctrl_dev_printpcfdata", {
 			if IsValid(k) then
 				if k.PartCtrl_SpecialEffect then MsgN("Can't get raw pcf data for special effect " .. k.PrintName) return end
 				if k:GetPCF() == "UtilFx" then MsgN("UtilFx isn't a real pcf, doofus!") return end
-				local pcf = PartCtrl_GetPCFPath(k:GetPCF(), k:GetPath())
+				local pcf = PartCtrl_GetGamePCF(k:GetPCF(), k:GetPath())
 				local name = k:GetParticleName()
 				MsgN("PartCtrl_ReadPCF(\"" .. pcf .. "\")[\"" .. name .. "\"]:")
 				PrintTable(PartCtrl_ReadPCF(pcf)[name])
@@ -174,7 +174,7 @@ properties.Add("partctrl_dev_printprocessed", {
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
 			if IsValid(k) then
 				if k.PartCtrl_SpecialEffect then MsgN("Can't get processed pcf data for special effect " .. k.PrintName) return end
-				local pcf = PartCtrl_GetPCFPath(k:GetPCF(), k:GetPath())
+				local pcf = PartCtrl_GetGamePCF(k:GetPCF(), k:GetPath())
 				local name = k:GetParticleName()
 				MsgN("PartCtrl_ProcessedPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
 				PrintTable(PartCtrl_ProcessedPCFs[pcf][name])
@@ -206,7 +206,7 @@ properties.Add("partctrl_dev_printparticleinfo", {
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
 			if IsValid(k) then
 				if k.PartCtrl_SpecialEffect then MsgN("Can't get ParticleInfo data for special effect " .. k.PrintName) return end
-				local pcf = PartCtrl_GetPCFPath(k:GetPCF(), k:GetPath())
+				local pcf = PartCtrl_GetGamePCF(k:GetPCF(), k:GetPath())
 				MsgN(k, ".ParticleInfo (", pcf, "/", k:GetParticleName(), "): ")
 				PrintTable(k.ParticleInfo)
 				MsgN()

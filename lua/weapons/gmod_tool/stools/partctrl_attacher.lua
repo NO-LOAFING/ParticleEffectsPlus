@@ -152,7 +152,7 @@ function TOOL:LeftClick(trace)
 
 			//Attach a particle effect or special effect to a model
 	
-			if !IsValid(ent) or !IsValid(p) or (!p.PartCtrl_SpecialEffect and (!istable(p.ParticleInfo) or !istable(p.ParticleInfo[k]) or PartCtrl_ProcessedPCFs[PartCtrl_GetPCFPath(p:GetPCF(), p:GetPath())][p:GetParticleName()].cpoints[k].mode != PARTCTRL_CPOINT_MODE_POSITION)) then return false end
+			if !IsValid(ent) or !IsValid(p) or (!p.PartCtrl_SpecialEffect and (!istable(p.ParticleInfo) or !istable(p.ParticleInfo[k]) or PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(p:GetPCF(), p:GetPath())][p:GetParticleName()].cpoints[k].mode != PARTCTRL_CPOINT_MODE_POSITION)) then return false end
 			if CLIENT then return true end
 
 			local const = p:AttachToEntity(ent, k, self:GetClientNumber("attachnum", 0), self:GetOwner(), true)

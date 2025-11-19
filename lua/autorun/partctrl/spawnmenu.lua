@@ -12,27 +12,30 @@ if CLIENT then
 
 	local cv_childfx_spawnlist = GetConVar("cl_partctrl_childfx_in_autospawnlists")
 
-	local function OnParticleNodeSelected(pcf, ViewPanel, pnlContent)
+	local function OnParticleNodeSelected(pcf, path, ViewPanel, pnlContent)
+
+		MsgN("running OnParticleNodeSelected for ", pcf, ", ", path)
 
 		ViewPanel:Clear(true)
+		local pcf2 = PartCtrl_GetGamePCF(pcf, path)
 
-		if !istable(PartCtrl_ProcessedPCFs[pcf]) then
-			MsgN("OnParticleNodeSelected tried to make spawnlist for invalid pcf ", pcf)
+		if !istable(PartCtrl_ProcessedPCFs[pcf2]) then
+			MsgN("OnParticleNodeSelected tried to make spawnlist for invalid pcf ", pcf2)
 		else
 			local dochildfx = cv_childfx_spawnlist:GetInt()
 			if dochildfx == 0 then
 				//No child fx
-				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do //sort them in alphabetical order
-					if !PartCtrl_ProcessedPCFs[pcf][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf][particle].parents) < 1 then
-						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
+					if !PartCtrl_ProcessedPCFs[pcf2][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][particle].parents) < 1 then
+						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = pcf, ["name"] = particle, ["path"] = path})
 					end
 				end
 			elseif dochildfx == 1 then
 				local tab = {}
 				//Separate child fx
-				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do //sort them in alphabetical order
-					if !PartCtrl_ProcessedPCFs[pcf][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf][particle].parents) < 1 then
-						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
+					if !PartCtrl_ProcessedPCFs[pcf2][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][particle].parents) < 1 then
+						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = pcf, ["name"] = particle, ["path"] = path})
 					else
 						table.insert(tab, particle)
 					end
@@ -40,19 +43,20 @@ if CLIENT then
 				if table.Count(tab) > 0 then
 					spawnmenu.CreateContentIcon("header", ViewPanel, {["text"] = "Child effects"})
 					for k, particle in pairs (tab) do
-						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = pcf, ["name"] = particle, ["path"] = path})
 					end
 				end
 			else
 				//All fx sorted alphabetically
-				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do //sort them in alphabetical order
-					spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = pcf, ["nicename"] = particle})
+				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
+					spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = pcf, ["name"] = particle, ["path"] = path})
 				end
 			end
 		end
 
 		pnlContent:SwitchPanel(ViewPanel)
-		ViewPanel.CurrentPCF = pcf //used by developer click-to-refresh-pcf function
+		ViewPanel.CurrentPCF = pcf2 //used by developer click-to-refresh-pcf function
+		ViewPanel.CurrentPath = path //^
 
 	end
 
@@ -64,12 +68,13 @@ if CLIENT then
 			MsgN("OnUtilFxNodeSelected tried to make spawnlist for invalid title ", name)
 		else
 			for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
-				spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["spawnname"] = "UtilFx", ["nicename"] = particle})
+				spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = "UtilFx", ["name"] = particle})
 			end
 		end
 
 		pnlContent:SwitchPanel(ViewPanel)
 		ViewPanel.CurrentPCF = "UtilFx" //used by developer click-to-refresh-pcf function
+		ViewPanel.CurrentPath = nil //^
 		ViewPanel.CurrentUtilFxName = name //^
 
 	end
@@ -83,7 +88,7 @@ if CLIENT then
 			//No child fx
 			for k, v in pairs (tab) do
 				if !PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents) < 1 then
-					table.insert(tab2, {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle})
+					table.insert(tab2, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle})
 				end
 			end
 		elseif dochildfx == 1 then
@@ -91,9 +96,9 @@ if CLIENT then
 			local tab3 = {}
 			for k, v in pairs (tab) do
 				if !PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents) < 1 then
-					table.insert(tab2, {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle})
+					table.insert(tab2, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle})
 				else
-					table.insert(tab3, {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle})
+					table.insert(tab3, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle})
 				end
 			end
 			if table.Count(tab3) > 0 then
@@ -103,7 +108,7 @@ if CLIENT then
 		else
 			//All fx sorted alphabetically
 			for k, v in pairs (tab) do
-				tab2[k] = {["type"] = "partctrl", ["spawnname"] = v.pcf, ["nicename"] = v.particle}
+				tab2[k] = {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle}
 			end
 		end
 
@@ -123,7 +128,7 @@ if CLIENT then
 	//Most of the spawnmenu code here this is ripped off wholesale from the Enhanced Spawnmenu addon - this is lame but I've gone over all the code and there's really no reason
 	//to reinvent the wheel here, it does everything we need it to do
 
-	local function AddBrowseContentParticle(node, name, icon, path, pathid, wsid)
+	local function AddBrowseContentParticle(node, name, icon, path, pathid, wsid, is_game_folder)
 
 		local ViewPanel = node.ViewPanel
 		local pnlContent = node.pnlContent
@@ -135,6 +140,7 @@ if CLIENT then
 
 		local particles = node:AddFolder(name, path .. "particles", pathid, true, false, "*.*") //unlike ES, the arg after pathid is true, which adds nodes for files as well
 		particles:SetIcon(icon)
+		particles.is_game_folder = is_game_folder
 
 		particles.FilePopulateCallback = function(self, files, folders, foldername, path, bAndChildren, wildcard) //based on DTree_Node.FilePopulateCallback (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/vgui/dtree_node.lua#L448)
 			local showfiles = self:GetShowFiles()
@@ -196,31 +202,41 @@ if CLIENT then
 				end
 
 				if showfiles then
-					local function AddFile(name, filename)
+					local function AddFile(name, filename, path)
 						//Clear out .txt file particle manifests and such, also clear out bad .pcf files that weren't processed
-						if !istable(PartCtrl_ProcessedPCFs[filename]) then return end
+						local filename2 = PartCtrl_GetGamePCF(filename, path)
+						if !istable(PartCtrl_ProcessedPCFs[filename2]) then return end
 
 						local Node = self:AddNode(name, "icon16/page.png")
 						Node:SetFileName(filename)
+						Node.path = path
 						FileCount = FileCount + 1
 						Node.DoRightClick = function()
 							if !IsValid(Node) then return end
 							local menu = DermaMenu()
 
-							menu:AddOption("Copy .pcf file path to clipboard", function() SetClipboardText(filename) end):SetIcon("icon16/page_copy.png")
+							menu:AddOption("Copy .pcf file path to clipboard", function() 
+								SetClipboardText(PartCtrl_GetDataPCFNiceName(filename2)) //don't confuse non-dev players by giving them an internal data pcf path.
+							end):SetIcon("icon16/page_copy.png")
 
 							menu:AddOption("#spawnmenu.createautospawnlist", function()
 								local tab = {}
-								for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[filename]) do //sort them in alphabetical order
-									table.insert(tab, {["pcf"] = filename, ["particle"] = particle})
+								for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[filename2]) do //sort them in alphabetical order
+									table.insert(tab, {["pcf"] = filename, ["particle"] = particle, ["path"] = path})
 								end
 								PartCtrl_CreateCustomSpawnlist(tab, name)
 							end):SetIcon("icon16/page_add.png")
 
-							//developer control to reload a .pcf file manually
+							//developer controls to get data pcf path, or reload a .pcf file manually
 							if GetConVarNumber("developer") >= 1 then
-								menu:AddOption("Reload " .. filename, function()
-									RunConsoleCommand("partctrl_reloadpcf", filename)
+								if filename != filename2 then
+									menu:AddOption("Copy internal data .pcf file path to clipboard", function() 
+										SetClipboardText(filename2)
+									end):SetIcon("icon16/page_copy.png")
+								end
+
+								menu:AddOption("Reload " .. filename2, function()
+									RunConsoleCommand("partctrl_reloadpcf", filename2)
 								end)
 							end
 
@@ -228,31 +244,38 @@ if CLIENT then
 						end
 					end
 			
-					for k, File in SortedPairs (files) do
-						//TODO: convert to new GamePCFs system
-						--[[local fallbacks = PartCtrl_FallbackPCFs[foldername .. "/" .. File]
-						if fallbacks and fallbacks[path] then
-							//For a game folder, add the fallback pcf for the file if applicable, instead of the mounted file
-							local path2 = fallbacks[path].path or path
-							AddFile(File .. " (" .. path2 .. ")", "particles/partctrl_fallbacks/" .. path2 .. "/" .. File)
-							continue
-						end]]
+					for k, name in SortedPairs (files) do
+						local pcf = string.Trim(foldername .. "/" .. name, "/")
+						local effect_path = PartCtrl_GamePCFs_DefaultPaths[pcf] 
+						//note: due to how this is implemented, this means if a game has an identical copy of a higher-priority game's pcf, it will use that game's path 
+						//instead. (i.e hl2 has a bunch of duplicates of gmod pcfs, so if you open a spawnlist for any of these pcfs, none of them will have the "hl2" path
+						//like the other hl2 pcfs.) i don't *think* there are any situations where this is a problem, but *maybe* this could cause issues with some weird
+						//combination of mounted game changes between sessions? idk
 
-						AddFile(File, string.Trim(foldername .. "/" .. File, "/"))
+						if self.is_game_folder then
+							//For game folders
+							//Check for data pcfs, and add (suffixes) to names of pcfs that use them
+							if PartCtrl_GetGamePCF(pcf, path) != pcf then
+								name = name .. " (" .. path  .. ")"
+								effect_path = path
+							end
+						end
 
-						//TODO: convert to new GamePCFs system
-						--[[if fallbacks and path == "GAME" then
-							//For the "All" folder, add every fallback pcf for this file, in addition to the mounted file
-							local fallbacks_to_add = {}
-							for Game, tab in pairs (fallbacks) do
-								local path2 = tab.path or Game
-								//add these to a table first, to make sure we don't add duplicate nodes for fallbacks that apply to more than 1 game
-								fallbacks_to_add[File .. " (" .. path2 .. ")"] = "particles/partctrl_fallbacks/" .. path2 .. "/" .. File
+						//test
+						//if PartCtrl_ProcessedPCFs[pcf] and effect_path != path then
+						//	MsgN(path, "'s ", pcf, " is from ", effect_path, "!")
+						//end
+
+						AddFile(name, pcf, effect_path)
+
+						//For the "All" folder, add every data pcf for this file, in addition to the mounted pcf file
+						if path == "GAME" and PartCtrl_GamePCFs[pcf] then
+							for path2, pcf2 in pairs (PartCtrl_GamePCFs[pcf]) do
+								if pcf2 != pcf then
+									AddFile(name .. " (" .. path2  .. ")", pcf, path2)
+								end
 							end
-							for k, v in pairs (fallbacks_to_add) do
-								AddFile(k, v)
-							end
-						end]]
+						end
 					end
 				end
 			end
@@ -285,7 +308,7 @@ if CLIENT then
 		particles.OnNodeSelected = function(self, node_sel)
 			local name2 = node_sel:GetFileName() //returns nil if the selected node was a folder - we only want files to be selectable
 			if name2 != nil and string.find(name2, ".pcf") then
-				OnParticleNodeSelected(name2, ViewPanel, pnlContent)
+				OnParticleNodeSelected(name2, node_sel.path, ViewPanel, pnlContent)
 			elseif node_sel.utilfx then
 				OnUtilFxNodeSelected(name, ViewPanel, pnlContent)
 			end
@@ -319,16 +342,18 @@ if CLIENT then
 			title = "All",
 			folder = "GAME",
 			icon = "all",
-			mounted = true
+			mounted = true,
+			not_game_folder = true
 		})
 		table.insert(games, {
 			title = "Garry's Mod",
 			folder = "garrysmod",
-			mounted = true
+			mounted = true,
+			not_game_folder = true
 		})
 		for _, game in SortedPairsByMemberValue(games, "title") do
 			if !game.mounted then continue end
-			AddBrowseContentParticle(node, game.title, "games/16/" .. (game.icon or game.folder) .. ".png", "", game.folder)
+			AddBrowseContentParticle(node, game.title, "games/16/" .. (game.icon or game.folder) .. ".png", "", game.folder, nil, !game.not_game_folder)
 		end
 	end
 
@@ -417,7 +442,7 @@ if CLIENT then
 					elseif k2 == #searchTerms then
 						local entry = {
 							text = v.name,
-							icon = spawnmenu.CreateContentIcon("partctrl", g_SpawnMenu.SearchPropPanel, {["spawnname"] = v.pcf, ["nicename"] = v.name}),
+							icon = spawnmenu.CreateContentIcon("partctrl", g_SpawnMenu.SearchPropPanel, {["pcf"] = v.pcf, ["name"] = v.name}),
 							words = {v.name}
 						}
 						table.insert(results, entry)
@@ -490,7 +515,8 @@ if CLIENT then
 				if PartCtrl_ViewPanel.pnlContent.SelectedPanel == PartCtrl_ViewPanel and PartCtrl_ViewPanel.CurrentPCF == str then
 					//MsgN("we doin this")
 					if str != "UtilFx" then
-						OnParticleNodeSelected(str, PartCtrl_ViewPanel, PartCtrl_ViewPanel.pnlContent)
+						if PartCtrl_AllDataPCFs[str] then str = PartCtrl_AllDataPCFs[str].original_filename end
+						OnParticleNodeSelected(str, PartCtrl_ViewPanel.CurrentPath, PartCtrl_ViewPanel, PartCtrl_ViewPanel.pnlContent)
 					else
 						OnUtilFxNodeSelected(PartCtrl_ViewPanel.CurrentUtilFxName, PartCtrl_ViewPanel, PartCtrl_ViewPanel.pnlContent)
 					end

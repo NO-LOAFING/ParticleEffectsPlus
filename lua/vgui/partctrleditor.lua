@@ -97,7 +97,7 @@ local function GetParticleName(ent)
 		//return "Particle Controller [" .. tostring(ent:EntIndex()) .. "]: " .. ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")")
 		if !ent.utilfx then
 			local str = ent:GetPCF()
-			if str != PartCtrl_GetPCFPath(ent:GetPCF(), ent:GetPath()) then str = str .. " (" .. ent:GetPath() .. ")" end
+			if str != PartCtrl_GetGamePCF(ent:GetPCF(), ent:GetPath()) then str = str .. " (" .. ent:GetPath() .. ")" end
 			return ent:GetParticleName() .. " (" .. str .. ")"
 		else
 			return ent:GetParticleName() .. " (Scripted Effect)"
@@ -154,7 +154,7 @@ function PANEL:RebuildControls()
 
 	local function BuildParticleEntControls(ent2, container)
 
-		local pcf = PartCtrl_GetPCFPath(ent2:GetPCF(), ent2:GetPath())
+		local pcf = PartCtrl_GetGamePCF(ent2:GetPCF(), ent2:GetPath())
 		local name = ent2:GetParticleName()
 
 		//don't throw a lua error if a special effect contains an invalid particle effect

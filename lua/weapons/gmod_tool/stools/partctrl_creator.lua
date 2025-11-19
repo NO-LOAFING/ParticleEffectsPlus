@@ -19,6 +19,7 @@ function TOOL:LeftClick()
 		local pcf = self:GetClientInfo("pcf")
 		local name = self:GetClientInfo("name")
 		local path = self:GetClientInfo("path")
+		if path == "" then path = nil end
 
 		PartCtrl_SpawnParticle(self:GetOwner(), nil, name, pcf, path)
 	end

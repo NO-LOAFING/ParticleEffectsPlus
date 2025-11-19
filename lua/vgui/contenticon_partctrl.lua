@@ -39,19 +39,18 @@ else
 	})
 end
 
-function PANEL:Setup(pcf, name)
+function PANEL:Setup(pcf, name, path)
 
 	self.pcf = pcf
 	self.name = name
-	self:SetName(name)
-	self:SetSpawnName(pcf)
+	self.path = path
+	self:SetName(name) //display name on icon
 	self:SetContentType("partctrl")
 
 	if pcf == "UtilFx" then
 		self:SetMaterial("icon16/cog.png") //icon_utilfx) //why doesn't this one take a Material()? whatever
 	end
 
-	//PartCtrl_AddParticles(pcf, name) //crash prevention
 	self.DoneSetup = true
 
 end
@@ -68,12 +67,13 @@ function PANEL:Paint(w, h)
 
 	//Add this effect to PartCtrl_IconFx - even if we're not showing a particle in this panel, 
 	//we still want it to populate other stuff like icons and tooltips
+	local pcf = PartCtrl_GetGamePCF(self.pcf, self.path)
 	local name = self.childname or self.name //when the player hovers over a child effect in the dropdown, override the spawnicon to display that effect instead
-	PartCtrl_IconFx[self.pcf] = PartCtrl_IconFx[self.pcf] or {}
-	PartCtrl_IconFx[self.pcf][name] = PartCtrl_IconFx[self.pcf][name] or {}
-	PartCtrl_IconFx[self.pcf][name].panels = PartCtrl_IconFx[self.pcf][name].panels or {}
+	PartCtrl_IconFx[pcf] = PartCtrl_IconFx[pcf] or {}
+	PartCtrl_IconFx[pcf][name] = PartCtrl_IconFx[pcf][name] or {}
+	PartCtrl_IconFx[pcf][name].panels = PartCtrl_IconFx[pcf][name].panels or {}
 	
-	local itab = PartCtrl_IconFx[self.pcf][name]
+	local itab = PartCtrl_IconFx[pcf][name]
 	self:SetTooltip(itab.tooltip)
 
 	if self.invalid != itab.invalid then
@@ -90,7 +90,7 @@ function PANEL:Paint(w, h)
 	local showparticle = true
 
 	//If the icon's effect is currently being overridden by another pcf's effect of the same name, show a notification instead
-	if self:IsCurrentlyOverridden(name) then
+	if self:IsCurrentlyOverridden(pcf, name) then
 		local mdef_width = math.min(w,h) * 0.5
 		surface.SetDrawColor(0,0,0,64)
 		surface.DrawRect(0 + bd, 0 + bd, w - (bd*2), h - (bd*2))
@@ -180,7 +180,7 @@ function PANEL:Paint(w, h)
 			end
 		else
 			//If particle is being throttled by crash prevention, draw loading icon
-			if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[self.pcf] and (!itab.particle or !(itab.particle.IsValid and itab.particle:IsValid())) then
+			if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] and (!itab.particle or !(itab.particle.IsValid and itab.particle:IsValid())) then
 				local load_width = math.min(w,h) * 0.65
 				surface.SetDrawColor(255,255,255,255)
 				surface.SetMaterial(icon_loading)
@@ -221,11 +221,11 @@ function PANEL:Paint(w, h)
 
 end
 
-function PANEL:IsCurrentlyOverridden(name)
+function PANEL:IsCurrentlyOverridden(pcf, name)
 
-	if PartCtrl_IconFx[self.pcf][name].MultiplyDefined
-	and !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[name] == self.pcf)
-	and !(PartCtrl_DuplicateFx[self.pcf][name] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[name] == PartCtrl_DuplicateFx[self.pcf][name]) then
+	if PartCtrl_IconFx[pcf][name].MultiplyDefined
+	and !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[name] == pcf)
+	and !(PartCtrl_DuplicateFx[pcf][name] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[name] == PartCtrl_DuplicateFx[pcf][name]) then
 		return true
 	end
 
@@ -365,10 +365,10 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					self.invalid = true
 				else
 					if !utilfx then
-						tooltip = tooltip .. "\n(" .. pcf .. ")"
+						tooltip = tooltip .. "\n(" .. PartCtrl_GetDataPCFNiceName(pcf) .. ")"
 
 						if PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][name] then
-							tooltip = tooltip .. "\n\nThis is a duplicate of \"" .. name .. "\" from \"" .. PartCtrl_DuplicateFx[pcf][name] .. "\"."
+							tooltip = tooltip .. "\n\nThis is a duplicate of \"" .. name .. "\" from \"" .. PartCtrl_GetDataPCFNiceName(PartCtrl_DuplicateFx[pcf][name]) .. "\"."
 							table.insert(self.icons, {["icon"] = Material("icon16/page_paste.png")})
 						end
 					else
@@ -456,9 +456,9 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						local text = "\n\n\nWarning: This particle effect name is defined in multiple files:"
 						for _, v in pairs (PartCtrl_PCFsByParticleName[name]) do
 							//if PartCtrl_PCFsWithConflicts[v] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
-								text = text .. "\n" .. v
+								text = text .. "\n" .. PartCtrl_GetDataPCFNiceName(v)
 								if PartCtrl_ProcessedPCFs[v][name] and PartCtrl_DuplicateFx[v][name] then
-									text = text .. " (duplicate of " .. PartCtrl_DuplicateFx[v][name] .. ")"
+									text = text .. " (duplicate of " .. PartCtrl_GetDataPCFNiceName(PartCtrl_DuplicateFx[v][name]) .. ")"
 									//Don't add conflict warnings for dupes unless there's at least 2 non-dupe fx with that name 
 									//(no point in conflict warning if every version of the effect is the same)
 								else
@@ -690,12 +690,14 @@ end)
 
 function PANEL:DoClick()
 
+	local pcf = PartCtrl_GetGamePCF(self.pcf, self.path)
+
 	//If the icon's effect is currently being overridden by another pcf's effect of the same name, reload the pcf on click instead
-	if self:IsCurrentlyOverridden(self.name) then
+	if self:IsCurrentlyOverridden(pcf, self.name) then
 		surface.PlaySound("common/wpn_select.wav") //TODO: is this a good sound? needs to be different enough from the spawn sound so players can tell that clicking didn't spawn an effect yet.
-		PartCtrl_AddParticles(self.pcf, self.name) //crash prevention
+		PartCtrl_AddParticles(pcf, self.name) //crash prevention
 	else
-		RunConsoleCommand("partctrl_spawnparticle", self.name, self.pcf)
+		RunConsoleCommand("partctrl_spawnparticle", self.name, self.pcf, self.path)
 		surface.PlaySound("ui/buttonclickrelease.wav")
 	end
 
@@ -704,45 +706,49 @@ end
 function PANEL:OpenMenu()
 
 	local menu = DermaMenu()
+	local pcf = PartCtrl_GetGamePCF(self.pcf, self.path) //use this unless we're doing something that handles the path arg on its own, like spawning an effect
 
 	menu:AddOption("Copy effect name to clipboard", function() SetClipboardText(self.name) end):SetIcon("icon16/page_copy.png")
-	if self.pcf != "UtilFx" then menu:AddOption("Copy .pcf file path to clipboard", function() SetClipboardText(self.pcf) end):SetIcon("icon16/page_copy.png") end
+	if pcf != "UtilFx" then menu:AddOption("Copy .pcf file path to clipboard", function() 
+		SetClipboardText(PartCtrl_GetDataPCFNiceName(pcf)) //don't confuse non-dev players by giving them an internal data pcf path
+	end):SetIcon("icon16/page_copy.png") end 
 
 	menu:AddOption("#spawnmenu.menu.spawn_with_toolgun", function()
 		RunConsoleCommand("gmod_tool", "partctrl_creator")
 		RunConsoleCommand("partctrl_creator_pcf", self.pcf)
 		RunConsoleCommand("partctrl_creator_name", self.name)
+		RunConsoleCommand("partctrl_creator_path", self.path or "")
 	end):SetIcon("icon16/brick_add.png")
 
 	//List all parents and children of this effect recursively; this means we don't have to clutter up the spawnlists with children
-	if istable(PartCtrl_ProcessedPCFs[self.pcf]) and istable(PartCtrl_ProcessedPCFs[self.pcf][self.name]) then
+	if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][self.name]) then
 		local function ListChildFx(submenu, submenuoption, name2, tabname)
 			local listed_fx = {} //don't list the same effect more than once - sometimes a parent can have multiple of the same child
-			for _, child in pairs (PartCtrl_ProcessedPCFs[self.pcf][name2][tabname]) do
+			for _, child in pairs (PartCtrl_ProcessedPCFs[pcf][name2][tabname]) do
 				//ptab.children is a table of tables containing both child names and other info about them;
 				//ptab.parents is just a table of strings
 				if istable(child) then
 					child = child.child
 				end
-				if PartCtrl_ProcessedPCFs[self.pcf][child] and !listed_fx[child] then
+				if PartCtrl_ProcessedPCFs[pcf][child] and !listed_fx[child] then
 					listed_fx[child] = true
 					local OnClick = function()
-						RunConsoleCommand("partctrl_spawnparticle", child, self.pcf)
+						RunConsoleCommand("partctrl_spawnparticle", child, self.pcf, self.path)
 						surface.PlaySound("ui/buttonclickrelease.wav")
 					end
 					local submenu2
 					local option2
-					if PartCtrl_ProcessedPCFs[self.pcf][child][tabname] and table.Count(PartCtrl_ProcessedPCFs[self.pcf][child][tabname]) > 0 then
+					if PartCtrl_ProcessedPCFs[pcf][child][tabname] and table.Count(PartCtrl_ProcessedPCFs[pcf][child][tabname]) > 0 then
 						submenu2, option2 = submenu:AddSubMenu(child, OnClick)
 						ListChildFx(submenu2, option2, child, tabname)
 					else
 						option2 = submenu:AddOption(child, OnClick)
 					end
-					if PartCtrl_CulledFx[self.pcf] and PartCtrl_CulledFx[self.pcf][child] then //in developer mode, add warnings to culled fx
+					if PartCtrl_CulledFx[pcf] and PartCtrl_CulledFx[pcf][child] then //in developer mode, add warnings to culled fx
 						option2:SetMaterial(icon_invalid)
 						//duplicate of text string from this panel's setup func, whatever
 						local tooltip = "ERROR: This effect is invalid, and won't be loaded outside of developer mode."
-						for _, v in pairs (PartCtrl_CulledFx[self.pcf][child]) do
+						for _, v in pairs (PartCtrl_CulledFx[pcf][child]) do
 							tooltip = tooltip .. "\n\n" .. language.GetPhrase(v)
 						end
 						option2:SetTooltip(tooltip)
@@ -760,8 +766,8 @@ function PANEL:OpenMenu()
 						old_OnCursorExited(option2)
 						if IsValid(self) then
 							self.childname = nil
-							if PartCtrl_IconFx[self.pcf] and PartCtrl_IconFx[self.pcf][child] and PartCtrl_IconFx[self.pcf][child].panels then
-								PartCtrl_IconFx[self.pcf][child].panels[self] = nil
+							if PartCtrl_IconFx[pcf] and PartCtrl_IconFx[pcf][child] and PartCtrl_IconFx[pcf][child].panels then
+								PartCtrl_IconFx[pcf][child].panels[self] = nil
 							end
 						end
 					end
@@ -770,8 +776,8 @@ function PANEL:OpenMenu()
 						//old_OnRemove(option2)
 						if IsValid(self) then
 							self.childname = nil
-							if PartCtrl_IconFx[self.pcf] and PartCtrl_IconFx[self.pcf][child] and PartCtrl_IconFx[self.pcf][child].panels then
-								PartCtrl_IconFx[self.pcf][child].panels[self] = nil
+							if PartCtrl_IconFx[pcf] and PartCtrl_IconFx[pcf][child] and PartCtrl_IconFx[pcf][child].panels then
+								PartCtrl_IconFx[pcf][child].panels[self] = nil
 							end
 						end
 					end
@@ -779,7 +785,7 @@ function PANEL:OpenMenu()
 			end
 			submenuoption:SetText(submenuoption:GetText() .. " (" .. table.Count(listed_fx) .. ")") //count the number of fx not including dupes
 		end
-		local ptab = PartCtrl_ProcessedPCFs[self.pcf][self.name]
+		local ptab = PartCtrl_ProcessedPCFs[pcf][self.name]
 		if ptab.parents and table.Count(ptab.parents) > 0 then
 			local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn parent effect")
 			base_submenuoption:SetImage("icon16/shape_group.png")
@@ -809,25 +815,31 @@ function PANEL:OpenMenu()
 		end):SetIcon("icon16/bin_closed.png")
 	end
 
-	//developer controls to reload a .pcf file manually, or dump pcf data into console
+	//developer controls to get data pcf path, reload a .pcf file manually, or dump pcf data into console
 	if GetConVarNumber("developer") >= 1 then
 		menu:AddSpacer()
 
-		menu:AddOption("Reload " .. self.pcf, function()
-			RunConsoleCommand("partctrl_reloadpcf", self.pcf)
+		if self.pcf != pcf then
+			menu:AddOption("Copy internal data .pcf file path to clipboard", function() 
+				SetClipboardText(pcf)
+			end):SetIcon("icon16/page_copy.png")
+		end
+
+		menu:AddOption("Reload " .. pcf, function()
+			RunConsoleCommand("partctrl_reloadpcf", pcf)
 		end)
 
-		if self.pcf != "UtilFx" then
+		if pcf != "UtilFx" then
 			menu:AddOption("Print raw PCF data for this effect", function()
-				MsgN("PartCtrl_ReadPCF(\"" .. self.pcf .. "\")[\"" .. self.name .. "\"]:")
-				PrintTable(PartCtrl_ReadPCF(self.pcf)[self.name])
+				MsgN("PartCtrl_ReadPCF(\"" .. pcf .. "\")[\"" .. self.name .. "\"]:")
+				PrintTable(PartCtrl_ReadPCF(pcf)[self.name])
 				MsgN()
 			end)
 		end
 
 		menu:AddOption("Print processed PCF data for this effect", function()
-			MsgN("PartCtrl_ProcessedPCFs[\"" .. self.pcf .. "\"][\"" .. self.name .. "\"]:")
-			PrintTable(PartCtrl_ProcessedPCFs[self.pcf][self.name])
+			MsgN("PartCtrl_ProcessedPCFs[\"" .. pcf .. "\"][\"" .. self.name .. "\"]:")
+			PrintTable(PartCtrl_ProcessedPCFs[pcf][self.name])
 		end)
 	end
 
@@ -841,10 +853,24 @@ function PANEL:Copy()
 	//because it tries to copy a nonexistent "material" value; don't overthink this, just have our own function, this works fine
 
 	local copy = vgui.Create("ContentIcon_PartCtrl", self:GetParent())
-	copy:Setup(self.pcf, self.name)
+	copy:Setup(self.pcf, self.name, self.path)
 	//copy.IsInSearch = self.IsInSearch
 
 	return copy
+
+end
+
+//variant of baseclass' ToTable, writes our custom values instead (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/spawnmenu/creationmenu/content/contenticon.lua#L221)
+function PANEL:ToTable(bigtable)
+
+	local tab = {}
+
+	tab.type = self:GetContentType()
+	tab.name = self.name
+	tab.pcf = self.pcf
+	tab.path = self.path
+
+	table.insert(bigtable, tab)
 
 end
 
@@ -852,12 +878,10 @@ vgui.Register("ContentIcon_PartCtrl", PANEL, "ContentIcon")
 
 spawnmenu.AddContentType("partctrl", function(container, obj)
 
-	//Particle name and pcf are stored in the "nicename" and "spawnname" values that ContentIcon already has; these will save and load in spawnlists correctly
-	if !obj.spawnname then return end
-	if !obj.nicename then return end
+	if !obj.pcf or !obj.name then return end //obj.path is optional
 
 	local icon = vgui.Create("ContentIcon_PartCtrl", container)
-	icon:Setup(obj.spawnname, obj.nicename)
+	icon:Setup(obj.pcf, obj.name, obj.path)
 
 	container:Add(icon)
 

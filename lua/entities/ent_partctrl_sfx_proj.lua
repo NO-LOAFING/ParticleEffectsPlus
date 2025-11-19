@@ -840,7 +840,7 @@ function ENT:SpecialEffectThink()
 						local wait = false
 						if CLIENT then
 							for child, _ in pairs (self.SpecialEffectChildren) do
-								local pcf = PartCtrl_GetPCFPath(child:GetPCF(), child:GetPath())
+								local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
 								if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
 								and !child.ParticleInfo then
 									wait = true
@@ -1173,7 +1173,7 @@ if CLIENT then
 
 		for child, _ in pairs (self.SpecialEffectChildrenSorted[tobool(hitpos)]) do
 			if child.PartCtrl_Ent then
-				local pcf = PartCtrl_GetPCFPath(child:GetPCF(), child:GetPath())
+				local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
 				local cpointtab = PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
 				local addtotarget = false
 				for k, v in pairs (child.ParticleInfo) do
@@ -1223,7 +1223,7 @@ function ENT:SpecialEffectRefresh()
 				if child.ParticleInfo then
 					local attach_to_proj = nil
 					local attach_to_expire = nil
-					local pcf = PartCtrl_GetPCFPath(child:GetPCF(), child:GetPath())
+					local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
 					local cpointtab = PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
 					for k, v in pairs (child.ParticleInfo) do
 						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
