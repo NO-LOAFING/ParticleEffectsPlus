@@ -377,18 +377,6 @@ list.Set("PartCtrl_UtilFx", "StunstickImpact", {
 	end
 })]]
 
-//all this one's code is commented out, does literally nothing (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/hud_blood.cpp#L34)
---[[list.Set("PartCtrl_UtilFx", "HudBloodSplat", {
-	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
-	default_time = 1,
-	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, -1, "placeholder")
-	end,
-	DoEffect = function(self, ed)
-		return true
-	end
-})]]
-
 //dynamic light only, hunter uses a pcf for the actual visuals (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/episodic/npc_hunter.cpp#L5965, https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L695)
 list.Set("PartCtrl_UtilFx", "HunterMuzzleFlash", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
