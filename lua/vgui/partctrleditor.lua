@@ -96,9 +96,7 @@ local function GetParticleName(ent)
 	if ent.PartCtrl_Ent then
 		//return "Particle Controller [" .. tostring(ent:EntIndex()) .. "]: " .. ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")")
 		if !ent.utilfx then
-			local str = ent:GetPCF()
-			if str != PartCtrl_GetGamePCF(ent:GetPCF(), ent:GetPath()) then str = str .. " (" .. ent:GetPath() .. ")" end
-			return ent:GetParticleName() .. " (" .. str .. ")"
+			return ent:GetParticleName() .. " (" .. PartCtrl_GetDataPCFNiceName(PartCtrl_GetGamePCF(ent:GetPCF(), ent:GetPath())) .. ")"
 		else
 			return ent:GetParticleName() .. " (Scripted Effect)"
 		end

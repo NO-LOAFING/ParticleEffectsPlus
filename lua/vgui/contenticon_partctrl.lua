@@ -709,9 +709,17 @@ function PANEL:OpenMenu()
 	local pcf = PartCtrl_GetGamePCF(self.pcf, self.path) //use this unless we're doing something that handles the path arg on its own, like spawning an effect
 
 	menu:AddOption("Copy effect name to clipboard", function() SetClipboardText(self.name) end):SetIcon("icon16/page_copy.png")
-	if pcf != "UtilFx" then menu:AddOption("Copy .pcf file path to clipboard", function() 
-		SetClipboardText(PartCtrl_GetDataPCFNiceName(pcf)) //don't confuse non-dev players by giving them an internal data pcf path
-	end):SetIcon("icon16/page_copy.png") end 
+	if pcf != "UtilFx" then 
+		menu:AddOption("Copy .pcf file path to clipboard", function() 
+			SetClipboardText(self.pcf)
+		end):SetIcon("icon16/page_copy.png")
+
+		if self.pcf != pcf then
+			menu:AddOption("Copy internal .pcf file path to clipboard", function() 
+				SetClipboardText(pcf)
+			end):SetIcon("icon16/page_copy.png")
+		end
+	end 
 
 	menu:AddOption("#spawnmenu.menu.spawn_with_toolgun", function()
 		RunConsoleCommand("gmod_tool", "partctrl_creator")
@@ -815,15 +823,9 @@ function PANEL:OpenMenu()
 		end):SetIcon("icon16/bin_closed.png")
 	end
 
-	//developer controls to get data pcf path, reload a .pcf file manually, or dump pcf data into console
+	//developer controls to reload a .pcf file manually, or dump pcf data into console
 	if GetConVarNumber("developer") >= 1 then
 		menu:AddSpacer()
-
-		if self.pcf != pcf then
-			menu:AddOption("Copy internal data .pcf file path to clipboard", function() 
-				SetClipboardText(pcf)
-			end):SetIcon("icon16/page_copy.png")
-		end
 
 		menu:AddOption("Reload " .. pcf, function()
 			RunConsoleCommand("partctrl_reloadpcf", pcf)
@@ -854,7 +856,6 @@ function PANEL:Copy()
 
 	local copy = vgui.Create("ContentIcon_PartCtrl", self:GetParent())
 	copy:Setup(self.pcf, self.name, self.path)
-	//copy.IsInSearch = self.IsInSearch
 
 	return copy
 

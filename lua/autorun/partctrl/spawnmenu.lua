@@ -13,11 +13,9 @@ if CLIENT then
 	local cv_childfx_spawnlist = GetConVar("cl_partctrl_childfx_in_autospawnlists")
 
 	local function OnParticleNodeSelected(pcf, path, ViewPanel, pnlContent)
-
-		MsgN("running OnParticleNodeSelected for ", pcf, ", ", path)
-
 		ViewPanel:Clear(true)
 		local pcf2 = PartCtrl_GetGamePCF(pcf, path)
+		//MsgN("running OnParticleNodeSelected for ", pcf, ", ", path)
 
 		if !istable(PartCtrl_ProcessedPCFs[pcf2]) then
 			MsgN("OnParticleNodeSelected tried to make spawnlist for invalid pcf ", pcf2)
@@ -82,23 +80,24 @@ if CLIENT then
 	function PartCtrl_CreateCustomSpawnlist(tab, name, icon) //globally available so we can use it to make arbitrary spawnlists for testing
 
 		local tab2 = {}
+		local pcf2 = PartCtrl_GetGamePCF(pcf, path)
 
 		local dochildfx = cv_childfx_spawnlist:GetInt()
 		if dochildfx == 0 then
 			//No child fx
 			for k, v in pairs (tab) do
-				if !PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents) < 1 then
-					table.insert(tab2, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle})
+				if !PartCtrl_ProcessedPCFs[pcf2][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][v.particle].parents) < 1 then
+					table.insert(tab2, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle, ["path"] = v.path})
 				end
 			end
 		elseif dochildfx == 1 then
 			//Separate child fx
 			local tab3 = {}
 			for k, v in pairs (tab) do
-				if !PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.particle].parents) < 1 then
-					table.insert(tab2, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle})
+				if !PartCtrl_ProcessedPCFs[pcf2][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][v.particle].parents) < 1 then
+					table.insert(tab2, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle, ["path"] = v.path})
 				else
-					table.insert(tab3, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle})
+					table.insert(tab3, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle, ["path"] = v.path})
 				end
 			end
 			if table.Count(tab3) > 0 then
@@ -108,7 +107,7 @@ if CLIENT then
 		else
 			//All fx sorted alphabetically
 			for k, v in pairs (tab) do
-				tab2[k] = {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle}
+				tab2[k] = {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle, ["path"] = v.path}
 			end
 		end
 
@@ -216,8 +215,14 @@ if CLIENT then
 							local menu = DermaMenu()
 
 							menu:AddOption("Copy .pcf file path to clipboard", function() 
-								SetClipboardText(PartCtrl_GetDataPCFNiceName(filename2)) //don't confuse non-dev players by giving them an internal data pcf path.
+								SetClipboardText(filename)
 							end):SetIcon("icon16/page_copy.png")
+
+							if filename != filename2 then
+								menu:AddOption("Copy internal .pcf file path to clipboard", function() 
+									SetClipboardText(filename2)
+								end):SetIcon("icon16/page_copy.png")
+							end
 
 							menu:AddOption("#spawnmenu.createautospawnlist", function()
 								local tab = {}
@@ -227,13 +232,9 @@ if CLIENT then
 								PartCtrl_CreateCustomSpawnlist(tab, name)
 							end):SetIcon("icon16/page_add.png")
 
-							//developer controls to get data pcf path, or reload a .pcf file manually
+							//developer control to reload a .pcf file manually
 							if GetConVarNumber("developer") >= 1 then
-								if filename != filename2 then
-									menu:AddOption("Copy internal data .pcf file path to clipboard", function() 
-										SetClipboardText(filename2)
-									end):SetIcon("icon16/page_copy.png")
-								end
+								menu:AddSpacer()
 
 								menu:AddOption("Reload " .. filename2, function()
 									RunConsoleCommand("partctrl_reloadpcf", filename2)
@@ -245,36 +246,50 @@ if CLIENT then
 					end
 			
 					for k, name in SortedPairs (files) do
+						local tab = {}
 						local pcf = string.Trim(foldername .. "/" .. name, "/")
-						local effect_path = PartCtrl_GamePCFs_DefaultPaths[pcf] 
-						//note: due to how this is implemented, this means if a game has an identical copy of a higher-priority game's pcf, it will use that game's path 
-						//instead. (i.e hl2 has a bunch of duplicates of gmod pcfs, so if you open a spawnlist for any of these pcfs, none of them will have the "hl2" path
-						//like the other hl2 pcfs.) i don't *think* there are any situations where this is a problem, but *maybe* this could cause issues with some weird
-						//combination of mounted game changes between sessions? idk
-
-						if self.is_game_folder then
-							//For game folders
-							//Check for data pcfs, and add (suffixes) to names of pcfs that use them
-							if PartCtrl_GetGamePCF(pcf, path) != pcf then
-								name = name .. " (" .. path  .. ")"
-								effect_path = path
-							end
-						end
-
-						//test
-						//if PartCtrl_ProcessedPCFs[pcf] and effect_path != path then
-						//	MsgN(path, "'s ", pcf, " is from ", effect_path, "!")
+						local file_path = PartCtrl_GamePCFs_DefaultPaths[pcf] 
+						//note: due to how this is implemented, this means if a game has an identical copy of a higher-priority 
+						//game's pcf, it will use that game's path instead. (i.e hl2 has a bunch of duplicates of gmod pcfs, so 
+						//if you open a spawnlist for any of these pcfs, none of them will have the "hl2" path like the other hl2
+						//pcfs do) i don't *think* there are any situations where this is a problem, but *maybe* this could cause
+						//issues with some weird combination of mounted game changes between sessions? not sure.
+						////test
+						//if PartCtrl_ProcessedPCFs[pcf] and file_path != path then
+						//	MsgN(path, "'s ", pcf, " is from ", file_path, "!")
 						//end
-
-						AddFile(name, pcf, effect_path)
 
 						//For the "All" folder, add every data pcf for this file, in addition to the mounted pcf file
 						if path == "GAME" and PartCtrl_GamePCFs[pcf] then
 							for path2, pcf2 in pairs (PartCtrl_GamePCFs[pcf]) do
 								if pcf2 != pcf then
-									AddFile(name .. " (" .. path2  .. ")", pcf, path2)
+									table.insert(tab, {
+										["name"] = name .. " (" .. path2  .. ")", ["pcf"] = pcf, ["path"] = path2
+									})
 								end
 							end
+						end
+
+						if self.is_game_folder and PartCtrl_GetGamePCF(pcf, path) != pcf then
+							//For game folders, if this game is using a data pcf for this file, always label it
+							//(and set the right file_path to make our spawnlist use it)
+							name = name .. " (" .. path  .. ")"
+							file_path = path
+						//elseif #tab > 0 and file_path then 
+						//	//For the "All" folder, if there are multiple entries and they're all from games, 
+						//	//then label the first one too if applicable
+						//	name = name .. " (" .. file_path  .. ")"
+						//elseif !self.is_game_folder and file_path then
+						//	//or maybe *every* game pcf in the "All" folder should be labeled, just so the names 
+						//	//stay consistent between sessions as you mount different games? 
+						//	name = name .. " (" .. file_path  .. ")"
+						end
+
+						table.insert(tab, 1, {
+							["name"] = name, ["pcf"] = pcf, ["path"] = file_path
+						})
+						for _, v in pairs (tab) do
+							AddFile(v.name, v.pcf, v.path)
 						end
 					end
 				end
@@ -425,8 +440,24 @@ if CLIENT then
 		if searchParticles == nil then
 			searchParticles = {}
 			for pcf, _ in SortedPairs (PartCtrl_ProcessedPCFs) do
-				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do
-					table.insert(searchParticles, {["name"] = particle, ["name_lower"] = particle:lower(), ["pcf"] = pcf}) //lowercase needs to be separate, because effect names are case-sensitive when spawning them
+				if !PartCtrl_AllDataPCFs[pcf] then
+					for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do
+						table.insert(searchParticles, {
+							["name"] = particle, 
+							["searchtext"] = particle:lower() .. " " .. pcf:lower(), //lowercase needs to be separate, because effect names are case-sensitive when spawning them
+							["pcf"] = pcf,
+							["path"] = PartCtrl_GamePCFs_DefaultPaths[pcf] //optional, can be nil
+						}) 
+					end
+				else
+					for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do
+						table.insert(searchParticles, {
+							["name"] = particle, 
+							["searchtext"] = particle:lower() .. " " .. pcf:lower() .. " " .. PartCtrl_GetDataPCFNiceName(pcf):lower(), //let us search for both the nicename and internal name
+							["pcf"] = PartCtrl_AllDataPCFs[pcf].original_filename,
+							["path"] = PartCtrl_AllDataPCFs[pcf].path
+						}) 
+					end
 				end
 			end
 		end
@@ -434,20 +465,19 @@ if CLIENT then
 		local results = {}
 
 		for k, v in ipairs (searchParticles) do
-			if (cv_childfx_search:GetBool() or !PartCtrl_ProcessedPCFs[v.pcf][v.name].parents or table.Count(PartCtrl_ProcessedPCFs[v.pcf][v.name].parents) < 1) 
-			and (cv_dupes_search:GetBool() or !PartCtrl_DuplicateFx[v.pcf] or !PartCtrl_DuplicateFx[v.pcf][v.name]) then
+			local pcf = PartCtrl_GetGamePCF(v.pcf, v.path)
+			if (cv_childfx_search:GetBool() or !PartCtrl_ProcessedPCFs[pcf][v.name].parents or table.Count(PartCtrl_ProcessedPCFs[pcf][v.name].parents) < 1) 
+			and (cv_dupes_search:GetBool() or !PartCtrl_DuplicateFx[pcf] or !PartCtrl_DuplicateFx[pcf][v.name]) then
 				for k2, v2 in ipairs (searchTerms) do
-					if !(v.name_lower:find(v2, nil, true) or v.pcf:find(v2, nil, true)) then
+					if !v.searchtext:find(v2, nil, true) then
 						break
 					elseif k2 == #searchTerms then
 						local entry = {
 							text = v.name,
-							icon = spawnmenu.CreateContentIcon("partctrl", g_SpawnMenu.SearchPropPanel, {["pcf"] = v.pcf, ["name"] = v.name}),
+							icon = spawnmenu.CreateContentIcon("partctrl", g_SpawnMenu.SearchPropPanel, {["pcf"] = v.pcf, ["name"] = v.name, ["path"] = v.path}),
 							words = {v.name}
 						}
 						table.insert(results, entry)
-						//entry.icon.IsInSearch = true //used by spawnicon code; TODO: stops working when the search is refreshed by the model search
-						//MsgN("according to addprovider, g_SpawnMenu.SearchPropPanel is ", g_SpawnMenu.SearchPropPanel, " and icon is ", entry.icon)
 					end
 				end
 			end
