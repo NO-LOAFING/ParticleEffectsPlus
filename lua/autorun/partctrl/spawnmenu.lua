@@ -80,12 +80,12 @@ if CLIENT then
 	function PartCtrl_CreateCustomSpawnlist(tab, name, icon) //globally available so we can use it to make arbitrary spawnlists for testing
 
 		local tab2 = {}
-		local pcf2 = PartCtrl_GetGamePCF(pcf, path)
 
 		local dochildfx = cv_childfx_spawnlist:GetInt()
 		if dochildfx == 0 then
 			//No child fx
 			for k, v in pairs (tab) do
+				local pcf2 = PartCtrl_GetGamePCF(v.pcf, v.path)
 				if !PartCtrl_ProcessedPCFs[pcf2][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][v.particle].parents) < 1 then
 					table.insert(tab2, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle, ["path"] = v.path})
 				end
@@ -94,6 +94,7 @@ if CLIENT then
 			//Separate child fx
 			local tab3 = {}
 			for k, v in pairs (tab) do
+				local pcf2 = PartCtrl_GetGamePCF(v.pcf, v.path)
 				if !PartCtrl_ProcessedPCFs[pcf2][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][v.particle].parents) < 1 then
 					table.insert(tab2, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle, ["path"] = v.path})
 				else
