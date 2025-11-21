@@ -3215,12 +3215,11 @@ function PartCtrl_ReadAndProcessPCFs()
 	end
 
 	//4: garrysmod/particles/ folder
-	AddPCFsToSet(pcfs_sorted[4], "particles/", "garrysmod")
+	AddPCFsToSet(pcfs_sorted[4], "particles/", "garrysmod", true) //handle this like a mounted game (keep track of what game they're from, and do data pcfs if they're overridden by an addon or something)
 
 	//5: mounted games
 	for _, game in SortedPairs(engine.GetGames()) do
-		//TODO: make sure this is handling hl2/css fallback vpks correctly
-		if !game.mounted then continue end
+		if !game.mounted and (game.folder != "hl2" and game.folder != "cstrike") then continue end //also load stuff from hl2/css fallback vpks; they don't have all the pcfs, but they have a few
 		AddPCFsToSet(pcfs_sorted[5], "particles/", game.folder, true)
 	end
 

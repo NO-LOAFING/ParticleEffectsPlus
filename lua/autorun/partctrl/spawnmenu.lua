@@ -358,17 +358,15 @@ if CLIENT then
 			folder = "GAME",
 			icon = "all",
 			mounted = true,
-			not_game_folder = true
 		})
 		table.insert(games, {
 			title = "Garry's Mod",
 			folder = "garrysmod",
 			mounted = true,
-			not_game_folder = true
 		})
 		for _, game in SortedPairsByMemberValue(games, "title") do
 			if !game.mounted then continue end
-			AddBrowseContentParticle(node, game.title, "games/16/" .. (game.icon or game.folder) .. ".png", "", game.folder, nil, !game.not_game_folder)
+			AddBrowseContentParticle(node, game.title, "games/16/" .. (game.icon or game.folder) .. ".png", "", game.folder, nil, game.folder != "GAME")
 		end
 	end
 
