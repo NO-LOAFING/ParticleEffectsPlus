@@ -106,7 +106,7 @@ local needs_model = "Must be attached to a model"
 
 --[[list.Set("PartCtrl_UtilFx", "Spawnlist_Populator_Test", {
 	//test: populate a game, workshop addon, and legacy addon, with and without existing particles
-	title = {"Garry's Mod", "Half-Life: Source", "Hat Painter & Crit Glow Tools", "Animated Props", "ParticleControlOverhaul", "ukmodels", "NotARealGameOrAddon"},
+	title = {"Garry's Mod", "Half-Life 2: Deathmatch", "Hat Painter & Crit Glow Tools", "Animated Props", "ParticleControlOverhaul", "ukmodels", "NotARealGameOrAddon"},
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
@@ -840,7 +840,7 @@ list.Set("PartCtrl_UtilFx", "cball_bounce", {
 if IsMounted("hl1") then //these two fx have error models or textures if hl1 is unmounted, so make them require it; the other hl1 fx work either way, so they don't need this check
 	//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_shelleject.cpp#L21
 	list.Set("PartCtrl_UtilFx", "HL1ShellEject", {
-		title = {"Garry's Mod", "Half-Life: Source"},
+		title = "Half-Life: Source",
 		default_time = 1,
 		DoProcess = function(tab)
 			PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
@@ -874,7 +874,7 @@ if IsMounted("hl1") then //these two fx have error models or textures if hl1 is 
 
 	//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L306
 	list.Set("PartCtrl_UtilFx", "HL1Gib", {
-		title = {"Garry's Mod", "Half-Life: Source"},
+		title = "Half-Life: Source",
 		default_time = 10,
 		DoProcess = function(tab)
 			PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -924,7 +924,7 @@ end
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L215
 list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact1", {
-	title = {"Garry's Mod", "Half-Life: Source"},
+	title = "Half-Life: Source",
 	default_time = 7, //sprite lifetime from code, + 1 for fadeout
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
@@ -946,7 +946,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact1", {
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L225
 list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact2", {
-	title = {"Garry's Mod", "Half-Life: Source"},
+	title = "Half-Life: Source",
 	default_time = 5, //rough average lifetime, can't figure out how this is determined in code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -960,7 +960,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact2", {
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L186
 list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchEnter", {
-	title = {"Garry's Mod", "Half-Life: Source"},
+	title = "Half-Life: Source",
 	default_time = 5, //rough average lifetime, can't figure out how this is determined in code
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -974,7 +974,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchEnter", {
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L199
 list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
-	title = {"Garry's Mod", "Half-Life: Source"},
+	title = "Half-Life: Source",
 	default_time = 7, //impact sprite lifetime from code, + 1 for fadeout
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -997,7 +997,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L170
 list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
-	title = {"Garry's Mod", "Half-Life: Source"},
+	title = "Half-Life: Source",
 	default_time = 6, //sprite lifetime at default magnitude (see comments) + 1 for fadeout
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
@@ -1020,7 +1020,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L117
 list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
-	title = {"Garry's Mod", "Half-Life: Source"},
+	title = "Half-Life: Source",
 	default_time = 0.11, //lifetime from code, plus an extra 100th of a second just to make it clear that this is a tracer and not a continuous beam
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
@@ -1047,7 +1047,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 //follows the attachment. I think we'll do without this one.
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L35
 --[[list.Set("PartCtrl_UtilFx", "HL1GaussBeam", {
-	title = {"Garry's Mod", "Half-Life: Source"},
+	title = "Half-Life: Source",
 	default_time = 0.11, //lifetime from code, plus an extra 100th of a second just to make it clear that this is a tracer and not a continuous beam
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Entity")
@@ -1077,7 +1077,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 //No code for this one; the only utileffect not listed on https://wiki.facepunch.com/gmod/Default_Effects, found it by checking the effects_list concommand
 //Appears identical to HL1GaussBeamReflect, doesn't even have the special follow-the-attachment-point functionality of the regular HL1GaussBeam.
 list.Set("PartCtrl_UtilFx", "HL1GaussBeam_GMOD", {
-	title = {"Garry's Mod", "Half-Life: Source"},
+	title = "Half-Life: Source",
 	default_time = 0.11, //lifetime from code, plus an extra 100th of a second just to make it clear that this is a tracer and not a continuous beam
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
@@ -1107,7 +1107,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeam_GMOD", {
 
 //https://github.com/mastercomfig/tf2-patches/blob/master/src/game/client/cstrike/fx_cs_weaponfx.cpp#L16
 local cstrikeshells = {
-	title = {"Garry's Mod", "Counter-Strike: Source"},
+	title = "Counter-Strike: Source",
 	default_time = 1, //arbitrary; these take 10 whole seconds to fade out which is too much
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
@@ -1143,7 +1143,7 @@ list.Set("PartCtrl_UtilFx", "EjectBrass_9mm", cstrikeshells)
 
 //https://github.com/GEEKiDoS/cstrike-asw/blob/master/src/game/client/cstrike/fx_cs_muzzleflash.cpp#L95C6-L95C29
 list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash_X", {
-	title = {"Garry's Mod", "Counter-Strike: Source"},
+	title = "Counter-Strike: Source",
 	default_time = 0.08, //lifetime value from code
 	info = needs_attachment,
 	DoProcess = function(tab)
@@ -1171,7 +1171,7 @@ list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash_X", {
 
 //https://github.com/GEEKiDoS/cstrike-asw/blob/master/src/game/client/cstrike/fx_cs_muzzleflash.cpp#L22
 list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash", {
-	title = {"Garry's Mod", "Counter-Strike: Source"},
+	title = "Counter-Strike: Source",
 	default_time = 0.08, //lifetime value from code
 	info = needs_attachment,
 	DoProcess = function(tab)
