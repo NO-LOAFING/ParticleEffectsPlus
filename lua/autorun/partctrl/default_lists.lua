@@ -66,7 +66,8 @@ local default_comments = {
 		burning_vehicle = tooclose_comment //also it doesn't render if hl2 isn't mounted, because that's where the vmt is, but that doesn't seem reasonable to check for
 	},
 	["particles/water_impact.pcf"] = {
-		water_bubble_trail_1 = cullplane1_bubble_comment
+		water_bubble_trail_1 = cullplane1_bubble_comment,
+		water_gunk_1 = cullplane1_comment
 	},
 	//Team Fortress 2
 	["particles/halloween2024_unusuals.pcf"] = {

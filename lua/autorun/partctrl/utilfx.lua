@@ -1308,6 +1308,7 @@ list.Set("PartCtrl_UtilFx", "Sparks", {
 list.Set("PartCtrl_UtilFx", "waterripple", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1.5, //lifetime value from code
+	info = "Requires nearby water surface",
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
@@ -1338,6 +1339,7 @@ list.Set("PartCtrl_UtilFx", "waterripple", {
 local splash = {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 2, //max lifetime from code
+	info = "Ripples require nearby water surface",
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
