@@ -25,7 +25,6 @@ if CLIENT then
 				return
 			else
 				doaddparticles = true
-				table.remove(AddParticles_Queued, key2)
 			end
 		end
 
@@ -88,7 +87,8 @@ if CLIENT then
 			//This queuing system lets every effect in a spawnlist run this function at once and queue every applicable
 			//pcf, without any of those pcfs getting game.AddParticles'd multiple times at once and causing a stutter.
 			if key2 then
-				table.remove(AddParticles_Queued, key2) //make sure the most recently called pcf takes precedence (i.e. if swapping between multiple pcf spawnlists with conflicting fx, make sure the one we clicked on last has the right fx when we call game.AddParticles)
+				 //make sure the most recently called pcf takes precedence (i.e. if swapping between multiple pcf spawnlists with conflicting fx, make sure the one we clicked on last has the right fx when we call game.AddParticles)
+				table.remove(AddParticles_Queued, key2)
 			end
 			table.insert(AddParticles_Queued, pcf)
 			//Crash prevention: throttle effects from the queued pcf, and all pcfs it conflicts with
