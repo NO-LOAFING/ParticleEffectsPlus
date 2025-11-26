@@ -40,7 +40,7 @@
 		"6"
 		{
 			"type"		"header"
-			"text"		"Frozen effects for Episode 2 Gman scene"
+			"text"		"Frozen effects from Episode 2 Gman scene"
 		}
 		"7"
 		{
