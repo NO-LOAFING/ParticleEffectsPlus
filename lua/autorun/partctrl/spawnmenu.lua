@@ -342,7 +342,7 @@ if CLIENT then
 
 	end
 
-	language.Add("spawnmenu.category.browseparticles", "Browse Particles")
+	language.Add("spawnmenu.category.browseparticles", "Browse Particle Effects")
 
 	RefreshAddonParticles = function(node)
 		for _, addon in SortedPairsByMemberValue(engine.GetAddons(), "title") do
@@ -423,11 +423,16 @@ if CLIENT then
 		RefreshGameParticles(browseGameParticles)
 
 
-		browseParticles:SetExpanded(true)
+		//browseParticles:SetExpanded(true)
 
 		if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running PopulateContent") end
 
 	end) end)
+
+
+
+
+	//Search populator
 
 	local cv_childfx_search = GetConVar("cl_partctrl_childfx_in_search")
 	local cv_dupes_search = GetConVar("cl_partctrl_dupes_in_search")
@@ -486,6 +491,36 @@ if CLIENT then
 		return results
 
 	end, "partctrl")
+
+
+
+
+	//Curated game spawnlists
+
+	hook.Add("PopulatePropMenu", "PartCtrl_GameSpawnlists", function()
+		
+		local id = 65220000
+		spawnmenu.AddPropCategory("PartCtrl_GameSpawnlists_Parent", "Particle Effect Spawnlists", {}, "icon16/fire.png", id) //TODO: this name sucks, come up with a better one
+
+		local function ReadSpawnlist(path, id, parent, gameid)
+			local str = file.Read(path, "GAME")
+			if str then
+				local tab = util.KeyValuesToTable(str)
+				if tab then
+					spawnmenu.AddPropCategory("PartCtrl_GameSpawnlists_" .. path, tab.name, tab.contents, tab.icon, id, parent, gameid)
+				end
+			end
+		end
+
+		ReadSpawnlist("lua/autorun/partctrl/spawnlists/gmod.lua", id + 1, id)
+
+		//also includes all the stock source pcfs, so no gameid for these ones
+		spawnmenu.AddPropCategory("PartCtrl_GameSpawnlists_hl2", "Half-Life 2 & Episodes", {}, "games/16/hl2.png", id + 10, id)
+		for i = 1, 9 do
+			ReadSpawnlist("lua/autorun/partctrl/spawnlists/hl2_0" .. i ..  ".lua", id + 10 + i, id + 10)
+		end
+
+	end)
 
 
 
