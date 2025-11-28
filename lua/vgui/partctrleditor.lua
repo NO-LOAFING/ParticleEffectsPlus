@@ -989,23 +989,88 @@ function PANEL:RebuildControls()
 
 	if ent.PartCtrl_Ent then
 
-		local container = vgui.Create("DCategoryList", self)
-		container.Paint = function(self, w, h)
+		local back = vgui.Create("DPanel", self)
+		back.Paint = function(self, w, h)
 			derma.SkinHook("Paint", "CategoryList", self, w, h)
 			draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
+			return false
+		end
+		back:Dock(FILL)
+
+		
+		local container = vgui.Create("DCategoryList", back)
+		container.Paint = function(self, w, h)
 			return false
 		end
 		container:Dock(FILL)
 		
 		BuildParticleEntControls(ent, container)
 
-		//dummy category to add extra padding to bottom of list if there's a scrollbar
+		--[[//dummy category to add extra padding to bottom of list if there's a scrollbar
 		local pnl = vgui.Create("DSizeToContents", container)
 		//pnl:DockMargin(3,1,3,3)
 		pnl:Dock(FILL)
 		container:AddItem(pnl)
 		//pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
-		//pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
+		//pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item]]
+
+
+		local trackpnl = vgui.Create("Panel", back)
+		trackpnl:Dock(BOTTOM)
+		trackpnl:DockMargin(5,5,5,5)
+
+		local pause = vgui.Create("DImageButton", trackpnl)
+		pause:SetImage("icon16/control_pause_blue.png")
+		pause:SetStretchToFit(false)
+		pause:SetDrawBackground(true)
+		pause:SetIsToggle(true)
+		pause:SetToggle(false)
+		pause:Dock(LEFT)
+		pause:SetWide(32)
+
+		function pause.Think()
+			//TODO: add this feature
+			////NOTE: This can be changed without clicking on the button by using the numpad key to pause/unpause
+			if ent and ent.GetPauseTime then //don't cause an error when the ent is removed
+				pause:SetToggle(ent:GetPauseTime() >= 0)
+			end
+		end
+		function pause.OnToggled(val)
+			ent:DoInput("pause")
+		end
+
+		local text = vgui.Create("DLabel", trackpnl)
+		text:SetDark(true)
+		text:DockMargin(5,0,0,0)
+		text:Dock(FILL)
+
+		function text.Think()
+			if ent and ent.GetPauseTime then //don't cause an error when the ent is removed
+				local pausetime = ent:GetPauseTime()
+				local newtext = ""
+				if pausetime >= 0 and ent.ParticleStartTime != nil then
+					if pausetime <= (CurTime() - ent.ParticleStartTime) then
+						newtext = "Paused at " .. tostring(math.Round(pausetime, 2)) .. " secs"
+					else
+						newtext = "Pausing at " .. tostring(math.Round(pausetime, 2)) .. " secs (in " .. tostring(-math.Round(CurTime() - ent.ParticleStartTime - pausetime, 2)) .. " secs)"
+					end
+				end
+				if newtext != text:GetText() then
+					text:SetText(newtext)
+				end
+			end
+		end
+
+		local reset = vgui.Create("DImageButton", trackpnl)
+		reset:SetImage("icon16/control_repeat_blue.png")
+		reset:SetStretchToFit(false)
+		reset:SetDrawBackground(true)
+		reset:Dock(RIGHT)
+		reset:SetWide(32)
+
+		function reset.DoClick()
+			ent:DoInput("reset")
+		end
 
 	elseif ent.PartCtrl_SpecialEffect then
 
@@ -1014,23 +1079,18 @@ function PANEL:RebuildControls()
 		back.Paint = function(self, w, h)
 			derma.SkinHook("Paint", "CategoryList", self, w, h)
 			draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
-	
 			return false
 		end
 		back:Dock(FILL)
 
 		local lcontainer = vgui.Create("DCategoryList", back)
 		lcontainer.Paint = function(self, w, h)
-			//derma.SkinHook("Paint", "CategoryList", self, w, h)
-			//draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
 			return false
 		end
 		lcontainer:DockMargin(0,0,0,0)
 
 		local rcontainer = vgui.Create("DCategoryList", back)
 		rcontainer.Paint = function(self, w, h)
-			//derma.SkinHook("Paint", "CategoryList", self, w, h)
-			//draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
 			return false
 		end
 		rcontainer:DockMargin(0,0,0,0)
