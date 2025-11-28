@@ -40,207 +40,212 @@
 		"6"
 		{
 			"type"		"header"
-			"text"		"Frozen effects from Episode 2 Gman scene"
+			"text"		"Frozen effects from "
 		}
 		"7"
+		{
+			"type"		"header"
+			"text"		"Episode 2 Gman scene"
+		}
+		"8"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"blood_frozen"
 			"pcf"		"particles/choreo_gman.pcf"
 		}
-		"8"
+		"9"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"frozen_steam"
 			"pcf"		"particles/choreo_gman.pcf"
 		}
-		"9"
+		"10"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"muzzleflash_frozen"
 			"pcf"		"particles/choreo_gman.pcf"
 		}
-		"10"
+		"11"
 		{
 			"type"		"header"
 			"text"		"These unused things that"
 		}
-		"11"
+		"12"
 		{
 			"type"		"header"
 			"text"		"could work as laser pointers"
 		}
-		"12"
+		"13"
 		{
 			"type"		"partctrl"
 			"name"		"CommandPointer"
 			"pcf"		"UtilFx"
 		}
-		"13"
+		"14"
 		{
 			"type"		"partctrl"
 			"name"		"GunshipImpact"
 			"pcf"		"UtilFx"
 		}
-		"14"
+		"15"
 		{
 			"type"		"header"
 			"text"		"This nice oil drip effect that's"
 		}
-		"15"
+		"16"
 		{
 			"type"		"header"
 			"text"		"pointed the wrong way"
 		}
-		"16"
+		"17"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
 			"name"		"blood_drip_synth_01b"
 			"pcf"		"particles/blood_impact.pcf"
 		}
-		"17"
+		"18"
 		{
 			"type"		"header"
 			"text"		"Dev/Test Effects"
 		}
-		"18"
+		"19"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
 			"name"		"error"
 			"pcf"		"particles/error.pcf"
 		}
-		"19"
+		"20"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"Weapon_Combine_Ion_Cannon_Backup"
 			"pcf"		"particles/weapon_fx.pcf"
 		}
-		"20"
+		"21"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"default"
 			"pcf"		"particles/default.pcf"
 		}
-		"21"
+		"22"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"bonfire"
 			"pcf"		"particles/bonfire.pcf"
 		}
-		"22"
+		"23"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"bonfire"
 			"pcf"		"particles/fireflow.pcf"
 		}
-		"23"
+		"24"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"smoke_blackbillow"
 			"pcf"		"particles/largefire.pcf"
 		}
-		"24"
+		"25"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"flame"
 			"pcf"		"particles/flamethrowertest.pcf"
 		}
-		"25"
+		"26"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"lit_smoke_sphere"
 			"pcf"		"particles/demo_particle_light.pcf"
 		}
-		"26"
+		"27"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"lit_smoke_sphere_sub"
 			"pcf"		"particles/demo_particle_light.pcf"
 		}
-		"27"
+		"28"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"test_green_alpha_sequence"
 			"pcf"		"particles/test_grnalpha.pcf"
 		}
-		"28"
+		"29"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"smoke_oily_01"
 			"pcf"		"particles/fire_ring.pcf"
 		}
-		"29"
+		"30"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"vomit"
 			"pcf"		"particles/test_noise.pcf"
 		}
-		"30"
+		"31"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"test_beam"
 			"pcf"		"particles/devtest.pcf"
 		}
-		"31"
+		"32"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"test_collision"
 			"pcf"		"particles/devtest.pcf"
 		}
-		"32"
+		"33"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"test_orientation"
 			"pcf"		"particles/devtest.pcf"
 		}
-		"33"
+		"34"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"test_lighting"
 			"pcf"		"particles/devtest.pcf"
 		}
-		"34"
+		"35"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"test_trails"
 			"pcf"		"particles/devtest.pcf"
 		}
-		"35"
+		"36"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"demo_falling_sand"
 			"pcf"		"particles/sand.pcf"
 		}
-		"36"
+		"37"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"demo_falling_sand_sub"
 			"pcf"		"particles/sand.pcf"
 		}
-		"37"
+		"38"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"

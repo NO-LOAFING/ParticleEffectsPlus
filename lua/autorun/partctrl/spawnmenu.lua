@@ -513,11 +513,23 @@ if CLIENT then
 		end
 
 		local function AddGameCategory(path, dont_require_mount)
-			for _, tab in pairs (engine.GetGames()) do
-				if tab.folder == path then
+			for _, game in pairs (engine.GetGames()) do
+				if game.folder == path then
+					//optional: make this a spawnlist if a matching file exists
+					local tab
+					local str = file.Read("lua/autorun/partctrl/spawnlists/" .. path .. ".lua", "GAME")
+					if str then
+						tab = util.KeyValuesToTable(str)
+						if tab then
+							tab = tab.contents
+						else
+							tab = nil
+						end
+					end
+					//also optional: let this not require a mountable game (for hl2 spawnlists)
 					local mount = path
 					if dont_require_mount then mount = nil end
-					spawnmenu.AddPropCategory("PartCtrl_GameSpawnlists_" .. path, tab.title, {}, "games/16/" .. path .. ".png", nil, par, mount)
+					spawnmenu.AddPropCategory("PartCtrl_GameSpawnlists_" .. path, game.title, tab or {}, "games/16/" .. path .. ".png", nil, par, mount)
 					return spawnmenu.GetCustomPropTable()["PartCtrl_GameSpawnlists_" .. path].id
 				end
 			end
@@ -530,6 +542,14 @@ if CLIENT then
 		for i = 1, 9 do
 			ReadSpawnlist("lua/autorun/partctrl/spawnlists/hl2_0" .. i ..  ".lua", hl2par)
 		end
+
+		//TODO: tf2 spawnlists
+
+		//TODO: portal spawnlists?
+
+		AddGameCategory("cstrike")
+
+		AddGameCategory("hl1")
 
 	end)
 

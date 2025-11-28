@@ -355,6 +355,6 @@
 			"pcf"		"particles/fire_01.pcf"
 		}
 	}
-	"name"		"Fire and Explosions"
+	"name"		"Explosions and Fire"
 	"version"		"3"
 }
