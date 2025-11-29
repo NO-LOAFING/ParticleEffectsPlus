@@ -1,3 +1,5 @@
+AddCSLuaFile()
+
 if CLIENT then
 
 	//Wrapper for game.AddParticles - this way, a lot of spawnicons or particle entities created at once can all try to run game.AddParticles at the 

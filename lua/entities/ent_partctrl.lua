@@ -860,7 +860,17 @@ end
 
 
 
-if SERVER then
+if CLIENT then
+
+	net.Receive("PartCtrl_DoPauseInput_SendToCl", function(_, ply)
+		local self = net.ReadEntity()
+		if !IsValid(self) or !self.PartCtrl_Ent or !istable(self.ParticleInfo) then return end
+		self:DoInput("pause")
+	end)
+	
+else
+
+	util.AddNetworkString("PartCtrl_DoPauseInput_SendToCl")
 
 	function ENT:UpdateTransmitState()
 
@@ -884,9 +894,16 @@ if SERVER then
 		elseif mode == 1 then
 
 			//Mode 1: Pause/unpause effect
-			//This requires a ParticleStartTime value that only exists clientside
-			//TODO
-			MsgN("numpad pause done by ", ply)
+			//This requires a ParticleStartTime value that only exists clientside, so tell the client to send it, using the same "pause" input as the cpanel
+			if IsValid(ply) and ply.IsPlayer and ply:IsPlayer() then
+				net.Start("PartCtrl_DoPauseInput_SendToCl")
+					net.WriteEntity(self)
+				net.Send(ply)
+			else
+				local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
+				local name = self:GetParticleName()
+				MsgN(self, " (", pcf, " ", name, ") tried to send a numpad pause input with invalid player ", ply, ". Report this!")
+			end
 
 		elseif mode == 2 then
 

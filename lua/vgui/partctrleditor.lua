@@ -1095,11 +1095,10 @@ function PANEL:RebuildControls()
 		pause:SetToggle(false)
 		pause:Dock(LEFT)
 		pause:SetWide(32)
-		pause:SetTooltip("Pause the particle effect\nIf the effect is restarted or duplicated, it will play up to and then pause at the same point in time.")
+		pause:SetTooltip("Pause particle effect\nIf the effect is restarted or duplicated, it will play up to and then pause at the same point in time.")
 
 		function pause.Think()
-			//TODO: add this feature
-			////NOTE: This can be changed without clicking on the button by using the numpad key to pause/unpause
+			//NOTE: This can be changed without clicking on the button by using the numpad key to pause/unpause
 			if ent and ent.GetPauseTime then //don't cause an error when the ent is removed
 				pause:SetToggle(ent:GetPauseTime() >= 0)
 			end
