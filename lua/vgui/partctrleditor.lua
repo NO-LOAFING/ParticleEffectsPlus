@@ -257,34 +257,19 @@ function PANEL:RebuildControls()
 
 			//category for key
 			local cat = vgui.Create("DCollapsibleCategory", container)
-			cat:SetLabel("Key & Repeat Settings")
+			cat:SetLabel("Key Settings")
 			cat:DockMargin(3,3,3,3)
 			first = false
 			cat:Dock(FILL)
 			container:AddItem(cat)
 		
-			local default_looptime = PartCtrl_ProcessedPCFs[pcf][name].default_time or 0
-			local default_loopmode = 1
-			if ent2.utilfx then
-				if default_looptime < 0 then
-					//-1 sets no loop by default
-					default_loopmode = 0
-				else
-					default_loopmode = 2
-				end
-			end
-			default_looptime = math.max(0, default_looptime)
-			//MsgN("default time ", default_looptime, ", currently ", ent2:GetLoopDelay())
-			//MsgN("default mode ", default_loopmode, ", currently ", ent2:GetLoopMode())
-		
 			//expand if any contained options are non-default 
 			cat:SetExpanded(
-				((ent2:GetNumpad() or 0) != 0)
+				((ent2:GetNumpadMode() or 0) != 0)
+				or ((ent2:GetNumpad() or 0) != 0)
 				or (ent2:GetNumpadToggle() != true)
 				or (ent2:GetNumpadStartOn() != true)
 				//considered also adding a check here to make sure the effect isn't disabled, but i don't think that's possible without a numpad key set
-				or ((ent2:GetLoopMode() or 1) != default_loopmode)
-				or ((math.Round(ent2:GetLoopDelay(), 6) or 0) != default_looptime)
 			)
 		
 			local rpnl = vgui.Create("DSizeToContents", cat) //call this one rpnl and not pnl, just so we don't have to rewrite the numpad stuff copied from animprop that already has a panel with that name
@@ -294,13 +279,59 @@ function PANEL:RebuildControls()
 			rpnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 			rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
 		
+				local drop = vgui.Create("Panel", rpnl)
+
+				drop.Label = vgui.Create("DLabel", drop)
+				drop.Label:SetDark(true)
+				drop.Label:SetText("Key Function")
+				drop.Label:Dock(LEFT)
+
+				drop.Combo = vgui.Create("DComboBox", drop)
+				drop.Combo:SetHeight(25)
+				drop.Combo:Dock(FILL)
+
+				local numpadmode0 = "Disable/enable effect"
+				local numpadmode1 = "Pause/unpause effect"
+				local numpadmode2 = "Restart effect"
+				local val = ent2:GetNumpadMode() or 0
+				if val == 0 then
+					drop.Combo:SetValue(numpadmode0)
+				elseif val == 1 then
+					drop.Combo:SetValue(numpadmode1)
+				elseif val == 2 then
+					drop.Combo:SetValue(numpadmode2)
+				end
+				drop.Combo:AddChoice(numpadmode0, 0)
+				if !ent2.utilfx then drop.Combo:AddChoice(numpadmode1, 1) end //utilfx don't support pausing
+				drop.Combo:AddChoice(numpadmode2, 2)
+				function drop.Combo.OnSelect(_, index, value, data)
+					ent2:DoInput("numpad_mode", data)
+
+					//"toggle" option is grayed out for numpad mode 2 (restart effect); make sure it's always true to prevent unintended behavior 
+					//("restart effect" with toggle off makes the effect restart on both key in and key out, instead of just key in)
+					if data > 1 then
+						container.NumpadToggleCheckbox:SetValue(true)
+					end
+					//"start on" option is grayed out for numpad mode 1 (pause/unpause) and numpad mode 2 (restart effect); make sure it's true to prevent unintended behavior
+					if data > 0 then
+						container.NumpadStartOnCheckbox:SetValue(true)
+					end
+				end
+			
+				drop:SetHeight(25)
+				drop:Dock(TOP)
+				drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
+				function drop.PerformLayout(_, w, h)
+					drop.Label:SetWide(w / 2.4)
+				end
+
 				local pnl = vgui.Create("Panel", rpnl)
 		
 				local numpadpnl = vgui.Create("DPanel", pnl)
 				numpadpnl:SetPaintBackground(false)
 		
 				numpadpnl.numpad = vgui.Create("DBinder", numpadpnl)
-				//back.Numpad = numpadpnl.numpad
+				//container.Numpad = numpadpnl.numpad
 				numpadpnl.label = vgui.Create("DLabel", numpadpnl)
 				numpadpnl.label:SetText("Effect Key")
 				numpadpnl.label:SetDark(true)
@@ -334,7 +365,8 @@ function PANEL:RebuildControls()
 				pnl:Dock(TOP)
 				//pnl:DockMargin(padding,betweenitems-3,0,padding) //numpad label is 3px too tall, compensate for it here
 				//pnl:DockMargin(padding,padding-3,0,padding) //numpad label is 3px too tall, compensate for it here
-				pnl:DockMargin(padding,padding-3,0,0) //numpad label is 3px too tall, compensate for it here
+				//pnl:DockMargin(padding,padding-3,0,0) //numpad label is 3px too tall, compensate for it here
+				pnl:DockMargin(padding,betweenitems-3,0,0) //numpad label is 3px too tall, compensate for it here
 				pnl:SetHeight(70)
 				//function pnl.Paint(_, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(255,0,0,70)) end //for testing the full size of this panel
 		
@@ -343,7 +375,7 @@ function PANEL:RebuildControls()
 				anotherpnl:SetWidth(90)
 		
 				local check = vgui.Create("DCheckBoxLabel", anotherpnl)
-				//back.NumpadToggleCheckbox = check
+				container.NumpadToggleCheckbox = check
 				check:SetText("Toggle")
 				check:SetDark(true)
 				check:SetHeight(15)
@@ -354,9 +386,20 @@ function PANEL:RebuildControls()
 				check.OnChange = function(_, val)
 					ent2:DoInput("numpad_toggle", val)
 				end
+				check.Think = function()
+					if !IsValid(ent2) then return end
+
+					if ent2:GetNumpadMode() > 1 then
+						check:SetDisabled(true)
+						//check:SetTooltip("Option not available for restart mode") //never mind, tooltips don't work on disabled checkboxes
+					else
+						check:SetDisabled(false)
+						//check:SetTooltip("") //TODO: use this if we're creating tooltips for everything
+					end
+				end
 		
 				local check = vgui.Create("DCheckBoxLabel", anotherpnl)
-				//back.NumpadStartOnCheckbox = check
+				container.NumpadStartOnCheckbox = check
 				check:SetText("Start on")
 				check:SetDark(true)
 				check:SetHeight(15)
@@ -366,6 +409,17 @@ function PANEL:RebuildControls()
 				check:SetValue(ent2:GetNumpadStartOn())
 				check.OnChange = function(_, val)
 					ent2:DoInput("numpad_starton", val)
+				end
+				check.Think = function()
+					if !IsValid(ent2) then return end
+
+					if ent2:GetNumpadMode() > 0 then
+						check:SetDisabled(true)
+						//check:SetTooltip("Option only available for enable/disable mode - use pause button below") //never mind, tooltips don't work on disabled checkboxes
+					else
+						check:SetDisabled(false)
+						//check:SetTooltip("") //TODO: use this if we're creating tooltips for everything
+					end
 				end
 		
 				local pnldisabled = vgui.Create("Panel", pnl)
@@ -440,16 +494,30 @@ function PANEL:RebuildControls()
 		
 		
 			//category for repeats
-			--[[local cat = vgui.Create("DCollapsibleCategory", container)
+			local cat = vgui.Create("DCollapsibleCategory", container)
 			cat:SetLabel("Repeat Settings")
-			cat:DockMargin(3,3,3,3)
+			cat:DockMargin(3,1,3,3)
 			cat:Dock(FILL)
 			container:AddItem(cat)
+
+			local default_looptime = PartCtrl_ProcessedPCFs[pcf][name].default_time or 0
+			local default_loopmode = 1
+			if ent2.utilfx then
+				if default_looptime < 0 then
+					//-1 sets no loop by default
+					default_loopmode = 0
+				else
+					default_loopmode = 2
+				end
+			end
+			default_looptime = math.max(0, default_looptime)
+			//MsgN("default time ", default_looptime, ", currently ", ent2:GetLoopDelay())
+			//MsgN("default mode ", default_loopmode, ", currently ", ent2:GetLoopMode())
 		
 			//expand if any contained options are non-default
 			cat:SetExpanded(
-				((ent2:GetLoopMode() or 1) != 1)
-				or ((ent2:GetLoopDelay() or 0) != 0)
+				((ent2:GetLoopMode() or 1) != default_loopmode)
+				or ((math.Round(ent2:GetLoopDelay(), 6) or 0) != default_looptime)
 			)
 		
 			local rpnl = vgui.Create("DSizeToContents", cat) //again, call this one rpnl and not pnl, just so we don't have to rewrite the repeat stuff copied from animprop
@@ -457,7 +525,7 @@ function PANEL:RebuildControls()
 			cat:SetContents(rpnl)
 			rpnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
 			rpnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-			rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents]]
+			rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
 		
 				local drop = vgui.Create("Panel", rpnl)
 		
@@ -497,7 +565,7 @@ function PANEL:RebuildControls()
 				end
 		
 				local slider = vgui.Create("DNumSlider", rpnl)
-				//back.LoopDelaySlider = slider
+				//container.LoopDelaySlider = slider
 				slider:SetText("Seconds between repeats")
 				slider:SetMinMax(0, 5)
 				slider:SetDefaultValue(default_looptime)
@@ -1027,7 +1095,7 @@ function PANEL:RebuildControls()
 		pause:SetToggle(false)
 		pause:Dock(LEFT)
 		pause:SetWide(32)
-		pause:SetTooltip("Pause the particle effect\nIf the effect is reset or duplicated, it will play up to and then pause at the same point in time.")
+		pause:SetTooltip("Pause the particle effect\nIf the effect is restarted or duplicated, it will play up to and then pause at the same point in time.")
 
 		function pause.Think()
 			//TODO: add this feature
@@ -1067,16 +1135,16 @@ function PANEL:RebuildControls()
 			end
 		end
 
-		local reset = vgui.Create("DImageButton", trackpnl)
-		reset:SetImage("icon16/control_repeat_blue.png")
-		reset:SetStretchToFit(false)
-		reset:SetDrawBackground(true)
-		reset:Dock(RIGHT)
-		reset:SetWide(32)
-		reset:SetTooltip("Reset particle effect")
+		local restart = vgui.Create("DImageButton", trackpnl)
+		restart:SetImage("icon16/control_repeat_blue.png")
+		restart:SetStretchToFit(false)
+		restart:SetDrawBackground(true)
+		restart:Dock(RIGHT)
+		restart:SetWide(32)
+		restart:SetTooltip("Restart particle effect")
 
-		function reset.DoClick()
-			ent:DoInput("reset")
+		function restart.DoClick()
+			ent:DoInput("restart")
 		end
 
 	elseif ent.PartCtrl_SpecialEffect then

@@ -33,6 +33,7 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Bool", 1, "NumpadToggle")
 	self:NetworkVar("Bool", 2, "NumpadStartOn")
 	self:NetworkVar("Bool", 3, "NumpadState")
+	self:NetworkVar("Int", 2, "NumpadMode")
 
 	self:NetworkVar("Float", 1, "PauseTime")
 
@@ -846,6 +847,35 @@ if SERVER then
 
 	end
 
+	function ENT:NumpadSetState(newstate, ply)
+
+		local mode = self:GetNumpadMode()
+		
+		if mode == 0 then
+
+			//Mode 0: Disable/enable effect
+			self:SetNumpadState(newstate)
+			//Everything else is handled clientside in Think once the client receives the new NumpadState value
+
+		elseif mode == 1 then
+
+			//Mode 1: Pause/unpause effect
+			//This requires a ParticleStartTime value that only exists clientside
+			//TODO
+			MsgN("numpad pause done by ", ply)
+
+		elseif mode == 2 then
+
+			//Mode 2: Restart effect
+			//Tell all clients to restart the effect
+			net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+				net.WriteEntity(self)
+			net.Broadcast()
+
+		end
+
+	end
+
 	function PartCtrlNumpadFunction(pl, ent, keydown)
 
 		if !IsValid(ent) then return end
@@ -861,8 +891,7 @@ if SERVER then
 		end
 
 		if newstate != nil then
-			ent:SetNumpadState(newstate)
-			//Everything else is handled clientside in Think once the client receives the new NumpadState value
+			ent:NumpadSetState(newstate, pl)
 		end
 		ent.NumpadKeyDown = keydown
 	
@@ -1135,8 +1164,9 @@ local EditMenuInputs = {
 	"numpad_num",
 	"numpad_toggle",
 	"numpad_starton",
+	"numpad_mode",
 	"pause",
-	"reset"
+	"restart"
 }
 local EditMenuInputs_bits = 4 //max 15
 EditMenuInputs = table.Flip(EditMenuInputs)
@@ -1213,6 +1243,10 @@ if CLIENT then
 			elseif input == "numpad_starton" then
 
 				net.WriteBool(args[1])
+
+			elseif input == "numpad_mode" then
+	
+				net.WriteUInt(args[1], 2) //numpad mode id
 
 			elseif input == "pause" then
 
@@ -1400,11 +1434,28 @@ else
 
 			self:SetNumpadStartOn(net.ReadBool())
 
+		elseif input == "numpad_mode" then
+
+			local mode = net.ReadUInt(2)
+			self:SetNumpadMode(mode)
+
+			//Only mode 0 uses and updates the numpad state, so don't save numpad state between modes, and update it if switching back to mode 0
+			if mode == 0 then
+				if !self:GetNumpadToggle() then
+					self:NumpadSetState(self.NumpadKeyDown, ply)
+				else
+					self:NumpadSetState(false, ply)
+				end
+			else
+				self:SetNumpadState(false)
+				//everything else should be handled clientside in Think once the client receives the new NumpadState value
+			end
+
 		elseif input == "pause" then
 			
 			self:SetPauseTime(net.ReadFloat())
 
-		elseif input == "reset" then
+		elseif input == "restart" then
 			
 			refreshtable = true
 
