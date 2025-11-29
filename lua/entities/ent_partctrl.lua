@@ -126,6 +126,30 @@ function ENT:Think()
 			return
 		end
 
+		//If a particle effect and its attached entities are spawned outside the client's PVS, only the first cpoint's entity is guaranteed to be
+		//transmitted to the client, while any other cpoints' ents might still be NULL until the client moves into their PVS. In these cases,
+		//keep checking until we can find them - if the entity actually gets removed, then this table should get updated by the server anyway.
+		if self.ParticleInfo_InvalidEnts then
+			local found = false
+			for k, v in pairs (self.ParticleInfo_InvalidEnts) do
+				if !IsValid(self.ParticleInfo[k].ent) then
+					local ent = Entity(v)
+					if IsValid(ent) then
+						self.ParticleInfo[k].ent = ent
+						self.ParticleInfo_InvalidEnts[k] = nil
+						found = true
+					end
+				else
+					self.ParticleInfo_InvalidEnts[k] = nil
+					found = true
+				end
+			end
+			if found then
+				if table.Count(self.ParticleInfo_InvalidEnts) == 0 then self.ParticleInfo_InvalidEnts = nil end
+				self:BeginNewParticle() //fix up the particle now that we have a valid ent for it to use
+			end
+		end
+
 
 		local extra = Vector(20,20,20) //add arrow length to bounds so it doesn't get cut off at weird angles
 		if IsValid(self.particle) then
@@ -1558,6 +1582,7 @@ else
 		if !istable(ptab) then return end
 
 		local tab = {}
+		local badents_tab = {}
 
 		for i = 1, net.ReadInt(partctrl_cpointbits + 1) do
 			local k = net.ReadInt(partctrl_cpointbits)
@@ -1565,7 +1590,12 @@ else
 
 			local mode = ptab.cpoints[k].mode
 			if mode == PARTCTRL_CPOINT_MODE_POSITION then
-				v.ent = net.ReadEntity()
+				//v.ent = net.ReadEntity()
+				//the ent can be null if it's outside the player's pvs, so tell the think func to keep checking until it becomes valid
+				local entnum = net.ReadUInt(MAX_EDICT_BITS)
+				v.ent = Entity(entnum)
+				if !IsValid(v.ent) then badents_tab[k] = entnum end
+
 				v.attach = net.ReadUInt(8)
 				v.sfx_role = net.ReadUInt(2)
 			elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
@@ -1595,6 +1625,9 @@ else
 		self.ParticleInfo_LastCPoint = nil
 		self.ParticleInfo_FirstPos = nil
 		self:BeginNewParticle()
+		if table.Count(badents_tab) > 0 and !IsValid(self:GetSpecialEffectParent()) then
+			self.ParticleInfo_InvalidEnts = badents_tab
+		end
 
 		local sfxpar = self:GetSpecialEffectParent()
 		//If we're a child of a special effect, update its control window
