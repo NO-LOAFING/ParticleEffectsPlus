@@ -289,7 +289,7 @@ function ENT:Think()
 							self.LastLoop = nil
 						end
 
-						if self.LastLoop == nil and (self.particle and self.particle.GetShouldSimulate and self.particle:GetShouldSimulate()) then //don't loop if particle is paused
+						if self.LastLoop == nil and ((self.particle and self.particle.GetShouldSimulate and self.particle:GetShouldSimulate()) or self.utilfx) then //don't loop if particle is paused
 							self.LastLoop = time
 							//MsgN(time, ": set last loop to ", self.LastLoop)
 						end

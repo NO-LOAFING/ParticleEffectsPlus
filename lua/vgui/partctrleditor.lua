@@ -1027,6 +1027,7 @@ function PANEL:RebuildControls()
 		pause:SetToggle(false)
 		pause:Dock(LEFT)
 		pause:SetWide(32)
+		pause:SetTooltip("Pause the particle effect\nIf the effect is reset or duplicated, it will play up to and then pause at the same point in time.")
 
 		function pause.Think()
 			//TODO: add this feature
@@ -1037,6 +1038,11 @@ function PANEL:RebuildControls()
 		end
 		function pause.OnToggled(val)
 			ent:DoInput("pause")
+		end
+		if ent.utilfx then
+			pause:SetDisabled(true)
+			pause:SetImage("icon16/control_pause.png") //gray icon
+			pause:SetTooltip("Pausing not available for scripted effects")
 		end
 
 		local text = vgui.Create("DLabel", trackpnl)
@@ -1067,6 +1073,7 @@ function PANEL:RebuildControls()
 		reset:SetDrawBackground(true)
 		reset:Dock(RIGHT)
 		reset:SetWide(32)
+		reset:SetTooltip("Reset particle effect")
 
 		function reset.DoClick()
 			ent:DoInput("reset")
