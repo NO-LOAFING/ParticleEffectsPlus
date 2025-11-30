@@ -177,7 +177,7 @@ function PANEL:RebuildControls()
 			text:SetDark(true)
 			text:SetWrap(true)
 			text:SetTextInset(0, 0)
-			text:SetText("Invalid particle effect (from game/addon that isn't mounted?)") //TODO: this is outdated, whoops
+			text:SetText("Invalid particle effect (from game/addon that isn't mounted?)") //TODO: this error text is outdated, whoops; use the different ones from the spawnicon code
 			text:SetContentAlignment(5)
 			text:SetAutoStretchVertical(true)
 			text:DockMargin(padding,padding-1,padding,0) //padding-1 for top is trial and error, results in nice 16px spacing on both top and bottom of text
@@ -302,7 +302,7 @@ function PANEL:RebuildControls()
 					drop.Combo:SetValue(numpadmode2)
 				end
 				drop.Combo:AddChoice(numpadmode0, 0)
-				if !ent2.utilfx then drop.Combo:AddChoice(numpadmode1, 1) end //utilfx don't support pausing
+				if !ent2.utilfx and ent == ent2 then drop.Combo:AddChoice(numpadmode1, 1) end //utilfx don't support pausing, and special fx handle pausing on their own
 				drop.Combo:AddChoice(numpadmode2, 2)
 				function drop.Combo.OnSelect(_, index, value, data)
 					ent2:DoInput("numpad_mode", data)

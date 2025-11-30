@@ -365,6 +365,23 @@ if SERVER then
 			Ent2:SetParent(Ent1)
 			Ent2:SetSpecialEffectParent(Ent1)
 
+			if Ent1.DisableChildAutoplay then
+				//Clear numpad and loop settings on children of sfx that handle these settings themselves, to prevent unwanted behavior
+				//(the effect's numpad still working while it's attached; the effect's loop safety setting overriding the special effect's)
+				numpad.Remove(Ent2.NumDown)
+				numpad.Remove(Ent2.NumUp)
+				Ent2:SetNumpad(0)
+				Ent2:SetNumpadToggle(true)
+				Ent2:SetNumpadStartOn(true)
+				Ent2:SetNumpadState(false)
+				Ent2.NumpadKeyDown = false
+				Ent2:SetNumpadMode(0)
+				Ent2:SetLoopSafety(false)
+			end
+			//Always clear pause settings on children of sfx (sfx will handle pausing themselves, we don't want the child fx pausing on their own)
+			Ent2:SetPauseTime(-1)
+			if Ent2:GetNumpadMode() == 1 then Ent2:SetNumpadMode(0) end
+
 			//If the constraint is removed by an Undo, unmerge the second entity - this shouldn't do anything if the constraint's removed some other way i.e. one of the ents is removed
 			timer.Simple(0.1, function()  //CallOnRemove won't do anything if we try to run it now instead of on a timer
 				if const:GetTable() then  //CallOnRemove can error if this table doesn't exist - this can happen if the constraint is removed at the same time it's created for some reason
