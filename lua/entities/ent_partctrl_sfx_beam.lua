@@ -25,6 +25,7 @@ function ENT:SetupDataTables()
 	if CLIENT then
 		self:NetworkVarNotify("SpecialEffectParent", self.OnSpecialEffectParentChanged)
 	end
+	self:NetworkVar("Float", 0, "PauseTime")
 
 	self:NetworkVar("Int", 1, "BeamDir")
 	self:NetworkVar("Int", 2, "BeamHitDir")
@@ -36,7 +37,9 @@ end
 
 function ENT:SetSpecialEffectDefaults()
 
-	self:SetAttachmentID(0) //all special fx must have this one
+	//all special fx must have these ones
+	self:SetAttachmentID(0) 
+	self:SetPauseTime(-1)
 
 	self:SetBeamDir(0)
 	self:SetBeamHitDir(0)
@@ -315,6 +318,43 @@ if CLIENT then
 			hit.PartCtrl_TraceHit = tr.Entity
 			hit.PartCtrl_SurfaceProp = tr.SurfaceProps
 
+			//Handle pausing
+			if self.ParticleStartTime then
+				local pausetime = self:GetPauseTime()
+				if pausetime >= 0 and pausetime <= (CurTime() - self.ParticleStartTime) then
+					//if not paused, but should be, then pause it
+					local didpause
+					for child, _ in pairs (self.SpecialEffectChildren) do
+						if !child.PauseOverride then
+							didpause = true
+							child.PauseOverride = true
+						end
+					end
+					if didpause then
+						//MsgN("pausing")
+						self.ParticlePauseTime = CurTime()
+					end
+				else//if pausetime < 0 then
+					//if paused, but shouldn't be, then unpause it
+					local didunpause
+					for child, _ in pairs (self.SpecialEffectChildren) do
+						if child.PauseOverride then
+							didunpause = true
+							child.PauseOverride = nil
+						end
+					end
+					if didunpause then
+						//MsgN("unpausing")
+						//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
+						//again afterward, the effect's lifetime doesn't include the time it spent paused prior to that
+						if self.ParticlePauseTime != nil then
+							self.ParticleStartTime = self.ParticleStartTime + (CurTime() - self.ParticlePauseTime)
+							self.ParticlePauseTime = nil
+						end
+					end
+				end
+			end
+
 			//Just set the entity values on the child fx, and let them do the rest of the work themselves
 			for child, _ in pairs (self.SpecialEffectChildren) do
 				if child.PartCtrl_Ent and child.ParticleInfo then
@@ -342,6 +382,8 @@ if CLIENT then
 
 		timer.Simple(0, function() //wait a frame, otherwise SpecialEffectThink will retrieve an out-of-date SpecialEffectParent on this ent
 			if !IsValid(self) then return end
+			self.ParticleStartTime = CurTime()
+			self.ParticlePauseTime = nil
 			self:SpecialEffectThink() //update the children's ParticleInfo first
 			if self.SpecialEffectChildren then
 				for child, _ in pairs (self.SpecialEffectChildren) do
@@ -365,11 +407,13 @@ local EditMenuInputs = {
 	"attachment_attach",
 	"child_setwithtool",
 	"child_detach",
+	"effect_pause",
+	"effect_restart",
 	//Entity-specific inputs
 	"beam_dir",
 	"beam_hitdir",
 }
-ENT.EditMenuInputs_bits = 3 //max 7
+ENT.EditMenuInputs_bits = 4 //max 15
 ENT.EditMenuInputs = table.Flip(EditMenuInputs)
 
 if CLIENT then

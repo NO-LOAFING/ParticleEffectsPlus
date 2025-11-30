@@ -1056,16 +1056,82 @@ function PANEL:RebuildControls()
 	end
 
 
-	if ent.PartCtrl_Ent then
+	//Container for all panels
+	local back = vgui.Create("DPanel", self)
+	back.Paint = function(self, w, h)
+		derma.SkinHook("Paint", "CategoryList", self, w, h)
+		draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
+		return false
+	end
+	back:Dock(FILL)
 
-		local back = vgui.Create("DPanel", self)
-		back.Paint = function(self, w, h)
-			derma.SkinHook("Paint", "CategoryList", self, w, h)
-			draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
-			return false
+
+	//Add lower bar for pause and reset controls; both particles and special fx have this
+	local trackpnl = vgui.Create("Panel", back)
+	trackpnl:Dock(BOTTOM)
+	trackpnl:DockMargin(5,5,5,5)
+
+	local pause = vgui.Create("DImageButton", trackpnl)
+	pause:SetImage("icon16/control_pause_blue.png")
+	pause:SetStretchToFit(false)
+	pause:SetDrawBackground(true)
+	pause:SetIsToggle(true)
+	pause:SetToggle(false)
+	pause:Dock(LEFT)
+	pause:SetWide(32)
+	pause:SetTooltip("Pause particle effect\nIf the effect is restarted or duplicated, it will play up to and then pause at the same point in time.")
+
+	function pause.Think()
+		//NOTE: This can be changed without clicking on the button by using the numpad key to pause/unpause
+		if ent and ent.GetPauseTime then //don't cause an error when the ent is removed
+			pause:SetToggle(ent:GetPauseTime() >= 0)
 		end
-		back:Dock(FILL)
+	end
+	function pause.OnToggled(val)
+		ent:DoInput("effect_pause")
+	end
+	if ent.utilfx then
+		pause:SetDisabled(true)
+		pause:SetImage("icon16/control_pause.png") //gray icon
+		pause:SetTooltip("Pausing not available for scripted effects")
+	end
 
+	local text = vgui.Create("DLabel", trackpnl)
+	text:SetDark(true)
+	text:DockMargin(5,0,0,0)
+	text:Dock(FILL)
+
+	function text.Think()
+		if ent and ent.GetPauseTime then //don't cause an error when the ent is removed
+			local pausetime = ent:GetPauseTime()
+			local newtext = ""
+			if pausetime >= 0 and ent.ParticleStartTime != nil then
+				if pausetime <= (CurTime() - ent.ParticleStartTime) then
+					newtext = "Paused at " .. tostring(math.Round(pausetime, 2)) .. " secs"
+				else
+					newtext = "Pausing at " .. tostring(math.Round(pausetime, 2)) .. " secs (in " .. tostring(-math.Round(CurTime() - ent.ParticleStartTime - pausetime, 2)) .. " secs)"
+				end
+			end
+			if newtext != text:GetText() then
+				text:SetText(newtext)
+			end
+		end
+	end
+
+	local restart = vgui.Create("DImageButton", trackpnl)
+	restart:SetImage("icon16/control_repeat_blue.png")
+	restart:SetStretchToFit(false)
+	restart:SetDrawBackground(true)
+	restart:Dock(RIGHT)
+	restart:SetWide(32)
+	restart:SetTooltip("Restart particle effect")
+
+	function restart.DoClick()
+		ent:DoInput("effect_restart")
+	end
+
+
+	if ent.PartCtrl_Ent then
 		
 		local container = vgui.Create("DCategoryList", back)
 		container.Paint = function(self, w, h)
@@ -1075,88 +1141,9 @@ function PANEL:RebuildControls()
 		
 		BuildParticleEntControls(ent, container)
 
-		--[[//dummy category to add extra padding to bottom of list if there's a scrollbar
-		local pnl = vgui.Create("DSizeToContents", container)
-		//pnl:DockMargin(3,1,3,3)
-		pnl:Dock(FILL)
-		container:AddItem(pnl)
-		//pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
-		//pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item]]
-
-
-		local trackpnl = vgui.Create("Panel", back)
-		trackpnl:Dock(BOTTOM)
-		trackpnl:DockMargin(5,5,5,5)
-
-		local pause = vgui.Create("DImageButton", trackpnl)
-		pause:SetImage("icon16/control_pause_blue.png")
-		pause:SetStretchToFit(false)
-		pause:SetDrawBackground(true)
-		pause:SetIsToggle(true)
-		pause:SetToggle(false)
-		pause:Dock(LEFT)
-		pause:SetWide(32)
-		pause:SetTooltip("Pause particle effect\nIf the effect is restarted or duplicated, it will play up to and then pause at the same point in time.")
-
-		function pause.Think()
-			//NOTE: This can be changed without clicking on the button by using the numpad key to pause/unpause
-			if ent and ent.GetPauseTime then //don't cause an error when the ent is removed
-				pause:SetToggle(ent:GetPauseTime() >= 0)
-			end
-		end
-		function pause.OnToggled(val)
-			ent:DoInput("effect_pause")
-		end
-		if ent.utilfx then
-			pause:SetDisabled(true)
-			pause:SetImage("icon16/control_pause.png") //gray icon
-			pause:SetTooltip("Pausing not available for scripted effects")
-		end
-
-		local text = vgui.Create("DLabel", trackpnl)
-		text:SetDark(true)
-		text:DockMargin(5,0,0,0)
-		text:Dock(FILL)
-
-		function text.Think()
-			if ent and ent.GetPauseTime then //don't cause an error when the ent is removed
-				local pausetime = ent:GetPauseTime()
-				local newtext = ""
-				if pausetime >= 0 and ent.ParticleStartTime != nil then
-					if pausetime <= (CurTime() - ent.ParticleStartTime) then
-						newtext = "Paused at " .. tostring(math.Round(pausetime, 2)) .. " secs"
-					else
-						newtext = "Pausing at " .. tostring(math.Round(pausetime, 2)) .. " secs (in " .. tostring(-math.Round(CurTime() - ent.ParticleStartTime - pausetime, 2)) .. " secs)"
-					end
-				end
-				if newtext != text:GetText() then
-					text:SetText(newtext)
-				end
-			end
-		end
-
-		local restart = vgui.Create("DImageButton", trackpnl)
-		restart:SetImage("icon16/control_repeat_blue.png")
-		restart:SetStretchToFit(false)
-		restart:SetDrawBackground(true)
-		restart:Dock(RIGHT)
-		restart:SetWide(32)
-		restart:SetTooltip("Restart particle effect")
-
-		function restart.DoClick()
-			ent:DoInput("effect_restart")
-		end
-
 	elseif ent.PartCtrl_SpecialEffect then
 
 		//Special effect controls have two columns - left column is for options on the special effect itself, right column is for child fx
-		local back = vgui.Create("DPanel", self)
-		back.Paint = function(self, w, h)
-			derma.SkinHook("Paint", "CategoryList", self, w, h)
-			draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
-			return false
-		end
-		back:Dock(FILL)
 
 		local lcontainer = vgui.Create("DCategoryList", back)
 		lcontainer.Paint = function(self, w, h)
@@ -1309,20 +1296,6 @@ function PANEL:RebuildControls()
 						slider.Scratch.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
 					end
 				end
-
-				//test dual scrollbars
-				--[[local text = vgui.Create("DLabel", pnl)
-				text:SetDark(true)
-				text:SetWrap(true)
-				text:SetTextInset(0, 0)
-				text:SetText("cause this is filler, filler night!!")
-				for i = 0, 32 do
-					text:SetText(text:GetText() .. "\nAAAA")
-				end
-				text:SetContentAlignment(5)
-				text:SetAutoStretchVertical(true)
-				text:DockMargin(padding,betweenitems,padding,0)
-				text:Dock(TOP)]]
 
 			end
 
@@ -1685,18 +1658,9 @@ function PANEL:RebuildControls()
 
 		end
 
-
+		
 		//Add special effect-specific controls
 		ent:SpecialEffectAddControls(self, lcontainer)
-
-
-		//dummy category to add extra padding to bottom of list if there's a scrollbar (for lcontainer)
-		local pnl = vgui.Create("DSizeToContents", lcontainer)
-		//pnl:DockMargin(3,1,3,3)
-		pnl:Dock(FILL)
-		lcontainer:AddItem(pnl)
-		//pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
-		//pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 
 
 		//Add child effect controls
@@ -1773,9 +1737,6 @@ function PANEL:RebuildControls()
 
 					end
 
-					//we want this to always be at the end
-					rcontainer.AddDummy()
-
 				end
 
 			elseif IsValid(rcontainer.ChildControls[child]) then
@@ -1788,25 +1749,10 @@ function PANEL:RebuildControls()
 
 		end
 
-		function rcontainer.AddDummy()
-			if IsValid(rcontainer.dummy) then rcontainer.dummy:Remove() end
-			//dummy category to add extra padding to bottom of list if there's a scrollbar (for rcontainer)
-			local pnl = vgui.Create("DSizeToContents", rcontainer)
-			//pnl:DockMargin(3,1,3,3)
-			pnl:Dock(FILL)
-			rcontainer:AddItem(pnl)
-			//pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
-			//pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-			rcontainer.dummy = pnl
-		end
-
 		//Add categories for each child effect
 		for child, _ in pairs (ent.SpecialEffectChildren) do
 			rcontainer.AddOrRemoveChild(child)
 		end
-
-		//also do this here in case no children were added
-		rcontainer.AddDummy()
 
 	end
 

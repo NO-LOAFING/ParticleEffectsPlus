@@ -155,7 +155,7 @@ function ENT:Think()
 		local ispaused = false
 		if self.ParticleStartTime then
 			local pausetime = self:GetPauseTime()
-			ispaused = pausetime >= 0 and pausetime <= (CurTime() - self.ParticleStartTime)
+			ispaused = self.PauseOverride or (pausetime >= 0 and pausetime <= (CurTime() - self.ParticleStartTime))
 			if ispaused then
 				//if not paused, but should be, then pause it
 				local didpause
@@ -191,7 +191,7 @@ function ENT:Think()
 				if didunpause then
 					//MsgN("unpausing")
 					//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
-					//again afterward,the particle's lifetime doesn't include the time it spent paused prior to that
+					//again afterward, the effect's lifetime doesn't include the time it spent paused prior to that
 					if self.ParticlePauseTime != nil then
 						self.ParticleStartTime = self.ParticleStartTime + (CurTime() - self.ParticlePauseTime)
 						self.ParticlePauseTime = nil
@@ -440,6 +440,7 @@ function ENT:OnSpecialEffectParentChanged(_,old,new)
 			if CLIENT and old.SpecialEffectChildren then
 				old.SpecialEffectChildren[self] = nil
 				self.MaxOldParticlesOverride = nil
+				self.PauseOverride = nil
 			end
 			//Restart the effect
 			if old.SpecialEffectRefresh then old:SpecialEffectRefresh() end

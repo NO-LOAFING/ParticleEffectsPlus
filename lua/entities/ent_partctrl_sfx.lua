@@ -446,6 +446,21 @@ if CLIENT then
 			elseif input == "child_detach" then
 	
 				net.WriteEntity(args[1]) //child entity to remove
+
+			elseif input == "effect_pause" then
+
+				if self:GetPauseTime() < 0 then
+					//not paused, so pause it at the current time
+					if self.ParticleStartTime then
+						net.WriteFloat(CurTime() - self.ParticleStartTime)
+						//pause the effect immediately, don't wait for the pausetime nwvar to be networked back to us
+						self:SetPauseTime(CurTime() - self.ParticleStartTime)
+					end
+				else
+					//paused, so unpause it
+					net.WriteFloat(-1)
+					self:SetPauseTime(-1)
+				end
 	
 			end
 
@@ -550,6 +565,14 @@ else
 				end
 				//don't refresh table, DetachFromSpecialEffect handles this
 			end
+
+		elseif input == "effect_pause" then
+			
+			self:SetPauseTime(net.ReadFloat())
+
+		elseif input == "effect_restart" then
+			
+			refreshtable = true
 
 		end
 

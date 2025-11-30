@@ -27,9 +27,10 @@ function ENT:SetupDataTables()
 	if CLIENT then
 		self:NetworkVarNotify("SpecialEffectParent", self.OnSpecialEffectParentChanged)
 	end
+	self:NetworkVar("Float", 0, "PauseTime")
 
 	self:NetworkVar("Bool", 0, "Loop") //because special fx can't use loop mode 1 (loop when effect is finished), just make this a bool instead
-	self:NetworkVar("Float", 0, "LoopDelay")
+	self:NetworkVar("Float", 1, "LoopDelay")
 	self:NetworkVar("Bool", 1, "LoopSafety")
 
 	self:NetworkVar("Int", 1, "Numpad")
@@ -38,7 +39,7 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Bool", 4, "NumpadState")
 	self:NetworkVar("Int", 2, "NumpadMode")
 
-	self:NetworkVar("Float", 1, "TracerSpread")
+	self:NetworkVar("Float", 2, "TracerSpread")
 	self:NetworkVar("Int", 3, "TracerCount")
 	self:NetworkVar("Int", 4, "TracerDir")
 	self:NetworkVar("Int", 5, "TracerHitDir")
@@ -50,7 +51,9 @@ end
 
 function ENT:SetSpecialEffectDefaults()
 
-	self:SetAttachmentID(0) //all special fx must have this one
+	//all special fx must have these ones
+	self:SetAttachmentID(0) 
+	self:SetPauseTime(-1)
 
 	self:SetLoop(true) 
 	self:SetLoopDelay(self.DefaultLoopTime)
@@ -575,6 +578,8 @@ local EditMenuInputs = {
 	"attachment_attach",
 	"child_setwithtool",
 	"child_detach",
+	"effect_pause",
+	"effect_restart",
 	//Entity-specific inputs
 	"loop_mode",
 	"loop_delay",
@@ -588,7 +593,7 @@ local EditMenuInputs = {
 	"tracer_dir",
 	"tracer_hitdir",
 }
-ENT.EditMenuInputs_bits = 4 //max 15
+ENT.EditMenuInputs_bits = 5 //max 31
 ENT.EditMenuInputs = table.Flip(EditMenuInputs)
 
 if CLIENT then

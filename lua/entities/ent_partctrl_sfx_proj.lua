@@ -28,9 +28,10 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Int", 0, "AttachmentID")
 	self:NetworkVar("Entity", 0, "SpecialEffectParent")
 	self:NetworkVarNotify("SpecialEffectParent", self.OnSpecialEffectParentChanged)
+	self:NetworkVar("Float", 0, "PauseTime")
 
 	self:NetworkVar("Bool", 0, "Loop") //because special fx can't use loop mode 1 (loop when effect is finished), just make this a bool instead
-	self:NetworkVar("Float", 0, "LoopDelay")
+	self:NetworkVar("Float", 1, "LoopDelay")
 	self:NetworkVar("Bool", 1, "LoopSafety")
 
 	self:NetworkVar("Int", 1, "Numpad")
@@ -40,19 +41,19 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Int", 2, "NumpadMode")
 
 	self:NetworkVar("Bool", 5, "ProjServerside")
-	self:NetworkVar("Float", 1, "ProjSpread")
+	self:NetworkVar("Float", 2, "ProjSpread")
 	self:NetworkVar("Int", 3, "ProjCount")
 	self:NetworkVar("Int", 4, "ProjDir")
 	self:NetworkVar("Int", 5, "ProjHitDir")
 
-	self:NetworkVar("Float", 2, "ProjVelocity")
+	self:NetworkVar("Float", 3, "ProjVelocity")
 	self:NetworkVar("Bool", 6, "ProjGravity")
-	self:NetworkVar("Float", 3, "ProjLifetimePre")
-	self:NetworkVar("Float", 4, "ProjLifetimePost")
+	self:NetworkVar("Float", 4, "ProjLifetimePre")
+	self:NetworkVar("Float", 5, "ProjLifetimePost")
 
 	self:NetworkVar("Int", 6, "ProjAngle")
 	self:NetworkVar("Int", 7, "ProjSpin")
-	self:NetworkVar("Float", 5, "ProjSpinVelocity")
+	self:NetworkVar("Float", 6, "ProjSpinVelocity")
 
 end
 
@@ -61,7 +62,9 @@ end
 
 function ENT:SetSpecialEffectDefaults()
 
-	self:SetAttachmentID(0) //all special fx must have this one
+	//all special fx must have these ones
+	self:SetAttachmentID(0) 
+	self:SetPauseTime(-1)
 
 	self:SetLoop(true) 
 	self:SetLoopDelay(self.DefaultLoopTime)
@@ -1341,6 +1344,8 @@ local EditMenuInputs = {
 	"attachment_attach",
 	"child_setwithtool",
 	"child_detach",
+	"effect_pause",
+	"effect_restart",
 	//Entity-specific inputs
 	"loop_mode",
 	"loop_delay",
