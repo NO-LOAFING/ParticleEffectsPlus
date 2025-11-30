@@ -9,12 +9,14 @@ if CLIENT then
 		if IsValid(ent.PartCtrlWindow) then return end
 
 		local width = 367 //width of 367 nicely fits color picker
+		local height = 400
 		if ent.PartCtrl_SpecialEffect then
 			width = 718 //special fx controls have two columns; this width is precisely calibrated so that both columns have the exact same width as on normal fx
+			height = 500 //special fx also just have more controls in general, so make it higher by default
 		end
 
 		local window = g_ContextMenu:Add("DFrame")
-		window:SetSize(width, 400) 
+		window:SetSize(width, height) 
 		window:Center()
 		window:SetSizable(true)
 		//window:SetMinHeight(h_min)

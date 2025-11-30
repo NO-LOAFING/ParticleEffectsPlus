@@ -865,7 +865,7 @@ if CLIENT then
 	net.Receive("PartCtrl_DoPauseInput_SendToCl", function(_, ply)
 		local self = net.ReadEntity()
 		if !IsValid(self) or !self.PartCtrl_Ent or !istable(self.ParticleInfo) then return end
-		self:DoInput("pause")
+		self:DoInput("effect_pause")
 	end)
 	
 else
@@ -894,7 +894,7 @@ else
 		elseif mode == 1 then
 
 			//Mode 1: Pause/unpause effect
-			//This requires a ParticleStartTime value that only exists clientside, so tell the client to send it, using the same "pause" input as the cpanel
+			//This requires a ParticleStartTime value that only exists clientside, so tell the client to send it, using the same "effect_pause" input as the cpanel
 			if IsValid(ply) and ply.IsPlayer and ply:IsPlayer() then
 				net.Start("PartCtrl_DoPauseInput_SendToCl")
 					net.WriteEntity(self)
@@ -1206,8 +1206,8 @@ local EditMenuInputs = {
 	"numpad_toggle",
 	"numpad_starton",
 	"numpad_mode",
-	"pause",
-	"restart"
+	"effect_pause",
+	"effect_restart"
 }
 local EditMenuInputs_bits = 4 //max 15
 EditMenuInputs = table.Flip(EditMenuInputs)
@@ -1289,7 +1289,7 @@ if CLIENT then
 	
 				net.WriteUInt(args[1], 2) //numpad mode id
 
-			elseif input == "pause" then
+			elseif input == "effect_pause" then
 
 				if self:GetPauseTime() < 0 then
 					//not paused, so pause it at the current time
@@ -1492,11 +1492,11 @@ else
 				//everything else should be handled clientside in Think once the client receives the new NumpadState value
 			end
 
-		elseif input == "pause" then
+		elseif input == "effect_pause" then
 			
 			self:SetPauseTime(net.ReadFloat())
 
-		elseif input == "restart" then
+		elseif input == "effect_restart" then
 			
 			refreshtable = true
 

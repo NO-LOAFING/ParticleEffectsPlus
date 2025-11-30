@@ -36,11 +36,12 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Bool", 2, "NumpadToggle")
 	self:NetworkVar("Bool", 3, "NumpadStartOn")
 	self:NetworkVar("Bool", 4, "NumpadState")
+	self:NetworkVar("Int", 2, "NumpadMode")
 
 	self:NetworkVar("Float", 1, "TracerSpread")
-	self:NetworkVar("Int", 2, "TracerCount")
-	self:NetworkVar("Int", 3, "TracerDir")
-	self:NetworkVar("Int", 4, "TracerHitDir")
+	self:NetworkVar("Int", 3, "TracerCount")
+	self:NetworkVar("Int", 4, "TracerDir")
+	self:NetworkVar("Int", 5, "TracerHitDir")
 
 end
 
@@ -520,6 +521,52 @@ end
 
 
 
+if SERVER then
+	
+	function ENT:NumpadSetState(newstate, ply)
+
+		local mode = self:GetNumpadMode()
+		
+		if mode == 0 then
+
+			//Mode 0: Disable/enable effect
+			self:SetNumpadState(newstate)
+			//Everything else is handled clientside in Think once the client receives the new NumpadState value
+
+		elseif mode == 1 then
+
+			//Mode 1: Pause/unpause effect
+			//TODO
+			--[[//This requires a ParticleStartTime value that only exists clientside, so tell the client to send it, using the same "effect_pause" input as the cpanel
+			if IsValid(ply) and ply.IsPlayer and ply:IsPlayer() then
+				net.Start("PartCtrl_DoPauseInput_SendToCl")
+					net.WriteEntity(self)
+				net.Send(ply)
+			else
+				local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
+				local name = self:GetParticleName()
+				MsgN(self, " (", pcf, " ", name, ") tried to send a numpad pause input with invalid player ", ply, ". Report this!")
+			end]]
+
+		elseif mode == 2 then
+
+			//Mode 2: Restart effect
+			////Refresh special effect on server
+			//if self.SpecialEffectRefresh then self:SpecialEffectRefresh() end
+			//Tell clients to refresh the special effect
+			net.Start("PartCtrl_SpecialEffect_Refresh_SendToCl")
+				net.WriteEntity(self)
+			net.Broadcast()
+
+		end
+
+	end
+
+end
+
+
+
+
 //Networking for edit menu inputs
 local EditMenuInputs = {
 	//All special fx must have these ones
@@ -535,6 +582,7 @@ local EditMenuInputs = {
 	"numpad_num",
 	"numpad_toggle",
 	"numpad_starton",
+	"numpad_mode",
 	"tracer_spread",
 	"tracer_count",
 	"tracer_dir",
@@ -570,6 +618,10 @@ if CLIENT then
 		elseif input == "numpad_starton" then
 
 			net.WriteBool(args[1])
+
+		elseif input == "numpad_mode" then
+	
+			net.WriteUInt(args[1], 2) //numpad mode id
 
 		elseif input == "tracer_spread" then
 			
@@ -648,6 +700,23 @@ else
 		elseif input == "numpad_starton" then
 
 			self:SetNumpadStartOn(net.ReadBool())
+
+		elseif input == "numpad_mode" then
+
+			local mode = net.ReadUInt(2)
+			self:SetNumpadMode(mode)
+
+			//Only mode 0 uses and updates the numpad state, so don't save numpad state between modes, and update it if switching back to mode 0
+			if mode == 0 then
+				if !self:GetNumpadToggle() then
+					self:NumpadSetState(self.NumpadKeyDown, ply)
+				else
+					self:NumpadSetState(false, ply)
+				end
+			else
+				self:SetNumpadState(false)
+				//everything else should be handled clientside in Think once the client receives the new NumpadState value
+			end
 
 		elseif input == "tracer_spread" then
 
