@@ -203,52 +203,69 @@ function ENT:Think()
 
 		//Do renderbounds
 		local extra = Vector(20,20,20) //add arrow length to bounds so it doesn't get cut off at weird angles
-		if IsValid(self.particle) then
-			if self.particle.GetRenderBounds then
-				//Cache which cpoint the renderbounds are relative to, so we don't have to keep retrieving this
-				if self.ParticleInfo_LastCPoint == nil then
-					for k, v in pairs (self.ParticleInfo) do
-						if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
-							self.ParticleInfo_LastCPoint = k
-							if self.ParticleInfo_FirstPos == nil then
-								self.ParticleInfo_FirstPos = k
-							end
-						elseif ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
-							self.ParticleInfo_LastCPoint = self.ParticleInfo_FirstPos or self.ParticleInfo_LastCPoint
+		if !self.utilfx then
+			//Cache which cpoint the renderbounds are relative to, so we don't have to keep retrieving this
+			if self.ParticleInfo_LastCPoint == nil then
+				for k, v in pairs (self.ParticleInfo) do
+					if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+						self.ParticleInfo_LastCPoint = k
+						if self.ParticleInfo_FirstPos == nil then
+							self.ParticleInfo_FirstPos = k
+						end
+					elseif ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+						self.ParticleInfo_LastCPoint = self.ParticleInfo_FirstPos or self.ParticleInfo_LastCPoint
+					end
+				end
+			end
+			//Set our renderbounds to the combined renderbounds of our current particle and all our old particles, so that we
+			//run our Draw func whenever any part of the particles are visible; these are relative to the last position cpoint
+			local pos
+			local k = self.ParticleInfo_LastCPoint
+			if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+				k = self.ParticleInfo_FirstPos
+			end
+			if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+				local v = self.ParticleInfo[k]
+				if IsValid(v.ent) then
+					if IsValid(v.ent.AttachedEntity) then
+						pos = v.ent.AttachedEntity:GetAttachment(v.attach)
+					else
+						pos = v.ent:GetAttachment(v.attach)
+					end
+					if istable(pos) then
+						pos = pos.Pos
+					else
+						pos = v.ent:GetPos()
+					end
+				end
+			end
+			if pos then
+				local mins, maxs
+				local function AddParticleRenderBounds(part)
+					if IsValid(part) and part.GetRenderBounds then
+						local mins2, maxs2 = part:GetRenderBounds()
+						mins2 = mins2 + pos
+						maxs2 = maxs2 + pos
+						if !mins then
+							mins = mins2
+							maxs = maxs2
+						else
+							mins = Vector(math.min(mins.x,mins2.x), math.min(mins.y,mins2.y), math.min(mins.z,mins2.z))
+							maxs = Vector(math.max(maxs.x,maxs2.x), math.max(maxs.y,maxs2.y), math.max(maxs.z,maxs2.z))
 						end
 					end
 				end
-				//Set our renderbounds to the particle renderbounds, so that we run our Draw func whenever any part of the particle is visible; these are relative to the last position cpoint
-				local pos
-				local k = self.ParticleInfo_LastCPoint
-				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
-					k = self.ParticleInfo_FirstPos
+				AddParticleRenderBounds(self.particle)
+				for k, v in pairs (self.OldParticles) do
+					AddParticleRenderBounds(v)
 				end
-				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
-					local v = self.ParticleInfo[k]
-					if IsValid(v.ent) then
-						if IsValid(v.ent.AttachedEntity) then
-							pos = v.ent.AttachedEntity:GetAttachment(v.attach)
-						else
-							pos = v.ent:GetAttachment(v.attach)
-						end
-						if istable(pos) then
-							pos = pos.Pos
-						else
-							pos = v.ent:GetPos()
-						end
-					end
-				end
-				if pos then
-					local mins, maxs = self.particle:GetRenderBounds()
-					mins = mins + pos
-					maxs = maxs + pos
+				if mins and maxs then
 					self:SetRenderBoundsWS(mins, maxs, extra)
 					//self._wsmins = mins
 					//self._wsmaxs = maxs
 				end
 			end
-		elseif self.utilfx then
+		else
 			//For utilfx, just make our renderbounds a box around all the cpoints, so that helpers render when any cpoint is on-screen
 			local mins, maxs
 			for k, v in pairs (self.ParticleInfo) do
@@ -467,13 +484,29 @@ if CLIENT then
 
 	function ENT:Draw()
 
-		//Don't draw our particle in the 3D skybox if its renderbounds are clipping into it but we're not actually in there
+		//Don't draw our particles in the 3D skybox if their renderbounds are clipping into it but we're not actually in there
 		//(common problem for ents with big renderbounds on gm_flatgrass, where the 3D skybox area is right under the floor)
-		if IsValid(self.particle) and self.particle.SetShouldDraw then
-			if PartCtrl_IsSkyboxDrawing and !self:GetNWBool("IsInSkybox") then
+		if PartCtrl_IsSkyboxDrawing and !self:GetNWBool("IsInSkybox") then
+			if IsValid(self.particle) and self.particle.SetShouldDraw then
 				self.particle:SetShouldDraw(false)
-			else
+			end
+			if self.OldParticles then
+				for k, v in pairs (self.OldParticles) do
+					if IsValid(v) then
+						v:SetShouldDraw(false)
+					end
+				end
+			end
+		else
+			if IsValid(self.particle) and self.particle.SetShouldDraw then
 				self.particle:SetShouldDraw(true)
+			end
+			if self.OldParticles then
+				for k, v in pairs (self.OldParticles) do
+					if IsValid(v) then
+						v:SetShouldDraw(true)
+					end
+				end
 			end
 		end
 
