@@ -75,14 +75,14 @@ function PANEL:Paint(w, h)
 	
 	local itab = PartCtrl_IconFx[pcf][name]
 	self:SetTooltip(itab.tooltip)
-
-	if self.invalid != itab.invalid then
-		if itab.invalid then
-			self.Image:SetMaterial(icon_invalid) //manually set our image instead of using self:SetMaterial, because that func saves it as (potentially wrong) info to the spawnlist (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/spawnmenu/creationmenu/content/contenticon.lua#L66-L88)
-		else
-			self.Image:SetMaterial() //^ also, self:SetMaterial won't let us clear the image after an update
+	//Handling for special error message that needs to include the game path
+	if itab.tooltip_withpath and self.path and !IsMounted(self.path) then
+		for k, v in pairs (engine.GetGames()) do
+			if v.folder == self.path then
+				self:SetTooltip(string.format(itab.tooltip_withpath, v.title))
+				break
+			end
 		end
-		self.invalid = itab.invalid
 	end
 
 	
@@ -358,11 +358,12 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						end
 						tooltip = tooltip .. "\n(" .. pcf .. ")\n\n\nERROR: Invalid particle effect (" .. text .. ")"
 					elseif !istable(PartCtrl_ProcessedPCFs[pcf]) then
+						self.tooltip_withpath = tooltip .. "\n(" .. pcf .. ")\n\n\nERROR: Invalid particle effect (No loaded .pcf file with this name, probably from unmounted game %s)"
 						tooltip = tooltip .. "\n(" .. pcf .. ")\n\n\nERROR: Invalid particle effect (No loaded .pcf file with this name)"
 					else
 						tooltip = tooltip .. "\n(" .. pcf .. ")\n\n\nERROR: Invalid particle effect (No effect with this name in this .pcf)"
 					end
-					self.invalid = true
+					table.insert(self.icons, {["icon"] = icon_invalid})
 				else
 					if !utilfx then
 						tooltip = tooltip .. "\n(" .. PartCtrl_GetDataPCFNiceName(pcf) .. ")"
