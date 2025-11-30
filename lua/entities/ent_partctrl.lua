@@ -151,36 +151,59 @@ function ENT:Think()
 		end
 
 
-		local extra = Vector(20,20,20) //add arrow length to bounds so it doesn't get cut off at weird angles
-		if IsValid(self.particle) then
-			//Handle pausing/unpausing the effect
+		//Handle pausing/unpausing the effect
+		local ispaused = false
+		if self.ParticleStartTime then
 			local pausetime = self:GetPauseTime()
-			if pausetime >= 0 and self.particle:GetShouldSimulate() and pausetime <= (CurTime() - self.ParticleStartTime) then
-				//MsgN("pausing")
-				//not paused, but should be, so pause it
-				self.particle:SetShouldSimulate(false)
-				for _, v in pairs (self.OldParticles) do
-					if IsValid(v) then v:SetShouldSimulate(false) end
+			ispaused = pausetime >= 0 and pausetime <= (CurTime() - self.ParticleStartTime)
+			if ispaused then
+				//if not paused, but should be, then pause it
+				local didpause
+				if IsValid(self.particle) and self.particle:GetShouldSimulate() then
+					didpause = true
+					self.particle:SetShouldSimulate(false)
 				end
-				self.ParticlePauseTime = CurTime()
-				//don't loop while paused
-				if self.LastLoop then self.LastLoop = nil end
-			elseif pausetime < 0 and !self.particle:GetShouldSimulate() then
-				//MsgN("unpausing")
-				//paused, but shouldn't be, so unpause it
-				self.particle:SetShouldSimulate(true)
 				for _, v in pairs (self.OldParticles) do
-					if IsValid(v) then v:SetShouldSimulate(true) end
+					if IsValid(v) and v:GetShouldSimulate() then
+						didpause = true
+						v:SetShouldSimulate(false)
+					end
 				end
-				//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
-				//again afterward,the particle's lifetime doesn't include the time it spent paused prior to that
-				if self.ParticlePauseTime != nil then
-					self.ParticleStartTime = self.ParticleStartTime + (CurTime() - self.ParticlePauseTime)
-					self.ParticlePauseTime = nil
+				if didpause then
+					//MsgN("pausing")
+					self.ParticlePauseTime = CurTime()
+					//don't loop while paused
+					if self.LastLoop then self.LastLoop = nil end
+				end
+			elseif pausetime < 0 then
+				//if paused, but shouldn't be, then unpause it
+				local didunpause
+				if IsValid(self.particle) and !self.particle:GetShouldSimulate() then
+					didunpause = true
+					self.particle:SetShouldSimulate(true)
+				end
+				for _, v in pairs (self.OldParticles) do
+					if IsValid(v) and !v:GetShouldSimulate() then 
+						didunpause = true
+						v:SetShouldSimulate(true)
+					end
+				end
+				if didunpause then
+					//MsgN("unpausing")
+					//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
+					//again afterward,the particle's lifetime doesn't include the time it spent paused prior to that
+					if self.ParticlePauseTime != nil then
+						self.ParticleStartTime = self.ParticleStartTime + (CurTime() - self.ParticlePauseTime)
+						self.ParticlePauseTime = nil
+					end
 				end
 			end
+		end
 
-			//Do renderbounds
+
+		//Do renderbounds
+		local extra = Vector(20,20,20) //add arrow length to bounds so it doesn't get cut off at weird angles
+		if IsValid(self.particle) then
 			if self.particle.GetRenderBounds then
 				//Cache which cpoint the renderbounds are relative to, so we don't have to keep retrieving this
 				if self.ParticleInfo_LastCPoint == nil then
@@ -260,6 +283,7 @@ function ENT:Think()
 		end
 
 
+		//Handle looping
 		local sfxpar = self:GetSpecialEffectParent()
 		if !IsValid(sfxpar) or !sfxpar.DisableChildAutoplay then
 			local numpadisdisabling = self:GetNumpadState()
@@ -270,7 +294,6 @@ function ENT:Think()
 				local loop = self:GetLoopMode()
 				local time = CurTime()
 				if self.particle or self.utilfx then 
-					local waiting = (self.particle == partctrl_wait)
 					if self.particle and !(self.particle.IsValid and self.particle:IsValid()) then
 						//Particle is non-nil but invalid; that probably means that it ran to completion and expired, so make a new particle
 						if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle] then
@@ -278,9 +301,9 @@ function ENT:Think()
 							PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = nil
 						end
 						
-						if waiting then
+						if self.particle == partctrl_wait then
 							//MsgN(time, ": waiting")
-							//We're ready to create the particle now, but crashcheck is making us wait, so just start the particle as soon as possible
+							self.ParticleStartTime = nil //effect was either disabled and enabled, or clobbered by crashcheck, so reset the timer
 							self:StartParticle()
 						else
 							if loop == 1 then //loop mode 1: repeat X seconds after ending
@@ -290,6 +313,7 @@ function ENT:Think()
 								end
 								if (self.LastLoop + self:GetLoopDelay()) <= time then
 									//MsgN(time, ": did loop 1")
+									self.ParticleStartTime = nil //loop mode 1 resets the timer with every new effect; otherwise, don't reset the timer unless we restart the effect
 									self:StartParticle()
 									self.LastLoop = nil
 								end
@@ -301,7 +325,7 @@ function ENT:Think()
 						self.utilfx_waiting = nil
 					end
 					if loop == 2 then //loop mode 2: repeat every X seconds
-						//TODO: do we need to handle the waiting var differently? tested, doesn't seem so
+						//TODO: do we need to handle partctrl_wait differently? tested, doesn't seem so
 						
 						if self.LastLoop and (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
 							//This loop mode can start a new particle while the old particle is still valid, so handle it
@@ -609,6 +633,7 @@ if CLIENT then
 		self:RemoveParticle()
 		local sfxpar = self:GetSpecialEffectParent()
 		if !IsValid(sfxpar) or !sfxpar.DisableChildAutoplay then
+			self.ParticleStartTime = nil
 			self:StartParticle()
 		end
 		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
@@ -717,8 +742,10 @@ if CLIENT then
 		local ignore = firstcpoint
 		if firstcpoint > 0 then ignore = nil end //cpoint 0 automatically follows the entity it's created on, but the others won't, so if our only position cpoint is > 0, then do AddControlPoint for it too.
 
-		//Save particle creation time (used for pausing)
-		self.ParticleStartTime = CurTime()
+		//Save particle creation time (used for pausing, which needs to pause at a certain point in the effect's lifetime)
+		if !self.ParticleStartTime then
+			self.ParticleStartTime = CurTime()
+		end
 
 		if self.particle and self.particle.IsValid and self.particle:IsValid() then
 			//Do other cpoints
