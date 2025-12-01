@@ -345,10 +345,12 @@ if CLIENT then
 					end
 					if didunpause then
 						//MsgN("unpausing")
-						//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
-						//again afterward, the effect's lifetime doesn't include the time it spent paused prior to that
 						if self.ParticlePauseTime != nil then
-							self.ParticleStartTime = self.ParticleStartTime + (CurTime() - self.ParticlePauseTime)
+							//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
+							//again afterward, the effect's lifetime doesn't include the time it spent paused prior to that
+							local diff = (CurTime() - self.ParticlePauseTime)
+							self.ParticleStartTime = self.ParticleStartTime + diff
+							//don't worry about adjusting LastLoop on all the particle ents, they'll handle it themselves
 							self.ParticlePauseTime = nil
 						end
 					end

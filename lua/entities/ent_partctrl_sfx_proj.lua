@@ -14,6 +14,7 @@ ENT.SpecialEffectRoles		= {
 	[2] = "Hit/expire point",
 }
 ENT.DisableChildAutoplay	= true
+ENT.CustomPauseInput		= true
 
 ENT.DefaultLoopTime = 0.8
 
@@ -54,6 +55,8 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Int", 6, "ProjAngle")
 	self:NetworkVar("Int", 7, "ProjSpin")
 	self:NetworkVar("Float", 6, "ProjSpinVelocity")
+
+	self:NetworkVar("Float", 7, "ParticleStartTime") //used by serverside projectile fx, to network it to clients
 
 end
 
@@ -823,12 +826,114 @@ function ENT:SpecialEffectThink()
 		//purpose of this feature, preventing too many fx from being created at once.
 	end
 	local time = CurTime()
+	local svproj = self:GetProjServerside() and svproj_enabled:GetBool()
+
+	local ispaused = false
+	local starttime
+	if !svproj then
+		starttime = self.ParticleStartTime
+	else
+		starttime = self:GetParticleStartTime()
+	end
+	if starttime and starttime > 0 then
+		local pausetime = self:GetPauseTime()
+		ispaused = pausetime >= 0 and pausetime <= (CurTime() - starttime)
+		if ispaused then
+			//MsgN("pausing")
+			//if not paused, but should be, then pause it
+			local didpause
+			if CLIENT then
+				for child, _ in pairs (self.SpecialEffectChildren) do
+					if !child.PauseOverride then
+						didpause = true
+						child.PauseOverride = true
+					end
+				end
+			end
+			//pause projectiles, and store their velocity
+			for _, proj in pairs (self.ProjectileEnts) do
+				if IsValid(proj) then
+					local phys = proj:GetPhysicsObject()
+					if IsValid(phys) then
+						if phys:IsMotionEnabled() then
+							self.ProjectileStoredVel = self.ProjectileStoredVel or {}
+							if !self.ProjectileStoredVel[proj] then
+								self.ProjectileStoredVel[proj] = {
+									["vel"] = phys:GetVelocity(),
+									["angvel"] = phys:GetAngleVelocity()
+								}
+								didpause = true //don't update the pausetime if we get unfrozen by the physgun while paused
+							end
+							phys:EnableMotion(false)
+						end
+					end
+				end
+			end
+			if didpause then
+				//MsgN("pausing")
+				self.ParticlePauseTime = CurTime()
+			end
+		else
+			//MsgN("unpausing")
+			//if paused, but shouldn't be, then unpause it
+			local didunpause
+			if CLIENT then
+				for child, _ in pairs (self.SpecialEffectChildren) do
+					if child.PauseOverride then
+						didunpause = true
+						child.PauseOverride = nil
+					end
+				end
+			end
+			//unpause projectiles and restore their velocity
+			if self.ProjectileStoredVel then
+				for proj, tab in pairs (self.ProjectileStoredVel) do
+					if IsValid(proj) then
+						local phys = proj:GetPhysicsObject()
+						if IsValid(phys) then
+							//if !phys:IsMotionEnabled() then
+								phys:EnableMotion(true)
+								//PrintTable(tab)
+								phys:SetVelocity(tab.vel)
+								phys:SetAngleVelocity(tab.angvel)
+								didunpause = true
+							//end
+						end
+					end
+				end
+				self.ProjectileStoredVel = nil
+			end
+			if didunpause then
+				//MsgN("unpausing")
+				if self.ParticlePauseTime != nil then
+					//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
+					//again afterward, the effect's lifetime doesn't include the time it spent paused prior to that
+					local diff = (CurTime() - self.ParticlePauseTime)
+					if (!svproj and CLIENT) then
+						self.ParticleStartTime = starttime + diff
+					elseif (svproj and SERVER) then
+						self:SetParticleStartTime(starttime + diff)
+					end
+					//do the same for loop time
+					if self.LastLoop then
+						self.LastLoop = self.LastLoop + diff
+					end
+					//do the same for projectile lifetime
+					for k, v in pairs (self.ProjectileTimers) do
+						self.ProjectileTimers[k] = v + diff
+					end
+					self.ParticlePauseTime = nil
+				end
+			end
+		end
+	end
 
 	local numpadisdisabling = self:GetNumpadState()
 	if !self:GetNumpadStartOn() then
 		numpadisdisabling = !numpadisdisabling
 	end
-	if !numpadisdisabling then
+	//TODO: for reference, remove later
+	--[[if !numpadisdisabling then
 		if self.LastLoop == partctrl_wait then
 			//Wait a frame after initialize or refresh
 			self.LastLoop = nil
@@ -877,6 +982,87 @@ function ENT:SpecialEffectThink()
 			end
 		end
 		self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
+	end]]
+
+	if !numpadisdisabling then
+		if CLIENT then
+			for child, _ in pairs (self.SpecialEffectChildren) do
+				child.MaxOldParticlesOverride = max
+			end
+		end
+		if !ispaused then 
+			if (!svproj and CLIENT) or (svproj and SERVER) then
+				local loop = self:GetLoop()
+				local time = CurTime()
+				if self.was_waiting then
+					local wait = false
+					if CLIENT then
+						for child, _ in pairs (self.SpecialEffectChildren) do
+							local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
+							if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+							and !child.ParticleInfo then
+								wait = true
+								break
+							end
+						end
+					end
+					if !wait then
+						if (!svproj and CLIENT) then
+							self.ParticleStartTime = nil //effect was either newly spawned, or disabled and enabled, so reset the timer
+						elseif (svproj and SERVER) then
+							self:SetParticleStartTime(0)
+						end
+
+						self.ParticlePauseTime = nil
+						self.was_waiting = nil
+						self:CreateProjectile()
+					end
+				end
+				if loop then //loop mode 2: repeat every X seconds
+					if self.LastLoop and (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
+						local wait = false
+						if CLIENT then
+							for child, _ in pairs (self.SpecialEffectChildren) do
+								child.MaxOldParticlesOverride = max
+								local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
+								if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+								and !child.ParticleInfo then
+									wait = true
+									self.was_waiting = true
+									break
+								end
+							end
+						end
+						if !wait then
+							self:CreateProjectile()
+							self.LastLoop = nil
+						end
+					end
+					
+					if self.LastLoop == nil then
+						self.LastLoop = time
+						//MsgN(time, ": set last loop to ", self.LastLoop)
+					end
+				end
+			end
+		end
+	else
+		if CLIENT then
+			if max != nil then max = 0 end
+			for child, _ in pairs (self.SpecialEffectChildren) do
+				if child.particle and child.particle != partctrl_wait then
+					child.MaxOldParticlesOverride = max
+					if child.particle.IsValid and child.particle:IsValid() then
+						//Stop any existing particles and throw them into the OldParticles table to get cleaned up
+						//child.particle:StopEmission() //doesn't interact well with tracer count; because all the tracers except the last one are already in OldParticles, only the last one gets cut off while the rest keep playing, which looks odd
+						table.insert(child.OldParticles, child.particle)
+					end
+					child.particle = partctrl_wait
+				end
+			end
+		end
+		self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
+		self.was_waiting = true
 	end
 
 	//Limit the number of spawned projectiles, just like ent_partctrl does with particles
@@ -895,31 +1081,33 @@ function ENT:SpecialEffectThink()
 	end
 
 	//Do projectile timers
-	for proj, dietime in pairs (self.ProjectileTimers) do
-		if IsValid(proj) then
-			if time >= dietime then
-				if CLIENT then
-					if IsValid(proj) and IsValid(self) then
-						if self.ProjectileHitData[proj] then
-							self:StartParticle(proj, self.ProjectileHitData[proj].HitPos, -self.ProjectileHitData[proj].HitNormal)
-						else
-							self:StartParticle(proj, true)
+	if !ispaused then
+		for proj, dietime in pairs (self.ProjectileTimers) do
+			if IsValid(proj) then
+				if time >= dietime then
+					if CLIENT then
+						if IsValid(proj) and IsValid(self) then
+							if self.ProjectileHitData[proj] then
+								self:StartParticle(proj, self.ProjectileHitData[proj].HitPos, -self.ProjectileHitData[proj].HitNormal)
+							else
+								self:StartParticle(proj, true)
+							end
+							proj:Remove()
 						end
-						proj:Remove()
-					end
-				else
-					if IsValid(proj) then
-						if self.ProjectileHitData[proj] then
-							proj:DoExpire(self.ProjectileHitData[proj].HitPos, -self.ProjectileHitData[proj].HitNormal)
-						else
-							proj:DoExpire()
+					else
+						if IsValid(proj) then
+							if self.ProjectileHitData[proj] then
+								proj:DoExpire(self.ProjectileHitData[proj].HitPos, -self.ProjectileHitData[proj].HitNormal)
+							else
+								proj:DoExpire()
+							end
 						end
 					end
 				end
+			else
+				self.ProjectileTimers[proj] = nil
+				self.ProjectileHitData[proj] = nil
 			end
-		else
-			self.ProjectileTimers[proj] = nil
-			self.ProjectileHitData[proj] = nil
 		end
 	end
 
@@ -941,15 +1129,31 @@ local ang_down = Angle(90,0,0)
 function ENT:CreateProjectile()
 
 	self.hitfunc = self.hitfunc or function(proj, data)
-		if proj.Hit then return end //there's no reason to call this more than once
-		proj.Hit = true
-
 		if IsValid(proj) and IsValid(self) then
+			local time = CurTime()
+			local svproj = self:GetProjServerside() and svproj_enabled:GetBool()
+
+			//dumb duplicated code from think func; don't register hits if the effect is paused
+			local ispaused = false
+			local starttime
+			if !svproj then
+				starttime = self.ParticleStartTime
+			else
+				starttime = self:GetParticleStartTime()
+			end
+			if starttime and starttime > 0 then
+				local pausetime = self:GetPauseTime()
+				ispaused = pausetime >= 0 and pausetime <= (time - starttime)
+			end
+			if ispaused then return end
+
+			if proj.Hit then return end //there's no reason to call this more than once
+			proj.Hit = true
 			if proj.lifetime_posthit == 0 then
 				self.ProjectileHitData[proj] = data
 				if CLIENT then proj:SetNoDraw(true) end //fix clientside projs that hit the world appearing at a deflected angle for a split sec until they get deleted; serverside projs don't have this problem
 			end
-			self.ProjectileTimers[proj] = math.min(self.ProjectileTimers[proj], CurTime() + proj.lifetime_posthit)
+			self.ProjectileTimers[proj] = math.min(self.ProjectileTimers[proj], time + proj.lifetime_posthit)
 		end
 	end
 
@@ -989,6 +1193,17 @@ function ENT:CreateProjectile()
 		//down
 		ang:RotateAroundAxis(ang:Right(), 180)
 		ang = ang:Up():Angle()
+	end
+
+	//Save particle creation time (used for pausing, which needs to pause at a certain point in the effect's lifetime)
+	if CLIENT then
+		if !self.ParticleStartTime then
+			self.ParticleStartTime = CurTime()
+		end
+	else
+		if self:GetParticleStartTime() <= 0 then
+			self:SetParticleStartTime(CurTime())
+		end
 	end
 
 	for i = 1, self:GetProjCount() do
@@ -1234,6 +1449,11 @@ end
 
 function ENT:SpecialEffectRefresh()
 
+	self.ParticleStartTime = nil
+	if SERVER then self:SetParticleStartTime(0) end
+	self.ParticlePauseTime = nil
+	self.was_waiting = true //tells the think func to run StartParticle as soon as possible
+
 	if CLIENT then
 		if self.SpecialEffectChildren then
 			self.SpecialEffectChildrenSorted = {[false] = {}, [true] = {}, ["bad"] = {}}
@@ -1288,7 +1508,7 @@ function ENT:SpecialEffectRefresh()
 		end
 		self.ProjectileEnts = {}
 	end
-	self.LastLoop = partctrl_wait
+	self.LastLoop = nil
 
 end
 
@@ -1323,17 +1543,28 @@ if SERVER then
 		elseif mode == 1 then
 
 			//Mode 1: Pause/unpause effect
-			//TODO
-			--[[//This requires a ParticleStartTime value that only exists clientside, so tell the client to send it, using the same "effect_pause" input as the cpanel
-			if IsValid(ply) and ply.IsPlayer and ply:IsPlayer() then
-				net.Start("PartCtrl_DoPauseInput_SendToCl")
-					net.WriteEntity(self)
-				net.Send(ply)
+			local svproj = self:GetProjServerside() and svproj_enabled:GetBool()
+			if !svproj then
+				//This requires a ParticleStartTime value that only exists clientside, so tell the client to send it, using the same "effect_pause" input as the cpanel
+				if IsValid(ply) and ply.IsPlayer and ply:IsPlayer() then
+					net.Start("PartCtrl_DoPauseInput_SendToCl")
+						net.WriteEntity(self)
+					net.Send(ply)
+				else
+					local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
+					local name = self:GetParticleName()
+					MsgN(self, " tried to send a numpad pause input with invalid player ", ply, ". Report this!")
+				end
 			else
-				local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
-				local name = self:GetParticleName()
-				MsgN(self, " (", pcf, " ", name, ") tried to send a numpad pause input with invalid player ", ply, ". Report this!")
-			end]]
+				//stupid duplicated code from input receive func
+				if self:GetPauseTime() < 0 and self:GetParticleStartTime() > 0 then
+					//not paused, so pause it at the current time
+					self:SetPauseTime(CurTime() - self:GetParticleStartTime())
+				else
+					//paused, so unpause it
+					self:SetPauseTime(-1)
+				end
+			end
 
 		elseif mode == 2 then
 
@@ -1396,7 +1627,26 @@ if CLIENT then
 	
 	function ENT:SpecialEffectDoInput(input, args)
 
-		if input == "loop_mode" then
+		if input == "effect_pause" then
+
+			if !(self:GetProjServerside() and svproj_enabled:GetBool()) then
+				//For clientside projectiles, pausing works the same as it does for other fx
+				if self:GetPauseTime() < 0 and self.ParticleStartTime then
+					//not paused, so pause it at the current time
+					net.WriteFloat(CurTime() - self.ParticleStartTime)
+					//pause the effect immediately, don't wait for the pausetime nwvar to be networked back to us
+					self:SetPauseTime(CurTime() - self.ParticleStartTime)
+				else
+					//paused, so unpause it
+					net.WriteFloat(-1)
+					self:SetPauseTime(-1)
+				end
+			else
+				//For serverside projectiles, ParticleStartTime is handled serverside, so tell the server to figure it out
+				net.WriteFloat(-1) //dummy value, just in case the client thinks we're doing clientside projectiles and tries to read it
+			end
+
+		elseif input == "loop_mode" then
 
 			net.WriteBool(args[1]) //new loop mode
 
@@ -1498,7 +1748,24 @@ else
 
 		local refreshtable = false
 
-		if input == "loop_mode" then
+		if input == "effect_pause" then
+			
+			if !(self:GetProjServerside() and svproj_enabled:GetBool()) then
+				//For clientside projectiles, pausing works the same as it does for other fx
+				self:SetPauseTime(net.ReadFloat())
+			else
+				//For serverside projectiles, ParticleStartTime is handled serverside
+				if self:GetPauseTime() < 0 and self:GetParticleStartTime() > 0 then
+					//not paused, so pause it at the current time
+					self:SetPauseTime(CurTime() - self:GetParticleStartTime())
+				else
+					//paused, so unpause it
+					self:SetPauseTime(-1)
+				end
+				net.ReadFloat() //dummy value, see send func
+			end
+
+		elseif input == "loop_mode" then
 				
 			self:SetLoop(net.ReadBool())
 			refreshtable = true

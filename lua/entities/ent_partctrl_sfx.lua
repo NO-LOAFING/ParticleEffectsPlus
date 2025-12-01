@@ -149,7 +149,6 @@ if CLIENT then
 				render.SetMaterial(partctrl_arrowmat)
 				render.DrawBeam(pos, pos + (ang:Forward() * 20), 20, 1, 0, color_white)
 
-				//TODO: this doesn't render through walls like the arrows or grips do, is there a better way than 3D2D to make text that resizes nicely like this?
 				local view = LocalPlayer():GetViewEntity()
 				local camang = nil
 				if view:IsPlayer() then
@@ -159,9 +158,11 @@ if CLIENT then
 				end
 				camang:RotateAroundAxis( camang:Up(), -90 )
 				camang:RotateAroundAxis( camang:Forward(), 90 )
+				cam.IgnoreZ(true)
 				cam.Start3D2D(pos, camang, 0.125)
 					draw.SimpleTextOutlined(self.PartCtrl_ShortName or self.PrintName,"PartCtrl_3D2DFont",0,-50,partctrl_colortext,TEXT_ALIGN_CENTER,TEXT_ALIGN_BOTTOM,3,partctrl_colorborder)
 				cam.End3D2D()
+				cam.IgnoreZ(false)
 			end
 		end
 
@@ -447,15 +448,13 @@ if CLIENT then
 	
 				net.WriteEntity(args[1]) //child entity to remove
 
-			elseif input == "effect_pause" then
+			elseif input == "effect_pause" and !self.CustomPauseInput then
 
-				if self:GetPauseTime() < 0 then
+				if self:GetPauseTime() < 0 and self.ParticleStartTime then
 					//not paused, so pause it at the current time
-					if self.ParticleStartTime then
-						net.WriteFloat(CurTime() - self.ParticleStartTime)
-						//pause the effect immediately, don't wait for the pausetime nwvar to be networked back to us
-						self:SetPauseTime(CurTime() - self.ParticleStartTime)
-					end
+					net.WriteFloat(CurTime() - self.ParticleStartTime)
+					//pause the effect immediately, don't wait for the pausetime nwvar to be networked back to us
+					self:SetPauseTime(CurTime() - self.ParticleStartTime)
 				else
 					//paused, so unpause it
 					net.WriteFloat(-1)
@@ -566,7 +565,7 @@ else
 				//don't refresh table, DetachFromSpecialEffect handles this
 			end
 
-		elseif input == "effect_pause" then
+		elseif input == "effect_pause" and !self.CustomPauseInput then
 			
 			self:SetPauseTime(net.ReadFloat())
 

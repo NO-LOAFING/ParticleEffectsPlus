@@ -328,8 +328,6 @@ if CLIENT then
 				if didpause then
 					//MsgN("pausing")
 					self.ParticlePauseTime = CurTime()
-					//don't loop while paused
-					if self.LastLoop then self.LastLoop = nil end
 				end
 			else
 				//if paused, but shouldn't be, then unpause it
@@ -342,10 +340,15 @@ if CLIENT then
 				end
 				if didunpause then
 					//MsgN("unpausing")
-					//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
-					//again afterward, the effect's lifetime doesn't include the time it spent paused prior to that
 					if self.ParticlePauseTime != nil then
-						self.ParticleStartTime = self.ParticleStartTime + (CurTime() - self.ParticlePauseTime)
+						//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
+						//again afterward, the effect's lifetime doesn't include the time it spent paused prior to that
+						local diff = (CurTime() - self.ParticlePauseTime)
+						self.ParticleStartTime = self.ParticleStartTime + diff
+						//do the same for loop time
+						if self.LastLoop then
+							self.LastLoop = self.LastLoop + diff
+						end
 						self.ParticlePauseTime = nil
 					end
 				end
@@ -357,28 +360,10 @@ if CLIENT then
 			numpadisdisabling = !numpadisdisabling
 		end
 		if !numpadisdisabling then
-			local loop = self:GetLoop()
-			local time = CurTime()
-			if self.was_waiting then
-				local wait = false
-				for child, _ in pairs (self.SpecialEffectChildren) do
-					child.MaxOldParticlesOverride = max
-					local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
-					if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
-					and !child.ParticleInfo then
-						wait = true
-						break
-					end
-				end
-				if !wait then
-					self.ParticleStartTime = nil //effect was either newly spawned, or disabled and enabled, so reset the timer
-					self.ParticlePauseTime = nil
-					self.was_waiting = nil
-					self:StartParticle()
-				end
-			end
-			if loop then //loop mode 2: repeat every X seconds
-				if self.LastLoop and (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
+			if !ispaused then
+				local loop = self:GetLoop()
+				local time = CurTime()
+				if self.was_waiting then
 					local wait = false
 					for child, _ in pairs (self.SpecialEffectChildren) do
 						child.MaxOldParticlesOverride = max
@@ -386,19 +371,39 @@ if CLIENT then
 						if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
 						and !child.ParticleInfo then
 							wait = true
-							self.was_waiting = true
 							break
 						end
 					end
 					if !wait then
+						self.ParticleStartTime = nil //effect was either newly spawned, or disabled and enabled, so reset the timer
+						self.ParticlePauseTime = nil
+						self.was_waiting = nil
 						self:StartParticle()
-						self.LastLoop = nil
 					end
 				end
-				
-				if self.LastLoop == nil and !ispaused then //don't loop if particle is paused
-					self.LastLoop = time
-					//MsgN(time, ": set last loop to ", self.LastLoop)
+				if loop then //loop mode 2: repeat every X seconds
+					if self.LastLoop and (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
+						local wait = false
+						for child, _ in pairs (self.SpecialEffectChildren) do
+							child.MaxOldParticlesOverride = max
+							local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
+							if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+							and !child.ParticleInfo then
+								wait = true
+								self.was_waiting = true
+								break
+							end
+						end
+						if !wait then
+							self:StartParticle()
+							self.LastLoop = nil
+						end
+					end
+					
+					if self.LastLoop == nil then
+						self.LastLoop = time
+						//MsgN(time, ": set last loop to ", self.LastLoop)
+					end
 				end
 			end
 		else

@@ -2,6 +2,8 @@ AddCSLuaFile()
 
 local PANEL = {}
 
+local svproj_enabled = GetConVar("sv_partctrl_allowserverprojectiles")
+
 
 
 
@@ -1100,12 +1102,16 @@ function PANEL:RebuildControls()
 	function text.Think()
 		if ent and ent.GetPauseTime then //don't cause an error when the ent is removed
 			local pausetime = ent:GetPauseTime()
+			local starttime = ent.ParticleStartTime
+			if ent.GetParticleStartTime and ent.GetProjServerside and (ent:GetProjServerside() and svproj_enabled:GetBool()) then 
+				starttime = ent:GetParticleStartTime() //for proj sfx's goofy serverside particlestarttime
+			end
 			local newtext = ""
-			if pausetime >= 0 and ent.ParticleStartTime != nil then
-				if pausetime <= (CurTime() - ent.ParticleStartTime) then
+			if pausetime >= 0 and starttime != nil and starttime > 0 then
+				if pausetime <= (CurTime() - starttime) then
 					newtext = "Paused at " .. tostring(math.Round(pausetime, 2)) .. " secs"
 				else
-					newtext = "Pausing at " .. tostring(math.Round(pausetime, 2)) .. " secs (in " .. tostring(-math.Round(CurTime() - ent.ParticleStartTime - pausetime, 2)) .. " secs)"
+					newtext = "Pausing at " .. tostring(math.Round(pausetime, 2)) .. " secs (in " .. tostring(-math.Round(CurTime() - starttime - pausetime, 2)) .. " secs)"
 				end
 			end
 			if newtext != text:GetText() then
