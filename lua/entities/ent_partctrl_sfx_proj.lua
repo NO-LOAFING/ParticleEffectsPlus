@@ -799,6 +799,8 @@ function ENT:SpecialEffectInitialize()
 
 	//list of projectile entities we've created; we use this to clean them up
 	self.ProjectileEnts = {}
+	self.ProjectileTimers = {}
+	self.ProjectileHitData = {}
 
 	self.LastLoop = partctrl_wait
 
@@ -820,6 +822,7 @@ function ENT:SpecialEffectThink()
 		//upon the start of the next loop, meaning the max won't get rid of them all uniformly like it does with the other fx. this is still acceptable because it fulfills the *safety*
 		//purpose of this feature, preventing too many fx from being created at once.
 	end
+	local time = CurTime()
 
 	local numpadisdisabling = self:GetNumpadState()
 	if !self:GetNumpadStartOn() then
@@ -838,7 +841,6 @@ function ENT:SpecialEffectThink()
 			end
 			if (!svproj and CLIENT) or (svproj and SERVER) then
 				local loop = self:GetLoop()
-				local time = CurTime()
 				if loop or self.LastLoop == nil then //loop mode 2: repeat every X seconds
 					if self.LastLoop == nil or (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
 						local wait = false
@@ -892,11 +894,37 @@ function ENT:SpecialEffectThink()
 		table.remove(self.ProjectileEnts, 1)
 	end
 
-	//If loop mode is set to minimum, ensure we run next frame (for consistency with standard fx)
-	if self:GetLoop() and (self:GetLoopDelay() == 0 or SERVER) then
-		self:NextThink(CurTime())
-		return true
+	//Do projectile timers
+	for proj, dietime in pairs (self.ProjectileTimers) do
+		if IsValid(proj) then
+			if time >= dietime then
+				if CLIENT then
+					if IsValid(proj) and IsValid(self) then
+						if self.ProjectileHitData[proj] then
+							self:StartParticle(proj, self.ProjectileHitData[proj].HitPos, -self.ProjectileHitData[proj].HitNormal)
+						else
+							self:StartParticle(proj, true)
+						end
+						proj:Remove()
+					end
+				else
+					if IsValid(proj) then
+						if self.ProjectileHitData[proj] then
+							proj:DoExpire(self.ProjectileHitData[proj].HitPos, -self.ProjectileHitData[proj].HitNormal)
+						else
+							proj:DoExpire()
+						end
+					end
+				end
+			end
+		else
+			self.ProjectileTimers[proj] = nil
+			self.ProjectileHitData[proj] = nil
+		end
 	end
+
+	self:NextThink(time)
+	return true
 
 end
 
@@ -911,6 +939,19 @@ local ang_up = Angle(-90,0,0)
 local ang_down = Angle(90,0,0)
 
 function ENT:CreateProjectile()
+
+	self.hitfunc = self.hitfunc or function(proj, data)
+		if proj.Hit then return end //there's no reason to call this more than once
+		proj.Hit = true
+
+		if IsValid(proj) and IsValid(self) then
+			if proj.lifetime_posthit == 0 then
+				self.ProjectileHitData[proj] = data
+				if CLIENT then proj:SetNoDraw(true) end //fix clientside projs that hit the world appearing at a deflected angle for a split sec until they get deleted; serverside projs don't have this problem
+			end
+			self.ProjectileTimers[proj] = math.min(self.ProjectileTimers[proj], CurTime() + proj.lifetime_posthit)
+		end
+	end
 
 	local ent = self:GetSpecialEffectParent()
 	if !IsValid(ent) then return end
@@ -1017,41 +1058,18 @@ function ENT:CreateProjectile()
 			proj:SetRenderMode(RENDERMODE_TRANSCOLOR)
 		end
 
-		local lifetime_prehit = self:GetProjLifetimePre()
-		local lifetime_posthit = self:GetProjLifetimePost()
+		self.ProjectileTimers[proj] = CurTime() + self:GetProjLifetimePre()
+		proj.lifetime_posthit = self:GetProjLifetimePost()
 		if CLIENT then
-			timer.Simple(lifetime_prehit, function()
-				if IsValid(proj) and IsValid(self) then
-					self:StartParticle(proj, true)
-					proj:Remove()
-				end
-			end)
-			proj:AddCallback("PhysicsCollide", function(proj, data)
-				if proj.Hit then return end //there's no reason to call this more than once
-				proj.Hit = true
-			
-				timer.Simple(lifetime_posthit, function() //even if lifetime_posthit is 0, we still need to use a timer, because directly removing the ent in a PhysicsCollide callback crashes the game
-					if IsValid(proj) and IsValid(self) then
-						if lifetime_posthit == 0 then
-							self:StartParticle(proj, data.HitPos, -data.HitNormal)
-						else
-							self:StartParticle(proj, true)
-						end
-						proj:Remove()
-					end
-				end)
-			end)
+			proj:AddCallback("PhysicsCollide", self.hitfunc)
 		else
-			//serverside projectile ent handles this in its code
-			proj.lifetime_prehit = lifetime_prehit
-			proj.lifetime_posthit = lifetime_posthit
+			proj.PhysicsCollide = self.hitfunc
 		end
 
 		proj:Spawn()
 		table.insert(self.ProjectileEnts, proj)
-		if CLIENT then
-			self:StartParticle(proj)
-		end
+		if CLIENT then self:StartParticle(proj) end
+		//serverside projectile ent handles this in its clientside spawn function
 
 		local phys = proj:GetPhysicsObject()
 		if IsValid(phys) then

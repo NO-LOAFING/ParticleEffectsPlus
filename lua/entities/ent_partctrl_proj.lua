@@ -33,12 +33,6 @@ function ENT:Initialize()
 		if IsValid(owner) then
 			owner:StartParticle(self)
 		end
-	else
-		timer.Simple(self.lifetime_prehit, function() 
-			if IsValid(self) then
-				self:DoExpire()
-			end
-		end)
 	end
 
 end
@@ -47,23 +41,6 @@ end
 
 
 if SERVER then
-
-	function ENT:PhysicsCollide(data)
-
-		if self.Hit then return end //there's no reason to call this more than once
-		self.Hit = true
-
-		timer.Simple(self.lifetime_posthit, function() //even if lifetime_posthit is 0, we still need to use a timer, because directly removing the ent in a PhysicsCollide callback crashes the game
-			if IsValid(self) then
-				if self.lifetime_posthit == 0 then
-					self:DoExpire(data.HitPos, -data.HitNormal)
-				else
-					self:DoExpire()
-				end
-			end
-		end)
-
-	end
 
 	util.AddNetworkString("PartCtrl_ProjEffectExpire_SendToCl")
 
