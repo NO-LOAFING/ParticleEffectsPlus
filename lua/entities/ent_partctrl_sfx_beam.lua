@@ -334,7 +334,7 @@ if CLIENT then
 						//MsgN("pausing")
 						self.ParticlePauseTime = CurTime()
 					end
-				else//if pausetime < 0 then
+				else
 					//if paused, but shouldn't be, then unpause it
 					local didunpause
 					for child, _ in pairs (self.SpecialEffectChildren) do
@@ -382,7 +382,7 @@ if CLIENT then
 
 		timer.Simple(0, function() //wait a frame, otherwise SpecialEffectThink will retrieve an out-of-date SpecialEffectParent on this ent
 			if !IsValid(self) then return end
-			self.ParticleStartTime = CurTime()
+			self.ParticleStartTime = CurTime() //pause behavior is extra simple on this special effect because we don't disablechildautoplay
 			self.ParticlePauseTime = nil
 			self:SpecialEffectThink() //update the children's ParticleInfo first
 			if self.SpecialEffectChildren then
@@ -479,6 +479,9 @@ duplicator.RegisterEntityClass("ent_partctrl_sfx_beam", function(ply, data)
 
 	local ent = ents.Create("ent_partctrl_sfx_beam")
 	if !ent:IsValid() then return false end
+
+	//default dtvars for old dupes that don't have them
+	if data.DT.PauseTime == nil then data.DT.PauseTime = -1 end
 
 	//duplicator.GenericDuplicatorFunction(ply, data)
 	duplicator.DoGeneric(ent, data)

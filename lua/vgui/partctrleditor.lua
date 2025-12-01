@@ -1079,7 +1079,7 @@ function PANEL:RebuildControls()
 	pause:SetToggle(false)
 	pause:Dock(LEFT)
 	pause:SetWide(32)
-	pause:SetTooltip("Pause particle effect\nIf the effect is restarted or duplicated, it will play up to and then pause at the same point in time.")
+	pause:SetTooltip("Pause particle effect\n\nIf the effect is modified, restarted, disabled-then-reenabled, or duplicated,\nthen it will play up to and then re-pause at the same point in time.")
 
 	function pause.Think()
 		//NOTE: This can be changed without clicking on the button by using the numpad key to pause/unpause
@@ -1124,7 +1124,11 @@ function PANEL:RebuildControls()
 	restart:SetDrawBackground(true)
 	restart:Dock(RIGHT)
 	restart:SetWide(32)
-	restart:SetTooltip("Restart particle effect")
+	if !ent.utilfx then
+		restart:SetTooltip("Restart particle effect, and clean up all particles")
+	else
+		restart:SetTooltip("Restart particle effect")
+	end
 
 	function restart.DoClick()
 		ent:DoInput("effect_restart")
@@ -1703,6 +1707,7 @@ function PANEL:RebuildControls()
 					//This effect is a new child, add controls for it
 					local cat = vgui.Create("DCollapsibleCategory", rcontainer)
 					cat:SetLabel(GetParticleName(child))
+					cat.Header:SetToolTip(GetParticleName(child)) //these names can get really long, show the whole name on hover
 					cat:DockMargin(-2,1,3,3) //need extra +1 on left and right to match the margins of first-level category; 0 left for divider
 					cat:Dock(TOP)
 					rcontainer:AddItem(cat)

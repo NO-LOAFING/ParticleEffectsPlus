@@ -1676,6 +1676,9 @@ duplicator.RegisterEntityClass("ent_partctrl_sfx_proj", function(ply, data)
 	local ent = ents.Create("ent_partctrl_sfx_proj")
 	if !ent:IsValid() then return false end
 
+	//default dtvars for old dupes that don't have them
+	if data.DT.PauseTime == nil then data.DT.PauseTime = -1 end
+
 	//duplicator.GenericDuplicatorFunction(ply, data)
 	duplicator.DoGeneric(ent, data)
 	duplicator.DoGenericPhysics(ent, ply, data)

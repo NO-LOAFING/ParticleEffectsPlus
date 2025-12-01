@@ -311,6 +311,47 @@ if CLIENT then
 			max = math.max(0, math.min(self:GetTracerCount(), cv_max:GetInt()) - 1)
 		end
 
+		//Handle pausing
+		local ispaused = false
+		if self.ParticleStartTime then
+			local pausetime = self:GetPauseTime()
+			ispaused = pausetime >= 0 and pausetime <= (CurTime() - self.ParticleStartTime)
+			if ispaused then
+				//if not paused, but should be, then pause it
+				local didpause
+				for child, _ in pairs (self.SpecialEffectChildren) do
+					if !child.PauseOverride then
+						didpause = true
+						child.PauseOverride = true
+					end
+				end
+				if didpause then
+					//MsgN("pausing")
+					self.ParticlePauseTime = CurTime()
+					//don't loop while paused
+					if self.LastLoop then self.LastLoop = nil end
+				end
+			else
+				//if paused, but shouldn't be, then unpause it
+				local didunpause
+				for child, _ in pairs (self.SpecialEffectChildren) do
+					if child.PauseOverride then
+						didunpause = true
+						child.PauseOverride = nil
+					end
+				end
+				if didunpause then
+					//MsgN("unpausing")
+					//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
+					//again afterward, the effect's lifetime doesn't include the time it spent paused prior to that
+					if self.ParticlePauseTime != nil then
+						self.ParticleStartTime = self.ParticleStartTime + (CurTime() - self.ParticlePauseTime)
+						self.ParticlePauseTime = nil
+					end
+				end
+			end
+		end
+
 		local numpadisdisabling = self:GetNumpadState()
 		if !self:GetNumpadStartOn() then
 			numpadisdisabling = !numpadisdisabling
@@ -318,8 +359,26 @@ if CLIENT then
 		if !numpadisdisabling then
 			local loop = self:GetLoop()
 			local time = CurTime()
-			if loop or self.LastLoop == nil then //loop mode 2: repeat every X seconds
-				if self.LastLoop == nil or (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
+			if self.was_waiting then
+				local wait = false
+				for child, _ in pairs (self.SpecialEffectChildren) do
+					child.MaxOldParticlesOverride = max
+					local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
+					if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+					and !child.ParticleInfo then
+						wait = true
+						break
+					end
+				end
+				if !wait then
+					self.ParticleStartTime = nil //effect was either newly spawned, or disabled and enabled, so reset the timer
+					self.ParticlePauseTime = nil
+					self.was_waiting = nil
+					self:StartParticle()
+				end
+			end
+			if loop then //loop mode 2: repeat every X seconds
+				if self.LastLoop and (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
 					local wait = false
 					for child, _ in pairs (self.SpecialEffectChildren) do
 						child.MaxOldParticlesOverride = max
@@ -327,14 +386,19 @@ if CLIENT then
 						if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
 						and !child.ParticleInfo then
 							wait = true
+							self.was_waiting = true
 							break
 						end
 					end
 					if !wait then
 						self:StartParticle()
-						self.LastLoop = time
-						//MsgN(time, ": set last loop to ", self.LastLoop)
+						self.LastLoop = nil
 					end
+				end
+				
+				if self.LastLoop == nil and !ispaused then //don't loop if particle is paused
+					self.LastLoop = time
+					//MsgN(time, ": set last loop to ", self.LastLoop)
 				end
 			end
 		else
@@ -351,6 +415,7 @@ if CLIENT then
 				end
 			end
 			self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
+			self.was_waiting = true
 		end
 
 		//If loop mode is set to minimum, ensure we run next frame (for consistency with standard fx)
@@ -472,6 +537,11 @@ if CLIENT then
 			hit.PartCtrl_TraceHit = tr.Entity
 			hit.PartCtrl_SurfaceProp = tr.SurfaceProps
 
+			//Save particle creation time (used for pausing, which needs to pause at a certain point in the effect's lifetime)
+			if !self.ParticleStartTime then
+				self.ParticleStartTime = CurTime()
+			end
+
 			for child, _ in pairs (self.SpecialEffectChildren) do
 				if child.PartCtrl_Ent then
 					local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
@@ -509,6 +579,10 @@ if CLIENT then
 
 	function ENT:SpecialEffectRefresh()
 
+		self.ParticleStartTime = nil
+		self.ParticlePauseTime = nil
+		self.was_waiting = true //tells the think func to run StartParticle as soon as possible
+
 		if self.SpecialEffectChildren then
 			for child, _ in pairs (self.SpecialEffectChildren) do
 				child:BeginNewParticle()
@@ -539,17 +613,14 @@ if SERVER then
 		elseif mode == 1 then
 
 			//Mode 1: Pause/unpause effect
-			//TODO
-			--[[//This requires a ParticleStartTime value that only exists clientside, so tell the client to send it, using the same "effect_pause" input as the cpanel
+			//This requires a ParticleStartTime value that only exists clientside, so tell the client to send it, using the same "effect_pause" input as the cpanel
 			if IsValid(ply) and ply.IsPlayer and ply:IsPlayer() then
 				net.Start("PartCtrl_DoPauseInput_SendToCl")
 					net.WriteEntity(self)
 				net.Send(ply)
 			else
-				local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
-				local name = self:GetParticleName()
-				MsgN(self, " (", pcf, " ", name, ") tried to send a numpad pause input with invalid player ", ply, ". Report this!")
-			end]]
+				MsgN(self, " tried to send a numpad pause input with invalid player ", ply, ". Report this!")
+			end
 
 		elseif mode == 2 then
 
@@ -775,6 +846,9 @@ duplicator.RegisterEntityClass("ent_partctrl_sfx_tracer", function(ply, data)
 
 	local ent = ents.Create("ent_partctrl_sfx_tracer")
 	if !ent:IsValid() then return false end
+
+	//default dtvars for old dupes that don't have them
+	if data.DT.PauseTime == nil then data.DT.PauseTime = -1 end
 
 	//duplicator.GenericDuplicatorFunction(ply, data)
 	duplicator.DoGeneric(ent, data)

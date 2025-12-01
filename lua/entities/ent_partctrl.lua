@@ -175,7 +175,7 @@ function ENT:Think()
 					//don't loop while paused
 					if self.LastLoop then self.LastLoop = nil end
 				end
-			elseif pausetime < 0 then
+			else
 				//if paused, but shouldn't be, then unpause it
 				local didunpause
 				if IsValid(self.particle) and !self.particle:GetShouldSimulate() then
@@ -321,6 +321,7 @@ function ENT:Think()
 						if self.particle == partctrl_wait then
 							//MsgN(time, ": waiting")
 							self.ParticleStartTime = nil //effect was either disabled and enabled, or clobbered by crashcheck, so reset the timer
+							self.ParticlePauseTime = nil
 							self:StartParticle()
 						else
 							if loop == 1 then //loop mode 1: repeat X seconds after ending
@@ -331,6 +332,7 @@ function ENT:Think()
 								if (self.LastLoop + self:GetLoopDelay()) <= time then
 									//MsgN(time, ": did loop 1")
 									self.ParticleStartTime = nil //loop mode 1 resets the timer with every new effect; otherwise, don't reset the timer unless we restart the effect
+									self.ParticlePauseTime = nil
 									self:StartParticle()
 									self.LastLoop = nil
 								end
@@ -668,6 +670,7 @@ if CLIENT then
 		local sfxpar = self:GetSpecialEffectParent()
 		if !IsValid(sfxpar) or !sfxpar.DisableChildAutoplay then
 			self.ParticleStartTime = nil
+			self.ParticlePauseTime = nil
 			self:StartParticle()
 		end
 		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
@@ -925,7 +928,7 @@ if CLIENT then
 
 	net.Receive("PartCtrl_DoPauseInput_SendToCl", function(_, ply)
 		local self = net.ReadEntity()
-		if !IsValid(self) or !self.PartCtrl_Ent or !istable(self.ParticleInfo) then return end
+		if !IsValid(self) or !((self.PartCtrl_Ent and istable(self.ParticleInfo)) or self.PartCtrl_SpecialEffect) then return end
 		self:DoInput("effect_pause")
 	end)
 	
