@@ -74,23 +74,40 @@ function PANEL:Paint(w, h)
 	PartCtrl_IconFx[pcf][name].panels = PartCtrl_IconFx[pcf][name].panels or {}
 	
 	local itab = PartCtrl_IconFx[pcf][name]
-	self:SetTooltip(itab.tooltip)
-	//Handling for special error message that needs to include the game path
-	if itab.tooltip_withpath and self.path and !IsMounted(self.path) then
-		for k, v in pairs (engine.GetGames()) do
-			if v.folder == self.path then
-				self:SetTooltip(string.format(itab.tooltip_withpath, v.title))
-				break
+	local tooltip = itab.tooltip
+	local overridden = self:IsCurrentlyOverridden(pcf, name)
+	if tooltip then
+		local path_nice = ""
+		local path_dev = ""
+		if self.path then
+			path_nice = self.path
+			for k, v in pairs (engine.GetGames()) do
+				if v.folder == self.path then
+					path_nice = v.title
+					break
+				end
+			end
+			path_nice = ", probably from game " .. path_nice
+			if GetConVarNumber("developer") >= 1 then
+				path_dev = "\n(path: " .. self.path .. ")"
 			end
 		end
+		local override_pcf = "this file"
+		if overridden then
+			override_pcf = '"' .. PartCtrl_GetDataPCFNiceName( PartCtrl_PCFsByParticleName_CurrentlyLoaded[name] ) .. '"'
+		end
+		tooltip = string.Replace(tooltip, "%PATH_NICE", path_nice)
+		tooltip = string.Replace(tooltip, "%PATH_DEV", path_dev)
+		tooltip = string.Replace(tooltip, "%OVERRIDE_PCF", override_pcf)
 	end
+	self:SetTooltip(tooltip)
 
 	
 	local bd = self.Border + 4
 	local showparticle = true
 
 	//If the icon's effect is currently being overridden by another pcf's effect of the same name, show a notification instead
-	if self:IsCurrentlyOverridden(pcf, name) then
+	if overridden then
 		local mdef_width = math.min(w,h) * 0.5
 		surface.SetDrawColor(0,0,0,64)
 		surface.DrawRect(0 + bd, 0 + bd, w - (bd*2), h - (bd*2))
@@ -333,7 +350,8 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 
 			//Store first-time info
 			if !self.tooltip then
-				local tooltip = name
+				local tooltip = name .. "\n(" .. PartCtrl_GetDataPCFNiceName(pcf) .. ")%PATH_DEV"
+				
 				self.icons = {}
 				if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) or !istable(PartCtrl_ProcessedPCFs[pcf][name].cpoints) then
 					if PartCtrl_CulledFx[pcf] and PartCtrl_CulledFx[pcf][name] then
@@ -356,24 +374,17 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							text = text .. v
 							docomma = true
 						end
-						tooltip = tooltip .. "\n(" .. pcf .. ")\n\n\nERROR: Invalid particle effect (" .. text .. ")"
+						tooltip = tooltip .. "\n\n\nERROR: Invalid particle effect (" .. text .. ")"
 					elseif !istable(PartCtrl_ProcessedPCFs[pcf]) then
-						self.tooltip_withpath = tooltip .. "\n(" .. pcf .. ")\n\n\nERROR: Invalid particle effect (No loaded .pcf file with this name, probably from unmounted game %s)"
-						tooltip = tooltip .. "\n(" .. pcf .. ")\n\n\nERROR: Invalid particle effect (No loaded .pcf file with this name)"
+						tooltip = tooltip .. "\n\n\nERROR: Invalid particle effect (No loaded .pcf file with this name%PATH_NICE)"
 					else
-						tooltip = tooltip .. "\n(" .. pcf .. ")\n\n\nERROR: Invalid particle effect (No effect with this name in this .pcf)"
+						tooltip = tooltip .. "\n\n\nERROR: Invalid particle effect (No effect with this name in this .pcf)"
 					end
 					table.insert(self.icons, {["icon"] = icon_invalid})
 				else
-					if !utilfx then
-						tooltip = tooltip .. "\n(" .. PartCtrl_GetDataPCFNiceName(pcf) .. ")"
-
-						if PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][name] then
-							tooltip = tooltip .. "\n\nThis is a duplicate of \"" .. name .. "\" from \"" .. PartCtrl_GetDataPCFNiceName(PartCtrl_DuplicateFx[pcf][name]) .. "\"."
-							table.insert(self.icons, {["icon"] = Material("icon16/page_paste.png")})
-						end
-					else
-						tooltip = tooltip .. "\n(Scripted Effect)"
+					if PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][name] then
+						tooltip = tooltip .. "\n\nThis is a duplicate of \"" .. name .. "\" from \"" .. PartCtrl_GetDataPCFNiceName(PartCtrl_DuplicateFx[pcf][name]) .. "\"."
+						table.insert(self.icons, {["icon"] = Material("icon16/page_paste.png")})
 					end
 			
 					local types = {}
@@ -470,7 +481,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 								end
 							//end
 						end
-						text = text .. "\n\nOnly one effect called \"" .. name .. "\" can be loaded at a time.\nIf you reload effects from any of these files, even in spawnicons,\nit will use the \"" .. name .. "\" from the most recently loaded file." 
+						text = text .. "\n\nCurrently, the one from %OVERRIDE_PCF is loaded.\nOnly one effect with the same name can be loaded at a time.\nIf you load effects from any of these files, even in spawnicons, then\nit will use the \"" .. name .. "\" from the most recently loaded file." 
 						if pcfs_added > 1 then
 							tooltip = tooltip .. text
 							table.insert(self.icons, {["icon"] = icon_multiplydefined, ["icon2"] = icon_multiplydefined_2})
@@ -697,6 +708,10 @@ function PANEL:DoClick()
 	if self:IsCurrentlyOverridden(pcf, self.name) then
 		surface.PlaySound("common/wpn_select.wav") //TODO: is this a good sound? needs to be different enough from the spawn sound so players can tell that clicking didn't spawn an effect yet.
 		PartCtrl_AddParticles(pcf, self.name) //crash prevention
+		//Update the tooltip, so it doesn't still say the effect is being overridden by another pcf
+		timer.Simple(0, function()
+			if IsValid(self) then ChangeTooltip(self) end
+		end)
 	else
 		RunConsoleCommand("partctrl_spawnparticle", self.name, self.pcf, self.path)
 		surface.PlaySound("ui/buttonclickrelease.wav")

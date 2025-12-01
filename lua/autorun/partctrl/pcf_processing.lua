@@ -3299,6 +3299,7 @@ function PartCtrl_GetGamePCF(pcf, path)
 end
 
 function PartCtrl_GetDataPCFNiceName(pcf)
+	if pcf == "UtilFx" then return "Scripted Effect" end
 	local tab = PartCtrl_AllDataPCFs[pcf]
 	if !tab then return pcf end
 	return tab.original_filename .. " (" .. tab.path .. ")"
