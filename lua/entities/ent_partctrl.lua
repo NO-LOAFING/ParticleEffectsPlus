@@ -113,6 +113,7 @@ function ENT:Think()
 		local name = self:GetParticleName()
 		if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then return end
 		local ptab = PartCtrl_ProcessedPCFs[pcf][name]
+		local time = CurTime()
 
 		//TODO: see if we need to copy the demo fix that ragdoll resizer/animpropoverhaul/advbone have for their info tables
 
@@ -122,7 +123,7 @@ function ENT:Think()
 				net.WriteEntity(self)
 			net.SendToServer()
 
-			self:NextThink(CurTime())
+			self:NextThink(time)
 			return
 		end
 
@@ -155,7 +156,7 @@ function ENT:Think()
 		local ispaused = false
 		if self.ParticleStartTime then
 			local pausetime = self:GetPauseTime()
-			ispaused = self.PauseOverride or (pausetime >= 0 and pausetime <= (CurTime() - self.ParticleStartTime))
+			ispaused = self.PauseOverride or (pausetime >= 0 and pausetime <= (time - self.ParticleStartTime))
 			if ispaused then
 				//if not paused, but should be, then pause it
 				local didpause
@@ -171,7 +172,7 @@ function ENT:Think()
 				end
 				if didpause then
 					//MsgN("pausing")
-					self.ParticlePauseTime = CurTime()
+					self.ParticlePauseTime = time
 				end
 			else
 				//if paused, but shouldn't be, then unpause it
@@ -191,7 +192,7 @@ function ENT:Think()
 					if self.ParticlePauseTime != nil then
 						//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
 						//again afterward, the effect's lifetime doesn't include the time it spent paused prior to that
-						local diff = (CurTime() - self.ParticlePauseTime)
+						local diff = (time - self.ParticlePauseTime)
 						self.ParticleStartTime = self.ParticleStartTime + diff
 						//do the same for loop time
 						if self.LastLoop then
@@ -313,7 +314,6 @@ function ENT:Think()
 			if !numpadisdisabling then
 				if !ispaused then
 					local loop = self:GetLoopMode()
-					local time = CurTime()
 					if self.particle or self.utilfx then 
 						if self.particle and !(self.particle.IsValid and self.particle:IsValid()) then
 							//Particle is non-nil but invalid; that probably means that it ran to completion and expired, so make a new particle
@@ -415,7 +415,7 @@ function ENT:Think()
 
 		//If loop mode is set to minimum, ensure we run next frame (for utilfx like CommandPointer that need to draw a sprite every frame to render correctly)
 		if self:GetLoopDelay() == 0 and self:GetLoopMode() == 2 then
-			self:NextThink(CurTime())
+			self:NextThink(time)
 			return true
 		end
 

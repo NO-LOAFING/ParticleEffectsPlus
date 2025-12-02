@@ -230,6 +230,7 @@ if CLIENT then
 
 			local ent = self:GetSpecialEffectParent()
 			if !IsValid(ent) then return end
+			local time = CurTime()
 
 			local pos = nil
 			local ang = nil
@@ -321,7 +322,7 @@ if CLIENT then
 			//Handle pausing
 			if self.ParticleStartTime then
 				local pausetime = self:GetPauseTime()
-				if pausetime >= 0 and pausetime <= (CurTime() - self.ParticleStartTime) then
+				if pausetime >= 0 and pausetime <= (time - self.ParticleStartTime) then
 					//if not paused, but should be, then pause it
 					local didpause
 					for child, _ in pairs (self.SpecialEffectChildren) do
@@ -332,7 +333,7 @@ if CLIENT then
 					end
 					if didpause then
 						//MsgN("pausing")
-						self.ParticlePauseTime = CurTime()
+						self.ParticlePauseTime = time
 					end
 				else
 					//if paused, but shouldn't be, then unpause it
@@ -348,7 +349,7 @@ if CLIENT then
 						if self.ParticlePauseTime != nil then
 							//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
 							//again afterward, the effect's lifetime doesn't include the time it spent paused prior to that
-							local diff = (CurTime() - self.ParticlePauseTime)
+							local diff = (time - self.ParticlePauseTime)
 							self.ParticleStartTime = self.ParticleStartTime + diff
 							//don't worry about adjusting LastLoop on all the particle ents, they'll handle it themselves
 							self.ParticlePauseTime = nil

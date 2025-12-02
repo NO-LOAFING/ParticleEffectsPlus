@@ -310,12 +310,13 @@ if CLIENT then
 		if self:GetLoopSafety() then
 			max = math.max(0, math.min(self:GetTracerCount(), cv_max:GetInt()) - 1)
 		end
+		local time = CurTime()
 
 		//Handle pausing
 		local ispaused = false
 		if self.ParticleStartTime then
 			local pausetime = self:GetPauseTime()
-			ispaused = pausetime >= 0 and pausetime <= (CurTime() - self.ParticleStartTime)
+			ispaused = pausetime >= 0 and pausetime <= (time - self.ParticleStartTime)
 			if ispaused then
 				//if not paused, but should be, then pause it
 				local didpause
@@ -327,7 +328,7 @@ if CLIENT then
 				end
 				if didpause then
 					//MsgN("pausing")
-					self.ParticlePauseTime = CurTime()
+					self.ParticlePauseTime = time
 				end
 			else
 				//if paused, but shouldn't be, then unpause it
@@ -343,7 +344,7 @@ if CLIENT then
 					if self.ParticlePauseTime != nil then
 						//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
 						//again afterward, the effect's lifetime doesn't include the time it spent paused prior to that
-						local diff = (CurTime() - self.ParticlePauseTime)
+						local diff = (time - self.ParticlePauseTime)
 						self.ParticleStartTime = self.ParticleStartTime + diff
 						//do the same for loop time
 						if self.LastLoop then
@@ -362,7 +363,6 @@ if CLIENT then
 		if !numpadisdisabling then
 			if !ispaused then
 				local loop = self:GetLoop()
-				local time = CurTime()
 				if self.was_waiting then
 					local wait = false
 					for child, _ in pairs (self.SpecialEffectChildren) do
@@ -425,7 +425,7 @@ if CLIENT then
 
 		//If loop mode is set to minimum, ensure we run next frame (for consistency with standard fx)
 		if self:GetLoop() and self:GetLoopDelay() == 0 then
-			self:NextThink(CurTime())
+			self:NextThink(time)
 			return true
 		end
 

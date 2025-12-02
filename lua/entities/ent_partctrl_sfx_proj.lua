@@ -41,16 +41,19 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Bool", 4, "NumpadState")
 	self:NetworkVar("Int", 2, "NumpadMode")
 
-	self:NetworkVar("Bool", 5, "ProjServerside")
 	self:NetworkVar("Float", 2, "ProjSpread")
 	self:NetworkVar("Int", 3, "ProjCount")
 	self:NetworkVar("Int", 4, "ProjDir")
 	self:NetworkVar("Int", 5, "ProjHitDir")
 
 	self:NetworkVar("Float", 3, "ProjVelocity")
-	self:NetworkVar("Bool", 6, "ProjGravity")
+	self:NetworkVar("Bool", 5, "ProjGravity")
+	self:NetworkVar("Bool", 6, "ProjDrag")
 	self:NetworkVar("Float", 4, "ProjLifetimePre")
 	self:NetworkVar("Float", 5, "ProjLifetimePost")
+	self:NetworkVar("Bool", 7, "ProjCollide")
+	self:NetworkVar("Bool", 8, "ProjPhysSounds")
+	self:NetworkVar("Bool", 9, "ProjServerside")
 
 	self:NetworkVar("Int", 6, "ProjAngle")
 	self:NetworkVar("Int", 7, "ProjSpin")
@@ -84,8 +87,11 @@ function ENT:SetSpecialEffectDefaults()
 
 	self:SetProjVelocity(1000)
 	self:SetProjGravity(false)
+	self:SetProjDrag(false)
 	self:SetProjLifetimePre(10)
 	self:SetProjLifetimePost(0)
+	self:SetProjCollide(false)
+	self:SetProjPhysSounds(false)
 	self:SetProjServerside(false)
 
 	
@@ -321,7 +327,7 @@ if CLIENT then
 
 
 			local slider = vgui.Create("DNumSlider", rpnl)
-			slider:SetText("Projectile velocity")
+			slider:SetText("Velocity")
 			slider:SetMinMax(0, 3000)
 			slider:SetDefaultValue(1000)
 			slider:SetDark(true)
@@ -341,7 +347,7 @@ if CLIENT then
 
 
 			local check = vgui.Create( "DCheckBoxLabel", rpnl)
-			check:SetText("Projectile gravity")
+			check:SetText("Gravity")
 			check:SetDark(true)
 			check:SetHeight(15)
 			check:Dock(TOP)
@@ -350,6 +356,19 @@ if CLIENT then
 			check:SetValue(ent:GetProjGravity())
 			check.OnChange = function(_, val)
 				ent:DoInput("proj_gravity", val)
+			end
+
+
+			local check = vgui.Create( "DCheckBoxLabel", rpnl)
+			check:SetText("Drag")
+			check:SetDark(true)
+			check:SetHeight(15)
+			check:Dock(TOP)
+			check:DockMargin(padding,betweenitems,0,0)
+
+			check:SetValue(ent:GetProjDrag())
+			check.OnChange = function(_, val)
+				ent:DoInput("proj_drag", val)
 			end
 
 
@@ -419,11 +438,37 @@ if CLIENT then
 
 
 			local check = vgui.Create( "DCheckBoxLabel", rpnl)
-			check:SetText("Serverside projectiles")
+			check:SetText("Collide with other projectiles")
 			check:SetDark(true)
 			check:SetHeight(15)
 			check:Dock(TOP)
 			check:DockMargin(padding,betweencategories,0,0)
+
+			check:SetValue(ent:GetProjCollide())
+			check.OnChange = function(_, val)
+				ent:DoInput("proj_collide", val)
+			end
+
+
+			local check = vgui.Create( "DCheckBoxLabel", rpnl)
+			check:SetText("Play physics sounds")
+			check:SetDark(true)
+			check:SetHeight(15)
+			check:Dock(TOP)
+			check:DockMargin(padding,betweenitems,0,0)
+
+			check:SetValue(ent:GetProjPhysSounds())
+			check.OnChange = function(_, val)
+				ent:DoInput("proj_physsounds", val)
+			end
+
+
+			local check = vgui.Create( "DCheckBoxLabel", rpnl)
+			check:SetText("Serverside projectiles")
+			check:SetDark(true)
+			check:SetHeight(15)
+			check:Dock(TOP)
+			check:DockMargin(padding,betweenitems,0,0)
 
 			check:SetValue(ent:GetProjServerside())
 			check.OnChange = function(_, val)
@@ -805,8 +850,6 @@ function ENT:SpecialEffectInitialize()
 	self.ProjectileTimers = {}
 	self.ProjectileHitData = {}
 
-	self.LastLoop = partctrl_wait
-
 end
 
 
@@ -837,7 +880,7 @@ function ENT:SpecialEffectThink()
 	end
 	if starttime and starttime > 0 then
 		local pausetime = self:GetPauseTime()
-		ispaused = pausetime >= 0 and pausetime <= (CurTime() - starttime)
+		ispaused = pausetime >= 0 and pausetime <= (time - starttime)
 		if ispaused then
 			//MsgN("pausing")
 			//if not paused, but should be, then pause it
@@ -871,7 +914,7 @@ function ENT:SpecialEffectThink()
 			end
 			if didpause then
 				//MsgN("pausing")
-				self.ParticlePauseTime = CurTime()
+				self.ParticlePauseTime = time
 			end
 		else
 			//MsgN("unpausing")
@@ -908,7 +951,7 @@ function ENT:SpecialEffectThink()
 				if self.ParticlePauseTime != nil then
 					//change the particlestarttime to compensate for the time we spent paused, so that if we pause it 
 					//again afterward, the effect's lifetime doesn't include the time it spent paused prior to that
-					local diff = (CurTime() - self.ParticlePauseTime)
+					local diff = (time - self.ParticlePauseTime)
 					if (!svproj and CLIENT) then
 						self.ParticleStartTime = starttime + diff
 					elseif (svproj and SERVER) then
@@ -932,58 +975,6 @@ function ENT:SpecialEffectThink()
 	if !self:GetNumpadStartOn() then
 		numpadisdisabling = !numpadisdisabling
 	end
-	//TODO: for reference, remove later
-	--[[if !numpadisdisabling then
-		if self.LastLoop == partctrl_wait then
-			//Wait a frame after initialize or refresh
-			self.LastLoop = nil
-		else
-			local svproj = self:GetProjServerside() and svproj_enabled:GetBool()
-			if CLIENT then
-				for child, _ in pairs (self.SpecialEffectChildren) do
-					child.MaxOldParticlesOverride = max
-				end
-			end
-			if (!svproj and CLIENT) or (svproj and SERVER) then
-				local loop = self:GetLoop()
-				if loop or self.LastLoop == nil then //loop mode 2: repeat every X seconds
-					if self.LastLoop == nil or (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
-						local wait = false
-						if CLIENT then
-							for child, _ in pairs (self.SpecialEffectChildren) do
-								local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
-								if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
-								and !child.ParticleInfo then
-									wait = true
-									break
-								end
-							end
-						end
-						if !wait then
-							self:CreateProjectile()
-							self.LastLoop = time
-							//MsgN(time, ": set last loop to ", self.LastLoop)
-						end
-					end
-				end
-			end
-		end
-	elseif CLIENT then
-		if max != nil then max = 0 end
-		for child, _ in pairs (self.SpecialEffectChildren) do
-			if child.particle and child.particle != partctrl_wait then
-				child.MaxOldParticlesOverride = max
-				if child.particle.IsValid and child.particle:IsValid() then
-					//Stop any existing particles and throw them into the OldParticles table to get cleaned up
-					//child.particle:StopEmission() //doesn't interact well with tracer count; because all the tracers except the last one are already in OldParticles, only the last one gets cut off while the rest keep playing, which looks odd
-					table.insert(child.OldParticles, child.particle)
-				end
-				child.particle = partctrl_wait
-			end
-		end
-		self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
-	end]]
-
 	if !numpadisdisabling then
 		if CLIENT then
 			for child, _ in pairs (self.SpecialEffectChildren) do
@@ -993,7 +984,6 @@ function ENT:SpecialEffectThink()
 		if !ispaused then 
 			if (!svproj and CLIENT) or (svproj and SERVER) then
 				local loop = self:GetLoop()
-				local time = CurTime()
 				if self.was_waiting then
 					local wait = false
 					if CLIENT then
@@ -1092,7 +1082,6 @@ function ENT:SpecialEffectThink()
 							else
 								self:StartParticle(proj, true)
 							end
-							proj:Remove()
 						end
 					else
 						if IsValid(proj) then
@@ -1103,6 +1092,7 @@ function ENT:SpecialEffectThink()
 							end
 						end
 					end
+					proj:Remove()
 				end
 			else
 				self.ProjectileTimers[proj] = nil
@@ -1159,6 +1149,7 @@ function ENT:CreateProjectile()
 
 	local ent = self:GetSpecialEffectParent()
 	if !IsValid(ent) then return end
+	local time = CurTime()
 
 	local pos = nil
 	local ang = nil
@@ -1198,11 +1189,11 @@ function ENT:CreateProjectile()
 	//Save particle creation time (used for pausing, which needs to pause at a certain point in the effect's lifetime)
 	if CLIENT then
 		if !self.ParticleStartTime then
-			self.ParticleStartTime = CurTime()
+			self.ParticleStartTime = time
 		end
 	else
 		if self:GetParticleStartTime() <= 0 then
-			self:SetParticleStartTime(CurTime())
+			self:SetParticleStartTime(time)
 		end
 	end
 
@@ -1258,7 +1249,11 @@ function ENT:CreateProjectile()
 		end
 		proj:SetAngles(projang)
 
-		proj:SetCollisionGroup(COLLISION_GROUP_INTERACTIVE_DEBRIS) //don't collide with other projectiles
+		if self:GetProjCollide() then
+			proj:SetCollisionGroup(COLLISION_GROUP_NONE) //default collision group, collide with everything
+		else
+			proj:SetCollisionGroup(COLLISION_GROUP_INTERACTIVE_DEBRIS) //don't collide with other projectiles
+		end
 		if !util.IsValidProp(proj:GetModel()) then
 			proj:PhysicsInitBox(proj:GetModelBounds())
 		else
@@ -1273,7 +1268,7 @@ function ENT:CreateProjectile()
 			proj:SetRenderMode(RENDERMODE_TRANSCOLOR)
 		end
 
-		self.ProjectileTimers[proj] = CurTime() + self:GetProjLifetimePre()
+		self.ProjectileTimers[proj] = time + self:GetProjLifetimePre()
 		proj.lifetime_posthit = self:GetProjLifetimePost()
 		if CLIENT then
 			proj:AddCallback("PhysicsCollide", self.hitfunc)
@@ -1283,8 +1278,7 @@ function ENT:CreateProjectile()
 
 		proj:Spawn()
 		table.insert(self.ProjectileEnts, proj)
-		if CLIENT then self:StartParticle(proj) end
-		//serverside projectile ent handles this in its clientside spawn function
+		if CLIENT then self:StartParticle(proj) end //serverside projectile ent handles this in its clientside think func
 
 		local phys = proj:GetPhysicsObject()
 		if IsValid(phys) then
@@ -1314,11 +1308,23 @@ function ENT:CreateProjectile()
 				end
 			end
 			phys:EnableGravity(self:GetProjGravity()) //would like to use proj:SetGravity() instead for more fine-tuned control, but that doesn't work on vphysics ents 
-			phys:SetMaterial("gmod_silent")
+			phys:EnableDrag(self:GetProjDrag())
+			if CLIENT and !self:GetProjPhysSounds() then
+				phys:SetMaterial("gmod_silent") //EntityEmitSound doesn't catch impact sounds, so use this to make them silent
+				proj.PartCtrl_ProjDisableSounds = true //gmod_silent doesn't catch scrape sounds, so use the hook below to remove them
+				//serverside projectile ent handles both of these in its initialize func
+			end
 		end
 
 	end
 end
+
+hook.Add("EntityEmitSound", "PartCtrl_ProjDisableSounds", function(data)
+	local ent = data.Entity
+	if IsValid(ent) and ent.PartCtrl_ProjDisableSounds then
+		return false
+	end
+end)
 
 
 
@@ -1609,8 +1615,11 @@ local EditMenuInputs = {
 	"proj_hitdir",
 	"proj_velocity",
 	"proj_gravity",
+	"proj_drag",
 	"proj_lifetime_pre",
 	"proj_lifetime_post",
+	"proj_collide",
+	"proj_physsounds",
 	"proj_serverside",
 	"projvis_model",
 	"projvis_skin",
@@ -1696,7 +1705,11 @@ if CLIENT then
 
 		elseif input == "proj_gravity" then
 			
-			net.WriteBool(args[1]) //new gravity toggle
+			net.WriteBool(args[1])
+
+		elseif input == "proj_drag" then
+			
+			net.WriteBool(args[1])
 
 		elseif input == "proj_lifetime_pre" then
 			
@@ -1705,6 +1718,14 @@ if CLIENT then
 		elseif input == "proj_lifetime_post" then
 			
 			net.WriteFloat(args[1]) //new lifetime (post-hit)
+
+		elseif input == "proj_collide" then
+			
+			net.WriteBool(args[1])
+
+		elseif input == "proj_physsounds" then
+			
+			net.WriteBool(args[1])
 
 		elseif input == "proj_serverside" then
 			
@@ -1864,6 +1885,11 @@ else
 			self:SetProjGravity(net.ReadBool())
 			refreshtable = true
 
+		elseif input == "proj_drag" then
+			
+			self:SetProjDrag(net.ReadBool())
+			refreshtable = true
+
 		elseif input == "proj_lifetime_pre" then
 			
 			self:SetProjLifetimePre(net.ReadFloat())
@@ -1872,6 +1898,16 @@ else
 		elseif input == "proj_lifetime_post" then
 			
 			self:SetProjLifetimePost(net.ReadFloat())
+			refreshtable = true
+
+		elseif input == "proj_collide" then
+			
+			self:SetProjCollide(net.ReadBool())
+			refreshtable = true
+
+		elseif input == "proj_physsounds" then
+			
+			self:SetProjPhysSounds(net.ReadBool())
 			refreshtable = true
 
 		elseif input == "proj_serverside" then

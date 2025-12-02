@@ -28,11 +28,43 @@ end
 
 function ENT:Initialize()
 
-	if CLIENT then
-		local owner = self:GetOwnerEntity()
-		if IsValid(owner) then
-			owner:StartParticle(self)
+	local owner = self:GetOwnerEntity()
+	if IsValid(owner) then
+		self.PhysicsSounds = owner:GetProjPhysSounds()
+	end
+	if !self.PhysicsSounds then
+		self.PartCtrl_ProjDisableSounds = true
+	end
+
+end
+
+
+
+
+if CLIENT then
+
+	function ENT:Think()
+
+		//Call StartParticle once the client has received the ParticleInfo tables for all the child particles
+		//(if we don't check for this, the effect's first projectile launched will have no particles)
+		if !self.HasDoneStart then
+			local owner = self:GetOwnerEntity()
+			if IsValid(owner) then
+				for child, _ in pairs (owner.SpecialEffectChildren) do
+					local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
+					if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+					and !child.ParticleInfo then
+						wait = true
+						break
+					end
+				end
+				if !wait then
+					owner:StartParticle(self)
+					self.HasDoneStart = true
+				end
+			end
 		end
+
 	end
 
 end
@@ -44,6 +76,7 @@ if SERVER then
 
 	util.AddNetworkString("PartCtrl_ProjEffectExpire_SendToCl")
 
+	//Called by PhysicsCollide function defined in ent_partctrl_sfx_proj's CreateProjectile function
 	function ENT:DoExpire(pos, norm)
 
 		net.Start("PartCtrl_ProjEffectExpire_SendToCl", true)
@@ -54,8 +87,6 @@ if SERVER then
 				net.WriteVector(norm)
 			end
 		net.Broadcast()
-
-		self:Remove()
 
 	end
 
