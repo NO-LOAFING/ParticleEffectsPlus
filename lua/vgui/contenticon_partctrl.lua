@@ -94,7 +94,7 @@ function PANEL:Paint(w, h)
 		end
 		local override_pcf = "this file"
 		if overridden then
-			override_pcf = '"' .. PartCtrl_GetDataPCFNiceName( PartCtrl_PCFsByParticleName_CurrentlyLoaded[name] ) .. '"'
+			override_pcf = '"' .. overridden .. '"'
 		end
 		tooltip = string.Replace(tooltip, "%PATH_NICE", path_nice)
 		tooltip = string.Replace(tooltip, "%PATH_DEV", path_dev)
@@ -103,12 +103,12 @@ function PANEL:Paint(w, h)
 	self:SetTooltip(tooltip)
 
 	
-	local bd = self.Border + 4
+	local bd = self.Border + 4 //this resizes dynamically when the button is clicked on
 	local showparticle = true
 
 	//If the icon's effect is currently being overridden by another pcf's effect of the same name, show a notification instead
 	if overridden then
-		local mdef_width = math.min(w,h) * 0.5
+		local mdef_width = math.min(w,h) * 0.5 - bd
 		surface.SetDrawColor(0,0,0,64)
 		surface.DrawRect(0 + bd, 0 + bd, w - (bd*2), h - (bd*2))
 
@@ -240,11 +240,19 @@ end
 
 function PANEL:IsCurrentlyOverridden(pcf, name)
 
-	if PartCtrl_IconFx[pcf][name].MultiplyDefined
-	and !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[name] == pcf)
-	and !(PartCtrl_DuplicateFx[pcf][name] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[name] == PartCtrl_DuplicateFx[pcf][name]) then
-		return true
+	if !PartCtrl_IconFx[pcf][name].MultiplyDefined then return false end
+
+	local function CheckEffectAndChildren(name2)
+		if !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[name2] == pcf)
+		and !(PartCtrl_DuplicateFx[pcf][name2] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[name2] == PartCtrl_DuplicateFx[pcf][name2]) then
+			return PartCtrl_PCFsByParticleName_CurrentlyLoaded[name2]
+		end
+		for k, childtab in pairs (PartCtrl_ProcessedPCFs[pcf][name2].children) do
+			//Also check all child fx for overrides
+			return CheckEffectAndChildren(childtab.child)
+		end
 	end
+	return PartCtrl_GetDataPCFNiceName(CheckEffectAndChildren(name))
 
 end
 
@@ -463,27 +471,77 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					end
 
 					//warning for multiply defined fx
-					if !utilfx and #PartCtrl_PCFsByParticleName[name] > 1 then
+					if !utilfx then
+						local listed_pcfs = {}
+						local listed_dupes = {}
+						local listed_invalids = {}
 						local pcfs_added = 0
-						local text = "\n\n\nWarning: This particle effect name is defined in multiple files:"
-						for _, v in pairs (PartCtrl_PCFsByParticleName[name]) do
-							//if PartCtrl_PCFsWithConflicts[v] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
-								text = text .. "\n" .. PartCtrl_GetDataPCFNiceName(v)
-								if PartCtrl_ProcessedPCFs[v][name] and PartCtrl_DuplicateFx[v][name] then
-									text = text .. " (duplicate of " .. PartCtrl_GetDataPCFNiceName(PartCtrl_DuplicateFx[v][name]) .. ")"
-									//Don't add conflict warnings for dupes unless there's at least 2 non-dupe fx with that name 
-									//(no point in conflict warning if every version of the effect is the same)
+						local conflicting_self = false
+						local conflicting_children = false
+						local function CheckEffectAndChildren(name2, is_child)
+							//if is_child then MsgN("checking child ", name2, " of ", name) else MsgN("checking ", name2) end
+							local this_listed_pcfs = {}
+							local this_listed_dupes = {}
+							local this_listed_invalids = {}
+							local this_pcfs_added = 0
+							for _, v in pairs (PartCtrl_PCFsByParticleName[name2]) do
+								//if PartCtrl_PCFsWithConflicts[v] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
+									if PartCtrl_ProcessedPCFs[v][name2] and PartCtrl_DuplicateFx[v][name2] then
+										if listed_dupes[v] == nil then
+											this_listed_dupes[v] = PartCtrl_DuplicateFx[v][name2]
+										end
+									else
+										this_listed_dupes[v] = false
+										this_pcfs_added = this_pcfs_added + 1
+									end
+									if PartCtrl_CulledFx[v] and PartCtrl_CulledFx[v][name2] then
+										if listed_invalids[v] == nil then
+											this_listed_invalids[v] = true
+										end
+									else
+										this_listed_invalids[v] = false
+									end
+									this_listed_pcfs[v] = true
+								//end
+							end
+							if this_pcfs_added > 1 then
+								//Don't add conflict warnings for dupes unless there's at least 2 non-dupe fx with that name 
+								//(no point in conflict warning if every version of the effect is the same)
+								table.Merge(listed_pcfs, this_listed_pcfs)
+								table.Merge(listed_dupes, this_listed_dupes)
+								table.Merge(listed_invalids, this_listed_invalids)
+								pcfs_added = pcfs_added + this_pcfs_added
+								if !is_child then
+									conflicting_self = true
 								else
-									pcfs_added = pcfs_added + 1
+									conflicting_children = true
 								end
-								if PartCtrl_CulledFx[v] and PartCtrl_CulledFx[v][name] then
+							end
+							for k, childtab in pairs (PartCtrl_ProcessedPCFs[pcf][name2].children) do
+								//Also check all child fx for overrides
+								CheckEffectAndChildren(childtab.child, true)
+							end
+						end
+						CheckEffectAndChildren(name)
+						if pcfs_added > 1 then
+							local text = ""
+							for k, _ in SortedPairs (listed_pcfs) do
+								text = text .. "\n" .. PartCtrl_GetDataPCFNiceName(k)
+								if listed_dupes[k] then 
+									text = text .. " (duplicate of " .. PartCtrl_GetDataPCFNiceName(listed_dupes[k]) .. ")"
+								end
+								if listed_invalids[k] then
 									text = text .. " (invalid)"
 								end
-							//end
-						end
-						text = text .. "\n\nCurrently, the one from %OVERRIDE_PCF is loaded.\nOnly one effect with the same name can be loaded at a time.\nIf you load effects from any of these files, even in spawnicons, then\nit will use the \"" .. name .. "\" from the most recently loaded file." 
-						if pcfs_added > 1 then
-							tooltip = tooltip .. text
+							end
+							//slightly different messages depending on which fx have conflicts
+							if conflicting_self and conflicting_children then
+								tooltip = tooltip .. "\n\n\nWarning: This particle effect and/or parts of it are defined in multiple files:" .. text .. "\n\nCurrently, the ones from %OVERRIDE_PCF are loaded.\nOnly one effect with the same name can be loaded at a time.\nIf you load effects from any of these files, even in spawnicons, then\nit will use the ones from the most recently loaded file."
+							elseif conflicting_self then
+								tooltip = tooltip .. "\n\n\nWarning: This particle effect name is defined in multiple files:" .. text .. "\n\nCurrently, the one from %OVERRIDE_PCF is loaded.\nOnly one effect with the same name can be loaded at a time.\nIf you load effects from any of these files, even in spawnicons, then\nit will use the \"" .. name .. "\" from the most recently loaded file."
+							elseif conflicting_children then
+								tooltip = tooltip .. "\n\n\nWarning: Parts of this particle effect are defined in multiple files:" .. text .. "\n\nCurrently, the ones from %OVERRIDE_PCF are loaded.\nOnly one effect with the same name can be loaded at a time.\nIf you load effects from any of these files, even in spawnicons, then\nit will use the ones from the most recently loaded file."
+							end
 							table.insert(self.icons, {["icon"] = icon_multiplydefined, ["icon2"] = icon_multiplydefined_2})
 							self.MultiplyDefined = true
 						end

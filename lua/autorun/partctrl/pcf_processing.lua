@@ -3118,7 +3118,7 @@ function PartCtrl_ReadAndProcessPCFs()
 					//which shares a name with a pcf included in gmod by default. The former will always be overridden if HL2 is 
 					//mounted, and the latter will always be overridden no matter what. All of the inaccessible pcfs contain
 					//unique effects that we don't want the player to be locked out of using, so write copies of these files to
-					//the data folder, and load them instead.
+					//the data folder, and load those instead.
 					if f1 and f2 and util.SHA256(f1) != util.SHA256(f2) then
 						local writepath = "partctrl_datapcfs/" .. path .. "/" .. filename
 						writepath = string.Replace(writepath, ".pcf", ".txt")
@@ -3374,7 +3374,7 @@ if CLIENT then
 								//since it never actually reaches the cap (left4dead2 fire_01.pcf's smoke_exhaust_01a/smoke_exhaust_01b), but a few where
 								//it actually does make it visibly different by cutting off particle emission (particles/mvm.pcf's mini_fireworks, 
 								//left4dead2 fire_01.pcf's smoke_medium_02c). in the cases where it does make a difference, it's still pretty subtle, so 
-								//i'm making an executive decision here to treat those as dupes anyway, to err of the side of not clogging up searches.
+								//i'm making an executive decision here to treat those as dupes anyway, to err on the side of not clogging up searches.
 								"max_particles",
 							}) do
 								allkeys[v] = nil
@@ -3461,10 +3461,10 @@ if CLIENT then
 					//
 					//   fire_large_01 itself has no differences on its own, and returns as a dupe of both fire_01.pcf and the left4dead2 pcf.
 					//
-					//   In this case, we want fire_large_01 to return as a dupe of the left4dead2 pcf, but not fire_01.pcf, because smoke_large_01
-					//   is different. This requires us to keep a whole list of potential dupe candidates instead of just the first we find, and
-					//   then also associate the child embers_large_01 with the left4dead2 pcf, despite that pcf not being in the child's list of
-					//   dupe candidates.
+					//   In this case, we want fire_large_01 to return as a dupe of the left4dead2 pcf, but not fire_01.pcf, because its child 
+					//   smoke_large_01 is different. This requires us to keep a whole list of potential dupe candidates instead of just the first 
+					//   we find, and then also associate the child embers_large_01 with the left4dead2 pcf, despite that pcf not being in the 
+					//   child's list of dupe candidates.
 					for _, tab in pairs (PartCtrl_CachedReadPCFs[filename][effect2].children) do
 						if !dupe_candidates[tab.child] then
 							//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " has no dupe candidates, discarding") end

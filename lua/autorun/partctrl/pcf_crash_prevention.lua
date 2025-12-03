@@ -61,15 +61,22 @@ if CLIENT then
 			if effectname then
 				//If this function is being called by a spawnicon or particle entity, then only check its one effect for overrides.
 				//Otherwise, we don't care, and running game.AddParticles(pcf) again would just cause an unnecessary stutter.
-				if !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] == pcf)
-				and !(PartCtrl_DuplicateFx[pcf][effectname] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] == PartCtrl_DuplicateFx[pcf][effectname]) then
-					for _, v in pairs (PartCtrl_PCFsByParticleName[effectname]) do
-						tab[v] = true
+				local function CheckEffectAndChildren(effectname2)
+					if !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname2] == pcf) 
+					and !(PartCtrl_DuplicateFx[pcf][effectname2] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname2] == PartCtrl_DuplicateFx[pcf][effectname2]) then
+						for _, v in pairs (PartCtrl_PCFsByParticleName[effectname2]) do
+							tab[v] = true
+						end
+						tab[pcf] = nil
 					end
-					tab[pcf] = nil
-					//MsgN("tab for effect ", effectname, ":")
-					//PrintTable(tab)
+					for k, childtab in pairs (PartCtrl_ProcessedPCFs[pcf][effectname2].children) do
+						//Also check all child fx for overrides
+						CheckEffectAndChildren(childtab.child)
+					end
 				end
+				CheckEffectAndChildren(effectname)
+				//MsgN("tab for effect ", effectname, ":")
+				//PrintTable(tab)
 			else
 				tab = PartCtrl_AddParticles_AddedParticles_Overrides[pcf]
 			end
@@ -127,8 +134,8 @@ if CLIENT then
 	//TODO: if some other addon's entity works by running game.AddParticles when the entity spawns instead of on autorun for some reason, then 
 	//our delayed-load crash prevention system could hypothetically cause issues if it expects to be able to create its particle fx immediately. 
 	//revisit this if we find any instances of this actually happening!
-	local old_AddParticles = game.AddParticles
-	if old_AddParticles then
+	PartCtrl_old_AddParticles = PartCtrl_old_AddParticles or game.AddParticles //don't get confused when reloading this file
+	if PartCtrl_old_AddParticles then
 		game.AddParticles = function(pcf)
 			if !PartCtrl_ProcessedPCFs then
 				//If another addon loads a pcf before we've built PartCtrl_ProcessedPCFs, just load it normally
@@ -137,7 +144,7 @@ if CLIENT then
 				//again after PartCtrl_ReadAndProcessPCFs, to make sure we don't break their overrides. revisit this if we find any 
 				//addons we need to do this for!
 				//MsgN("mounting ", pcf, " before partctrl startup")
-				old_AddParticles(pcf)
+				PartCtrl_old_AddParticles(pcf)
 				return
 			end
 			//MsgN("mounting ", pcf, " after partctrl startup")
@@ -185,7 +192,7 @@ if CLIENT then
 				for _, pcf in ipairs (AddParticles_Queued) do
 					//surface.PlaySound("vo/ravenholm/engage03.wav")
 					//MsgN("running game.AddParticles for ", pcf)
-					old_AddParticles(pcf)
+					PartCtrl_old_AddParticles(pcf)
 				end
 				AddParticles_Queued = {}
 				AddParticles_QueuedTime = nil
