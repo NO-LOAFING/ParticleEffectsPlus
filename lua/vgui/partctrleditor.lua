@@ -152,67 +152,6 @@ function PANEL:RebuildControls()
 
 		local pcf = PartCtrl_GetGamePCF(ent2:GetPCF(), ent2:GetPath())
 		local name = ent2:GetParticleName()
-
-		//don't throw a lua error if a special effect contains an invalid particle effect
-		//(i.e. we're a client connected to a server, and the server has the effect but we don't)
-		if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then
-			local pnl = vgui.Create("DSizeToContents", container)
-			pnl:SetSizeX(false)
-			pnl:Dock(FILL)
-			container:AddItem(pnl)
-			pnl.Paint = function(self, w, h) 
-				draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
-				//draw info icon
-				surface.SetDrawColor(255,255,255,255)
-				surface.SetMaterial(icon_invalid)
-				//surface.DrawTexturedRect(padding,betweenitems,16,16)
-				surface.DrawTexturedRect(padding,(h/2)-8,16,16)
-			end
-			pnl:DockPadding(16+padding,0,0,padding) //extra left to make room for the info icon; DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-			pnl:DockMargin(3,3,3,3-2) //-2 bottom because there's too much space between this and the next category otherwise
-	
-			local text = vgui.Create("DLabel", pnl)
-			text:SetDark(true)
-			text:SetWrap(true)
-			text:SetTextInset(0, 0)
-			text:SetText("Invalid particle effect (from game/addon that isn't mounted?)") //TODO: this error text is outdated, whoops; use the different ones from the spawnicon code
-			text:SetContentAlignment(5)
-			text:SetAutoStretchVertical(true)
-			text:DockMargin(padding,padding-1,padding,0) //padding-1 for top is trial and error, results in nice 16px spacing on both top and bottom of text
-			text:Dock(TOP)
-
-			return
-		end
-	
-		--[[//category for general settings
-		local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("General")
-		cat:DockMargin(3,3,3,3)
-		cat:Dock(FILL)
-		container:AddItem(cat)
-		cat:SetExpanded(true)
-	
-		local pnl = vgui.Create("DSizeToContents", cat)
-		pnl:Dock(FILL)
-		cat:SetContents(pnl)
-		pnl.Paint = function(self, w, h) draw.RoundedBox(4, 0, -5, w, h+5, Color(0,0,0,70)) end //draw the top of the box higher up (it'll be hidden behind the header) so the upper corners are hidden and it blends smoothly into the header
-		pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-		pnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
-	
-				//filler to ensure pnl is stretched to full width
-				local filler = vgui.Create("Panel", pnl)
-				filler:Dock(TOP)
-				filler:SetHeight(0)
-	
-				local text = vgui.Create("DLabel", pnl)
-				text:SetDark(true)
-				text:SetWrap(true)
-				text:SetTextInset(0, 0)
-				text:SetText("cause this is filler, filler night!!")
-				text:SetContentAlignment(5)
-				text:SetAutoStretchVertical(true)
-				text:DockMargin(padding,betweenitems,padding,0)
-				text:Dock(TOP)]]
 	
 	
 		//category for info; no header for this one
