@@ -4,11 +4,10 @@ AddCSLuaFile()
 
 if CLIENT then
 
-	local browseAddonParticles
+	local browseAddonParticles //TODO: these break if we refresh this file, can't find a good way to fix this without unlocalizing them
+	local browseLegacyParticles
 	local browseGameParticles
 	local searchParticles = nil
-	local RefreshAddonParticles
-	local RefreshGameParticles
 
 	local cv_childfx_spawnlist = GetConVar("cl_partctrl_childfx_in_autospawnlists")
 
@@ -344,7 +343,7 @@ if CLIENT then
 
 	language.Add("spawnmenu.category.browseparticles", "Browse Particle Effects")
 
-	RefreshAddonParticles = function(node)
+	local RefreshAddonParticles = function(node)
 		for _, addon in SortedPairsByMemberValue(engine.GetAddons(), "title") do
 			if !addon.downloaded then continue end
 			if !addon.mounted then continue end
@@ -352,7 +351,19 @@ if CLIENT then
 			AddBrowseContentParticle(node, addon.title, "icon16/bricks.png", "", addon.title, addon.wsid)
 		end
 	end
-	RefreshGameParticles = function(node)
+	local RefreshLegacyParticles = function(node)
+		local addon_particles = {}
+		local _, particle_folders = file.Find("addons/*", "MOD")
+		for _, addon in SortedPairs(particle_folders) do
+			if !file.IsDir("addons/" .. addon .. "/particles/", "MOD") and !PartCtrl_UtilFxByTitle[addon] then continue end
+			table.insert(addon_particles, addon)
+		end
+
+		for _, addon in SortedPairsByValue(addon_particles) do
+			AddBrowseContentParticle(node, addon, "icon16/bricks.png", "addons/" .. addon .. "/", "MOD")
+		end
+	end
+	local RefreshGameParticles = function(node)
 		local games = engine.GetGames()
 		table.insert(games, {
 			title = "All",
@@ -389,39 +400,22 @@ if CLIENT then
 		browseParticles.ViewPanel = ViewPanel
 		browseParticles.pnlContent = pnlContent
 
-
 		browseAddonParticles = browseParticles:AddNode("#spawnmenu.category.addons", "icon16/folder_database.png")
 		browseAddonParticles.ViewPanel = ViewPanel
 		browseAddonParticles.pnlContent = pnlContent
-
 		RefreshAddonParticles(browseAddonParticles)
 
-
-		local addon_particles = {}
-		local _, particle_folders = file.Find("addons/*", "MOD")
-		for _, addon in SortedPairs(particle_folders) do
-			if !file.IsDir("addons/" .. addon .. "/particles/", "MOD") and !PartCtrl_UtilFxByTitle[addon] then continue end
-			table.insert(addon_particles, addon)
-		end
-
-		local browseLegacyParticles = browseParticles:AddNode("#spawnmenu.category.addonslegacy", "icon16/folder_database.png")
+		browseLegacyParticles = browseParticles:AddNode("#spawnmenu.category.addonslegacy", "icon16/folder_database.png")
 		browseLegacyParticles.ViewPanel = ViewPanel
 		browseLegacyParticles.pnlContent = pnlContent
-
-		for _, addon in SortedPairsByValue(addon_particles) do
-			AddBrowseContentParticle(browseLegacyParticles, addon, "icon16/bricks.png", "addons/" .. addon .. "/", "MOD")
-		end
-
+		RefreshLegacyParticles(browseLegacyParticles)
 
 		AddBrowseContentParticle(browseParticles, "#spawnmenu.category.downloads", "icon16/folder_database.png", "download/", "MOD")
-
 
 		browseGameParticles = browseParticles:AddNode("#spawnmenu.category.games", "icon16/folder_database.png")
 		browseGameParticles.ViewPanel = ViewPanel
 		browseGameParticles.pnlContent = pnlContent
-
 		RefreshGameParticles(browseGameParticles)
-
 
 		//browseParticles:SetExpanded(true)
 
@@ -560,6 +554,15 @@ if CLIENT then
 
 	function PartCtrl_ReloadPCF(str)
 
+		//If we try to reload a pcf that hasn't been loaded before (i.e. create a new pcf with the particle editor or something, then try to 
+		//load it), then vital tables like PartCtrl_PCFsInDupeOrder won't have it, which'll cause errors, so pivot to rebuilding everything
+		//with PartCtrl_ReadAndProcessPCFs.
+		str = string.Trim(string.Replace(str, "\\", "/"))
+		if str != "UtilFx" and str != "all" and !PartCtrl_ProcessedPCFs[str] then
+			MsgN("PartCtrl: Trying to reload ", str, " which hasn't been loaded before; reloading all PCFs instead")
+			str = "all"
+		end
+
 		if str == "all" then
 			MsgN("PartCtrl: Reloading all PCFs on client ", LocalPlayer())
 
@@ -569,17 +572,18 @@ if CLIENT then
 
 			//Spawnlist stuff from enhanced spawnmenu
 			if IsValid(browseAddonParticles) then
-				-- TODO: Maybe be more advaced and do not delete => recreate all the nodes, only delete nodes for addons that were removed, add only the new ones?
 				browseAddonParticles:Clear()
 				browseAddonParticles.ViewPanel:Clear(true)
-
 				RefreshAddonParticles(browseAddonParticles)
 			end
+			if IsValid(browseLegacyParticles) then
+				browseLegacyParticles:Clear()
+				browseLegacyParticles.ViewPanel:Clear(true)
+				RefreshLegacyParticles(browseLegacyParticles)
+			end
 			if IsValid(browseGameParticles) then
-				-- TODO: Maybe be more advaced and do not delete => recreate all the nodes, only delete nodes for addons that were removed, add only the new ones?
 				browseGameParticles:Clear()
 				browseGameParticles.ViewPanel:Clear(true)
-
 				RefreshGameParticles(browseGameParticles)
 			end
 
@@ -639,6 +643,12 @@ if CLIENT then
 else
 	
 	function PartCtrl_ReloadPCF(str, dont_network) //local var scope also forces us to have two of these, instead of one func with "if CLIENT then" conditionals
+
+		str = string.Trim(string.Replace(str, "\\", "/"))
+		if str != "UtilFx" and str != "all" and !PartCtrl_ProcessedPCFs[str] then
+			MsgN("PartCtrl: Trying to reload ", str, " which hasn't been loaded before; reloading all PCFs instead")
+			str = "all"
+		end
 
 		if str == "all" then
 			MsgN("PartCtrl: Reloading all PCFs on server")

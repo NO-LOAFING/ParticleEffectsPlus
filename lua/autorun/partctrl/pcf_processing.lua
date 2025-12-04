@@ -3235,9 +3235,9 @@ function PartCtrl_ReadAndProcessPCFs()
 
 	if CLIENT then
 		//sort sets into hierarchical order for dupe detection (the more "permanent" something is, the higher priority we should assign to it for dupe 
-		//detection; i.e. garrysmod/particles/ are always installed, so its fx should always be considered the "originals" in terms of dupe detection,
-		//followed by mounted games, which are above addons because it would be absurd to consider a valve game to be derivative of a gmod addon; bsp 
-		//particles and server downloads are at the end because they're transient and should never take priority over other sources)
+		//detection; i.e. garrysmod/particles/ are always installed, so its fx should always be considered the "originals", followed by mounted games, 
+		//which are above addons because it would be absurd to consider a valve game to be derivative of a gmod addon; bsp particles and server 
+		//downloads are at the end because they're transient and should never take priority over other sources)
 		local pcfs_dupe_order = {}
 		table.Add(pcfs_dupe_order, pcfs_sorted[4]) //garrysmod/particles/ folder
 		table.Add(pcfs_dupe_order, pcfs_sorted[5]) //games
