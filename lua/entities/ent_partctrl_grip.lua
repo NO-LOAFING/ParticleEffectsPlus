@@ -84,7 +84,7 @@ end
 
 local GripMaterial = Material("sprites/grip")
 local GripMaterialHover = Material("sprites/grip_hover")
-local GripMaterialSelected = Material("gui/faceposer_indicator") //TODO: make a better one, color the default grip tan/cream to match the tool's selection halo
+local GripMaterialSelected = Material("sprites/grip_partctrl_selected")
 
 function ENT:Draw()
 

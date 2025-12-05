@@ -16,7 +16,7 @@ local PANEL = {}
 local icon_invalid = Material("icon16/cancel.png")
 local icon_multiplydefined = Material("icon16/page_copy.png")
 local icon_multiplydefined_2 = Material("icon16/bullet_error.png")
-local icon_position = Material("icon16/arrow_right.png") //Material("sprites/grip") //Material("icon16/arrow_inout.png")
+local icon_position = Material("sprites/grip") //Material("icon16/arrow_right.png") //Material("icon16/arrow_inout.png")
 local icon_edit = Material("icon16/pencil.png")
 local icon_color = Material("icon16/color_wheel.png")
 local icon_test = Material("icon16/color_wheel.png")
@@ -26,15 +26,15 @@ local icon_info = Material("icon16/information.png")
 if system.IsLinux() then
 	surface.CreateFont("PartCtrl_DermaDefaultSmall", {
 		font		= "DejaVu Sans",
-		size		= 13, //don't have this font, so just have to trust that this is right (1pt larger than the tahoma, like in https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/derma/init.lua#L6C1-L45C4)
-		weight		= 500,
+		size		= 14, //don't have this font, so just have to trust that this is right (1pt larger than the tahoma, like in https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/derma/init.lua#L6C1-L45C4)
+		weight		= 1000,
 		extended	= true
 	})
 else
 	surface.CreateFont("PartCtrl_DermaDefaultSmall", {
 		font		= "Tahoma",
-		size		= 12,
-		weight		= 500,
+		size		= 13,
+		weight		= 1000,
 		extended	= true
 	})
 end
@@ -226,7 +226,7 @@ function PANEL:Paint(w, h)
 			end
 			//Draw number
 			if v.num then
-				draw.SimpleTextOutlined(v.num, "PartCtrl_DermaDefaultSmall", x+8, y+8, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0,0,0,255))
+				draw.SimpleTextOutlined(v.num, "PartCtrl_DermaDefaultSmall", x+8, y+7, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0,0,0,255))
 			end
 			x = x + 16 + 2 //move the position of the next icon to the right by the width of this icon, plus a bit more
 			if x + 16 > (w - self.Border - 8) then //if this would cause the next icon to stick out past the right edge of the panel, then start a new row instead
