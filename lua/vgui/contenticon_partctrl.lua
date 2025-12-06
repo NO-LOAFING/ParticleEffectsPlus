@@ -536,11 +536,11 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							end
 							//slightly different messages depending on which fx have conflicts
 							if conflicting_self and conflicting_children then
-								tooltip = tooltip .. "\n\n\nWarning: This particle effect and/or parts of it are defined in multiple files:" .. text .. "\n\nCurrently, the ones from %OVERRIDE_PCF are loaded.\nOnly one effect with the same name can be loaded at a time.\nIf you load effects from any of these files, even in spawnicons, then\nit will use the ones from the most recently loaded file."
+								tooltip = tooltip .. "\n\n\nWarning: This particle effect and/or its children are defined in multiple files:" .. text .. "\n\nCurrently, the ones from %OVERRIDE_PCF are loaded.\nOnly one effect with the same name can be loaded at a time.\nIf you load effects from any of these files, even in spawnicons, then\nit will use the ones from the most recently loaded file."
 							elseif conflicting_self then
 								tooltip = tooltip .. "\n\n\nWarning: This particle effect name is defined in multiple files:" .. text .. "\n\nCurrently, the one from %OVERRIDE_PCF is loaded.\nOnly one effect with the same name can be loaded at a time.\nIf you load effects from any of these files, even in spawnicons, then\nit will use the \"" .. name .. "\" from the most recently loaded file."
 							elseif conflicting_children then
-								tooltip = tooltip .. "\n\n\nWarning: Parts of this particle effect are defined in multiple files:" .. text .. "\n\nCurrently, the ones from %OVERRIDE_PCF are loaded.\nOnly one effect with the same name can be loaded at a time.\nIf you load effects from any of these files, even in spawnicons, then\nit will use the ones from the most recently loaded file."
+								tooltip = tooltip .. "\n\n\nWarning: This particle effect's children are defined in multiple files:" .. text .. "\n\nCurrently, the ones from %OVERRIDE_PCF are loaded.\nOnly one effect with the same name can be loaded at a time.\nIf you load effects from any of these files, even in spawnicons, then\nit will use the ones from the most recently loaded file."
 							end
 							table.insert(self.icons, {["icon"] = icon_multiplydefined, ["icon2"] = icon_multiplydefined_2})
 							self.MultiplyDefined = true
