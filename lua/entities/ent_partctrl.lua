@@ -206,6 +206,23 @@ function ENT:Think()
 
 
 		//Do renderbounds
+		local function GetCPointPos(k)
+			local pos
+			local v = self.ParticleInfo[k]
+			if IsValid(v.ent) then
+				if IsValid(v.ent.AttachedEntity) then
+					pos = v.ent.AttachedEntity:GetAttachment(v.attach)
+				else
+					pos = v.ent:GetAttachment(v.attach)
+				end
+				if istable(pos) then
+					pos = pos.Pos
+				else
+					pos = v.ent:GetPos()
+				end
+			end
+			return pos
+		end
 		local extra = Vector(20,20,20) //add arrow length to bounds so it doesn't get cut off at weird angles
 		if !self.utilfx then
 			//Cache which cpoint the renderbounds are relative to, so we don't have to keep retrieving this
@@ -229,19 +246,7 @@ function ENT:Think()
 				k = self.ParticleInfo_FirstPos
 			end
 			if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
-				local v = self.ParticleInfo[k]
-				if IsValid(v.ent) then
-					if IsValid(v.ent.AttachedEntity) then
-						pos = v.ent.AttachedEntity:GetAttachment(v.attach)
-					else
-						pos = v.ent:GetAttachment(v.attach)
-					end
-					if istable(pos) then
-						pos = pos.Pos
-					else
-						pos = v.ent:GetPos()
-					end
-				end
+				pos = GetCPointPos(k)
 			end
 			if pos then
 				local mins, maxs
@@ -263,6 +268,18 @@ function ENT:Think()
 				for k, v in pairs (self.OldParticles) do
 					AddParticleRenderBounds(v)
 				end
+				if ispaused then
+					//When the effect is paused, its renderbounds no longer update to contain its cpoint positions, which means 
+					//helpers can stop rendering if we move them so that the effect is off-screen. Fix this by adding cpoint 
+					//positions to the renderbounds if paused.
+					for k2, v2 in pairs (self.ParticleInfo) do
+						local pos2 = GetCPointPos(k2)
+						if pos2 then
+							mins = Vector(math.min(mins.x,pos2.x), math.min(mins.y,pos2.y), math.min(mins.z,pos2.z))
+							maxs = Vector(math.max(maxs.x,pos2.x), math.max(maxs.y,pos2.y), math.max(maxs.z,pos2.z))
+						end
+					end
+				end
 				if mins and maxs then
 					self:SetRenderBoundsWS(mins, maxs, extra)
 					//self._wsmins = mins
@@ -273,26 +290,14 @@ function ENT:Think()
 			//For utilfx, just make our renderbounds a box around all the cpoints, so that helpers render when any cpoint is on-screen
 			local mins, maxs
 			for k, v in pairs (self.ParticleInfo) do
-				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
-					if IsValid(v.ent) then
-						local pos
-						if IsValid(v.ent.AttachedEntity) then
-							pos = v.ent.AttachedEntity:GetAttachment(v.attach)
-						else
-							pos = v.ent:GetAttachment(v.attach)
-						end
-						if istable(pos) then
-							pos = pos.Pos
-						else
-							pos = v.ent:GetPos()
-						end
-						if !mins then
-							mins = pos
-							maxs = pos
-						else
-							mins = Vector(math.min(mins.x,pos.x), math.min(mins.y,pos.y), math.min(mins.z,pos.z))
-							maxs = Vector(math.max(maxs.x,pos.x), math.max(maxs.y,pos.y), math.max(maxs.z,pos.z))
-						end
+				local pos = GetCPointPos(k)
+				if pos then
+					if !mins then
+						mins = pos
+						maxs = pos
+					else
+						mins = Vector(math.min(mins.x,pos.x), math.min(mins.y,pos.y), math.min(mins.z,pos.z))
+						maxs = Vector(math.max(maxs.x,pos.x), math.max(maxs.y,pos.y), math.max(maxs.z,pos.z))
 					end
 				end
 			end
