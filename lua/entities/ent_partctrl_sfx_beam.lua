@@ -1,13 +1,13 @@
 AddCSLuaFile()
 
 ENT.Base 			= "ent_partctrl_sfx"
-ENT.PrintName			= "Pointer Effect"
+ENT.PrintName			= "Beam Effect"
 ENT.Category			= "Particle Effects"
 ENT.Information			= "Makes particle effects work like a laser pointer, with one end where the \"beam\" starts, and the other end continuously moving to where it's pointing."
 
 ENT.Spawnable			= true
 
-ENT.PartCtrl_ShortName		= "Pointer"
+ENT.PartCtrl_ShortName		= "Beam"
 ENT.SpecialEffectRoles		= {
 	[0] = "Start point",
 	[1] = "Hit point",
@@ -96,7 +96,7 @@ if CLIENT then
 		local color_helpdark = window.color_helpdark
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("Pointer Effect Settings")
+		cat:SetLabel("Beam Effect Settings")
 		cat:DockMargin(3,1,-2,3) //-2 right for divider
 		cat:Dock(FILL)
 		container:AddItem(cat)
@@ -154,7 +154,7 @@ if CLIENT then
 		help:SetDark(true)
 		help:SetWrap(true)
 		help:SetTextInset(0, 0)
-		help:SetText("Sets which direction to fire the pointer. Useful for attachments that don't point forward.")
+		help:SetText("Sets which direction to aim the beam. Useful for attachments that don't point forward.")
 		//help:SetContentAlignment(5)
 		help:SetAutoStretchVertical(true)
 		//help:DockMargin(32,0,32,8)

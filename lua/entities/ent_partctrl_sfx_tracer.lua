@@ -1,13 +1,13 @@
 AddCSLuaFile()
 
 ENT.Base 			= "ent_partctrl_sfx"
-ENT.PrintName			= "Bullet Effect"
+ENT.PrintName			= "Tracer Effect"
 ENT.Category			= "Particle Effects"
-ENT.Information			= "Fires out particle effects like bullets, with one end where each \"bullet\" starts, and the other where it hits something."
+ENT.Information			= "Fires out particle effects like bullet tracers, with one end where each \"bullet\" starts, and the other where it hits something."
 
 ENT.Spawnable			= true
 
-ENT.PartCtrl_ShortName		= "Bullet"
+ENT.PartCtrl_ShortName		= "Tracer"
 ENT.SpecialEffectRoles		= {
 	[0] = "Start point",
 	[1] = "Hit point",
@@ -117,7 +117,7 @@ if CLIENT then
 		local color_helpdark = window.color_helpdark
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
-		cat:SetLabel("Bullet Effect Settings")
+		cat:SetLabel("Tracer Effect Settings")
 		cat:DockMargin(3,1,-2,3) //-2 right for divider
 		cat:Dock(FILL)
 		container:AddItem(cat)
@@ -131,7 +131,7 @@ if CLIENT then
 
 
 		local slider = vgui.Create("DNumSlider", rpnl)
-		slider:SetText("Bullet spread (degrees)")
+		slider:SetText("Spread (degrees)")
 		slider:SetMinMax(0, 360)
 		slider:SetDefaultValue(10)
 		slider:SetDark(true)
@@ -146,7 +146,7 @@ if CLIENT then
 
 
 		local slider = vgui.Create("DNumSlider", rpnl)
-		slider:SetText("Bullets per shot")
+		slider:SetText("Tracers per shot")
 		slider:SetDecimals(0)
 		slider:SetMinMax(1, 8)
 		slider:SetDefaultValue(1)
@@ -207,7 +207,7 @@ if CLIENT then
 		help:SetDark(true)
 		help:SetWrap(true)
 		help:SetTextInset(0, 0)
-		help:SetText("Sets which direction to fire bullets. Useful for attachments that don't point forward.")
+		help:SetText("Sets which direction to aim tracers. Useful for attachments that don't point forward.")
 		//help:SetContentAlignment(5)
 		help:SetAutoStretchVertical(true)
 		//help:DockMargin(32,0,32,8)

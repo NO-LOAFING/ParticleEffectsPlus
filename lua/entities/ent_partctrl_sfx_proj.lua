@@ -184,7 +184,7 @@ if CLIENT then
 		rpnl:DockMargin(0,-1,0,0) //fix the 1px of blank white space between the header and the contents
 
 			local slider = vgui.Create("DNumSlider", rpnl)
-			slider:SetText("Projectile spread (degrees)")
+			slider:SetText("Spread (degrees)")
 			slider:SetMinMax(0, 360)
 			slider:SetDefaultValue(0)
 			slider:SetDark(true)
