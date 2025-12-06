@@ -147,7 +147,7 @@ if CLIENT then
 				end
 
 				render.SetMaterial(partctrl_arrowmat)
-				render.DrawBeam(pos, pos + (ang:Forward() * 20), 20, 1, 0, color_white)
+				render.DrawBeam(pos + (ang:Forward() * -3.01), pos + (ang:Forward() * (20-3.01)), 20, 1, 0, color_white)
 
 				local view = LocalPlayer():GetViewEntity()
 				local camang = nil

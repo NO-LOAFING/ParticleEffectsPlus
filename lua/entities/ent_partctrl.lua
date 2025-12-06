@@ -481,14 +481,14 @@ if CLIENT then
 
 	//make these global so that special fx can use them too
 	//partctrl_colortext = Color(130,255,31,255) //matches effect grip
-	partctrl_colortext = Color(234,125,0,255) //matches temporary arrow texture; gmod blue would probably be a better final color
+	partctrl_colortext = Color(31,201,255,255) //matches arrow texture
 	partctrl_colorborder = Color(255,255,255,255)
 	surface.CreateFont( "PartCtrl_3D2DFont", {
 		font = "Arial",
 		size = 100,
 		weight = 5000,
 	} )
-	partctrl_arrowmat = Material("hud/arrow_big") //TODO: make better custom material eventually, this is a tf2 material; end of the arrow should be at the end of the texture; also compare "trails/laser" which doesn't render through walls
+	partctrl_arrowmat = Material("sprites/partctrl_arrow")
 
 	function ENT:Draw()
 
@@ -561,7 +561,7 @@ if CLIENT then
 						//Draw particle effect helpers (arrow showing cpoint orientation, number showing cpoint id)
 						if window or v.ent.PartCtrl_Grip then //hide helpers when they're attached to other ents unless the window is open
 							render.SetMaterial(partctrl_arrowmat)
-							render.DrawBeam(pos, pos + (ang:Forward() * 20), 20, 1, 0, color_white)
+							render.DrawBeam(pos + (ang:Forward() * -3.01), pos + (ang:Forward() * (20-3.01)), 20, 1, 0, color_white)
 
 							cam.IgnoreZ(true)
 							cam.Start3D2D(pos, camang, 0.125)
