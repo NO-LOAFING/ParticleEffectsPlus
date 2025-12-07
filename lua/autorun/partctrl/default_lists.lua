@@ -57,17 +57,10 @@ end)
 
 local stove_comment = "Control point 1 pushes the flame away; it's very subtle"
 local tooclose_comment = "Not visible if too close to the camera"
-local cullplane1_comment = "Control point 1 controls max height of particles"
-local cullplane1_bubble_comment = "Control point 1 controls max height of bubbles"
-local cullplane1_reverse_comment = "Control point 1 controls minimum height of particles"
 local default_comments = {
 	//Default
 	["particles/fire_01.pcf"] = {
 		burning_vehicle = tooclose_comment //also it doesn't render if hl2 isn't mounted, because that's where the vmt is, but that doesn't seem reasonable to check for
-	},
-	["particles/water_impact.pcf"] = {
-		water_bubble_trail_1 = cullplane1_bubble_comment,
-		water_gunk_1 = cullplane1_comment
 	},
 	//Team Fortress 2
 	["particles/halloween2024_unusuals.pcf"] = {
@@ -93,19 +86,6 @@ local default_comments = {
 	},
 	["particles/stamp_spin.pcf"] = {
 		Stamp_spin = "Only creates particles while moving"
-	},
-	["particles/taunt_fx.pcf"] = {
-		taunt_demo_nuke_brew = cullplane1_comment,
-		taunt_demo_nuke_powder = cullplane1_comment,
-	},
-	["particles/water.pcf"] = {
-		water_playerdive = cullplane1_bubble_comment,
-		water_playerdive_bubbles = cullplane1_bubble_comment,
-		water_splash_croc_spawn_droplets = cullplane1_reverse_comment,
-	},
-	["particles/rockettrail.pcf"] = {
-		rockettrail_underwater = cullplane1_bubble_comment,
-		rockettrail_waterbubbles = cullplane1_bubble_comment,
 	},
 	//Portal
 	["particles/neurotoxins.pcf"] = {

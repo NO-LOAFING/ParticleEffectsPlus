@@ -2823,20 +2823,19 @@ function PartCtrl_ProcessPCF(filename)
 			//Do info text for on_model
 			if on_model then
 				local text = ""
-				text = "This effect will apply to a whole model if control point"
-				if table.Count(on_model) > 1 then text = text .. "s" end
 				local docomma = false
 				for k, _ in pairs (on_model) do
-					if docomma then text = text .. "," end
-					text = text .. " " .. k
+					if docomma then text = text .. ", " end
+					text = text .. k
 					docomma = true
 				end
-				if docomma then
-					text = text .. " is attached."
+				local text2
+				if table.Count(on_model) > 1 then
+					text2 = "This effect will apply to a whole model if control points %CPOINTS are attached."
 				else
-					text = text .. " are attached."
+					text2 = "This effect will apply to a whole model if control point %CPOINTS is attached."
 				end
-				PartCtrl_AddInfoText(t2[particle], text)
+				PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 			end
 
 			//Do cpoint_planes; not necessary if the effect only has 1 position control
@@ -2860,6 +2859,21 @@ function PartCtrl_ProcessPCF(filename)
 					end
 					t2[particle].cpoint_planes[k] = newplanes
 				end
+				//Add info text for planes
+				local text = ""
+				local docomma = false
+				for k, _ in pairs (t2[particle].cpoint_planes) do
+					if docomma then text = text .. ", " end
+					text = text .. k
+					docomma = true
+				end
+				local text2
+				if table.Count(t2[particle].cpoint_planes) > 1 then
+					text2 = "Control points %CPOINTS control planes that prevent particles from passing through."
+				else
+					text2 = "Control point %CPOINTS controls a plane that prevents particles from passing through."
+				end
+				PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 			end
 
 			//Do min_length for tracer fx
