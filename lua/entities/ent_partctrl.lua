@@ -529,6 +529,7 @@ if CLIENT then
 	end
 
 	local icon_loading = Material("vgui/loading-rotate.vmt") //TODO: replace this with a custom texture eventually, something bulkier that looks better when drawn on top of a grip point
+	local mat_plane = Material("vgui/white") //Material("sprites/partctrl_plane.vmt") //this looks nicer but it could be mistaken for a legitimate part of an effect
 	function ENT:DrawCPointHelpers()
 
 		if self.ParticleInfo and !IsValid(self:GetSpecialEffectParent()) then
@@ -565,6 +566,27 @@ if CLIENT then
 						end
 						//Draw particle effect helpers (arrow showing cpoint orientation, number showing cpoint id)
 						if window or v.ent.PartCtrl_Grip then //hide helpers when they're attached to other ents unless the window is open
+							if ptab.cpoint_planes and ptab.cpoint_planes[k] then
+								render.SetMaterial(mat_plane)
+								for _, tab in pairs (ptab.cpoint_planes[k]) do
+									local pos2 = tab.pos
+									local norm = tab.normal
+									if !tab.pos_global then
+										if !tab.pos_fixed_offset then
+											pos2, _ = LocalToWorld(tab.pos, Angle(), pos, ang)
+										else
+											pos2 = tab.pos + pos
+										end
+									end
+									if !tab.normal_global then
+										norm, _ = LocalToWorld(tab.normal, Angle(), Vector(), ang)
+									end
+
+									render.DrawQuadEasy(pos2, norm, 50, 50, Color(0,255,0,128))
+									render.DrawQuadEasy(pos2, -norm, 50, 50, Color(255,0,0,128))
+								end
+							end
+						
 							render.SetMaterial(partctrl_arrowmat)
 							render.DrawBeam(pos + (ang:Forward() * -3.01), pos + (ang:Forward() * (20-3.01)), 20, 1, 0, color_white)
 

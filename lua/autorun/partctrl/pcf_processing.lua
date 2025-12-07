@@ -1211,7 +1211,17 @@ local processfuncs = {
 		["cull relative to model"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, { //TODO: should this be a position_combine? can't actually find any fx that use this, even in portal2/asw/l4d2
 			["ignore_outputs"] = true, //this cpoint sets an associated model, not a position, so outputs don't override it
 		}) end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Cull_relative_to_model, yeah it's on the wrong page); pet doesn't add a control for this
-		["cull when crossing plane"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point for point on plane", 0) end,
+		["cull when crossing plane"] = function(processed, attrib) 
+			local norm = attrib["Plane Normal"] or Vector(0,0,1)
+			cpoint_from_attrib_value(processed, attrib, "Control Point for point on plane", 0, nil, {
+				["plane"] = {
+					["pos"] = norm * -(attrib["Cull plane offset"] or 0),
+					["pos_fixed_offset"] = true,
+					["normal"] = norm,
+					["normal_global"] = true
+				}		
+			})
+		end,
 		["cull when crossing sphere"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point", 0) end,
 		["lifespan decay"] = function(processed, attrib)
 			//only do min_length for tracers if we have one of the right decay operators; tracer fx using other things 
@@ -2271,7 +2281,18 @@ local processfuncs = {
 		//"constrain particles to a box" is in worldspace only?? why? what is this for?
 		["prevent passing through a plane"] = function(processed, attrib)
 			if !attrib["global origin"] or !attrib["global normal"] then
-				cpoint_from_attrib_value(processed, attrib, "control point number", 0)
+				local norm = attrib["plane normal"] or Vector(0,0,1)
+				local x = norm.x //x and y values are swapped, and y is negative. why does this normal and *only* this normal use a totally different coordinate system?
+				norm.x = norm.y
+				norm.y = -x
+				cpoint_from_attrib_value(processed, attrib, "control point number", 0, nil, {
+					["plane"] = {
+						["pos"] = attrib["plane point"] or Vector(0,0,0),
+						["normal"] = norm,
+						["pos_global"] = attrib["global origin"],
+						["normal_global"] = attrib["global normal"],
+					}
+				})
 			end
 		end,
 		//code says this one always uses cpoint 0 for some trace stuff, but when trying to test it, on every single effect i could find or make with this attribute, it just doesn't seem to work at all? particles pass through brushes, displacements, and static props just fine. (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_constraints.cpp#L473)
@@ -2450,6 +2471,7 @@ function PartCtrl_ProcessPCF(filename)
 			local output_children = {}
 			local output_axis = {}
 			local on_model = nil
+			local cpoint_planes = nil
 			local sets_particle_pos = nil
 			local copy_sets_particle_pos = nil
 			local remove_if_other_cpoint_is_empty = {}
@@ -2555,6 +2577,12 @@ function PartCtrl_ProcessPCF(filename)
 										if v2["on_model"] then
 											on_model = on_model or {}
 											on_model[k] = true
+										end
+										//also make a list of cpoints that define a cull plane, so we can draw helpers for them
+										if v2["plane"] then
+											cpoint_planes = cpoint_planes or {}
+											cpoint_planes[k] = cpoint_planes[k] or {}
+											table.insert(cpoint_planes[k], v2["plane"])
 										end
 										//also check for "remove_if_other_cpoint_is_empty"; we only care about this if ALL position controls for this cpoint have this
 										local remove = v2["remove_if_other_cpoint_is_empty"]
@@ -2698,17 +2726,22 @@ function PartCtrl_ProcessPCF(filename)
 			end
 
 			local shouldcull = !t2[particle].has_renderer or !t2[particle].has_emitter
+			local do_cpoint_planes
+			if cpoint_planes then do_cpoint_planes = 0 end
 			local needfallback = -1
 			for k, v in pairs (modes) do
-				if !shouldcull and !needfallback then break end
+				if !shouldcull and !needfallback and do_cpoint_planes == nil then break end
 				if shouldcull and v != PARTCTRL_CPOINT_MODE_NONE then
 					//Clear out empty effects (no renderer, no emitter, no cpoints even from children)
 					shouldcull = false
 				end
-				if needfallback then 
-					if v == PARTCTRL_CPOINT_MODE_POSITION then
+				if v == PARTCTRL_CPOINT_MODE_POSITION then
+					if needfallback then 
 						//Create fallback position cpoint for effects that don't have any
 						needfallback = nil
+					end
+					if do_cpoint_planes != nil then
+						do_cpoint_planes = do_cpoint_planes + 1
 					end
 				end
 			end
@@ -2804,6 +2837,29 @@ function PartCtrl_ProcessPCF(filename)
 					text = text .. " are attached."
 				end
 				PartCtrl_AddInfoText(t2[particle], text)
+			end
+
+			//Do cpoint_planes; not necessary if the effect only has 1 position control
+			if cpoint_planes and do_cpoint_planes > 1 then
+				//Squish together entries that have the same values
+				t2[particle].cpoint_planes = {}
+				for k, v in pairs (cpoint_planes) do
+					local newplanes = {}
+					for k2, v2 in pairs (v) do
+						if cpoint_planes[k2] != nil then
+							local newtab = table.Copy(v2)
+							for k3, v3 in pairs (cpoint_planes[k2]) do
+								if k3 != k2 and v3.pos == v2.pos and v3.pos_global == v2.pos_global and v3.pos_fixed_offset == v2.pos_fixed_offset
+								and v3.normal == v2.normal and v3.normal_global == v2.normal_global then
+									cpoint_planes[k][k3] = nil
+								end
+							end
+							cpoint_planes[k][k2] = nil
+							table.insert(newplanes, newtab)
+						end
+					end
+					t2[particle].cpoint_planes[k] = newplanes
+				end
 			end
 
 			//Do min_length for tracer fx
