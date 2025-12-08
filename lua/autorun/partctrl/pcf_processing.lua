@@ -1139,6 +1139,7 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 
 	table.insert(processed.cpoints[k][processedk], processedv)
 end
+
 local function cpoint_from_attrib_value(processed, attrib, value, default_k, processedk, processedv)
 	local k = attrib[value] or default_k
 	if k > -1 or (processedv and processedv["force_allow_-1"]) then
@@ -1152,6 +1153,105 @@ local function cpoint_from_attrib_value(processed, attrib, value, default_k, pro
 		PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processedv, attrib)
 	end
 end
+
+local function DoScalarIO(attrib, is_distance_scalar)
+	local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS //PARTICLE_ATTRIBUTE_x enum
+	local label = ParticleAttributeNames[field]
+	local inMin
+	local inMax
+	if !is_distance_scalar then
+		inMin = attrib["input minimum"] or 0
+		inMax = attrib["input maximum"] or 1
+	else
+		inMin = attrib["distance minimum"] or 0
+		inMax = attrib["distance maximum"] or 128
+	end
+	local outMin = attrib["output minimum"] or 0
+	local outMax = attrib["output maximum"] or 1
+	local is_multiplier = attrib["output is scalar of initial random range"] or attrib["output is scalar of current value"] //initializers don't have the latter, but this should be fine
+	local default
+	local decimals = nil
+	if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS and !is_multiplier then
+		//radius scalars should default to a nice big size, not 1 pixel
+		default = math.Remap(8, outMin, outMax, inMin, inMax)
+	elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
+		//Alpha should always default to max visibility;
+		//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
+		if outMin <= outMax then
+			default = math.max(inMin, inMax)
+		else
+			default = math.min(inMin, inMax)
+		end
+	elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER or field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 then
+		//don't let sequence number scalars set the value to 64, or it'll crash (for particles/asw_order_fx.pcf order_use_item)
+		if outMax > 63 then
+			inMax = math.Remap(63, outMin, outMax, inMin, inMax)
+			outMax = 63
+		end
+		//sequence number scalars should be whole numbers, and default to 0 (first sequence)
+		default = math.Remap(0, outMin, outMax, inMin, inMax)
+		decimals = 0
+	else
+		//default to 1
+		default = math.Remap(1, outMin, outMax, inMin, inMax)
+	end
+	//make sure the default value of the control in the edit window isn't outside its range
+	default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
+	if is_multiplier then
+		label = label .. " Scale"
+	end
+
+	return {
+		["label"] = label,
+		["inMin"] = inMin,
+		["inMax"] = inMax,
+		["outMin"] = outMin,
+		["outMax"] = outMax,
+		["default"] = default,
+		["decimals"] = decimals,
+	}
+end
+
+local function DoVectorIO(attrib)
+	local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_XYZ //PARTICLE_ATTRIBUTE_x enum //assume the default is Position because that's what shows in pet by default, just like Radius is for scalars; can't find any v5 fx to test with that omit this value
+	local label = ParticleAttributeNames[field]
+	local inMin = attrib["input minimum"] or Vector()
+	local inMax = attrib["input maximum"] or Vector()
+	local outMin = attrib["output minimum"] or Vector()
+	local outMax = attrib["output maximum"] or Vector()
+	local is_multiplier = attrib["output is scalar of initial random range"] or attrib["output is scalar of current value"] //initializers don't have the latter, but this should be fine
+	local default = nil
+	local colorpicker = nil
+	if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB or is_multiplier then
+		//Color should default to the equivalent of 1,1,1 (white),
+		//and multipliers should default to 100%
+		default = Vector(math.Remap(1, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(1, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(1, outMin.z, outMax.z, inMin.z, inMax.z))
+		if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB then
+			colorpicker = true
+		end
+	else
+		//default to 0
+		default = Vector(math.Remap(0, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(0, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(0, outMin.z, outMax.z, inMin.z, inMax.z))
+	end
+	for i = 1, 3 do
+		//make sure the default value of the control in the edit window isn't outside its range (see portal 2 portalgun_top_light_squiggles)
+		default[i] = math.Clamp(default[i], math.Remap(outMin[i], outMin[i], outMax[i], inMin[i], inMax[i]), math.Remap(outMax[i], outMin[i], outMax[i], inMin[i], inMax[i]))
+	end
+	if is_multiplier then
+		label = label .. " Scale"
+	end
+
+	return {
+		["label"] = label,
+		["inMin"] = inMin,
+		["inMax"] = inMax,
+		["outMin"] = outMin,
+		["outMax"] = outMax,
+		["default"] = default,
+		["colorpicker"] = colorpicker,
+	}
+end
+
 local processfuncs = {
 	["renderers"] = {
 		["render models"] = function(processed, attrib) processed["has_renderer"] = true end, //add this value manually for each renderer attribute, rather than doing it in _generic, so that we can catch fx that don't have a valid one, like those ep2 blob fx
@@ -1339,89 +1439,31 @@ local processfuncs = {
 			//controls a whole bunch of stuff (lifetime, radius, alpha, etc.) with the value of a single axis of the cpoint, definitely not a position control
 			local axis = attrib["input field 0-2 X/Y/Z"] or 0
 			if axis > -1 then
-				local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS //PARTICLE_ATTRIBUTE_x enum
-				local label = ParticleAttributeNames[field]
-				local inMin = attrib["input minimum"] or 0
-				local inMax = attrib["input maximum"] or 1
-				local outMin = attrib["output minimum"] or 0
-				local outMax = attrib["output maximum"] or 1
-				local is_multiplier = attrib["output is scalar of initial random range"] or attrib["output is scalar of current value"]
-				local default
-				local decimals = nil
-				if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS and !is_multiplier then
-					//radius scalars should default to a nice big size, not 1 pixel
-					default = math.Remap(8, outMin, outMax, inMin, inMax)
-				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
-					//Alpha should always default to max visibility;
-					//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
-					if outMin <= outMax then
-						default = math.max(inMin, inMax)
-					else
-						default = math.min(inMin, inMax)
-					end
-				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER or field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 then
-					//sequence number scalars should be whole numbers, and default to 0 (first sequence)
-					default = math.Remap(0, outMin, outMax, inMin, inMax)
-					decimals = 0
-				else
-					//default to 1
-					default = math.Remap(1, outMin, outMax, inMin, inMax)
-				end
-				//make sure the default value of the control in the edit window isn't outside its range
-				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
-				if is_multiplier then
-					label = label .. " Scale"
-				end
+				local tab = DoScalarIO(attrib)
 				cpoint_from_attrib_value(processed, attrib, "input control point number", 0, "axis", {
 					["axis"] = axis,
-					["label"] = label,
-					["inMin"] = inMin,
-					["inMax"] = inMax,
-					["outMin"] = outMin,
-					["outMax"] = outMax,
-					["default"] = default,
-					["decimals"] = decimals,
+					["label"] = tab.label,
+					["inMin"] = tab.inMin,
+					["inMax"] = tab.inMax,
+					["outMin"] = tab.outMin,
+					["outMax"] = tab.outMax,
+					["default"] = tab.default,
+					["decimals"] = tab.decimals,
 				})
 			end
 		end,
 		["remap control point to vector"] = function(processed, attrib)
 			//Similar to above, use all 3 axes of the cpoint to set Position, Roll, or Color
 			//TF2/episodes/HL2 pcfs only have use cases for Color, so the others required some testing.
-			local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_XYZ //PARTICLE_ATTRIBUTE_x enum //assume the default is Position because that's what shows in pet by default, just like Radius is for scalars; can't find any v5 fx to test with that omit this value
-			local label = ParticleAttributeNames[field]
-			local inMin = attrib["input minimum"] or Vector()
-			local inMax = attrib["input maximum"] or Vector()
-			local outMin = attrib["output minimum"] or Vector()
-			local outMax = attrib["output maximum"] or Vector()
-			local is_multiplier = attrib["output is scalar of initial random range"] or attrib["output is scalar of current value"]
-			local default = nil
-			local colorpicker = nil
-			if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB or is_multiplier then
-				//Color should default to the equivalent of 1,1,1 (white),
-				//and multipliers should default to 100%
-				default = Vector(math.Remap(1, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(1, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(1, outMin.z, outMax.z, inMin.z, inMax.z))
-				if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB then
-					colorpicker = true
-				end
-			else
-				//default to 0
-				default = Vector(math.Remap(0, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(0, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(0, outMin.z, outMax.z, inMin.z, inMax.z))
-			end
-			for i = 1, 3 do
-				//make sure the default value of the control in the edit window isn't outside its range (see portal 2 portalgun_top_light_squiggles)
-				default[i] = math.Clamp(default[i], math.Remap(outMin[i], outMin[i], outMax[i], inMin[i], inMax[i]), math.Remap(outMax[i], outMin[i], outMax[i], inMin[i], inMax[i]))
-			end
-			if is_multiplier then
-				label = label .. " Scale"
-			end
+			local tab = DoVectorIO(attrib)
 			cpoint_from_attrib_value(processed, attrib, "input control point number", 0, "vector", {
-				["label"] = label,
-				["inMin"] = inMin,
-				["inMax"] = inMax,
-				["outMin"] = outMin,
-				["outMax"] = outMax,
-				["default"] = default,
-				["colorpicker"] = colorpicker,
+				["label"] = tab.label,
+				["inMin"] = tab.inMin,
+				["inMax"] = tab.inMax,
+				["outMin"] = tab.outMin,
+				["outMax"] = tab.outMax,
+				["default"] = tab.default,
+				["colorpicker"] = tab.colorpicker,
 			})
 			cpoint_from_attrib_value(processed, attrib, "local space CP", -1, "position_combine") //uses the cpoint's angles to rotate the output in some odd way, can be used to make a position sort-of-rotate with the cpoint, or make colors change as it spins
 		end,
@@ -1456,56 +1498,23 @@ local processfuncs = {
 		end,
 		["remap distance between two control points to scalar"] = function(processed, attrib)
 			//this uses all the same scalars as remap control point to scalar, but actually uses the distance between two positions to get the value
-			local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS //PARTICLE_ATTRIBUTE_x enum
-			local label = ParticleAttributeNames[field]
-			local inMin = attrib["distance minimum"] or 0
-			local inMax = attrib["distance maximum"] or 1
-			local outMin = attrib["output minimum"] or 0
-			local outMax = attrib["output maximum"] or 1
-			local is_multiplier = attrib["output is scalar of initial random range"] or attrib["output is scalar of current value"]
-			local default
-			local decimals = nil
-			if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS and !is_multiplier then
-				//radius scalars should default to a nice big size, not 1 pixel
-				default = math.Remap(8, outMin, outMax, inMin, inMax)
-			elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
-				//Alpha should always default to max visibility;
-				//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
-				if outMin <= outMax then
-					default = math.max(inMin, inMax)
-				else
-					default = math.min(inMin, inMax)
-				end
-			elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER or field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 then
-				//sequence number scalars should be whole numbers, and default to 0 (first sequence)
-				default = math.Remap(0, outMin, outMax, inMin, inMax)
-				decimals = 0
-			else
-				//default to 1
-				default = math.Remap(1, outMin, outMax, inMin, inMax)
-			end
-			//make sure the default value of the control in the edit window isn't outside its range
-			default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
-			if is_multiplier then
-				label = label .. " Scale"
-			end
+			local tab = DoScalarIO(attrib, true)
 			cpoint_from_attrib_value(processed, attrib, "ending control point", 1, "axis", {
 				["axis"] = 0, //arbitrary; any axis could work for this, but ent_partctrl:StartParticle checks which_0 for relative_to_cpoint
-				["label"] = label,
-				["inMin"] = inMin,
-				["inMax"] = inMax,
-				["outMin"] = outMin,
-				["outMax"] = outMax,
-				["default"] = default,
-				["decimals"] = decimals,
+				["label"] = tab.label,
+				["inMin"] = tab.inMin,
+				["inMax"] = tab.inMax,
+				["outMin"] = tab.outMin,
+				["outMax"] = tab.outMax,
+				["default"] = tab.default,
+				["decimals"] = tab.decimals,
 				["relative_to_cpoint"] = attrib["starting control point"] or 0 //?
 			})
 			cpoint_from_attrib_value(processed, attrib, "starting control point", 0, "position_combine") //this is iffy; we assume the start cpoint might be attached to something while the end point isn't, which *is* the case with all existing fx, but doesn't necessarily have to be
 		end,
 		["remap distance to control point to scalar"] = function(processed, attrib)
 			//like the above but uses the distance between a single cpoint's position and the particle (sprite?) itself (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Remap_Distance_to_Control_Point_to_Scalar)
-			local label = ParticleAttributeNames[attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS] //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
-			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["label"] = label})
+			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["distance_scalar"] = DoScalarIO(attrib, true)})
 		end,
 		["remap dot product to scalar"] = function (processed, attrib)
 			//like "remap control point to scalar", except it gets the angle(?) of 2 cpoints and does math with them to set the scalar. not listed in wiki.
@@ -1956,95 +1965,31 @@ local processfuncs = {
 			//controls a whole bunch of stuff (lifetime, radius, alpha, etc.) with the value of a single axis of the cpoint, definitely not a position control
 			local axis = attrib["input field 0-2 X/Y/Z"] or 0
 			if axis > -1 then
-				//Make sure we have values for everything, just in case; use default values from pet otherwise
-				local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS //PARTICLE_ATTRIBUTE_x enum
-				local label = ParticleAttributeNames[field]
-				local inMin = attrib["input minimum"] or 0
-				local inMax = attrib["input maximum"] or 1
-				local outMin = attrib["output minimum"] or 0
-				local outMax = attrib["output maximum"] or 1
-				local is_multiplier = attrib["output is scalar of initial random range"] //or attrib["output is scalar of current value"] //this one doesn't have this value
-				local default
-				local decimals = nil
-				if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS and !is_multiplier then
-					//radius scalars should default to a nice big size, not 1 pixel
-					default = math.Remap(8, outMin, outMax, inMin, inMax)
-				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
-					//Alpha should always default to max visibility;
-					//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
-					if outMin <= outMax then
-						default = math.max(inMin, inMax)
-					else
-						default = math.min(inMin, inMax)
-					end
-				elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER or field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 then
-					//don't let sequence number scalars set the value to 64, or it'll crash (for particles/asw_order_fx.pcf order_use_item)
-					if outMax > 63 then
-						inMax = math.Remap(63, outMin, outMax, inMin, inMax)
-						outMax = 63
-					end
-					//sequence number scalars should be whole numbers, and default to 0 (first sequence)
-					default = math.Remap(0, outMin, outMax, inMin, inMax)
-					decimals = 0
-				else
-					//default to 1
-					default = math.Remap(1, outMin, outMax, inMin, inMax)
-				end
-				//make sure the default value of the control in the edit window isn't outside its range
-				default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
-				if is_multiplier then
-					label = label .. " Scale"
-				end
+				local tab = DoScalarIO(attrib)
 				cpoint_from_attrib_value(processed, attrib, "input control point number", 0, "axis", {
 					["axis"] = axis,
-					["label"] = label,
-					["inMin"] = inMin,
-					["inMax"] = inMax,
-					["outMin"] = outMin,
-					["outMax"] = outMax,
-					["default"] = default,
-					["decimals"] = decimals,
+					["label"] = tab.label,
+					["inMin"] = tab.inMin,
+					["inMax"] = tab.inMax,
+					["outMin"] = tab.outMin,
+					["outMax"] = tab.outMax,
+					["default"] = tab.default,
+					["decimals"] = tab.decimals,
 				})
 			end
 		end,
 		["remap control point to vector"] = function(processed, attrib)
 			//same as operator of the same name; actually, orangebox only has the initializer version of this, the operator is new from pcf v5
 			//Similar to above, use all 3 axes of the cpoint to set Position, Roll, or Color
-			local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_XYZ //PARTICLE_ATTRIBUTE_x enum //assume the default is Position because that's what shows in pet by default, just like Radius is for scalars; can't find any v5 fx to test with that omit this value
-			local label = ParticleAttributeNames[field]
-			local inMin = attrib["input minimum"] or Vector()
-			local inMax = attrib["input maximum"] or Vector()
-			local outMin = attrib["output minimum"] or Vector()
-			local outMax = attrib["output maximum"] or Vector()
-			local is_multiplier = attrib["output is scalar of initial random range"] //or attrib["output is scalar of current value"] //this one doesn't have this value
-			local default = nil
-			local colorpicker = nil
-			if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB or is_multiplier then
-				//Color should default to the equivalent of 1,1,1 (white),
-				//and multipliers should default to 100%
-				default = Vector(math.Remap(1, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(1, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(1, outMin.z, outMax.z, inMin.z, inMax.z))
-				if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB then
-					colorpicker = true
-				end
-			else
-				//default to 0
-				default = Vector(math.Remap(0, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(0, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(0, outMin.z, outMax.z, inMin.z, inMax.z))
-			end
-			for i = 1, 3 do
-				//make sure the default value of the control in the edit window isn't outside its range (see portal 2 portalgun_top_light_squiggles)
-				default[i] = math.Clamp(default[i], math.Remap(outMin[i], outMin[i], outMax[i], inMin[i], inMax[i]), math.Remap(outMax[i], outMin[i], outMax[i], inMin[i], inMax[i]))
-			end
-			if is_multiplier then
-				label = label .. " Scale"
-			end
+			local tab = DoVectorIO(attrib)
 			cpoint_from_attrib_value(processed, attrib, "input control point number", 0, "vector", {
-				["label"] = label,
-				["inMin"] = inMin,
-				["inMax"] = inMax,
-				["outMin"] = outMin,
-				["outMax"] = outMax,
-				["default"] = default,
-				["colorpicker"] = colorpicker,
+				["label"] = tab.label,
+				["inMin"] = tab.inMin,
+				["inMax"] = tab.inMax,
+				["outMin"] = tab.outMin,
+				["outMax"] = tab.outMax,
+				["default"] = tab.default,
+				["colorpicker"] = tab.colorpicker,
 			})
 			cpoint_from_attrib_value(processed, attrib, "local space CP", -1, "position_combine") //uses the cpoint's angles to rotate the output in some odd way, can be used to make a position sort-of-rotate with the cpoint, or make colors change as it spins
 		end,
@@ -2056,8 +2001,7 @@ local processfuncs = {
 			cpoint_from_attrib_value(processed, attrib, "control point", 0, "position_combine")
 		end,
 		["remap initial distance to control point to scalar"] = function(processed, attrib)
-			local label = ParticleAttributeNames[attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS] //PARTICLE_ATTRIBUTE_x enum //put this in the table so we can see what it does in the debug
-			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["label"] = label})
+			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["distance_scalar"] = DoScalarIO(attrib, true)})
 		end,
 		["remap noise to scalar"] = function(processed, attrib)
 			//for particles/blood_impact.pcf blood_impact_synth_01_short: ignore the initializer "alpha random" zero alpha check if the zero alpha is being
