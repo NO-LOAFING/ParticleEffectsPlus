@@ -1298,9 +1298,9 @@ local processfuncs = {
 	},
 	["operators"]= {
 		["alpha fade and decay"] = function(processed, attrib)
-			//only do min_length for tracers if we have one of the right decay operators; tracer fx using other things 
+			//only do tracer_min_distance if we have one of the right decay operators; tracer fx using other things 
 			//(i.e. alien swarm tracers using "alpha fade and decay for tracers") don't have a minimum length between cpoints to render
-			processed["min_length_raw_hasdecay"] = true
+			processed["tracer_min_distance_hasdecay"] = true
 		end,
 		["color light from control point"] = function(processed, attrib)
 			cpoint_from_attrib_value(processed, attrib, "Light 1 Control Point", 0, "position_combine")
@@ -1324,9 +1324,9 @@ local processfuncs = {
 		end,
 		["cull when crossing sphere"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control Point", 0) end,
 		["lifespan decay"] = function(processed, attrib)
-			//only do min_length for tracers if we have one of the right decay operators; tracer fx using other things 
+			//only do tracer_min_distance if we have one of the right decay operators; tracer fx using other things 
 			//(i.e. alien swarm tracers using "alpha fade and decay for tracers") don't have a minimum length between cpoints to render
-			processed["min_length_raw_hasdecay"] = true
+			processed["tracer_min_distance_hasdecay"] = true
 		end,
 		["lifespan maintain count decay"] = function(processed, attrib)
 			local axis = attrib["maintain count scale control point field"] or 0
@@ -1531,11 +1531,13 @@ local processfuncs = {
 		["remap particle bbox volume to cp"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "output control point", -1, "output") end, //sets the whole cpoint to Vector(volume,0,0) https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L2532
 		["remap percentage between two control points to scalar"] = function(processed, attrib)
 			//sets a scalar value on *each individual particle* based on what percentage of the distance between two cpoints it's covered
+			//TODO: do we need to handle this like distance scalars?
 			cpoint_from_attrib_value(processed, attrib, "starting control point", 0)
 			cpoint_from_attrib_value(processed, attrib, "ending control point", 1)
 		end,
 		["remap percentage between two control points to vector"] = function(processed, attrib)
 			//sets a vector value on *each individual particle* based on what percentage of the distance between two cpoints it's covered
+			//TODO: do we need to handle this like distance scalars?
 			cpoint_from_attrib_value(processed, attrib, "starting control point", 0)
 			cpoint_from_attrib_value(processed, attrib, "ending control point", 1)
 		end,
@@ -1757,13 +1759,12 @@ local processfuncs = {
 		["cull relative to model"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, nil, { //TODO: should this be a position_combine? can't actually find any fx that use this, even in portal2/asw/l4d2
 			["ignore_outputs"] = true, //this cpoint sets an associated model, not a position, so outputs don't override it
 		}) end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Cull_relative_to_model)
-		["move particles between 2 control points"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "end control point", 1, nil, {["sets_particle_pos"] = true}) //yes, it only defines an endpoint (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Move_Particles_Between_2_Control_Points)
+		["move particles between 2 control points"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "end control point", 1, nil, { //yes, it only defines an endpoint (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Move_Particles_Between_2_Control_Points); seems to work based on each particle's initial position (https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_initializers.cpp#L3787)
+			["sets_particle_pos"] = true,
 			//the minimum distance between cpoints needed to render fx using this operator actually scales with FRAMERATE, ridiculous
-			//TODO: not much more we can do about this since min_length is serverside, argh. i guess this could use a convar? a serverside convar for how much fps they expect clients to have? nonsense
-			processed["min_length_raw"] = (math.max((attrib["maximum speed"] or 1), (attrib["minimum speed"] or 1))/58) + 1
-			+ (attrib["start offset"] or 0) - (attrib["end offset"] or 0)
-		end, 
+			//TODO: not much more we can do about this since actually spawning the cpoints is serverside, argh. i guess this could use a convar? a serverside convar for how much fps they expect clients to have? nonsense
+			["tracer_min_distance"] = (math.max((attrib["maximum speed"] or 1), (attrib["minimum speed"] or 1))/58) + 1 + (attrib["start offset"] or 0) - (attrib["end offset"] or 0)
+		}) end, 
 		["normal align to cp"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "control_point_number", 0, "position_combine") end, //controls angle of Render Models fx; this is an angle control, so combine it
 		["normal modify offset random"] = function(processed, attrib)
 			if attrib["offset in local space 0/1"] then //cpoint is only used if this is true https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_initializers.cpp#L7267
@@ -2416,6 +2417,8 @@ function PartCtrl_ProcessPCF(filename)
 			local output_axis = {}
 			local on_model = nil
 			local cpoint_planes = nil
+			local distance_scalars = nil
+			local tracer_min_distance = nil
 			local sets_particle_pos = nil
 			local copy_sets_particle_pos = nil
 			local remove_if_other_cpoint_is_empty = {}
@@ -2528,6 +2531,17 @@ function PartCtrl_ProcessPCF(filename)
 											cpoint_planes[k] = cpoint_planes[k] or {}
 											table.insert(cpoint_planes[k], v2["plane"])
 										end
+										//also make a list of distance scalars
+										if v2["distance_scalar"] then
+											distance_scalars = distance_scalars or {}
+											distance_scalars[k] = distance_scalars[k] or {}
+											table.insert(distance_scalars[k], v2["distance_scalar"])
+										end
+										//also inherit tracer_min_distance stuff here
+										if v2["tracer_min_distance"] and t2[particle2].tracer_min_distance_hasdecay then
+											tracer_min_distance = tracer_min_distance or {}
+											tracer_min_distance[k] = math.max((tracer_min_distance[k] or 0), v2["tracer_min_distance"])
+										end
 										//also check for "remove_if_other_cpoint_is_empty"; we only care about this if ALL position controls for this cpoint have this
 										local remove = v2["remove_if_other_cpoint_is_empty"]
 										if remove != nil and remove_if_other_cpoint_is_empty[k] != nil then
@@ -2616,11 +2630,6 @@ function PartCtrl_ProcessPCF(filename)
 				//MsgN("Current modes:")
 				//PrintTable(modes)
 
-				//Also inherit min_length stuff from children here, this loop is a good place to do this
-				if particle2 != particle and t2[particle2].min_length_raw_hasdecay and t2[particle2].min_length_raw then
-					t2[particle].min_length_raw_child = math.max((t2[particle].min_length_raw_child or 0), t2[particle2].min_length_raw)
-				end
-
 				//Also inherit screenspace flag from children here
 				if particle2 != particle and t2[particle2].screenspace then
 					t2[particle].screenspace_from_child = true
@@ -2670,11 +2679,10 @@ function PartCtrl_ProcessPCF(filename)
 			end
 
 			local shouldcull = !t2[particle].has_renderer or !t2[particle].has_emitter
-			local do_cpoint_planes
-			if cpoint_planes then do_cpoint_planes = 0 end
+			local pos_control_count = 0
 			local needfallback = -1
 			for k, v in pairs (modes) do
-				if !shouldcull and !needfallback and do_cpoint_planes == nil then break end
+				if !shouldcull and !needfallback and pos_control_count > 1 then break end
 				if shouldcull and v != PARTCTRL_CPOINT_MODE_NONE then
 					//Clear out empty effects (no renderer, no emitter, no cpoints even from children)
 					shouldcull = false
@@ -2684,8 +2692,8 @@ function PartCtrl_ProcessPCF(filename)
 						//Create fallback position cpoint for effects that don't have any
 						needfallback = nil
 					end
-					if do_cpoint_planes != nil then
-						do_cpoint_planes = do_cpoint_planes + 1
+					if pos_control_count != nil then
+						pos_control_count = pos_control_count + 1
 					end
 				end
 			end
@@ -2782,51 +2790,60 @@ function PartCtrl_ProcessPCF(filename)
 				PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 			end
 
-			//Do cpoint_planes; not necessary if the effect only has 1 position control
-			if cpoint_planes and do_cpoint_planes > 1 then
-				//Squish together entries that have the same values
-				t2[particle].cpoint_planes = {}
-				for k, v in pairs (cpoint_planes) do
-					local newplanes = {}
-					for k2, v2 in pairs (v) do
-						if cpoint_planes[k2] != nil then
-							local newtab = table.Copy(v2)
-							for k3, v3 in pairs (cpoint_planes[k2]) do
-								if k3 != k2 and v3.pos == v2.pos and v3.pos_global == v2.pos_global and v3.pos_fixed_offset == v2.pos_fixed_offset
-								and v3.normal == v2.normal and v3.normal_global == v2.normal_global then
-									cpoint_planes[k][k3] = nil
+			if pos_control_count and pos_control_count > 1 then
+				//Do cpoint_planes; not necessary if the effect only has 1 position control
+				if cpoint_planes then
+					//Squish together entries that have the same values
+					t2[particle].cpoint_planes = {}
+					for k, v in pairs (cpoint_planes) do
+						local newplanes = {}
+						for k2, v2 in pairs (v) do
+							if cpoint_planes[k][k2] != nil then
+								local newtab = table.Copy(v2)
+								for k3, v3 in pairs (cpoint_planes[k]) do
+									if k3 != k2 and v3.pos == v2.pos and v3.pos_global == v2.pos_global and v3.pos_fixed_offset == v2.pos_fixed_offset
+									and v3.normal == v2.normal and v3.normal_global == v2.normal_global then
+										cpoint_planes[k][k3] = nil
+									end
 								end
+								cpoint_planes[k][k2] = nil
+								table.insert(newplanes, newtab)
 							end
-							cpoint_planes[k][k2] = nil
-							table.insert(newplanes, newtab)
 						end
+						t2[particle].cpoint_planes[k] = newplanes
 					end
-					t2[particle].cpoint_planes[k] = newplanes
+					//Add info text for planes
+					local text = ""
+					local docomma = false
+					for k, _ in pairs (t2[particle].cpoint_planes) do
+						if docomma then text = text .. ", " end
+						text = text .. k
+						docomma = true
+					end
+					local text2
+					if table.Count(t2[particle].cpoint_planes) > 1 then
+						text2 = "Control points %CPOINTS control planes that prevent particles from passing through."
+					else
+						text2 = "Control point %CPOINTS controls a plane that prevents particles from passing through."
+					end
+					PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 				end
-				//Add info text for planes
-				local text = ""
-				local docomma = false
-				for k, _ in pairs (t2[particle].cpoint_planes) do
-					if docomma then text = text .. ", " end
-					text = text .. k
-					docomma = true
-				end
-				local text2
-				if table.Count(t2[particle].cpoint_planes) > 1 then
-					text2 = "Control points %CPOINTS control planes that prevent particles from passing through."
-				else
-					text2 = "Control point %CPOINTS controls a plane that prevents particles from passing through."
-				end
-				PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
-			end
 
-			//Do min_length for tracer fx
-			local raw = t2[particle].min_length_raw_child or 0
-			if t2[particle].min_length_raw_hasdecay then
-				raw = math.max((t2[particle].min_length_raw or 0), raw)
-			end
-			if raw > 100 then //don't bother if it would actually make it smaller than default
-				t2[particle].min_length = raw
+				//Do min cpoint distance for tracer fx
+				if tracer_min_distance then
+					t2[particle].cpoint_distance_overrides = t2[particle].cpoint_distance_overrides or {}
+					for k, v in pairs (tracer_min_distance) do
+						t2[particle].cpoint_distance_overrides[k] = {
+							["min"] = v
+						}
+					end
+				end
+				
+				//Do min/max cpoint distance for distance scalars
+				if distance_scalars then
+					t2[particle].distance_scalars = distance_scalars
+					//TODO: use this to determine min/max dist
+				end
 			end
 		end
 		for particle, _ in pairs (t2) do

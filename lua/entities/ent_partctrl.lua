@@ -1245,25 +1245,22 @@ else
 		oldconst:Remove()
 		parentent:DontDeleteOnRemove(self)
 
-
+		local grips, mins, maxs = PartCtrl_GetParticleDefaultPositions(pcf, self:GetParticleName())
 		local pos = parentmodel:GetPos()
 		local _, bboxtop1 = parentmodel:GetRotatedAABB(parentmodel:GetCollisionBounds())
-		local height = bboxtop1.z + 3 + pos.z //3 is a stupid hard-coded grip point radius
+		local height = bboxtop1.z + pos.z - mins.z
 		pos = Vector(pos.x, pos.y, height)
 
 
-		local grips = {}
 		for k, v in pairs (ptab.cpoints) do
 			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
-				grips[k] = true
 				self.ParticleInfo[k].sfx_role = 0
 				self.ParticleInfo[k].attach = 0
 			end
 		end
-		local multigrip_length = ptab.min_length or 100
 
 		local parent = nil
-		grips, parent = PartCtrl_SpawnParticleGripPoints(pos, multigrip_length, grips)
+		grips, parent = PartCtrl_SpawnParticleGripPoints(grips, pos)
 
 		self:SetSpecialEffectParent(nil)
 		for k, v in pairs (grips) do
@@ -1987,35 +1984,85 @@ if SERVER then
 
 	local grip_radius = 6/2
 
-	function PartCtrl_SpawnParticleGripPoints(spawnpos, length, grips)
-
-		local igrips = {}
-		for k, v in pairs (grips) do
-			table.insert(igrips, k)
-		end
+	function PartCtrl_SpawnParticleGripPoints(grips, localpos)
+		
 		local parent = nil
-		for i, k in ipairs (igrips) do
-			local pos = 0
-			if i > 1 then
-				pos = ((i-1)/(#igrips-1))*length
-			end
-			if #igrips > 1 then
-				pos = spawnpos - Vector((length/2)-pos, 0, 0)
-			else
-				pos = spawnpos
-			end
-
+		for k, pos in pairs (grips) do
 			local g = ents.Create("ent_partctrl_grip")
-			if !IsValid(g) then return end
-			g:SetPos(pos)
-			g:Spawn()
-			grips[k] = g
-			//tab[k].ent = g //no longer valid now that the grip spawning was moved out of SpawnParticle - i think the constraint should handle this anyway
-			if !IsValid(parent) then parent = g end
+			if IsValid(g) then
+				g:SetPos(pos + localpos)
+				g:Spawn()
+				grips[k] = g
+				//tab[k].ent = g //no longer valid now that the grip spawning was moved out of SpawnParticle - i think the constraint should handle this anyway
+				if !IsValid(parent) then parent = g end
+			end
 		end
-
 		return grips, parent
 
+	end
+
+	function PartCtrl_GetParticleDefaultPositions(pcf, name)
+
+		local ptab = PartCtrl_ProcessedPCFs[pcf][name]
+
+		local grips = {}
+		local igrips = {}
+		for k, v in pairs (ptab.cpoints) do
+			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+				if !ptab.cpoint_planes or !ptab.cpoint_planes[k] then
+					table.insert(igrips, k)
+				end
+			end
+		end
+
+		local total_length = 0
+		for i, k in ipairs (igrips) do
+			//TODO: ehh, this method isn't great, and assumes that the previous cpoint is the one we want to determine our distance from.
+			//this won't work right on effects with multiple distance scalar cpoints.
+			local this_length = 0
+			if i > 1 then
+				this_length = 100/(#igrips-1) //by default, arrange all points in a line 100 units long
+				if ptab.cpoint_distance_overrides and ptab.cpoint_distance_overrides[k] then
+					if ptab.cpoint_distance_overrides[k].min then this_length = math.max(this_length, ptab.cpoint_distance_overrides[k].min) end
+					if ptab.cpoint_distance_overrides[k].max then this_length = math.min(this_length, ptab.cpoint_distance_overrides[k].max) end
+					//math.Clamp(this_length, ptab.cpoint_distance_overrides[k].min or this_length, ptab.cpoint_distance_overrides[k].max or this_length)
+				end
+			end
+			total_length = total_length + this_length
+			grips[k] = Vector(total_length, 0, 0)
+		end
+		if ptab.cpoint_planes then
+			for k, v in pairs (ptab.cpoint_planes) do
+				local vec = v[1].normal * -50 //distance is arbitrary
+				if v[1].normal.x > 0 then
+					vec.x = vec.x + (total_length * v[1].normal.x)
+				elseif v[1].normal.x == 0 then
+					vec.x = vec.x + (total_length/2)
+				end
+				grips[k] = Vector(vec)
+			end
+		end
+
+		local avg = Vector()
+		local mins, maxs
+		for k, v in pairs (grips) do
+			avg = avg + v
+		end
+		avg = avg / table.Count(grips)
+		for k, v in pairs (grips) do
+			grips[k] = v - avg
+			if !mins then
+				mins = grips[k]
+				maxs = grips[k]
+			else
+				mins = Vector(math.min(mins.x, grips[k].x), math.min(mins.y, grips[k].y), math.min(mins.z, grips[k].z))
+				maxs = Vector(math.max(maxs.x, grips[k].x), math.max(maxs.y, grips[k].y), math.max(maxs.z, grips[k].z))
+			end
+		end
+		mins = mins - Vector(grip_radius, grip_radius, grip_radius)
+		maxs = maxs + Vector(grip_radius, grip_radius, grip_radius)
+
+		return grips, mins, maxs
 	end
 
 	function PartCtrl_SpawnParticle(ply, pos, name, pcf_original, path)
@@ -2025,7 +2072,7 @@ if SERVER then
 			return
 		end
 
-		if !name or !pcf_original then 
+		if !name or !pcf_original then
 			MsgN("partctrl_spawnparticle: failed, missing name or pcf (first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf)")
 			return
 		end
@@ -2044,10 +2091,8 @@ if SERVER then
 		if IsValid(ply) and !gamemode.Call("PlayerSpawnParticle", ply, name, pcf_original, path) then return end
 
 		local tab = {}
-		local grips = {}
 		for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
 			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
-				grips[k] = true
 				tab[k] = {
 					ent = nil,
 					attach = 0,
@@ -2074,28 +2119,61 @@ if SERVER then
 				end
 			end
 		end
-		//Handle position cpoints by placing them all in a line 100 units long, with the cpoints distributed evenly from one end of the line to another
-		//(note: this would take dozens of grips on one single effect for them to start spawning inside each other, and no official fx get anywhere close, so don't worry about this)
-		local multigrip_length = PartCtrl_ProcessedPCFs[pcf][name].min_length or 100
-		local maxs = Vector(grip_radius, grip_radius, grip_radius)
-		if table.Count(grips) > 1 then
-			maxs.x = multigrip_length/2 + grip_radius //add grip_radius so that grips won't spawn half-embedded in a wall
-		end
-		if IsValid(ply) then
-			local tr = util.TraceHull({
+
+		local grips, mins, maxs = PartCtrl_GetParticleDefaultPositions(pcf, name)
+		if IsValid(ply) and pos == nil then
+			//util.TraceHull returns a nonsense hitpos if we're up against a surface, and doesn't spawn things exactly where we click unless we
+			//move all the mins, maxs, and all the grips to put 0,0,0 flat against the surface. Just copy how gmod's prop spawn func does it instead.
+			local tr = util.TraceLine({
 				start = ply:GetShootPos(),
 				endpos = ply:GetShootPos() + (ply:GetAimVector() * 2048),
-				filter = ply,
-				maxs = maxs,
-				mins = -maxs
+				filter = {ply, ply:GetVehicle()}
 			})
-			if pos == nil then
-				pos = tr.HitPos
+			pos = tr.HitPos
+
+			//copied from gmod's DoPlayerEntitySpawn function (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/commands.lua#L364-L370)
+			-- Attempt to move the object so it sits flush
+			-- We could do a TraceEntity instead of doing all
+			-- of this - but it feels off after the old way
+			local vFlushPoint = tr.HitPos - ( tr.HitNormal * -512 )	-- Find a point that is definitely out of the object in the direction of the floor
+			vFlushPoint = util.IntersectRayWithOBB(vFlushPoint, pos-vFlushPoint, pos, Angle(), mins, maxs) or pos //ent:NearestPoint( vFlushPoint )	-- Find the nearest point inside the object to that point
+			//vFlushPoint = pos - vFlushPoint		-- Get the difference //completely redundant, classic garry
+			//vFlushPoint = tr.HitPos - vFlushPoint	-- Add it to our target pos
+			pos = vFlushPoint
+
+			//modified version of local functions TryFixPropPosition/fixupProp, from the same file (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/commands.lua#L29)
+			-- A little hacky function to help prevent spawning props partially inside walls
+			local function fixupParticle( ply, pos, mins, maxs )
+				local entPos = pos
+				local endposD = mins + pos
+				local tr_down = util.TraceLine( {
+					start = pos,
+					endpos = endposD,
+					filter = { ply }
+				} )
+
+				local endposU = maxs + pos
+				local tr_up = util.TraceLine( {
+					start = pos,
+					endpos = endposU,
+					filter = { ply }
+				} )
+
+				-- Both traces hit meaning we are probably inside a wall on both sides, do nothing
+				if ( tr_up.Hit && tr_down.Hit ) then return end
+
+				if ( tr_down.Hit ) then pos = pos + ( tr_down.HitPos - endposD ) end
+				if ( tr_up.Hit ) then pos = pos + ( tr_up.HitPos - endposU ) end
+
+				return pos
 			end
+			pos = fixupParticle( ply, pos, Vector( mins.x, 0, 0 ), Vector( maxs.x, 0, 0 ) )
+			pos = fixupParticle( ply, pos, Vector( 0, mins.y, 0 ), Vector( 0, maxs.y, 0 ) )
+			pos = fixupParticle( ply, pos, Vector( 0, 0, mins.z ), Vector( 0, 0, maxs.z ) )
 		end
 
 		local parent = nil
-		grips, parent = PartCtrl_SpawnParticleGripPoints(pos, multigrip_length, grips)
+		grips, parent = PartCtrl_SpawnParticleGripPoints(grips, pos)
 
 		local p = ents.Create("ent_partctrl")
 		if !IsValid(p) then return end
