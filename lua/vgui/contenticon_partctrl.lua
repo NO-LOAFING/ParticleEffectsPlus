@@ -260,8 +260,6 @@ PartCtrl_IconFx = {}
 
 local function DoPosCPoints(self, p, particle3_k)
 
-	//Handle position cpoints by placing them all in a fixed-length line, with the cpoints distributed evenly from one end of the line to another
-
 	local origin = vector_origin
 	if p == self.particle2 and self.particle2_playerposfix then
 		origin = LocalPlayer():GetPos()
@@ -279,14 +277,7 @@ local function DoPosCPoints(self, p, particle3_k)
 
 	done_position_combine = false
 
-	for i, k in ipairs (self.iGrips) do
-		local pos = 0
-		if i > 1 then
-			pos = ((i-1)/(#self.iGrips-1))*self.length
-		end
-		pos = Vector(pos,0,0)
-		//MsgN(i, " = ", pos)
-
+	for k, pos in pairs (self.PosCPoints) do
 		if p == self.particle2 and self.particle2_playerposfix then
 			p:AddControlPoint(k, LocalPlayer(), PATTACH_ABSORIGIN_FOLLOW, nil, pos)
 		else
@@ -408,7 +399,9 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					self.particle2_playerposfix = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_playerposfix //particle operator "set control point to player" sets this to true
 					self.particle3_forcedpositions = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_forcedpositions //particle operator "set control point positions" creates this table
 					self.doparticle2 = self.particle2_playerposfix
-					self.length = PartCtrl_ProcessedPCFs[pcf][name].min_length or 100
+
+					self.PosCPoints = PartCtrl_GetParticleDefaultPositions(pcf, name)
+					self.iPositionCombine = {}
 					self.EditCPoints = {}
 					self.EditCPointsText = {}
 					self.ColorCPoints = {}
@@ -430,6 +423,8 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 									table.insert(self.EditCPointsText, axistab.label)
 								end
 							end
+						elseif v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+							table.insert(self.iPositionCombine, k)
 						end
 					end
 					self.iColorCPoints = {}
@@ -608,15 +603,6 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							self.particle:SetShouldDraw(false)
 							self.mins = nil
 							self.maxs = nil
-							self.iGrips = {}
-							self.iPositionCombine = {}
-							for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
-								if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
-									table.insert(self.iGrips, k)
-								elseif v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
-									table.insert(self.iPositionCombine, k)
-								end
-							end
 							DoPosCPoints(self, self.particle)
 							if self.particle2 then
 								DoPosCPoints(self, self.particle2)

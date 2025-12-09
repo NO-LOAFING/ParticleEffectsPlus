@@ -1980,9 +1980,73 @@ end, "Data")
 
 
 
-if SERVER then
+local grip_radius = 6/2
 
-	local grip_radius = 6/2
+function PartCtrl_GetParticleDefaultPositions(pcf, name)
+
+	local ptab = PartCtrl_ProcessedPCFs[pcf][name]
+
+	local grips = {}
+	local igrips = {}
+	for k, v in pairs (ptab.cpoints) do
+		if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+			if !ptab.cpoint_planes or !ptab.cpoint_planes[k] then
+				table.insert(igrips, k)
+			end
+		end
+	end
+
+	local total_length = 0
+	for i, k in ipairs (igrips) do
+		//TODO: ehh, this method isn't great, and assumes that the previous cpoint is the one we want to determine our distance from.
+		//this won't work right on effects with multiple distance scalar cpoints.
+		local this_length = 0
+		if i > 1 then
+			this_length = 100/(#igrips-1) //by default, arrange all points in a line 100 units long
+			if ptab.cpoint_distance_overrides and ptab.cpoint_distance_overrides[k] then
+				if ptab.cpoint_distance_overrides[k].min then this_length = math.max(this_length, ptab.cpoint_distance_overrides[k].min) end
+				if ptab.cpoint_distance_overrides[k].max then this_length = math.min(this_length, ptab.cpoint_distance_overrides[k].max) end
+				//math.Clamp(this_length, ptab.cpoint_distance_overrides[k].min or this_length, ptab.cpoint_distance_overrides[k].max or this_length)
+			end
+		end
+		total_length = total_length + this_length
+		grips[k] = Vector(total_length, 0, 0)
+	end
+	if ptab.cpoint_planes then
+		for k, v in pairs (ptab.cpoint_planes) do
+			local vec = v[1].normal * -50 //distance is arbitrary
+			if v[1].normal.x > 0 then
+				vec.x = vec.x + (total_length * v[1].normal.x)
+			elseif v[1].normal.x == 0 then
+				vec.x = vec.x + (total_length/2)
+			end
+			grips[k] = Vector(vec)
+		end
+	end
+
+	local avg = Vector()
+	local mins, maxs
+	for k, v in pairs (grips) do
+		avg = avg + v
+	end
+	avg = avg / table.Count(grips)
+	for k, v in pairs (grips) do
+		grips[k] = v - avg
+		if !mins then
+			mins = grips[k]
+			maxs = grips[k]
+		else
+			mins = Vector(math.min(mins.x, grips[k].x), math.min(mins.y, grips[k].y), math.min(mins.z, grips[k].z))
+			maxs = Vector(math.max(maxs.x, grips[k].x), math.max(maxs.y, grips[k].y), math.max(maxs.z, grips[k].z))
+		end
+	end
+	mins = mins - Vector(grip_radius, grip_radius, grip_radius)
+	maxs = maxs + Vector(grip_radius, grip_radius, grip_radius)
+
+	return grips, mins, maxs
+end
+
+if SERVER then
 
 	function PartCtrl_SpawnParticleGripPoints(grips, localpos)
 		
@@ -1999,70 +2063,6 @@ if SERVER then
 		end
 		return grips, parent
 
-	end
-
-	function PartCtrl_GetParticleDefaultPositions(pcf, name)
-
-		local ptab = PartCtrl_ProcessedPCFs[pcf][name]
-
-		local grips = {}
-		local igrips = {}
-		for k, v in pairs (ptab.cpoints) do
-			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
-				if !ptab.cpoint_planes or !ptab.cpoint_planes[k] then
-					table.insert(igrips, k)
-				end
-			end
-		end
-
-		local total_length = 0
-		for i, k in ipairs (igrips) do
-			//TODO: ehh, this method isn't great, and assumes that the previous cpoint is the one we want to determine our distance from.
-			//this won't work right on effects with multiple distance scalar cpoints.
-			local this_length = 0
-			if i > 1 then
-				this_length = 100/(#igrips-1) //by default, arrange all points in a line 100 units long
-				if ptab.cpoint_distance_overrides and ptab.cpoint_distance_overrides[k] then
-					if ptab.cpoint_distance_overrides[k].min then this_length = math.max(this_length, ptab.cpoint_distance_overrides[k].min) end
-					if ptab.cpoint_distance_overrides[k].max then this_length = math.min(this_length, ptab.cpoint_distance_overrides[k].max) end
-					//math.Clamp(this_length, ptab.cpoint_distance_overrides[k].min or this_length, ptab.cpoint_distance_overrides[k].max or this_length)
-				end
-			end
-			total_length = total_length + this_length
-			grips[k] = Vector(total_length, 0, 0)
-		end
-		if ptab.cpoint_planes then
-			for k, v in pairs (ptab.cpoint_planes) do
-				local vec = v[1].normal * -50 //distance is arbitrary
-				if v[1].normal.x > 0 then
-					vec.x = vec.x + (total_length * v[1].normal.x)
-				elseif v[1].normal.x == 0 then
-					vec.x = vec.x + (total_length/2)
-				end
-				grips[k] = Vector(vec)
-			end
-		end
-
-		local avg = Vector()
-		local mins, maxs
-		for k, v in pairs (grips) do
-			avg = avg + v
-		end
-		avg = avg / table.Count(grips)
-		for k, v in pairs (grips) do
-			grips[k] = v - avg
-			if !mins then
-				mins = grips[k]
-				maxs = grips[k]
-			else
-				mins = Vector(math.min(mins.x, grips[k].x), math.min(mins.y, grips[k].y), math.min(mins.z, grips[k].z))
-				maxs = Vector(math.max(maxs.x, grips[k].x), math.max(maxs.y, grips[k].y), math.max(maxs.z, grips[k].z))
-			end
-		end
-		mins = mins - Vector(grip_radius, grip_radius, grip_radius)
-		maxs = maxs + Vector(grip_radius, grip_radius, grip_radius)
-
-		return grips, mins, maxs
 	end
 
 	function PartCtrl_SpawnParticle(ply, pos, name, pcf_original, path)
