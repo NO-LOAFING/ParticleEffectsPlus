@@ -528,8 +528,8 @@ if CLIENT then
 
 	end
 
-	local icon_loading = Material("vgui/loading-rotate.vmt") //TODO: replace this with a custom texture eventually, something bulkier that looks better when drawn on top of a grip point
-	local mat_plane = Material("vgui/white") //Material("sprites/partctrl_plane.vmt") //this looks nicer but it could be mistaken for a legitimate part of an effect
+	local icon_loading = Material("vgui/loading-rotate.vmt")
+	local mat_plane = Material("sprites/partctrl_plane_solid.vmt") //Material("sprites/partctrl_plane.vmt") //this looks nicer but it could be mistaken for a legitimate part of an effect
 	function ENT:DrawCPointHelpers()
 
 		if self.ParticleInfo and !IsValid(self:GetSpecialEffectParent()) then
@@ -564,8 +564,9 @@ if CLIENT then
 							ang = v.ent:GetAngles()
 							pos = v.ent:GetPos()
 						end
-						//Draw particle effect helpers (arrow showing cpoint orientation, number showing cpoint id)
+
 						if window or v.ent.PartCtrl_Grip then //hide helpers when they're attached to other ents unless the window is open
+							//Draw plane helpers
 							if ptab.cpoint_planes and ptab.cpoint_planes[k] then
 								render.SetMaterial(mat_plane)
 								for _, tab in pairs (ptab.cpoint_planes[k]) do
@@ -582,11 +583,18 @@ if CLIENT then
 										norm, _ = LocalToWorld(tab.normal, Angle(), Vector(), ang)
 									end
 
-									render.DrawQuadEasy(pos2, norm, 50, 50, Color(0,255,0,128))
-									render.DrawQuadEasy(pos2, -norm, 50, 50, Color(255,0,0,128))
+									//draw at partial opacity through walls, so you can see where it intersects with the world
+									render.DrawQuadEasy(pos2, norm, 50, 50, Color(0,255,0,(128/3)*2))
+									render.DrawQuadEasy(pos2, -norm, 50, 50, Color(255,0,0,(128/3)*2))
+									cam.IgnoreZ(true)
+									render.DrawQuadEasy(pos2, norm, 50, 50, Color(0,255,0,128/3))
+									render.DrawQuadEasy(pos2, -norm, 50, 50, Color(255,0,0,128/3))
+									cam.IgnoreZ(false)
+
 								end
 							end
 						
+							//Draw cpoint helpers (arrow showing cpoint orientation, number showing cpoint id)
 							render.SetMaterial(partctrl_arrowmat)
 							render.DrawBeam(pos + (ang:Forward() * -3.01), pos + (ang:Forward() * (20-3.01)), 20, 1, 0, color_white)
 
