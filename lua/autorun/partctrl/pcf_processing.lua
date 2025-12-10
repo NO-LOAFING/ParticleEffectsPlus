@@ -2865,7 +2865,7 @@ function PartCtrl_ProcessPCF(filename)
 								//we can't move cpoint 0, so move the next relevant cpoint instead
 								local spp_copy = table.Copy(t2[particle].sets_particle_pos)
 								spp_copy[0] = nil
-								if table.Count(spp_copy) == 0 then MsgN(filename, " ", particle, " failed when doing distance scalars!") continue end
+								if table.Count(spp_copy) == 0 then --[[MsgN(filename, " ", particle, " failed when doing distance scalars!")]] continue end
 								k = table.GetFirstKey(spp_copy)
 							end
 						end

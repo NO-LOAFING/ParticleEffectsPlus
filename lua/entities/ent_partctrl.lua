@@ -2195,11 +2195,10 @@ if SERVER then
 			//vFlushPoint = pos - vFlushPoint		-- Get the difference //completely redundant, classic garry
 			//vFlushPoint = tr.HitPos - vFlushPoint	-- Add it to our target pos
 			pos = vFlushPoint
-
+			
 			//modified version of local functions TryFixPropPosition/fixupProp, from the same file (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/commands.lua#L29)
 			-- A little hacky function to help prevent spawning props partially inside walls
 			local function fixupParticle( ply, pos, mins, maxs )
-				local entPos = pos
 				local endposD = mins + pos
 				local tr_down = util.TraceLine( {
 					start = pos,
@@ -2215,7 +2214,7 @@ if SERVER then
 				} )
 
 				-- Both traces hit meaning we are probably inside a wall on both sides, do nothing
-				if ( tr_up.Hit && tr_down.Hit ) then return end
+				if ( tr_up.Hit && tr_down.Hit ) then return pos end
 
 				if ( tr_down.Hit ) then pos = pos + ( tr_down.HitPos - endposD ) end
 				if ( tr_up.Hit ) then pos = pos + ( tr_up.HitPos - endposU ) end
