@@ -2840,9 +2840,57 @@ function PartCtrl_ProcessPCF(filename)
 				end
 				
 				//Do min/max cpoint distance for distance scalars
-				if distance_scalars then
+				if distance_scalars and t2[particle].sets_particle_pos then
 					t2[particle].distance_scalars = distance_scalars
-					//TODO: use this to determine min/max dist
+					t2[particle].cpoint_distance_overrides = t2[particle].cpoint_distance_overrides or {}
+					for k, v in pairs (distance_scalars) do
+						--[[if k == 0 then
+							k = 1
+							//TODO: this seems like the wrong way to handle this, can't we move 0 in the other direction instead?
+						elseif t2[particle].sets_particle_pos and table.GetFirstKey(t2[particle].sets_particle_pos) > k then
+							k = table.GetFirstKey(t2[particle].sets_particle_pos)
+							//TODO: this is dumb, need to save a reference to this specific key
+							//      in case there's more non-sets_particle_pos cpoints between them
+						end]]
+
+						local is_non_spp = false
+						if !t2[particle].sets_particle_pos[k] then
+							//This cpoint doesn't control particle movement, so we can get more creative with its positioning.
+							//Instead of putting it in a row with the standard cpoints, offset it above one of the normal cpoints.
+							is_non_spp = true
+						else
+							//This cpoint also controls particle movement, so it's just a "normal" cpoint in the row that we
+							//need to set the min/max distance from its next cpoint.
+							if k == 0 then
+								//we can't move cpoint 0, so move the next relevant cpoint instead
+								local spp_copy = table.Copy(t2[particle].sets_particle_pos)
+								spp_copy[0] = nil
+								if table.Count(spp_copy) == 0 then MsgN(filename, " ", particle, " failed when doing distance scalars!") continue end
+								k = table.GetFirstKey(spp_copy)
+							end
+						end
+						t2[particle].cpoint_distance_overrides[k] = t2[particle].cpoint_distance_overrides[k] or {}
+						local text = ""
+						local docomma = false
+						for k2, v2 in pairs (v) do
+							v2.default = (v2.inMin + v2.inMax) / 2 //test
+							if v2.outMax > v2.outMin then
+								t2[particle].cpoint_distance_overrides[k].min = math.max(t2[particle].cpoint_distance_overrides[k].min or v2.default, v2.default)
+							elseif v2.outMin > v2.outMax then
+								t2[particle].cpoint_distance_overrides[k].max = math.min(t2[particle].cpoint_distance_overrides[k].max or v2.default, v2.default)
+							end
+							if is_non_spp then
+								t2[particle].distance_scalars[k][k2].do_helpers = true
+								if docomma then text = text .. ", " end
+								text = text .. v2.label
+								docomma = true
+							end
+						end
+						if is_non_spp then
+							PartCtrl_AddInfoText(t2[particle], "Control point " .. k .. " controls particle " .. text .. " with distance.") //TODO: this sucks, reword better
+							t2[particle].cpoint_distance_overrides[k].offset_from_main_row = true
+						end
+					end
 				end
 			end
 		end

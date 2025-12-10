@@ -1996,30 +1996,77 @@ function PartCtrl_GetParticleDefaultPositions(pcf, name)
 
 	local grips = {}
 	local igrips = {}
+	local offset_grips
 	for k, v in pairs (ptab.cpoints) do
 		if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
 			if !ptab.cpoint_planes or !ptab.cpoint_planes[k] then
-				table.insert(igrips, k)
+				if ptab.cpoint_distance_overrides and ptab.cpoint_distance_overrides[k] and ptab.cpoint_distance_overrides[k].offset_from_main_row then
+					offset_grips = offset_grips or {}
+					offset_grips[k] = true
+				else
+					table.insert(igrips, k)
+				end
 			end
 		end
 	end
 
+	//Arrange all normal cpoints in a line
 	local total_length = 0
 	for i, k in ipairs (igrips) do
-		//TODO: ehh, this method isn't great, and assumes that the previous cpoint is the one we want to determine our distance from.
-		//this won't work right on effects with multiple distance scalar cpoints.
 		local this_length = 0
 		if i > 1 then
 			this_length = 100/(#igrips-1) //by default, arrange all points in a line 100 units long
 			if ptab.cpoint_distance_overrides and ptab.cpoint_distance_overrides[k] then
 				if ptab.cpoint_distance_overrides[k].min then this_length = math.max(this_length, ptab.cpoint_distance_overrides[k].min) end
-				if ptab.cpoint_distance_overrides[k].max then this_length = math.min(this_length, ptab.cpoint_distance_overrides[k].max) end
+				if ptab.cpoint_distance_overrides[k].max then 
+					this_length = math.min(this_length, ptab.cpoint_distance_overrides[k].max)
+					this_length = math.max(this_length, grip_radius*2)
+				end
 				//math.Clamp(this_length, ptab.cpoint_distance_overrides[k].min or this_length, ptab.cpoint_distance_overrides[k].max or this_length)
 			end
 		end
 		total_length = total_length + this_length
 		grips[k] = Vector(total_length, 0, 0)
 	end
+	//For distance scalar cpoints; offset each of these a set distance away from a normal cpoint that sets particle positions
+	if offset_grips then
+		for i, k in pairs (igrips) do
+			if !ptab.sets_particle_pos[k] then
+				table.remove(igrips, k)
+			end
+		end
+		if #igrips > 0 then
+			local cpoints_to_offset = {}
+			local i = 1
+			for k, _ in pairs (offset_grips) do
+				//if !istable(igrips[i]) then igrips[i] = {["k"] = igrips[i], ["offset_grips"] = {}} end
+				//table.insert(igrips[i].offset_grips, k)
+				cpoints_to_offset[i] = cpoints_to_offset[i] or {}
+				table.insert(cpoints_to_offset[i], k)
+				i = i + 1
+				if i > #igrips then i = 1 end
+			end
+			for i, tab in pairs (cpoints_to_offset) do
+				local k = igrips[i]
+				for _, k2 in pairs (tab) do
+					local this_length = 50 //distance is arbitrary
+					if ptab.cpoint_distance_overrides and ptab.cpoint_distance_overrides[k2] then
+						if ptab.cpoint_distance_overrides[k2].min then this_length = math.max(this_length, ptab.cpoint_distance_overrides[k2].min) end
+						if ptab.cpoint_distance_overrides[k2].max then 
+							this_length = math.min(this_length, ptab.cpoint_distance_overrides[k2].max)
+							this_length = math.max(this_length, grip_radius*2)
+						end
+						//math.Clamp(this_length, ptab.cpoint_distance_overrides[k2].min or this_length, ptab.cpoint_distance_overrides[k2].max or this_length)
+					end
+					//TODO: if there's multiple cpoints offset from this mainline cpoint, arrange them in an arc or something
+					//so they don't overlap each other; haven't found any existing fx that would actually need this
+					//if table.Count(tab) > 1 then MsgN("check ", pcf, " ", name, ", it has multiple cpoints offset from the same cpoint") end
+					grips[k2] = grips[k] + Vector(0,0,this_length)
+				end
+			end
+		end
+	end
+	//For plane cpoints, offset each of these a set distance away from everything else in the direction of their plane
 	if ptab.cpoint_planes then
 		for k, v in pairs (ptab.cpoint_planes) do
 			local vec = v[1].normal * -50 //distance is arbitrary
