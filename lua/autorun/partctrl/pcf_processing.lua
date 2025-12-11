@@ -1154,12 +1154,12 @@ local function cpoint_from_attrib_value(processed, attrib, value, default_k, pro
 	end
 end
 
-local function DoScalarIO(attrib, is_distance_scalar)
+local function DoScalarIO(attrib, use_distance_input, is_position_control)
 	local field = attrib["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS //PARTICLE_ATTRIBUTE_x enum
 	local label = ParticleAttributeNames[field]
 	local inMin
 	local inMax
-	if !is_distance_scalar then
+	if !use_distance_input then
 		inMin = attrib["input minimum"] or 0
 		inMax = attrib["input maximum"] or 1
 	else
@@ -1171,34 +1171,42 @@ local function DoScalarIO(attrib, is_distance_scalar)
 	local is_multiplier = attrib["output is scalar of initial random range"] or attrib["output is scalar of current value"] //initializers don't have the latter, but this should be fine
 	local default
 	local decimals = nil
-	if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS and !is_multiplier then
-		//radius scalars should default to a nice big size, not 1 pixel
-		default = math.Remap(8, outMin, outMax, inMin, inMax)
-	elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
-		//Alpha should always default to max visibility;
-		//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
-		if outMin <= outMax then
-			default = math.max(inMin, inMax)
+	if !is_position_control then
+		//Defaults for axis controls (slider in options menu)
+		if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS and !is_multiplier then
+			//radius scalars should default to a nice big size, not 1 pixel
+			default = math.Remap(8, outMin, outMax, inMin, inMax)
+		elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
+			//Alpha should always default to max visibility;
+			//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
+			if outMin <= outMax then
+				default = math.max(inMin, inMax)
+			else
+				default = math.min(inMin, inMax)
+			end
+		elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER or field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 then
+			//don't let sequence number scalars set the value to 64, or it'll crash (for particles/asw_order_fx.pcf order_use_item)
+			if outMax > 63 then
+				inMax = math.Remap(63, outMin, outMax, inMin, inMax)
+				outMax = 63
+			end
+			//sequence number scalars should be whole numbers, and default to 0 (first sequence)
+			default = math.Remap(0, outMin, outMax, inMin, inMax)
+			decimals = 0
 		else
-			default = math.min(inMin, inMax)
+			//default to 1
+			default = math.Remap(1, outMin, outMax, inMin, inMax)
 		end
-	elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER or field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 then
-		//don't let sequence number scalars set the value to 64, or it'll crash (for particles/asw_order_fx.pcf order_use_item)
-		if outMax > 63 then
-			inMax = math.Remap(63, outMin, outMax, inMin, inMax)
-			outMax = 63
+		//make sure the default value of the control in the edit window isn't outside its range
+		default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
+		if is_multiplier then
+			label = label .. " Scale"
 		end
-		//sequence number scalars should be whole numbers, and default to 0 (first sequence)
-		default = math.Remap(0, outMin, outMax, inMin, inMax)
-		decimals = 0
 	else
-		//default to 1
-		default = math.Remap(1, outMin, outMax, inMin, inMax)
-	end
-	//make sure the default value of the control in the edit window isn't outside its range
-	default = math.Clamp(default, math.Remap(outMin, outMin, outMax, inMin, inMax), math.Remap(outMax, outMin, outMax, inMin, inMax))
-	if is_multiplier then
-		label = label .. " Scale"
+		//Defaults for position controls (movable cpoint in the world)
+		//clamping in/outMin/Max is not applicable to these, since we can't actually clamp where the player can move the position control to
+		//don't print "Scale" in label for these ones, this looks bad
+		default = (inMin + inMax) / 2 //test: set the default distance to the midpoint of the effective radius, so players can visibly see what the scalar cpoint is doing
 	end
 
 	return {
@@ -1513,8 +1521,8 @@ local processfuncs = {
 			cpoint_from_attrib_value(processed, attrib, "starting control point", 0, "position_combine") //this is iffy; we assume the start cpoint might be attached to something while the end point isn't, which *is* the case with all existing fx, but doesn't necessarily have to be
 		end,
 		["remap distance to control point to scalar"] = function(processed, attrib)
-			//like the above but uses the distance between a single cpoint's position and the particle (sprite?) itself (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Remap_Distance_to_Control_Point_to_Scalar)
-			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["distance_scalar"] = DoScalarIO(attrib, true)})
+			//like the above, but uses the distance between a single cpoint's position and each individual particle itself (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Remap_Distance_to_Control_Point_to_Scalar)
+			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["distance_scalar"] = DoScalarIO(attrib, true, true)})
 		end,
 		["remap dot product to scalar"] = function (processed, attrib)
 			//like "remap control point to scalar", except it gets the angle(?) of 2 cpoints and does math with them to set the scalar. not listed in wiki.
@@ -2002,7 +2010,9 @@ local processfuncs = {
 			cpoint_from_attrib_value(processed, attrib, "control point", 0, "position_combine")
 		end,
 		["remap initial distance to control point to scalar"] = function(processed, attrib)
-			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["distance_scalar"] = DoScalarIO(attrib, true)})
+			//like "remap distance to control point to scalar", but an initializer instead of an operator. 
+			//uses the distance between a single cpoint's position and each individual particle itself
+			cpoint_from_attrib_value(processed, attrib, "control point", 0, nil, {["distance_scalar"] = DoScalarIO(attrib, true, true)})
 		end,
 		["remap noise to scalar"] = function(processed, attrib)
 			//for particles/blood_impact.pcf blood_impact_synth_01_short: ignore the initializer "alpha random" zero alpha check if the zero alpha is being
@@ -2870,25 +2880,56 @@ function PartCtrl_ProcessPCF(filename)
 							end
 						end
 						t2[particle].cpoint_distance_overrides[k] = t2[particle].cpoint_distance_overrides[k] or {}
-						local text = ""
-						local docomma = false
+						local text = {
+							["increase"] = {},
+							["decrease"] = {},
+						}
 						for k2, v2 in pairs (v) do
-							v2.default = (v2.inMin + v2.inMax) / 2 //test
 							if v2.outMax > v2.outMin then
 								t2[particle].cpoint_distance_overrides[k].min = math.max(t2[particle].cpoint_distance_overrides[k].min or v2.default, v2.default)
+								text.decrease[v2.label] = true
 							elseif v2.outMin > v2.outMax then
 								t2[particle].cpoint_distance_overrides[k].max = math.min(t2[particle].cpoint_distance_overrides[k].max or v2.default, v2.default)
+								text.increase[v2.label] = true
 							end
-							if is_non_spp then
-								t2[particle].distance_scalars[k][k2].do_helpers = true
-								if docomma then text = text .. ", " end
-								text = text .. v2.label
+							if is_non_spp then t2[particle].distance_scalars[k][k2].do_helpers = true end
+						end
+						if particle == "ent_on_fire" then PrintTable(text) end
+						if is_non_spp then
+							t2[particle].cpoint_distance_overrides[k].offset_from_main_row = true
+							//Do info text
+							local identical = false
+							if table.Count(text.increase) == table.Count(text.decrease) then
+								identical = true
+								for k, _ in pairs (text.increase) do
+									if !text.decrease[k] then identical = false break end
+								end
+							end
+							local text_increase = ""
+							local docomma = false
+							for k, _ in SortedPairs (text.increase) do
+								if docomma then text_increase = text_increase .. ", " end
+								text_increase = text_increase .. k
 								docomma = true
 							end
-						end
-						if is_non_spp then
-							PartCtrl_AddInfoText(t2[particle], "Control point " .. k .. " controls particle " .. text .. " with distance.") //TODO: this sucks, reword better
-							t2[particle].cpoint_distance_overrides[k].offset_from_main_row = true
+							local text_decrease = ""
+							docomma = false
+							for k, _ in SortedPairs (text.decrease) do
+								if docomma then text_decrease = text_decrease .. ", " end
+								text_decrease = text_decrease .. k
+								docomma = true
+							end
+							if particle == "ent_on_fire" then MsgN(text_decrease, text_increase, identical) end
+							if identical then
+								text = "Control point " .. k .. " increases and decreases " .. text_decrease .. " of particles as they get closer to it."
+							elseif table.Count(text.increase) == 0 then
+								text = "Control point " .. k .. " decreases " .. text_decrease .. " of particles as they get closer to it."
+							elseif table.Count(text.decrease) == 0 then
+								text = "Control point " .. k .. " increases " .. text_increase .. " of particles as they get closer to it."
+							else
+								text = "Control point " .. k .. " increases " .. text_increase .. " and decreases " .. text_decrease .. " of particles as they get closer to it."
+							end
+							PartCtrl_AddInfoText(t2[particle], text)
 						end
 					end
 				end
