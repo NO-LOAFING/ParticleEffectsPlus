@@ -2030,12 +2030,16 @@ function PartCtrl_GetParticleDefaultPositions(pcf, name)
 	end
 	//For distance scalar cpoints; offset each of these a set distance away from a normal cpoint that sets particle positions
 	if offset_grips then
+		//local fallback = igrips[1]
 		for i, k in pairs (igrips) do
 			if !ptab.sets_particle_pos[k] then
 				table.remove(igrips, k)
 			end
 		end
 		if #igrips > 0 then
+		//if #igrips == 0 then
+		//	igrips[1] = fallback
+		//end
 			local cpoints_to_offset = {}
 			local i = 1
 			for k, _ in pairs (offset_grips) do

@@ -2207,12 +2207,12 @@ local processfuncs = {
 		["force based on distance from plane"] = function(processed, attrib) cpoint_from_attrib_value(processed, attrib, "Control point number", 0) end, //don't know if the extra overrides on "pull toward control point" are necessary here, i don't think any existing fx need them
 		["pull towards control point"] = function(processed, attrib)
 			local type = nil
-			if math.abs(attrib["amount of force"] or 0) < 10 then //can be negative
+			if math.abs(attrib["amount of force"] or 0) < 10 then //can be negative to push particles away
 				//a lot of effects have this attrib with miniscule force values, for whatever reason. they don't visibly appear to do anything, maybe it's part of some hacky workaround
 				//that particle developers use, i don't know. either way, don't let them create their own position control in these cases, because they aren't useful.
 				type = "position_combine" 
 			end
-			cpoint_from_attrib_value(processed, attrib, "control point number", 0, type, {["overridable_by_constraint"] = true, ["overridable_by_drag"] = true})
+			cpoint_from_attrib_value(processed, attrib, "control point number", 0, type, {["overridable_by_constraint"] = true, ["overridable_by_drag"] = true, ["dont_offset_distance_scalar"] = true})
 		end
 	},
 	["constraints"] = {
@@ -2428,6 +2428,7 @@ function PartCtrl_ProcessPCF(filename)
 			local on_model = nil
 			local cpoint_planes = nil
 			local distance_scalars = nil
+			local dont_offset_distance_scalar = nil
 			local tracer_min_distance = nil
 			local sets_particle_pos = nil
 			local copy_sets_particle_pos = nil
@@ -2565,6 +2566,10 @@ function PartCtrl_ProcessPCF(filename)
 									sets_particle_pos = sets_particle_pos or {}
 									sets_particle_pos[k] = true
 								end
+								if v2["dont_offset_distance_scalar"] then //for operators that don't set particle pos, but still should prevent distance scalar operators on the same cpoint from moving the cpoint
+									dont_offset_distance_scalar = dont_offset_distance_scalar or {}
+									dont_offset_distance_scalar[k] = true
+								end
 								if v2["copy_sets_particle_pos"] then
 									copy_sets_particle_pos = copy_sets_particle_pos or {}
 									copy_sets_particle_pos[k] = copy_sets_particle_pos[k] or {}
@@ -2608,6 +2613,10 @@ function PartCtrl_ProcessPCF(filename)
 								if v2["sets_particle_pos"] and !t2[particle2].sets_particle_pos_forcedisable then
 									sets_particle_pos = sets_particle_pos or {}
 									sets_particle_pos[k] = true
+								end
+								if v2["dont_offset_distance_scalar"] then //for operators that don't set particle pos, but still should prevent distance scalar operators on the same cpoint from moving the cpoint
+									dont_offset_distance_scalar = dont_offset_distance_scalar or {}
+									dont_offset_distance_scalar[k] = true
 								end
 								if v2["copy_sets_particle_pos"] then
 									copy_sets_particle_pos = copy_sets_particle_pos or {}
@@ -2854,22 +2863,13 @@ function PartCtrl_ProcessPCF(filename)
 					t2[particle].distance_scalars = distance_scalars
 					t2[particle].cpoint_distance_overrides = t2[particle].cpoint_distance_overrides or {}
 					for k, v in pairs (distance_scalars) do
-						--[[if k == 0 then
-							k = 1
-							//TODO: this seems like the wrong way to handle this, can't we move 0 in the other direction instead?
-						elseif t2[particle].sets_particle_pos and table.GetFirstKey(t2[particle].sets_particle_pos) > k then
-							k = table.GetFirstKey(t2[particle].sets_particle_pos)
-							//TODO: this is dumb, need to save a reference to this specific key
-							//      in case there's more non-sets_particle_pos cpoints between them
-						end]]
-
 						local is_non_spp = false
-						if !t2[particle].sets_particle_pos[k] then
-							//This cpoint doesn't control particle movement, so we can get more creative with its positioning.
-							//Instead of putting it in a row with the standard cpoints, offset it above one of the normal cpoints.
+						if !t2[particle].sets_particle_pos[k] and (!dont_offset_distance_scalar or !dont_offset_distance_scalar[k]) then
+							//This cpoint doesn't control particle placement, so we can get more creative with its positioning.
+							//Instead of putting it in a row with the standard cpoints, offset it above one of them.
 							is_non_spp = true
 						else
-							//This cpoint also controls particle movement, so it's just a "normal" cpoint in the row that we
+							//This cpoint also controls particle placement, so it's just a "normal" cpoint in the row that we
 							//need to set the min/max distance from its next cpoint.
 							if k == 0 then
 								//we can't move cpoint 0, so move the next relevant cpoint instead
@@ -2894,7 +2894,6 @@ function PartCtrl_ProcessPCF(filename)
 							end
 							if is_non_spp then t2[particle].distance_scalars[k][k2].do_helpers = true end
 						end
-						if particle == "ent_on_fire" then PrintTable(text) end
 						if is_non_spp then
 							t2[particle].cpoint_distance_overrides[k].offset_from_main_row = true
 							//Do info text
@@ -2919,7 +2918,6 @@ function PartCtrl_ProcessPCF(filename)
 								text_decrease = text_decrease .. k
 								docomma = true
 							end
-							if particle == "ent_on_fire" then MsgN(text_decrease, text_increase, identical) end
 							if identical then
 								text = "Control point " .. k .. " increases and decreases " .. text_decrease .. " of particles as they get closer to it."
 							elseif table.Count(text.increase) == 0 then
