@@ -2866,7 +2866,10 @@ function PartCtrl_ProcessPCF(filename)
 						local is_non_spp = false
 						if !t2[particle].sets_particle_pos[k] and (!dont_offset_distance_scalar or !dont_offset_distance_scalar[k]) then
 							//This cpoint doesn't control particle placement, so we can get more creative with its positioning.
-							//Instead of putting it in a row with the standard cpoints, offset it above one of them.
+							//Instead of putting it in a row with the standard cpoints, offset this cpoint a set distance above
+							//another one that spawns particles, to make sure this cpoint starts off an ideal distance to
+							//demonstrate the scalar, and never starts off at a bad distance that prevents any particles
+							//from rendering.
 							is_non_spp = true
 						else
 							//This cpoint also controls particle placement, so it's just a "normal" cpoint in the row that we

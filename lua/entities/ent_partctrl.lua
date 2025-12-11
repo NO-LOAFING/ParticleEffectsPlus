@@ -2030,43 +2030,42 @@ function PartCtrl_GetParticleDefaultPositions(pcf, name)
 	end
 	//For distance scalar cpoints; offset each of these a set distance away from a normal cpoint that sets particle positions
 	if offset_grips then
-		//local fallback = igrips[1]
+		local fallback = igrips[1]
 		for i, k in pairs (igrips) do
 			if !ptab.sets_particle_pos[k] then
 				table.remove(igrips, k)
 			end
 		end
-		if #igrips > 0 then
-		//if #igrips == 0 then
-		//	igrips[1] = fallback
-		//end
-			local cpoints_to_offset = {}
-			local i = 1
-			for k, _ in pairs (offset_grips) do
-				//if !istable(igrips[i]) then igrips[i] = {["k"] = igrips[i], ["offset_grips"] = {}} end
-				//table.insert(igrips[i].offset_grips, k)
-				cpoints_to_offset[i] = cpoints_to_offset[i] or {}
-				table.insert(cpoints_to_offset[i], k)
-				i = i + 1
-				if i > #igrips then i = 1 end
-			end
-			for i, tab in pairs (cpoints_to_offset) do
-				local k = igrips[i]
-				for _, k2 in pairs (tab) do
-					local this_length = 50 //distance is arbitrary
-					if ptab.cpoint_distance_overrides and ptab.cpoint_distance_overrides[k2] then
-						if ptab.cpoint_distance_overrides[k2].min then this_length = math.max(this_length, ptab.cpoint_distance_overrides[k2].min) end
-						if ptab.cpoint_distance_overrides[k2].max then 
-							this_length = math.min(this_length, ptab.cpoint_distance_overrides[k2].max)
-							this_length = math.max(this_length, grip_radius*2)
-						end
-						//math.Clamp(this_length, ptab.cpoint_distance_overrides[k2].min or this_length, ptab.cpoint_distance_overrides[k2].max or this_length)
+		if #igrips == 0 then
+			//i don't think there are any effects where this can happen, but let's be safe here
+			igrips[1] = fallback
+		end
+		local cpoints_to_offset = {}
+		local i = 1
+		for k, _ in pairs (offset_grips) do
+			//if !istable(igrips[i]) then igrips[i] = {["k"] = igrips[i], ["offset_grips"] = {}} end
+			//table.insert(igrips[i].offset_grips, k)
+			cpoints_to_offset[i] = cpoints_to_offset[i] or {}
+			table.insert(cpoints_to_offset[i], k)
+			i = i + 1
+			if i > #igrips then i = 1 end
+		end
+		for i, tab in pairs (cpoints_to_offset) do
+			local k = igrips[i]
+			for _, k2 in pairs (tab) do
+				local this_length = 50 //distance is arbitrary
+				if ptab.cpoint_distance_overrides and ptab.cpoint_distance_overrides[k2] then
+					if ptab.cpoint_distance_overrides[k2].min then this_length = math.max(this_length, ptab.cpoint_distance_overrides[k2].min) end
+					if ptab.cpoint_distance_overrides[k2].max then 
+						this_length = math.min(this_length, ptab.cpoint_distance_overrides[k2].max)
+						this_length = math.max(this_length, grip_radius*2)
 					end
-					//TODO: if there's multiple cpoints offset from this mainline cpoint, arrange them in an arc or something
-					//so they don't overlap each other; haven't found any existing fx that would actually need this
-					//if table.Count(tab) > 1 then MsgN("check ", pcf, " ", name, ", it has multiple cpoints offset from the same cpoint") end
-					grips[k2] = grips[k] + Vector(0,0,this_length)
+					//math.Clamp(this_length, ptab.cpoint_distance_overrides[k2].min or this_length, ptab.cpoint_distance_overrides[k2].max or this_length)
 				end
+				//TODO: if there's multiple cpoints offset from this mainline cpoint, arrange them in an arc or something
+				//so they don't overlap each other; haven't found any existing fx that would actually need this
+				//if table.Count(tab) > 1 then MsgN("check ", pcf, " ", name, ", it has multiple cpoints offset from the same cpoint") end
+				grips[k2] = grips[k] + Vector(0,0,this_length)
 			end
 		end
 	end
@@ -2088,7 +2087,7 @@ function PartCtrl_GetParticleDefaultPositions(pcf, name)
 	for k, v in pairs (grips) do
 		avg = avg + v
 	end
-	avg = avg / table.Count(grips)
+	avg = avg / table.Count(grips) //TODO: if the effect's cpoints are unevenly distributed, this causes it to spawn slighly offset. does this matter?
 	for k, v in pairs (grips) do
 		grips[k] = v - avg
 		if !mins then
