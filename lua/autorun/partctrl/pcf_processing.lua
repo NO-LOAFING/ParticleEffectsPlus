@@ -2653,6 +2653,10 @@ function PartCtrl_ProcessPCF(filename)
 				if particle2 != particle and t2[particle2].screenspace then
 					t2[particle].screenspace_from_child = true
 				end
+				//Also inherit spawnicon_playerposfix from children here
+				if particle2 != particle and t2[particle2].spawnicon_playerposfix then
+					t2[particle].spawnicon_playerposfix = true
+				end
 			end
 			SetCPointModes(particle)
 			//Cpoints that haven't been filled in yet should inherit from children
