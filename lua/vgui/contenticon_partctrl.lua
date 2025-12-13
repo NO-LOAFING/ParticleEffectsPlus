@@ -706,7 +706,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 								local mn2 = Vector(mn.x, mx.y, mn.z)
 								local mx2 = Vector(mx.x, mn.y, mx.z)
 								local size = mn2:Distance2D(mx2) * 0.9 //zoom in just a bit; the majority of effects still have a good distance between the visible edge of the effect and the edge of the bbox, so this helps make them more visible; a small number of effects that don't have this issue get cut off slightly, but it's worth the tradeoff
-								if size == 0 then size = mn.z - mx.z * 0.9 end //try not to completely screw up on fx with no width
+								if size == 0 then size = math.Distance(mn.z, 0, mx.z, 0) end //try not to completely screw up on fx with no width
 
 								//Loosely based off RenderSpawnIcon_Prop (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/util/client.lua#L53)
 								local ViewPos = vector_origin + ViewAngle:Forward() * size * -15
