@@ -594,13 +594,24 @@ if CLIENT then
 								end
 							end
 
-							//TODO: i guess this could be useful, but i really don't know if there's a way to make this look good
+							//TODO: these are useful for debugging, but i really don't know if there's a way to make these look good. maybe this should be a convar?
 							--[[//Draw distance scalar helpers (spheres showing min/max distance)
 							if ptab.distance_scalars and ptab.distance_scalars[k] then
 								for _, tab in pairs (ptab.distance_scalars[k]) do
 									if tab.do_helpers then
-										render.DrawWireframeSphere(pos, tab.inMax, 8, 8, Color(255,0,0), true)
-										render.DrawWireframeSphere(pos, tab.inMin, 8, 8, Color(0,255,0), true)
+										if tab.outMax > tab.outMin then
+											//decreases with proximity
+											render.DrawWireframeSphere(pos, tab.inMax, 8, 8, Color(255,0,0), true)
+											if tab.inMax != tab.inMin then
+												render.DrawWireframeSphere(pos, tab.inMin, 8, 8, Color(0,255,0), true)
+											end
+										else
+											//increases with proximity
+											render.DrawWireframeSphere(pos, tab.inMin, 8, 8, Color(0,255,0), true)
+											if tab.inMax != tab.inMin then
+												render.DrawWireframeSphere(pos, tab.inMax, 8, 8, Color(255,0,0), true)
+											end
+										end
 									end
 								end
 							end]]
@@ -2059,15 +2070,19 @@ function PartCtrl_GetParticleDefaultPositions(pcf, name)
 		for i, tab in pairs (cpoints_to_offset) do
 			local k = igrips[i]
 			for _, k2 in pairs (tab) do
-				local this_length = 50 //distance is arbitrary
+				local this_length //= 50 //distance is arbitrary
 				if ptab.cpoint_distance_overrides and ptab.cpoint_distance_overrides[k2] then
-					if ptab.cpoint_distance_overrides[k2].min then this_length = math.max(this_length, ptab.cpoint_distance_overrides[k2].min) end
-					if ptab.cpoint_distance_overrides[k2].max then 
-						this_length = math.min(this_length, ptab.cpoint_distance_overrides[k2].max)
-						this_length = math.max(this_length, grip_radius*2)
+					if this_length == nil then
+						//if we only have min or max defined, just use that as the distance,
+						//so we can be sure the cpoint ends up at a good position
+						this_length = ptab.cpoint_distance_overrides[k2].min or ptab.cpoint_distance_overrides[k2].max
 					end
+					if ptab.cpoint_distance_overrides[k2].min then this_length = math.max(this_length, ptab.cpoint_distance_overrides[k2].min) end
+					if ptab.cpoint_distance_overrides[k2].max then this_length = math.min(this_length, ptab.cpoint_distance_overrides[k2].max) end
+					this_length = math.max(this_length, grip_radius*2)
 					//math.Clamp(this_length, ptab.cpoint_distance_overrides[k2].min or this_length, ptab.cpoint_distance_overrides[k2].max or this_length)
 				end
+				if this_length == nil then this_length = 50 end
 				//TODO: if there's multiple cpoints offset from this mainline cpoint, arrange them in an arc or something
 				//so they don't overlap each other; haven't found any existing fx that would actually need this
 				//if table.Count(tab) > 1 then MsgN("check ", pcf, " ", name, ", it has multiple cpoints offset from the same cpoint") end
