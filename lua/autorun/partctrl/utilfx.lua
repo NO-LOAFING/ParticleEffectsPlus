@@ -10,7 +10,7 @@ AddCSLuaFile()
 	default_time = 1,	//Float, default setting of "seconds between repeats" on newly spawned fx, should roughly correspond to how long it takes for the effect to "finish", defaults to 1 if absent
 	info = "Text text text",//String, optional, adds extra info to the spawnicon and edit window
 	info_sfx = "Text text", //String, optional, alternative info text used instead of the above if attached to a special effect (tracer/beam/projectile)
-	min_length = 129,	//Float/int, optional, overrides how far apart the grip points will spawn; used by some tracer fx that don't render if the points are too close together
+	cpoint_distance_overrides = {[1] = {["min"] = 129}},	//Table, optional, overrides how far apart the grip points will spawn; used by some tracer fx that don't render if the points are too close together
 
 	DoProcess = function(tab, extras)
 		//Function, used to set up the controls for the util effect by defining CONTROL POINTS, just like we do with PCF effects.
@@ -529,10 +529,10 @@ local tracer = {
 }
 //this is a mess but still better than writing out a dozen mostly-identical tables
 local tracer1 = table.Copy(tracer)
-tracer1.min_length = 129
+tracer1.cpoint_distance_overrides = {[1] = {["min"] = 129}}
 list.Set("PartCtrl_UtilFx", "AR2Tracer", tracer1)
 local tracer1point5 = table.Copy(tracer)
-tracer1point5.min_length = 257
+tracer1point5.cpoint_distance_overrides = {[1] = {["min"] = 257}}
 list.Set("PartCtrl_UtilFx", "HelicopterTracer", tracer1point5)
 local tracer2 = table.Copy(tracer)
 tracer2.DoProcessExtras.scale_default = 10000
@@ -549,7 +549,7 @@ local tracer5 = table.Copy(tracer)
 tracer5.DoProcessExtras.scale_default = 5000 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/episodic/npc_hunter.cpp#L5242, https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/npc_strider.cpp#L2748
 list.Set("PartCtrl_UtilFx", "HunterTracer", tracer5)
 local tracer5point5 = table.Copy(tracer5)
-tracer5point5.min_length = 257
+tracer5point5.cpoint_distance_overrides = {[1] = {["min"] = 257}}
 list.Set("PartCtrl_UtilFx", "StriderTracer", tracer5point5)
 list.Set("PartCtrl_UtilFx", "GunshipTracer", tracer1point5) //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/npc_combinegunship.cpp#L2814
 //list.Set("PartCtrl_UtilFx", "TracerSound", tracer) //only the sound, not really this addon's purpose
@@ -1785,7 +1785,7 @@ list.Set("PartCtrl_UtilFx", "inflator_magic", {
 list.Set("PartCtrl_UtilFx", "LaserTracer", {
 	title = "Garry's Mod",
 	default_time = 0.1, //arbitrary, same as hl2 tracers; like those, this effect's lifetime depends on its length
-	min_length = 256,
+	cpoint_distance_overrides = {[1] = {["min"] = 256}},
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Entity, Attachment")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
@@ -1942,7 +1942,7 @@ function PartCtrl_ProcessUtilFx()
 				["cpoints"] = {},
 				["utilfx"] = true,
 				["default_time"] = v.default_time,
-				["min_length"] = v.min_length
+				["cpoint_distance_overrides"] = v.cpoint_distance_overrides
 			}
 			if t.default_time == nil then t.default_time = 1 end
 			//everything else expects the info to be a table of strings
