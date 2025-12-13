@@ -101,8 +101,10 @@ end
 
 
 local cv_max
+local cv_distancescalar_helpers
 if CLIENT then 
 	cv_max = GetConVar("sv_partctrl_particlesperent")
+	cv_distancescalar_helpers = GetConVar("cl_partctrl_distancescalar_helpers")
 end
 
 function ENT:Think()
@@ -594,11 +596,11 @@ if CLIENT then
 								end
 							end
 
-							//TODO: these are useful for debugging, but i really don't know if there's a way to make these look good. maybe this should be a convar?
-							--[[//Draw distance scalar helpers (spheres showing min/max distance)
-							if ptab.distance_scalars and ptab.distance_scalars[k] then
+							//Draw distance scalar helpers (spheres showing min/max distance)
+							//These are useful for debugging, but impossible to make look good, so gate them behind a convar
+							if ptab.distance_scalars and ptab.distance_scalars[k] and cv_distancescalar_helpers:GetInt() > 0 then
 								for _, tab in pairs (ptab.distance_scalars[k]) do
-									if tab.do_helpers then
+									//if tab.do_helpers then
 										if tab.outMax > tab.outMin then
 											//decreases with proximity
 											render.DrawWireframeSphere(pos, tab.inMax, 8, 8, Color(255,0,0), true)
@@ -612,9 +614,9 @@ if CLIENT then
 												render.DrawWireframeSphere(pos, tab.inMax, 8, 8, Color(255,0,0), true)
 											end
 										end
-									end
+									//end
 								end
-							end]]
+							end
 						
 							//Draw cpoint helpers (arrow showing cpoint orientation, number showing cpoint id)
 							render.SetMaterial(partctrl_arrowmat)

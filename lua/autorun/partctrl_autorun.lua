@@ -29,6 +29,7 @@ if CLIENT then
 
 	CreateClientConVar("cl_partctrl_dupes_in_search", 0, false, false, "If 0, prevents duplicate effects from being shown in search results.", 0, 1)
 	CreateClientConVar("cl_partctrl_debug_spawnicons", 0, false, false, "If 1, show renderbounds used to calculate spawnicon camera position.\nred = particle bounds\ngreen = particle2 bounds (compensation for vector/axis controls and \"set control point to player\")\nblue = particle3 bounds (compensation for \"set control point positions\")\nwhite = final spawnicon bounds", 0, 1)
+	CreateClientConVar("cl_partctrl_distancescalar_helpers", 0, false, false, "If 1, display helpers (radius spheres) for control points used by operators like \"remap distance to control point to scalar\".", 0, 1)
 end
 
 
