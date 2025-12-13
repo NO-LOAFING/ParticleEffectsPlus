@@ -2036,15 +2036,10 @@ function PartCtrl_GetParticleDefaultPositions(pcf, name)
 				table.remove(igrips, k)
 			end
 		end
-		if #igrips == 0 then
-			//i don't think there are any effects where this can happen, but let's be safe here
-			igrips[1] = fallback
-		end
+		if #igrips == 0 then igrips[1] = fallback end //i don't think there are any effects where this can happen, but let's be safe here
 		local cpoints_to_offset = {}
 		local i = 1
 		for k, _ in pairs (offset_grips) do
-			//if !istable(igrips[i]) then igrips[i] = {["k"] = igrips[i], ["offset_grips"] = {}} end
-			//table.insert(igrips[i].offset_grips, k)
 			cpoints_to_offset[i] = cpoints_to_offset[i] or {}
 			table.insert(cpoints_to_offset[i], k)
 			i = i + 1
@@ -2082,14 +2077,8 @@ function PartCtrl_GetParticleDefaultPositions(pcf, name)
 		end
 	end
 
-	local avg = Vector()
 	local mins, maxs
 	for k, v in pairs (grips) do
-		avg = avg + v
-	end
-	avg = avg / table.Count(grips) //TODO: if the effect's cpoints are unevenly distributed, this causes it to spawn slighly offset. does this matter?
-	for k, v in pairs (grips) do
-		grips[k] = v - avg
 		if !mins then
 			mins = grips[k]
 			maxs = grips[k]
@@ -2098,10 +2087,16 @@ function PartCtrl_GetParticleDefaultPositions(pcf, name)
 			maxs = Vector(math.max(maxs.x, grips[k].x), math.max(maxs.y, grips[k].y), math.max(maxs.z, grips[k].z))
 		end
 	end
-	mins = mins - Vector(grip_radius, grip_radius, grip_radius)
-	maxs = maxs + Vector(grip_radius, grip_radius, grip_radius)
+	//Center the grip points and mins/maxs
+	local midpoint = mins + maxs / 2
+	for k, v in pairs (grips) do
+		grips[k] = v - midpoint
+	end
+	mins = mins - midpoint - Vector(grip_radius, grip_radius, grip_radius)
+	maxs = maxs - midpoint + Vector(grip_radius, grip_radius, grip_radius)
 
-	return grips, mins, maxs
+	return grips, mins, maxs, offset_grips
+	
 end
 
 if SERVER then

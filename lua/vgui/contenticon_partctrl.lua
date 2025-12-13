@@ -278,22 +278,36 @@ local function DoPosCPoints(self, p, particle3_k)
 	done_position_combine = false
 
 	for k, pos in pairs (self.PosCPoints) do
-		if p == self.particle2 and self.particle2_playerposfix then
-			p:AddControlPoint(k, LocalPlayer(), PATTACH_ABSORIGIN_FOLLOW, nil, pos)
-		else
-			p:SetControlPoint(k, pos + origin)
-		end
-		p:SetControlPointOrientation(k, angle_zero)
-		if !done_position_combine then
-			for _, k2 in pairs (self.iPositionCombine) do
-				if p == self.particle2 and self.particle2_playerposfix then
-					p:AddControlPoint(k2, LocalPlayer(), PATTACH_ABSORIGIN_FOLLOW, nil, pos)
-				else
-					p:SetControlPoint(k2, pos + origin)
-				end
-				p:SetControlPointOrientation(k2, angle_zero)
+		if p != self.particle2 or !self.OffsetPosCPoints or !self.OffsetPosCPoints[k] then
+			if p == self.particle2 and self.particle2_playerposfix then
+				p:AddControlPoint(k, LocalPlayer(), PATTACH_ABSORIGIN_FOLLOW, nil, pos)
+			else
+				p:SetControlPoint(k, pos + origin)
 			end
-			done_position_combine = true
+			p:SetControlPointOrientation(k, angle_zero)
+			if !done_position_combine then
+				local function do_position_combine(k2)
+					if p == self.particle2 and self.particle2_playerposfix then
+						p:AddControlPoint(k2, LocalPlayer(), PATTACH_ABSORIGIN_FOLLOW, nil, pos)
+					else
+						p:SetControlPoint(k2, pos + origin)
+					end
+					p:SetControlPointOrientation(k2, angle_zero)
+				end
+				for _, k2 in pairs (self.iPositionCombine) do
+					do_position_combine(k2)
+				end
+				if p == self.particle2 then
+					//Move offset pos cpoints (distance scalars) in the same manner as position_combine cpoints,
+					//to prevent them from stretching out the renderbounds
+					if self.OffsetPosCPoints then
+						for k2, _ in pairs (self.OffsetPosCPoints) do
+							do_position_combine(k2)
+						end
+					end
+				end
+				done_position_combine = true
+			end
 		end
 	end
 
@@ -398,9 +412,8 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 			
 					self.particle2_playerposfix = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_playerposfix //particle operator "set control point to player" sets this to true
 					self.particle3_forcedpositions = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_forcedpositions //particle operator "set control point positions" creates this table
-					self.doparticle2 = self.particle2_playerposfix
-
-					self.PosCPoints = PartCtrl_GetParticleDefaultPositions(pcf, name)
+					self.PosCPoints, _, _, self.OffsetPosCPoints = PartCtrl_GetParticleDefaultPositions(pcf, name)
+					self.doparticle2 = self.OffsetPosCPoints or self.particle2_playerposfix
 					self.iPositionCombine = {}
 					self.EditCPoints = {}
 					self.EditCPointsText = {}
@@ -603,6 +616,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							self.particle:SetShouldDraw(false)
 							self.mins = nil
 							self.maxs = nil
+							self.view = nil
 							DoPosCPoints(self, self.particle)
 							if self.particle2 then
 								DoPosCPoints(self, self.particle2)
@@ -641,62 +655,69 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 								self.particle2:Render() //always render particle2 or it'll fall asleep and stop updating cpoint positions properly
 							end
 							mn, mx = self.particle2:GetRenderBounds()
+							//If self.particle2 fails and generates an effect with bad bounds (i.e. with axis scalars
+							//at 0,0,0, no particles spawn at all), then bail and use self.particle's bounds instead.
+							if mn == mx then mn, mx = self.particle:GetRenderBounds() end
 						else
 							mn, mx = self.particle:GetRenderBounds()
 						end
-						if self.particle3 then
-							local function DoParticle3(i, use_mx, axis)
-								local p = self.particle3[i]
-								if p and p:IsValid() then
-									local mn2, mx2 = p:GetRenderBounds()
-									if !use_mx then
-										mn[axis] = mn2[axis] - self.particle3_forcedpositions[i]
-									else
-										mx[axis] = mx2[axis] - self.particle3_forcedpositions[i]
+						if math.abs(mn.x) < 100000 then //fix for fx that give nonsense bounds for the first few frames (swarm's particles/fire_fx.pcf ent_on_fire)
+							if self.particle3 then
+								local function DoParticle3(i, use_mx, axis)
+									local p = self.particle3[i]
+									if p and p:IsValid() then
+										local mn2, mx2 = p:GetRenderBounds()
+										if !use_mx then
+											mn[axis] = mn2[axis] - self.particle3_forcedpositions[i]
+										else
+											mx[axis] = mx2[axis] - self.particle3_forcedpositions[i]
+										end
 									end
 								end
+								DoParticle3(1, false, "x")
+								DoParticle3(2, false, "y")
+								DoParticle3(3, false, "z")
+								DoParticle3(4, true, "x")
+								DoParticle3(5, true, "y")
+								DoParticle3(6, true, "z")
 							end
-							DoParticle3(1, false, "x")
-							DoParticle3(2, false, "y")
-							DoParticle3(3, false, "z")
-							DoParticle3(4, true, "x")
-							DoParticle3(5, true, "y")
-							DoParticle3(6, true, "z")
+
+							//Don't let the bounds be any taller than they are wide, so that rising smoke, falling debris, etc. don't move the camera totally out of position
+							local width = math.max((math.abs(mn.x) + math.abs(mx.x)), (math.abs(mn.y) + math.abs(mx.y)))
+							local height = math.max(-mn.z + mx.z, 1) //min 1 here to prevent divide-by-zero errors
+							if width == 0 then width = height end //try not to completely screw up on fx with no width
+							height = width/height
+							mn.z = math.max(mn.z, mn.z * height)
+							mx.z = math.min(mx.z, mx.z * height)
+
+							//Expand our bounds using the new bounds, and only recreate all the view info if the bounds have changed
+							//Because the particle's render bounds are constantly fluctuating as more particles are added, destroyed, and moved, this behavior lets us keep expanding our bounds
+							//bit by bit until we can settle down at the maximum potential bounds.
+							self.mins = self.mins or mn
+							self.maxs = self.maxs or mx
+							mn = Vector(math.min(mn.x, self.mins.x), math.min(mn.y, self.mins.y), math.min(mn.z, self.mins.z))
+							mx = Vector(math.max(mx.x, self.maxs.x), math.max(mx.y, self.maxs.y), math.max(mx.z, self.maxs.z))
+							if mn != self.mins or mx != self.maxs or !self.view then
+								self.mins = mn
+								self.maxs = mx
+
+								local middle = (mn + mx) * 0.5
+								//Works better with ortho than RenderSpawnIcon's size code; uses the distance between the edges of the box on the left and right sides of the panel
+								local mn2 = Vector(mn.x, mx.y, mn.z)
+								local mx2 = Vector(mx.x, mn.y, mx.z)
+								local size = mn2:Distance2D(mx2) * 0.9 //zoom in just a bit; the majority of effects still have a good distance between the visible edge of the effect and the edge of the bbox, so this helps make them more visible; a small number of effects that don't have this issue get cut off slightly, but it's worth the tradeoff
+								if size == 0 then size = mn.z - mx.z * 0.9 end //try not to completely screw up on fx with no width
+
+								//Loosely based off RenderSpawnIcon_Prop (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/util/client.lua#L53)
+								local ViewPos = vector_origin + ViewAngle:Forward() * size * -15
+								self.view = {
+									pos = ViewPos + middle,
+									ortho = size/2
+								}
+							end
+
+							DoColorCPoints(self)
 						end
-
-						//Don't let the bounds be any taller than they are wide, so that rising smoke, falling debris, etc. don't move the camera totally out of position
-						local width = math.max((math.abs(mn.x) + math.abs(mx.x)), (math.abs(mn.y) + math.abs(mx.y)))
-						local height = -mn.z + mx.z
-						height = width/height
-						mn.z = math.max(mn.z, mn.z * height)
-						mx.z = math.min(mx.z, mx.z * height)
-
-						//Expand our bounds using the new bounds, and only recreate all the view info if the bounds have changed
-						//Because the particle's render bounds are constantly fluctuating as more particles are added, destroyed, and moved, this behavior lets us keep expanding our bounds
-						//bit by bit until we can settle down at the maximum potential bounds.
-						self.mins = self.mins or mn
-						self.maxs = self.maxs or mx
-						mn = Vector(math.min(mn.x, self.mins.x), math.min(mn.y, self.mins.y), math.min(mn.z, self.mins.z))
-						mx = Vector(math.max(mx.x, self.maxs.x), math.max(mx.y, self.maxs.y), math.max(mx.z, self.maxs.z))
-						if mn != self.mins or mx != self.maxs then
-							self.mins = mn
-							self.maxs = mx
-
-							local middle = (mn + mx) * 0.5
-							//Works better with ortho than RenderSpawnIcon's size code; uses the distance between the edges of the box on the left and right sides of the panel
-							local mn2 = Vector(mn.x, mx.y, mn.z)
-							local mx2 = Vector(mx.x, mn.y, mx.z)
-							local size = mn2:Distance2D(mx2) * 0.9 //zoom in just a bit; the majority of effects still have a good distance between the visible edge of the effect and the edge of the bbox, so this helps make them more visible; a small number of effects that don't have this issue get cut off slightly, but it's worth the tradeoff
-							
-							//Loosely based off RenderSpawnIcon_Prop (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/util/client.lua#L53)
-							local ViewPos = vector_origin + ViewAngle:Forward() * size * -15
-							self.view = {
-								pos = ViewPos + middle,
-								ortho = size/2
-							}
-						end
-
-						DoColorCPoints(self)
 						
 					end
 				else
