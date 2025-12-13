@@ -593,6 +593,17 @@ if CLIENT then
 
 								end
 							end
+
+							//TODO: i guess this could be useful, but i really don't know if there's a way to make this look good
+							--[[//Draw distance scalar helpers (spheres showing min/max distance)
+							if ptab.distance_scalars and ptab.distance_scalars[k] then
+								for _, tab in pairs (ptab.distance_scalars[k]) do
+									if tab.do_helpers then
+										render.DrawWireframeSphere(pos, tab.inMax, 8, 8, Color(255,0,0), true)
+										render.DrawWireframeSphere(pos, tab.inMin, 8, 8, Color(0,255,0), true)
+									end
+								end
+							end]]
 						
 							//Draw cpoint helpers (arrow showing cpoint orientation, number showing cpoint id)
 							render.SetMaterial(partctrl_arrowmat)
@@ -2096,7 +2107,7 @@ function PartCtrl_GetParticleDefaultPositions(pcf, name)
 	maxs = maxs - midpoint + Vector(grip_radius, grip_radius, grip_radius)
 
 	return grips, mins, maxs, offset_grips
-	
+
 end
 
 if SERVER then
