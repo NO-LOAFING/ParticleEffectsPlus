@@ -501,7 +501,9 @@ if CLIENT then
 			if str then
 				local tab = util.KeyValuesToTable(str)
 				if tab then
-					spawnmenu.AddPropCategory("PartCtrl_GameSpawnlists_" .. string.StripExtension(string.GetFileFromFilename(path)), tab.name, tab.contents, tab.icon, nil, parent, gameid)
+					local name = "PartCtrl_GameSpawnlists_" .. string.StripExtension(string.GetFileFromFilename(path))
+					spawnmenu.AddPropCategory(name, tab.name, tab.contents, tab.icon, nil, parent, gameid)
+					return spawnmenu.GetCustomPropTable()[name].id
 				end
 			end
 		end
@@ -523,18 +525,22 @@ if CLIENT then
 					//also optional: let this not require a mountable game (for hl2 spawnlists)
 					local mount = path
 					if dont_require_mount then mount = nil end
-					spawnmenu.AddPropCategory("PartCtrl_GameSpawnlists_" .. path, game.title, tab or {}, "games/16/" .. path .. ".png", nil, par, mount)
-					return spawnmenu.GetCustomPropTable()["PartCtrl_GameSpawnlists_" .. path].id
+					local name = "PartCtrl_GameSpawnlists_" .. path
+					spawnmenu.AddPropCategory(name, game.title, tab or {}, "games/16/" .. path .. ".png", nil, par, mount)
+					return spawnmenu.GetCustomPropTable()[name].id
 				end
 			end
 		end
 
 		ReadSpawnlist("lua/autorun/partctrl/spawnlists/gmod.lua", par)
 
-		//also includes all the stock source pcfs, so no gameid for these ones
+		//HL2 spawnlists also include all the stock source pcfs, so no mount requirement for these ones
 		local hl2par = AddGameCategory("hl2", true)
-		for i = 1, 9 do
-			ReadSpawnlist("lua/autorun/partctrl/spawnlists/hl2_0" .. i ..  ".lua", hl2par)
+		local hl2 = {}
+		for i = 1, 8 do
+			local ipar
+			if i == 3 then ipar = hl2[2] end //Blood and Gore is a subcategory of Characters and NPCs
+			hl2[i] = ReadSpawnlist("lua/autorun/partctrl/spawnlists/hl2_0" .. i ..  ".lua", ipar or hl2par)
 		end
 
 		//TODO: tf2 spawnlists

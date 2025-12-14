@@ -1658,7 +1658,7 @@ list.Set("PartCtrl_UtilFx", "WheelDust", {
 list.Set("PartCtrl_UtilFx", "ShakeRopes", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1, //arbitrary
-	info = "No visible particles, makes ropes move",
+	info = "No visible particles, makes nearby ropes move",
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {

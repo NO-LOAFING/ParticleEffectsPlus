@@ -1,8 +1,8 @@
 "TableToKeyValues"
 {
-	"parentid"		"139"
+	"parentid"		"141"
 	"icon"		"icon16/page.png"
-	"id"		"141"
+	"id"		"143"
 	"contents"
 	{
 		"1"
@@ -455,6 +455,6 @@
 			"model"		"models/advisor_ep2.mdl"
 		}
 	}
-	"name"		"NPCs"
+	"name"		"Characters and NPCs"
 	"version"		"3"
 }
