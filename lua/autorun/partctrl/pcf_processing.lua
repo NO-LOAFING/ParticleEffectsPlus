@@ -2657,13 +2657,27 @@ function PartCtrl_ProcessPCF(filename)
 				//MsgN("Current modes:")
 				//PrintTable(modes)
 
-				//Also inherit screenspace flag from children here
-				if particle2 != particle and t2[particle2].screenspace then
-					t2[particle].screenspace_from_child = true
-				end
-				//Also inherit spawnicon_playerposfix from children here
-				if particle2 != particle and t2[particle2].spawnicon_playerposfix then
-					t2[particle].spawnicon_playerposfix = true
+				if particle2 != particle then
+					//Also inherit screenspace flag from children here
+					if t2[particle2].screenspace then
+						t2[particle].screenspace_from_child = true
+					end
+					//Also inherit spawnicon_playerposfix from children here
+					if t2[particle2].spawnicon_playerposfix then
+						t2[particle].spawnicon_playerposfix = true
+					end
+					//Also inherit spawnicon_forcedpositions from children here
+					if t2[particle2].spawnicon_forcedpositions then
+						t2[particle].spawnicon_forcedpositions = t2[particle].spawnicon_forcedpositions or {0,0,0,0,0,0}
+						t2[particle].spawnicon_forcedpositions = {
+							math.min(t2[particle].spawnicon_forcedpositions[1], t2[particle2].spawnicon_forcedpositions[1]),
+							math.min(t2[particle].spawnicon_forcedpositions[2], t2[particle2].spawnicon_forcedpositions[2]),
+							math.min(t2[particle].spawnicon_forcedpositions[3], t2[particle2].spawnicon_forcedpositions[3]),
+							math.max(t2[particle].spawnicon_forcedpositions[4], t2[particle2].spawnicon_forcedpositions[4]),
+							math.max(t2[particle].spawnicon_forcedpositions[5], t2[particle2].spawnicon_forcedpositions[5]),
+							math.max(t2[particle].spawnicon_forcedpositions[6], t2[particle2].spawnicon_forcedpositions[6]),
+						}
+					end
 				end
 			end
 			SetCPointModes(particle)
