@@ -153,6 +153,8 @@ function ENT:Think()
 			end
 		end
 
+		self:UpdateRelativeCPoints()
+
 
 		//Handle pausing/unpausing the effect
 		local ispaused = false
@@ -775,6 +777,41 @@ if CLIENT then
 
 	end
 
+	function ENT:UpdateRelativeCPoints()
+
+		if !self.RelativeCPointsToUpdate then return end
+		for k, v in pairs (self.RelativeCPointsToUpdate) do
+			local tab = self.ParticleInfo[v]
+			if tab and IsValid(tab.ent) then
+				local ang = nil
+				if IsValid(tab.ent.AttachedEntity) then
+					ang = tab.ent.AttachedEntity:GetAttachment(tab.attach)
+				else
+					ang = tab.ent:GetAttachment(tab.attach)
+				end
+				if istable(ang) then
+					ang = ang.Ang
+				else
+					ang = tab.ent:GetAngles()
+				end
+				if ang then
+					//update the cpoint on both old particles and new particles
+					if IsValid(self.particle) and self.particle.SetControlPoint then
+						self.particle:SetControlPoint(k, LocalToWorld(self.ParticleInfo[k].val, angle_zero, vector_origin, ang))
+					end
+					if self.OldParticles then
+						for _, part in pairs (self.OldParticles) do
+							if IsValid(part) and part.SetControlPoint then
+								part:SetControlPoint(k, LocalToWorld(self.ParticleInfo[k].val, angle_zero, vector_origin, ang))
+							end	
+						end
+					end
+				end
+			end
+		end
+
+	end
+
 	function ENT:StartParticle()
 
 		if !self.ParticleInfo then return end
@@ -848,6 +885,8 @@ if CLIENT then
 			self.ParticleStartTime = CurTime()
 		end
 
+		self.RelativeCPointsToUpdate = nil
+
 		if self.particle and self.particle.IsValid and self.particle:IsValid() then
 			//Do other cpoints
 			for k, v in pairs (ptab.cpoints) do
@@ -878,17 +917,19 @@ if CLIENT then
 						end
 					elseif mode == PARTCTRL_CPOINT_MODE_VECTOR or mode == PARTCTRL_CPOINT_MODE_AXIS then
 						local rel = nil
+						local rel_ang = nil
 						if ptab.cpoints[k].vector then
 							local vectab = ptab.cpoints[k].vector[ptab.cpoints[k]["which"]]
 							if istable(vectab) then
 								rel = vectab.relative_to_cpoint
+								rel_ang = vectab.relative_to_cpoint_angle
 							end
-							rel = vectab.relative_to_cpoint
 						end
 						if !rel and ptab.cpoints[k].axis then
 							local axistab = ptab.cpoints[k].axis[ptab.cpoints[k]["which_0"]]
 							if istable(axistab) then
 								rel = axistab.relative_to_cpoint
+								rel_ang = axistab.relative_to_cpoint_angle
 							end
 						end
 
@@ -923,6 +964,14 @@ if CLIENT then
 									self.particle:SetControlPoint(k, self.ParticleInfo[k].val + self.ParticleInfo[rel].val)
 								end
 							end
+						elseif rel_ang != nil then
+							//If this cpoint is relative to the angle of another cpoint, then rotate its value accordingly
+							if rel_ang == -1 or ptab.cpoints[rel_ang].mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then rel_ang = firstcpoint end
+							if ptab.cpoints[rel_ang] != nil then
+								self.RelativeCPointsToUpdate = self.RelativeCPointsToUpdate or {}
+								self.RelativeCPointsToUpdate[k] = rel_ang
+								//this has to be done in a separate self:UpdateRelativeCPoints() function so Think can keep the position updated after this
+							end
 						else
 							//Otherwise, just set this cpoint to its value
 							if self.ParticleInfo[k] then
@@ -932,6 +981,8 @@ if CLIENT then
 					end
 				end
 			end
+
+			self:UpdateRelativeCPoints()
 			
 			PartCtrl_AddParticles_CrashCheck[pcf] = PartCtrl_AddParticles_CrashCheck[pcf] or {}
 			PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = true

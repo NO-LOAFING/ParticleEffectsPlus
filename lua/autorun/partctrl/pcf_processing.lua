@@ -2096,7 +2096,8 @@ local processfuncs = {
 						["inMax"] = Vector(1,1,1),
 						["outMin"] = Vector(-1,-1,-1),
 						["outMax"] = Vector(1,1,1),
-						["default"] = Vector(0,0,0),
+						["default"] = Vector(1,0,0),
+						["relative_to_cpoint_angle"] = -1 //-1 value tells the particle entity to use the angle of the first available position control
 					})
 					local cpoint = attrib["control_point_number"] or 0
 					local name = attrib._categoryName .. " " .. attrib.functionName .. ": control_point_number (+ 1 for Inherit from parent)"
@@ -2132,6 +2133,12 @@ local processfuncs = {
 				default = 1
 				label = "Velocity Direction"
 			end
+			local relative_to_cpoint_angle = attrib["local space control point number"] or -1
+			if !(relative_to_cpoint_angle > -1) then
+				relative_to_cpoint_angle = -1 //-1 value tells the particle entity to use the angle of the first available position control
+			else
+				relative_to_cpoint_angle = nil
+			end
 			cpoint_from_attrib_value(processed, attrib, "control point number", 0, "vector", {
 				["label"] = label,
 				["inMin"] = Vector(-inMax,-inMax,-inMax),
@@ -2139,7 +2146,8 @@ local processfuncs = {
 				["outMin"] = Vector(-outMax,-outMax,-outMax),
 				["outMax"] = Vector(outMax,outMax,outMax),
 				["default"] = Vector(default,0,0),
-				["relative_to_cpoint"] = relative_to_cpoint
+				["relative_to_cpoint"] = relative_to_cpoint,
+				["relative_to_cpoint_angle"] = relative_to_cpoint_angle
 			})
 		end,
 	},
@@ -3411,7 +3419,7 @@ function PartCtrl_ReadAndProcessPCFs()
 
 	PartCtrl_ReadAndProcessPCFs_StartupHasRun = true
 
-	if dodebug then MsgN("PartCtrl: PartCtrl_ReadAndProcessPCFs took " , SysTime() - starttime, " secs") end
+	--[[if dodebug then]] MsgN("PartCtrl: PartCtrl_ReadAndProcessPCFs took " , SysTime() - starttime, " secs") //end
 
 end
 

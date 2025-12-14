@@ -452,8 +452,11 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						table.insert(self.icons, {["icon"] = icon_color, ["num"] = num})
 						for k, v in SortedPairs (self.ColorCPoints) do
 							table.insert(self.iColorCPoints, k)
+							//do particle2 if the default is large enough to stretch the bounds
+							if !self.doparticle2 and (math.abs(v.default.x) > 1 or math.abs(v.default.y) > 1 or math.abs(v.default.z) > 1) then
+								self.doparticle2 = true
+							end
 						end
-						self.doparticle2 = true
 					end
 					if table.Count(self.EditCPoints) > 0 then
 						table.insert(self.icons, {["icon"] = icon_edit})
@@ -461,7 +464,12 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						for _, v in pairs (self.EditCPointsText) do
 							tooltip = tooltip .. "\n" .. v
 						end
-						self.doparticle2 = true
+						for k, v in pairs (self.EditCPoints) do
+							//do particle2 if the default is large enough to stretch the bounds
+							if !self.doparticle2 and (math.abs(v.x) > 1 or math.abs(v.y) > 1 or math.abs(v.z) > 1) then
+								self.doparticle2 = true
+							end
+						end
 					end
 					if PartCtrl_ProcessedPCFs[pcf][name].info then
 						table.insert(self.icons, {["icon"] = icon_info})
