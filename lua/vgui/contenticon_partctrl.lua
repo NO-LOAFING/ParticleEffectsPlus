@@ -672,64 +672,72 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						else
 							mn, mx = self.particle:GetRenderBounds()
 						end
-						if math.abs(mn.x) < 100000 then //fix for fx that give nonsense bounds for the first few frames (swarm's particles/fire_fx.pcf ent_on_fire)
-							if self.particle3 then
-								local function DoParticle3(i, use_mx, axis)
-									local p = self.particle3[i]
-									if p and p:IsValid() then
-										local mn2, mx2 = p:GetRenderBounds()
-										if !use_mx then
-											mn[axis] = mn2[axis] - self.particle3_forcedpositions[i]
-										else
-											mx[axis] = mx2[axis] - self.particle3_forcedpositions[i]
-										end
+
+						if self.particle3 then
+							local function DoParticle3(i, use_mx, axis)
+								local p = self.particle3[i]
+								if p and p:IsValid() then
+									local mn2, mx2 = p:GetRenderBounds()
+									if !use_mx then
+										mn[axis] = mn2[axis] - self.particle3_forcedpositions[i]
+									else
+										mx[axis] = mx2[axis] - self.particle3_forcedpositions[i]
 									end
 								end
-								DoParticle3(1, false, "x")
-								DoParticle3(2, false, "y")
-								DoParticle3(3, false, "z")
-								DoParticle3(4, true, "x")
-								DoParticle3(5, true, "y")
-								DoParticle3(6, true, "z")
 							end
+							DoParticle3(1, false, "x")
+							DoParticle3(2, false, "y")
+							DoParticle3(3, false, "z")
+							DoParticle3(4, true, "x")
+							DoParticle3(5, true, "y")
+							DoParticle3(6, true, "z")
+						end
 
-							//Don't let the bounds be any taller than they are wide, so that rising smoke, falling debris, etc. don't move the camera totally out of position
-							local width = math.max((math.abs(mn.x) + math.abs(mx.x)), (math.abs(mn.y) + math.abs(mx.y)))
-							local height = math.max(-mn.z + mx.z, 1) //min 1 here to prevent divide-by-zero errors
-							if width == 0 then width = height end //try not to completely screw up on fx with no width
-							height = width/height
-							mn.z = math.max(mn.z, mn.z * height)
-							mx.z = math.min(mx.z, mx.z * height)
+						//Don't let the bounds be any taller than they are wide, so that rising smoke, falling debris, etc. don't move the camera totally out of position
+						local width = math.max((math.abs(mn.x) + math.abs(mx.x)), (math.abs(mn.y) + math.abs(mx.y)))
+						local height = math.max(-mn.z + mx.z, 1) //min 1 here to prevent divide-by-zero errors
+						if width == 0 then width = height end //try not to completely screw up on fx with no width
+						height = width/height
+						mn.z = math.max(mn.z, mn.z * height)
+						mx.z = math.min(mx.z, mx.z * height)
 
-							//Expand our bounds using the new bounds, and only recreate all the view info if the bounds have changed
-							//Because the particle's render bounds are constantly fluctuating as more particles are added, destroyed, and moved, this behavior lets us keep expanding our bounds
-							//bit by bit until we can settle down at the maximum potential bounds.
-							self.mins = self.mins or mn
-							self.maxs = self.maxs or mx
+						self.mins = self.mins or mn
+						self.maxs = self.maxs or mx
+						if math.abs(self.mins.x - mn.x) > 1000 or math.abs(self.mins.y - mn.y) > 1000 or math.abs(self.mins.z - mn.z) > 1000
+						or math.abs(self.maxs.x - mx.x) > 1000 or math.abs(self.maxs.y - mx.y) > 1000 or math.abs(self.maxs.z - mx.z) > 1000 then
+							//If the render bounds shrink drastically in a single frame, use those new bounds instead. This fixes cases where some fx start off
+							//at some huge overscaled value, then shrink down to something reasonable shortly after (swarm's particles/fire_fx.pcf ent_on_fire, 
+							//tf2's particles/item_fx.pcf unusual_tentmonster_purple_parent)
+							self.mins = nil
+							self.maxs = nil
+						else
+							//Expand our bounds using the new bounds. Because the particle's render bounds are constantly fluctuating as more particles are added, 
+							//destroyed, and moved, this lets us keep expanding our bounds bit by bit until we can settle down at the maximum potential bounds.
 							mn = Vector(math.min(mn.x, self.mins.x), math.min(mn.y, self.mins.y), math.min(mn.z, self.mins.z))
 							mx = Vector(math.max(mx.x, self.maxs.x), math.max(mx.y, self.maxs.y), math.max(mx.z, self.maxs.z))
-							if mn != self.mins or mx != self.maxs or !self.view then
-								self.mins = mn
-								self.maxs = mx
-
-								local middle = (mn + mx) * 0.5
-								//Works better with ortho than RenderSpawnIcon's size code; uses the distance between the edges of the box on the left and right sides of the panel
-								local mn2 = Vector(mn.x, mx.y, mn.z)
-								local mx2 = Vector(mx.x, mn.y, mx.z)
-								local size = mn2:Distance2D(mx2) * 0.9 //zoom in just a bit; the majority of effects still have a good distance between the visible edge of the effect and the edge of the bbox, so this helps make them more visible; a small number of effects that don't have this issue get cut off slightly, but it's worth the tradeoff
-								if size == 0 then size = math.Distance(mn.z, 0, mx.z, 0) end //try not to completely screw up on fx with no width
-
-								//Loosely based off RenderSpawnIcon_Prop (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/util/client.lua#L53)
-								local ViewPos = vector_origin + ViewAngle:Forward() * size * -15
-								self.view = {
-									pos = ViewPos + middle,
-									ortho = size/2
-								}
-							end
-
-							DoColorCPoints(self)
 						end
-						
+						//Only recreate all the view info if the bounds have changed
+						if mn != self.mins or mx != self.maxs or !self.view then
+							self.mins = mn
+							self.maxs = mx
+
+							local middle = (mn + mx) * 0.5
+							//Works better with ortho than RenderSpawnIcon's size code; uses the distance between the edges of the box on the left and right sides of the panel
+							local mn2 = Vector(mn.x, mx.y, mn.z)
+							local mx2 = Vector(mx.x, mn.y, mx.z)
+							local size = mn2:Distance2D(mx2) * 0.9 //zoom in just a bit; the majority of effects still have a good distance between the visible edge of the effect and the edge of the bbox, so this helps make them more visible; a small number of effects that don't have this issue get cut off slightly, but it's worth the tradeoff
+							if size == 0 then size = math.Distance(mn.z, 0, mx.z, 0) end //try not to completely screw up on fx with no width
+
+							//Loosely based off RenderSpawnIcon_Prop (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/util/client.lua#L53)
+							local ViewPos = vector_origin + ViewAngle:Forward() * size * -15
+							self.view = {
+								pos = ViewPos + middle,
+								ortho = size/2
+							}
+						end
+
+						DoColorCPoints(self)
+
 					end
 				else
 
