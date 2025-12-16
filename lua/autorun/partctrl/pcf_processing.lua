@@ -519,7 +519,7 @@ fixes = fixes2
 fixes2 = nil
 
 
-//manually copied from gmod's own particle editor 5/13/24, necessary for development but not finished addon
+//manually copied from gmod's own particle editor 5/13/24
 local default_attribs = {
 	//Renderer
 	"Render models", 
@@ -724,8 +724,6 @@ function PartCtrl_GetUnhandledOperators()
 								table.insert(allproperties[category][name].paths, filename .. " " .. particle)
 							end
 						end
-					else
-						MsgN(filename, ": ", particle, " has no attribute category ", category)
 					end
 				end
 			end
@@ -3300,7 +3298,7 @@ function PartCtrl_ReadAndProcessPCFs()
 						//Add the data pcf to all the tables
 						if !PartCtrl_ProcessedPCFs[filename] then
 							PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
-							PartCtrl_AllPCFPaths[filename] = true
+							table.insert(PartCtrl_AllPCFPaths, filename)
 							allpcfs[filename] = true
 							PartCtrl_AllDataPCFs[filename] = {
 								["original_filename"] = original_filename,
@@ -3395,28 +3393,22 @@ function PartCtrl_ReadAndProcessPCFs()
 		table.Add(pcfs_dupe_order, pcfs_sorted[7]) //other
 		PartCtrl_PCFsInDupeOrder = pcfs_dupe_order //global so that PartCtrl_GetDuplicateFx can be run again later without rebuilding this table
 		PartCtrl_GetDuplicateFx()
-	end
 
-
-	//Run AddParticles in another particular order, so things like gmod fx take priority by default;
-	//this prevents TF2's blood fx from becoming the default when you shoot an NPC, for instance
-	//NOTE: had to put gmod+games above addons to prevent an issue where tf2 map particles addon's 
-	//particles/brine_salmann_goop.pcf would unintentionally override the default blood fx, is this bad? 
-	//TODO: could this cause issues with other addons i'm not aware of that try to override gmod or game fx?
-	local pcfs_load_order = {}
-	table.Add(pcfs_load_order, pcfs_sorted[1]) //packed into bsp
-	table.Add(pcfs_load_order, pcfs_sorted[4]) //garrysmod/particles/ folder
-	table.Add(pcfs_load_order, pcfs_sorted[5]) //games
-	table.Add(pcfs_load_order, pcfs_sorted[2]) //legacy addons
-	table.Add(pcfs_load_order, pcfs_sorted[3]) //workshop addons
-	table.Add(pcfs_load_order, pcfs_sorted[6]) //garrysmod/download/ folder
-	table.Add(pcfs_load_order, pcfs_sorted[7]) //other
-	for _, filename in SortedPairs (pcfs_load_order, true) do
-		//MsgN("running AddParticles for ", filename)
-		if CLIENT then
+		//Run AddParticles in another particular order, so things like gmod fx take priority by default;
+		//this prevents TF2's blood fx from becoming the default when you shoot an NPC, for instance
+		//NOTE: had to put gmod+games above addons to prevent an issue where tf2 map particles addon's 
+		//particles/brine_salmann_goop.pcf would unintentionally override the default blood fx, is this bad? 
+		//TODO: could this cause issues with other addons i'm not aware of that try to override gmod or game fx?
+		local pcfs_load_order = {}
+		table.Add(pcfs_load_order, pcfs_sorted[1]) //packed into bsp
+		table.Add(pcfs_load_order, pcfs_sorted[4]) //garrysmod/particles/ folder
+		table.Add(pcfs_load_order, pcfs_sorted[5]) //games
+		table.Add(pcfs_load_order, pcfs_sorted[2]) //legacy addons
+		table.Add(pcfs_load_order, pcfs_sorted[3]) //workshop addons
+		table.Add(pcfs_load_order, pcfs_sorted[6]) //garrysmod/download/ folder
+		table.Add(pcfs_load_order, pcfs_sorted[7]) //other
+		for _, filename in SortedPairs (pcfs_load_order, true) do
 			PartCtrl_AddParticles(filename)
-		else
-			game.AddParticles(filename)
 		end
 	end
 

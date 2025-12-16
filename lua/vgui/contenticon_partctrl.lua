@@ -249,7 +249,8 @@ function PANEL:IsCurrentlyOverridden(pcf, name)
 		end
 		for k, childtab in pairs (PartCtrl_ProcessedPCFs[pcf][name2].children) do
 			//Also check all child fx for overrides
-			return CheckEffectAndChildren(childtab.child)
+			local val = CheckEffectAndChildren(childtab.child)
+			if val then return val end
 		end
 	end
 	return PartCtrl_GetDataPCFNiceName(CheckEffectAndChildren(name))
@@ -624,7 +625,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							self.particle:SetShouldDraw(false)
 							self.mins = nil
 							self.maxs = nil
-							self.view = nil
+							//self.view = nil
 							DoPosCPoints(self, self.particle)
 							if self.particle2 then
 								DoPosCPoints(self, self.particle2)
@@ -651,7 +652,9 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							end
 						end
 
-					else
+					end
+
+					if self.particle and self.particle.IsValid and self.particle:IsValid() then
 
 						//Update the particle and render bounds
 						//Based off PositionSpawnIcon (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/util/client.lua#L208)
