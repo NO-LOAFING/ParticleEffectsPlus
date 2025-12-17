@@ -152,57 +152,81 @@
 		}
 		"22"
 		{
-			"type"		"header"
-			"text"		"These unused things that"
+			"type"		"partctrl"
+			"path"		"hl2"
+			"name"		"aurora_shockwave"
+			"pcf"		"particles/aurora_sphere2.pcf"
 		}
 		"23"
 		{
 			"type"		"header"
-			"text"		"could work as laser pointers"
+			"text"		"These unused things that"
 		}
 		"24"
+		{
+			"type"		"header"
+			"text"		"could work as laser pointers"
+		}
+		"25"
 		{
 			"type"		"partctrl"
 			"name"		"CommandPointer"
 			"pcf"		"UtilFx"
 		}
-		"25"
+		"26"
 		{
 			"type"		"partctrl"
 			"name"		"GunshipImpact"
 			"pcf"		"UtilFx"
 		}
-		"26"
+		"27"
+		{
+			"type"		"header"
+			"text"		"This nice oil drip effect that's"
+		}
+		"28"
+		{
+			"type"		"header"
+			"text"		"pointed the wrong way"
+		}
+		"29"
+		{
+			"type"		"partctrl"
+			"path"		"garrysmod"
+			"name"		"blood_drip_synth_01b"
+			"pcf"		"particles/blood_impact.pcf"
+		}
+		"30"
 		{
 			"type"		"header"
 			"text"		"This effect makes nearby ropes move"
 		}
-		"27"
+		"31"
 		{
 			"type"		"partctrl"
 			"name"		"ShakeRopes"
 			"pcf"		"UtilFx"
 		}
-		"28"
+		"32"
 		{
 			"type"		"header"
 			"text"		"Frozen effects from Ep2 Gman scene"
 		}
-		"29"
+		"33"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"blood_frozen"
 			"pcf"		"particles/choreo_gman.pcf"
 		}
-		"30"
+		"34"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"
 			"name"		"frozen_steam"
 			"pcf"		"particles/choreo_gman.pcf"
 		}
-		"31"
+		"35"
 		{
 			"type"		"partctrl"
 			"path"		"hl2"

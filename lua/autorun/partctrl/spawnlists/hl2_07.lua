@@ -1,6 +1,6 @@
 "TableToKeyValues"
 {
-	"parentid"		"141"
+	"parentid"		"145"
 	"icon"		"icon16/page.png"
 	"id"		"148"
 	"contents"
@@ -358,21 +358,136 @@
 		"53"
 		{
 			"type"		"header"
-			"text"		"This nice oil drip effect that's"
+			"text"		"Rain"
 		}
 		"54"
 		{
-			"type"		"header"
-			"text"		"pointed the wrong way"
+			"type"		"partctrl"
+			"path"		"garrysmod"
+			"name"		"rain"
+			"pcf"		"particles/precipitation.pcf"
 		}
 		"55"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"blood_drip_synth_01b"
-			"pcf"		"particles/blood_impact.pcf"
+			"name"		"rain_outer"
+			"pcf"		"particles/precipitation.pcf"
+		}
+		"56"
+		{
+			"type"		"partctrl"
+			"path"		"garrysmod"
+			"name"		"rain_storm"
+			"pcf"		"particles/precipitation.pcf"
+		}
+		"57"
+		{
+			"type"		"partctrl"
+			"path"		"garrysmod"
+			"name"		"rain_storm_outer"
+			"pcf"		"particles/precipitation.pcf"
+		}
+		"58"
+		{
+			"type"		"partctrl"
+			"path"		"garrysmod"
+			"name"		"rain_storm_screen"
+			"pcf"		"particles/precipitation.pcf"
+		}
+		"59"
+		{
+			"type"		"partctrl"
+			"path"		"hl2"
+			"name"		"Rain_01"
+			"pcf"		"particles/rain.pcf"
+		}
+		"60"
+		{
+			"type"		"partctrl"
+			"path"		"hl2"
+			"name"		"Rain_01_character_head"
+			"pcf"		"particles/rain.pcf"
+		}
+		"61"
+		{
+			"type"		"partctrl"
+			"path"		"hl2"
+			"name"		"Rain_01_character_shoulder"
+			"pcf"		"particles/rain.pcf"
+		}
+		"62"
+		{
+			"type"		"header"
+			"text"		"Snow"
+		}
+		"63"
+		{
+			"type"		"partctrl"
+			"path"		"garrysmod"
+			"name"		"snow"
+			"pcf"		"particles/precipitation.pcf"
+		}
+		"64"
+		{
+			"type"		"partctrl"
+			"path"		"garrysmod"
+			"name"		"snow_outer"
+			"pcf"		"particles/precipitation.pcf"
+		}
+		"65"
+		{
+			"type"		"partctrl"
+			"path"		"hl2"
+			"name"		"choreo_borealis_snow"
+			"pcf"		"particles/choreo_launch.pcf"
+		}
+		"66"
+		{
+			"type"		"header"
+			"text"		"Ash"
+		}
+		"67"
+		{
+			"type"		"partctrl"
+			"path"		"garrysmod"
+			"name"		"ash"
+			"pcf"		"particles/precipitation.pcf"
+		}
+		"68"
+		{
+			"type"		"partctrl"
+			"path"		"garrysmod"
+			"name"		"ash_outer"
+			"pcf"		"particles/precipitation.pcf"
+		}
+		"69"
+		{
+			"type"		"header"
+			"text"		"Aurora"
+		}
+		"70"
+		{
+			"type"		"partctrl"
+			"path"		"hl2"
+			"name"		"aurora_01"
+			"pcf"		"particles/aurora.pcf"
+		}
+		"71"
+		{
+			"type"		"partctrl"
+			"path"		"hl2"
+			"name"		"aurora_02"
+			"pcf"		"particles/aurora.pcf"
+		}
+		"72"
+		{
+			"type"		"partctrl"
+			"path"		"hl2"
+			"name"		"aurora_02b"
+			"pcf"		"particles/aurora.pcf"
 		}
 	}
-	"name"		"Water and Fluids"
+	"name"		"Water and Weather"
 	"version"		"3"
 }

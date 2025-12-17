@@ -493,11 +493,8 @@ if CLIENT then
 
 	hook.Add("PopulatePropMenu", "PartCtrl_GameSpawnlists", function()
 
-		spawnmenu.AddPropCategory("PartCtrl_GameSpawnlists", "Particle Effect Spawnlists", {}, "icon16/fire.png")
-		local par = spawnmenu.GetCustomPropTable()["PartCtrl_GameSpawnlists"].id
-
 		local function ReadSpawnlist(path, parent, gameid)
-			local str = file.Read(path, "GAME")
+			local str = file.Read("lua/autorun/partctrl/spawnlists/" .. path .. ".lua", "GAME")
 			if str then
 				local tab = util.KeyValuesToTable(str)
 				if tab then
@@ -508,48 +505,46 @@ if CLIENT then
 			end
 		end
 
-		local function AddGameCategory(path, dont_require_mount)
-			for _, game in pairs (engine.GetGames()) do
-				if game.folder == path then
-					//optional: make this a spawnlist if a matching file exists
-					local tab
-					local str = file.Read("lua/autorun/partctrl/spawnlists/" .. path .. ".lua", "GAME")
-					if str then
-						tab = util.KeyValuesToTable(str)
-						if tab then
-							tab = tab.contents
-						else
-							tab = nil
-						end
-					end
-					//also optional: let this not require a mountable game (for hl2 spawnlists)
-					local mount = path
-					if dont_require_mount then mount = nil end
-					local name = "PartCtrl_GameSpawnlists_" .. path
-					spawnmenu.AddPropCategory(name, game.title, tab or {}, "games/16/" .. path .. ".png", nil, par, mount)
-					return spawnmenu.GetCustomPropTable()[name].id
-				end
-			end
-		end
+		local par = ReadSpawnlist("root")
 
-		ReadSpawnlist("lua/autorun/partctrl/spawnlists/gmod.lua", par)
+		ReadSpawnlist("gmod", par)
 
 		//HL2 spawnlists also include all the stock source pcfs, so no mount requirement for these ones
-		local hl2par = AddGameCategory("hl2", true)
+		local hl2par = ReadSpawnlist("hl2", par)
 		local hl2 = {}
 		for i = 1, 8 do
 			local ipar
-			if i == 3 then ipar = hl2[2] end //Blood and Gore is a subcategory of Characters and NPCs
-			hl2[i] = ReadSpawnlist("lua/autorun/partctrl/spawnlists/hl2_0" .. i ..  ".lua", ipar or hl2par)
+			if i == 3 then
+				ipar = hl2[2] //Blood and Gore is a subcategory of Characters and NPCs
+			elseif i > 4 then
+				ipar = hl2[4] //All of these are subcategories of Environment
+			end
+			hl2[i] = ReadSpawnlist("hl2_0" .. i, ipar or hl2par)
 		end
 
-		//TODO: tf2 spawnlists
+		local tfpar = ReadSpawnlist("tf", par, "tf")
+		local tf = {}
+		for i = 1, 11 do
+			local ipar
+			if i == 2 or i == 4 or i == 5 then
+				ipar = tf[1] //Weapons, Cosmetics and Taunts are subcategories of Items
+			elseif i == 3 then
+				ipar = tf[2] //Unusual Weapons is a subcategory of Weapons
+			elseif i == 7 then
+				ipar = tf[6] //Blood and Gore is a subcategory of Characters and NPCs
+			elseif i > 8 then
+				ipar = tf[8] //All of these are subcategories of Environment
+			end
+			local zero = "0"
+			if i >= 10 then zero = "" end
+			tf[i] = ReadSpawnlist("tf_" .. zero .. i, ipar or tfpar, "tf")
+		end
 
 		//TODO: portal spawnlists?
 
-		AddGameCategory("cstrike")
+		ReadSpawnlist("cstrike", par, "cstrike")
 
-		AddGameCategory("hl1")
+		ReadSpawnlist("hl1", par, "hl1")
 
 	end)
 

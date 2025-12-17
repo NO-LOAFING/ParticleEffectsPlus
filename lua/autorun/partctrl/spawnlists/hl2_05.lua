@@ -1,6 +1,6 @@
 "TableToKeyValues"
 {
-	"parentid"		"141"
+	"parentid"		"145"
 	"icon"		"icon16/page.png"
 	"id"		"146"
 	"contents"
@@ -8,657 +8,353 @@
 		"1"
 		{
 			"type"		"header"
-			"text"		"Smoke"
+			"text"		"Explosions"
 		}
 		"2"
 		{
 			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"smoke_gib_01"
-			"pcf"		"particles/fire_01.pcf"
+			"name"		"Explosion"
+			"pcf"		"UtilFx"
 		}
 		"3"
 		{
 			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"smoke_large_01"
-			"pcf"		"particles/fire_01.pcf"
+			"name"		"HelicopterMegaBomb"
+			"pcf"		"UtilFx"
 		}
 		"4"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"smoke_large_01b"
+			"name"		"explosion_huge"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"5"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"smoke_large_02"
+			"name"		"explosion_silo"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"6"
 		{
 			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"smoke_large_02b"
-			"pcf"		"particles/fire_01.pcf"
+			"path"		"hl2"
+			"name"		"explosion_turret_break"
+			"pcf"		"particles/weapon_fx.pcf"
 		}
 		"7"
 		{
 			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"smoke_medium_01"
-			"pcf"		"particles/fire_01.pcf"
+			"path"		"hl2"
+			"name"		"door_explosion_core"
+			"pcf"		"particles/door_explosion.pcf"
 		}
 		"8"
 		{
 			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"smoke_medium_02"
-			"pcf"		"particles/fire_01.pcf"
+			"path"		"hl2"
+			"name"		"Explosion_2"
+			"pcf"		"particles/explosion.pcf"
 		}
 		"9"
 		{
 			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"smoke_medium_02 Version #2"
-			"pcf"		"particles/fire_01.pcf"
+			"path"		"hl2"
+			"name"		"ExplosionCore"
+			"pcf"		"particles/explosion.pcf"
 		}
 		"10"
 		{
 			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"Smoke_medium_02b"
-			"pcf"		"particles/fire_01.pcf"
+			"path"		"hl2"
+			"name"		"grenade_explosion_01"
+			"pcf"		"particles/grenade_fx.pcf"
 		}
 		"11"
 		{
-			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"Smoke_medium_02b Version #2"
-			"pcf"		"particles/fire_01.pcf"
+			"type"		"header"
+			"text"		"Fire"
 		}
 		"12"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"smoke_medium_02c"
+			"name"		"env_fire_large"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"13"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"smoke_medium_02d"
+			"name"		"env_fire_large_smoke"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"14"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"smoke_small_01"
+			"name"		"env_fire_medium"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"15"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"smoke_small_01b"
+			"name"		"env_fire_medium_smoke"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"16"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"smoke_burning_engine_01"
+			"name"		"env_fire_medium_spread"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"17"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"smoke_exhaust_01"
+			"name"		"env_fire_small"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"18"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Advisor_Pod_Explosion_Smoke"
-			"pcf"		"particles/advisor_fx.pcf"
+			"path"		"garrysmod"
+			"name"		"env_fire_small_smoke"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"19"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"smoke_dark_plume_1"
-			"pcf"		"particles/choreo_dog_v_strider.pcf"
+			"path"		"garrysmod"
+			"name"		"env_fire_small_coverage"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"20"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"smoke_dog_v_strider_dropship"
-			"pcf"		"particles/choreo_dog_v_strider.pcf"
+			"path"		"garrysmod"
+			"name"		"env_fire_small_coverage_smoke"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"21"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"smoke_mesh_01"
-			"pcf"		"particles/choreo_dog_v_strider.pcf"
+			"path"		"garrysmod"
+			"name"		"env_fire_small_base"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"22"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"smoke_smoulder_01"
-			"pcf"		"particles/choreo_dog_v_strider.pcf"
+			"path"		"garrysmod"
+			"name"		"env_fire_small_coverage_base"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"23"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"door_explosion_shockwave"
-			"pcf"		"particles/door_explosion.pcf"
+			"path"		"garrysmod"
+			"name"		"env_fire_small_coverage_base_smoke"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"24"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"door_explosion_smoke"
-			"pcf"		"particles/door_explosion.pcf"
+			"path"		"garrysmod"
+			"name"		"env_fire_tiny"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"25"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"smoke_skybox_01a"
+			"path"		"garrysmod"
+			"name"		"env_fire_tiny_smoke"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"26"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"smoke_skybox_01b"
-			"pcf"		"particles/fire_01.pcf"
+			"path"		"garrysmod"
+			"name"		"burning_character"
+			"pcf"		"particles/burning_fx.pcf"
 		}
 		"27"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Skybox_Haze_01"
-			"pcf"		"particles/skybox_smoke.pcf"
+			"path"		"garrysmod"
+			"name"		"burning_gib_01"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"28"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Skybox_Smoke_01"
-			"pcf"		"particles/skybox_smoke.pcf"
+			"path"		"garrysmod"
+			"name"		"burning_gib_01_follower1"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"29"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Skybox_Smoke_03"
-			"pcf"		"particles/skybox_smoke.pcf"
+			"path"		"garrysmod"
+			"name"		"burning_engine_01"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"30"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Skybox_Smoke_03_06a"
-			"pcf"		"particles/skybox_smoke.pcf"
+			"path"		"garrysmod"
+			"name"		"burning_vehicle"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"31"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Skybox_Smoke_04"
-			"pcf"		"particles/skybox_smoke.pcf"
+			"path"		"garrysmod"
+			"name"		"burning_wood_01"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"32"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Skybox_Smoke_05"
-			"pcf"		"particles/skybox_smoke.pcf"
+			"path"		"garrysmod"
+			"name"		"burning_wood_01b"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"33"
 		{
-			"type"		"header"
-			"text"		"Smoke (rocket launch)"
+			"type"		"partctrl"
+			"path"		"garrysmod"
+			"name"		"fire_large_01"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"34"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"choreo_launch_camjet_1"
-			"pcf"		"particles/choreo_launch.pcf"
+			"path"		"garrysmod"
+			"name"		"fire_large_02"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"35"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"choreo_launch_camjet_2"
-			"pcf"		"particles/choreo_launch.pcf"
+			"path"		"garrysmod"
+			"name"		"fire_medium_01"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"36"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"choreo_launch_rocket_jet"
-			"pcf"		"particles/choreo_launch.pcf"
+			"path"		"garrysmod"
+			"name"		"fire_medium_02"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"37"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"choreo_launch_rocket_skyboxsmoke"
-			"pcf"		"particles/choreo_launch.pcf"
+			"path"		"garrysmod"
+			"name"		"fire_medium_02_nosmoke"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"38"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"choreo_launch_rocket_start"
-			"pcf"		"particles/choreo_launch.pcf"
+			"path"		"garrysmod"
+			"name"		"fire_medium_03"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"39"
 		{
 			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"choreo_launch_rocket_upsmoke"
-			"pcf"		"particles/choreo_launch.pcf"
+			"path"		"garrysmod"
+			"name"		"fire_medium_03_brownsmoke"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"40"
 		{
-			"type"		"header"
-			"text"		"Embers"
+			"type"		"partctrl"
+			"path"		"garrysmod"
+			"name"		"fire_small_01"
+			"pcf"		"particles/fire_01.pcf"
 		}
 		"41"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"env_embers_large"
+			"name"		"fire_small_02"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"42"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"env_embers_medium"
+			"name"		"fire_small_03"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"43"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"env_embers_medium_spread"
+			"name"		"fire_verysmall_01"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"44"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"env_embers_small"
+			"name"		"fire_jet_01"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"45"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"env_embers_small_spread"
+			"name"		"explosion_huge_i"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"46"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"env_embers_tiny"
+			"name"		"explosion_huge_flames"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"47"
 		{
 			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"embers_large_01"
-			"pcf"		"particles/fire_01.pcf"
+			"path"		"hl2"
+			"name"		"explosion_turret_fizzle"
+			"pcf"		"particles/weapon_fx.pcf"
 		}
 		"48"
 		{
 			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"embers_large_02"
-			"pcf"		"particles/fire_01.pcf"
+			"path"		"hl2"
+			"name"		"skybox_fire_01"
+			"pcf"		"particles/skybox_smoke.pcf"
 		}
 		"49"
 		{
 			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"embers_medium_01"
-			"pcf"		"particles/fire_01.pcf"
+			"path"		"hl2"
+			"name"		"Skybox_Fire_02"
+			"pcf"		"particles/skybox_smoke.pcf"
 		}
 		"50"
 		{
-			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"embers_medium_03"
-			"pcf"		"particles/fire_01.pcf"
+			"type"		"header"
+			"text"		"Heat wave"
 		}
 		"51"
 		{
 			"type"		"partctrl"
 			"path"		"garrysmod"
-			"name"		"embers_small_01"
+			"name"		"fire_medium_heatwave"
 			"pcf"		"particles/fire_01.pcf"
 		}
-		"52"
-		{
-			"type"		"header"
-			"text"		"Dust and Debris"
-		}
-		"53"
-		{
-			"type"		"partctrl"
-			"name"		"ThumperDust"
-			"pcf"		"UtilFx"
-		}
-		"54"
-		{
-			"type"		"partctrl"
-			"name"		"WheelDust"
-			"pcf"		"UtilFx"
-		}
-		"55"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"hunter_slide_dust"
-			"pcf"		"particles/hunter_projectile.pcf"
-		}
-		"56"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"advisor_beam1_break"
-			"pcf"		"particles/advisor.pcf"
-		}
-		"57"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"advisor_healthcharger_break"
-			"pcf"		"particles/advisor.pcf"
-		}
-		"58"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"advisor_pillar1_break"
-			"pcf"		"particles/advisor.pcf"
-		}
-		"59"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"advisor_plat_break"
-			"pcf"		"particles/advisor.pcf"
-		}
-		"60"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Advisor_Pod_Explosion_Debris"
-			"pcf"		"particles/advisor_fx.pcf"
-		}
-		"61"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"building_explosion"
-			"pcf"		"particles/building_explosion.pcf"
-		}
-		"62"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"strider_cannon_impact"
-			"pcf"		"particles/choreo_dog_v_strider.pcf"
-		}
-		"63"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"strider_headbeating_01"
-			"pcf"		"particles/choreo_dog_v_strider.pcf"
-		}
-		"64"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"strider_headbeating_02"
-			"pcf"		"particles/choreo_dog_v_strider.pcf"
-		}
-		"65"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"strider_headbeating_03"
-			"pcf"		"particles/choreo_dog_v_strider.pcf"
-		}
-		"66"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"strider_hit_ground"
-			"pcf"		"particles/choreo_dog_v_strider.pcf"
-		}
-		"67"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"strider_impale_ground"
-			"pcf"		"particles/choreo_dog_v_strider.pcf"
-		}
-		"68"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"strider_small_spray"
-			"pcf"		"particles/choreo_dog_v_strider.pcf"
-		}
-		"69"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"strider_wall_smash"
-			"pcf"		"particles/choreo_dog_v_strider.pcf"
-		}
-		"70"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"choreo_silo_door"
-			"pcf"		"particles/choreo_launch.pcf"
-		}
-		"71"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"door_explosion_chunks"
-			"pcf"		"particles/door_explosion.pcf"
-		}
-		"72"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"door_pound_core"
-			"pcf"		"particles/door_explosion.pcf"
-		}
-		"73"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"dust_bombdrop"
-			"pcf"		"particles/dust_bombdrop.pcf"
-		}
-		"74"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"dust_bridge_crack"
-			"pcf"		"particles/dust_rumble.pcf"
-		}
-		"75"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"dust_bridgefall"
-			"pcf"		"particles/dust_rumble.pcf"
-		}
-		"76"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"dust_bridgefall_2"
-			"pcf"		"particles/dust_rumble.pcf"
-		}
-		"77"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Dust_Ceiling_Inn"
-			"pcf"		"particles/dust_rumble.pcf"
-		}
-		"78"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Dust_Ceiling_Rumble_24Diam"
-			"pcf"		"particles/dust_rumble.pcf"
-		}
-		"79"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Dust_Ceiling_Rumble_256Line"
-			"pcf"		"particles/dust_rumble.pcf"
-		}
-		"80"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Dust_Ceiling_Rumble_512Square"
-			"pcf"		"particles/dust_rumble.pcf"
-		}
-		"81"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"explosion_cabin"
-			"pcf"		"particles/dust_rumble.pcf"
-		}
-		"82"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"ceiling_dust"
-			"pcf"		"particles/hunter_intro.pcf"
-		}
-		"83"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"portal_rift_dust"
-			"pcf"		"particles/skybox_smoke.pcf"
-		}
-		"84"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"rock_splinter_stalactite"
-			"pcf"		"particles/stalactite.pcf"
-		}
-		"85"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"rock_impact_stalactite"
-			"pcf"		"particles/stalactite.pcf"
-		}
-		"86"
-		{
-			"type"		"header"
-			"text"		"Steam"
-		}
-		"87"
-		{
-			"type"		"partctrl"
-			"path"		"garrysmod"
-			"name"		"steam_train"
-			"pcf"		"particles/train_steam.pcf"
-		}
-		"88"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Advisor_Pod_Steam_01"
-			"pcf"		"particles/advisor_fx.pcf"
-		}
-		"89"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Advisor_Pod_Steam_02"
-			"pcf"		"particles/advisor_fx.pcf"
-		}
-		"90"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"Advisor_Pod_Steam_Continuous"
-			"pcf"		"particles/advisor_fx.pcf"
-		}
-		"91"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"steamjet"
-			"pcf"		"particles/magnusson_burner.pcf"
-		}
-		"92"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"steam_jet_50"
-			"pcf"		"particles/steampuff.pcf"
-		}
-		"93"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"steam_jet_80"
-			"pcf"		"particles/steampuff.pcf"
-		}
-		"94"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"steam_large_01"
-			"pcf"		"particles/steampuff.pcf"
-		}
-		"95"
-		{
-			"type"		"partctrl"
-			"path"		"hl2"
-			"name"		"steampuff"
-			"pcf"		"particles/steampuff.pcf"
-		}
 	}
-	"name"		"Smoke, Dust and Debris"
+	"name"		"Explosions and Fire"
 	"version"		"3"
 }
