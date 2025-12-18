@@ -1762,6 +1762,30 @@ else
 
 	end)
 
+	//Used by Advanced Bonemerge to fix merged fx breaking when their parent (or parent's parent, etc.) is changed
+	function PartCtrl_RefreshAllChildFx(ent)
+
+		//MsgN("refreshing all child fx: ", ent)
+		if ent.PartCtrl_Ent then
+			//Tell clients to retrieve the updated info table
+			net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+				net.WriteEntity(ent)
+			net.Broadcast()
+		elseif ent.PartCtrl_SpecialEffect then
+			//Refresh special effect on server
+			if ent.SpecialEffectRefresh then ent:SpecialEffectRefresh() end
+			//Tell clients to refresh the special effect
+			net.Start("PartCtrl_SpecialEffect_Refresh_SendToCl")
+				net.WriteEntity(ent)
+			net.Broadcast()
+		else
+			for k, v in pairs (ent:GetChildren()) do
+				PartCtrl_RefreshAllChildFx(v)
+			end
+		end
+
+	end
+
 end
 
 
