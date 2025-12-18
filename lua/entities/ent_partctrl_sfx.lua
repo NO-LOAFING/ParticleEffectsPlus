@@ -262,7 +262,7 @@ if SERVER then
 		if !IsValid(ent) then return false end
 
 		//If the ent is an adv bonemerged grip point, then unmerge it instead
-		if ent.PartCtrl_MergedGrip then
+		if (ent.GetPartCtrl_MergedGrip and ent:GetPartCtrl_MergedGrip()) then
 			if ent:Unmerge(ply) then
 				ply:SendLua("GAMEMODE:AddNotify('#undone_AdvBonemerge', NOTIFY_UNDO, 2)")
 				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
@@ -339,7 +339,7 @@ if SERVER then
 			Ent1:SetParent(Ent2)
 			Ent1:SetSpecialEffectParent(Ent2)
 
-			if !(Ent2.PartCtrl_Grip or Ent2.PartCtrl_MergedGrip) then
+			if !(Ent2.PartCtrl_Grip or (Ent2.GetPartCtrl_MergedGrip and Ent2:GetPartCtrl_MergedGrip())) then
 				//If the constraint is removed by an Undo, unmerge the second entity - this shouldn't do anything if the constraint's removed some other way i.e. one of the ents is removed
 				timer.Simple(0.1, function()  //CallOnRemove won't do anything if we try to run it now instead of on a timer
 					if const:GetTable() then  //CallOnRemove can error if this table doesn't exist - this can happen if the constraint is removed at the same time it's created for some reason

@@ -1,8 +1,8 @@
 "TableToKeyValues"
 {
-	"parentid"		"155"
+	"parentid"		"156"
 	"icon"		"icon16/page.png"
-	"id"		"156"
+	"id"		"157"
 	"contents"
 	{
 		"1"

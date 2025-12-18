@@ -1,8 +1,8 @@
 "TableToKeyValues"
 {
-	"parentid"		"150"
+	"parentid"		"151"
 	"icon"		"icon16/page.png"
-	"id"		"154"
+	"id"		"155"
 	"contents"
 	{
 		"1"
@@ -721,1678 +721,1683 @@
 		"104"
 		{
 			"type"		"header"
-			"text"		"Unusual taunt effects:"
+			"text"		"   "
 		}
 		"105"
 		{
 			"type"		"header"
-			"text"		"   "
+			"text"		"Unusual taunt effects:"
 		}
 		"106"
 		{
 			"type"		"header"
-			"text"		"Love and War"
+			"text"		"   "
 		}
 		"107"
+		{
+			"type"		"header"
+			"text"		"Love and War"
+		}
+		"108"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_firework_teamcolor_red"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"108"
+		"109"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_firework_teamcolor_blue"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"109"
+		"110"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_beams_yellow"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"110"
+		"111"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_disco_party"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"111"
+		"112"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_hearts_glow_parent"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"112"
+		"113"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_meteor_parent"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"113"
+		"114"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_cash_confetti"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"114"
+		"115"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_tornado_parent_black"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"115"
+		"116"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_tornado_parent_white"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"116"
+		"117"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_lightning_parent"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"117"
+		"118"
 		{
 			"type"		"header"
 			"text"		"Halloween 2014"
 		}
-		"118"
+		"119"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_souls_green_parent"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"119"
+		"120"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_souls_purple_parent"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"120"
+		"121"
 		{
 			"type"		"header"
 			"text"		"Halloween 2016"
 		}
-		"121"
+		"122"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_hellpit_parent"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"122"
+		"123"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_hellswirl"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"123"
+		"124"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_headless"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"124"
+		"125"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_merasmus"
 			"pcf"		"particles/taunt_fx.pcf"
 		}
-		"125"
+		"126"
 		{
 			"type"		"header"
 			"text"		"Halloween 2018"
 		}
-		"126"
+		"127"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_bubbles_glow_green_parent"
 			"pcf"		"particles/halloween2018_unusuals.pcf"
 		}
-		"127"
+		"128"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_bubbles_glow_orange_parent"
 			"pcf"		"particles/halloween2018_unusuals.pcf"
 		}
-		"128"
+		"129"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_bubbles_glow_purple_parent"
 			"pcf"		"particles/halloween2018_unusuals.pcf"
 		}
-		"129"
+		"130"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_firework_dragon_parent"
 			"pcf"		"particles/halloween2018_unusuals.pcf"
 		}
-		"130"
+		"131"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_smoke_moon_parent"
 			"pcf"		"particles/halloween2018_unusuals.pcf"
 		}
-		"131"
+		"132"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_smoke_moon_green_parent"
 			"pcf"		"particles/halloween2018_unusuals.pcf"
 		}
-		"132"
+		"133"
 		{
 			"type"		"header"
 			"text"		"Halloween 2019"
 		}
-		"133"
+		"134"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_arcane_purple_parent"
 			"pcf"		"particles/halloween2019_unusuals.pcf"
 		}
-		"134"
+		"135"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_arcane_green_parent"
 			"pcf"		"particles/halloween2019_unusuals.pcf"
 		}
-		"135"
+		"136"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_arcane_yellow_parent"
 			"pcf"		"particles/halloween2019_unusuals.pcf"
 		}
-		"136"
+		"137"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_electric_mist_parent"
 			"pcf"		"particles/halloween2019_unusuals.pcf"
 		}
-		"137"
+		"138"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_electricity_cloud_parent_WP"
 			"pcf"		"particles/halloween2019_unusuals.pcf"
 		}
-		"138"
+		"139"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_electricity_cloud_parent_WB"
 			"pcf"		"particles/halloween2019_unusuals.pcf"
 		}
-		"139"
+		"140"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_electricity_cloud_parent_WY"
 			"pcf"		"particles/halloween2019_unusuals.pcf"
 		}
-		"140"
+		"141"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_portalswirl_purple_parent"
 			"pcf"		"particles/halloween2019_unusuals.pcf"
 		}
-		"141"
+		"142"
 		{
 			"type"		"header"
 			"text"		"Smissmas 2019"
 		}
-		"142"
+		"143"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_present_parent"
 			"pcf"		"particles/smissmas2019_unusuals.pcf"
 		}
-		"143"
+		"144"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_snowring_icy_parent"
 			"pcf"		"particles/smissmas2019_unusuals.pcf"
 		}
-		"144"
+		"145"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_snowring_space_parent"
 			"pcf"		"particles/smissmas2019_unusuals.pcf"
 		}
-		"145"
+		"146"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_spirit_winter_parent"
 			"pcf"		"particles/smissmas2019_unusuals.pcf"
 		}
-		"146"
+		"147"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_spirit_festive_parent"
 			"pcf"		"particles/smissmas2019_unusuals.pcf"
 		}
-		"147"
+		"148"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_spirit_magical_parent"
 			"pcf"		"particles/smissmas2019_unusuals.pcf"
 		}
-		"148"
+		"149"
 		{
 			"type"		"header"
 			"text"		"Halloween 2020"
 		}
-		"149"
+		"150"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_astralbodies_greenorange_parent"
 			"pcf"		"particles/halloween2020_unusuals.pcf"
 		}
-		"150"
+		"151"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_astralbodies_tealpurple_parent"
 			"pcf"		"particles/halloween2020_unusuals.pcf"
 		}
-		"151"
+		"152"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_astralbodies_teamcolor_red"
 			"pcf"		"particles/halloween2020_unusuals.pcf"
 		}
-		"152"
+		"153"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_astralbodies_teamcolor_blue"
 			"pcf"		"particles/halloween2020_unusuals.pcf"
 		}
-		"153"
+		"154"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_glowyplayer_green_parent"
 			"pcf"		"particles/halloween2020_unusuals.pcf"
 		}
-		"154"
+		"155"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_glowyplayer_orange_parent"
 			"pcf"		"particles/halloween2020_unusuals.pcf"
 		}
-		"155"
+		"156"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_glowyplayer_purple_parent"
 			"pcf"		"particles/halloween2020_unusuals.pcf"
 		}
-		"156"
+		"157"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_electricity_parent"
 			"pcf"		"particles/halloween2020_unusuals.pcf"
 		}
-		"157"
+		"158"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_electricity_purple_parent"
 			"pcf"		"particles/halloween2020_unusuals.pcf"
 		}
-		"158"
+		"159"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_spider_green_parent"
 			"pcf"		"particles/halloween2020_unusuals.pcf"
 		}
-		"159"
+		"160"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_spider_orange_parent"
 			"pcf"		"particles/halloween2020_unusuals.pcf"
 		}
-		"160"
+		"161"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_spider_purple_parent"
 			"pcf"		"particles/halloween2020_unusuals.pcf"
 		}
-		"161"
+		"162"
 		{
 			"type"		"header"
 			"text"		"Smissmas 2020"
 		}
-		"162"
+		"163"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_tf2smissmas_tree_parent"
 			"pcf"		"particles/smissmas2020_unusuals.pcf"
 		}
-		"163"
+		"164"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_tf2smissmas_tree_parent_w"
 			"pcf"		"particles/smissmas2020_unusuals.pcf"
 		}
-		"164"
+		"165"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_spirits_blue_parent"
 			"pcf"		"particles/smissmas2020_unusuals.pcf"
 		}
-		"165"
+		"166"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_spirits_purple_parent"
 			"pcf"		"particles/smissmas2020_unusuals.pcf"
 		}
-		"166"
+		"167"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_balloonicorn_reindeer_teamcolor_red"
 			"pcf"		"particles/smissmas2020_unusuals.pcf"
 		}
-		"167"
+		"168"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_balloonicorn_reindeer_teamcolor_blue"
 			"pcf"		"particles/smissmas2020_unusuals.pcf"
 		}
-		"168"
+		"169"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_twinkling_rgb_parent"
 			"pcf"		"particles/smissmas2020_unusuals.pcf"
 		}
-		"169"
+		"170"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_twinkling_goldsilver_parent"
 			"pcf"		"particles/smissmas2020_unusuals.pcf"
 		}
-		"170"
+		"171"
 		{
 			"type"		"header"
 			"text"		"Halloween 2021"
 		}
-		"171"
+		"172"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_chain_green_parent"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"172"
+		"173"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_chain_purple_parent"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"173"
+		"174"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_tarotcard_teamcolor_red"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"174"
+		"175"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_tarotcard_teamcolor_blue"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"175"
+		"176"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_tarotcard_orange_parent"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"176"
+		"177"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_tarotcard_purple_parent"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"177"
+		"178"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_elebound_green_parent"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"178"
+		"179"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_elebound_purple_parent"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"179"
+		"180"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_elebound_yellow_parent"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"180"
+		"181"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_wispy_parent_g"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"181"
+		"182"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_wispy_parent_p"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"182"
+		"183"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_auroraglow_green_parent"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"183"
+		"184"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_auroraglow_orange_parent"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"184"
+		"185"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_auroraglow_purple_parent"
 			"pcf"		"particles/halloween2021_unusuals.pcf"
 		}
-		"185"
+		"186"
 		{
 			"type"		"header"
 			"text"		"Smissmas 2021"
 		}
-		"186"
+		"187"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_snowswirl_purple_parent"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"187"
+		"188"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_snowswirl_yellow_parent"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"188"
+		"189"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_snowswirl_teamcolor_red"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"189"
+		"190"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_snowswirl_teamcolor_blue"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"190"
+		"191"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_treespiral_green_parent"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"191"
+		"192"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_treespiral_purple_parent"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"192"
+		"193"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_treespiral_teamcolor_red"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"193"
+		"194"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_treespiral_teamcolor_blue"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"194"
+		"195"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_gifts_teamcolor_red"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"195"
+		"196"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_gifts_teamcolor_blue"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"196"
+		"197"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_glitter_parent_gold"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"197"
+		"198"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_glitter_parent_silver"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"198"
+		"199"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_glitter_teamcolor_red"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"199"
+		"200"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_glitter_teamcolor_blue"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"200"
+		"201"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_ice_parent"
 			"pcf"		"particles/smissmas2021_unusuals.pcf"
 		}
-		"201"
+		"202"
 		{
 			"type"		"header"
 			"text"		"Halloween 2022"
 		}
-		"202"
+		"203"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_marigoldritual_teamcolor_red"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"203"
+		"204"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_marigoldritual_teamcolor_blue"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"204"
+		"205"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_poison_parent_green"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"205"
+		"206"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_poison_parent_orange"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"206"
+		"207"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_poison_parent_purple"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"207"
+		"208"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_runeprison_green_parent"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"208"
+		"209"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_runeprison_yellow_parent"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"209"
+		"210"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_runeprison_teamcolor_red"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"210"
+		"211"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_runeprison_teamcolor_blue"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"211"
+		"212"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_prismatichaze_parent"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"212"
+		"213"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_risingsprit_teamcolor_red"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"213"
+		"214"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_risingsprit_teamcolor_blue"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"214"
+		"215"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_hands_teamcolor_red"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"215"
+		"216"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_hands_teamcolor_blue"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"216"
+		"217"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_hands_green_parent"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"217"
+		"218"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_hands_orange_parent"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"218"
+		"219"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_hands_purple_parent"
 			"pcf"		"particles/halloween2022_unusuals.pcf"
 		}
-		"219"
+		"220"
 		{
 			"type"		"header"
 			"text"		"Smissmas 2022"
 		}
-		"220"
+		"221"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_storm_parent_g"
 			"pcf"		"particles/smissmas2022_unusuals.pcf"
 		}
-		"221"
+		"222"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_storm_parent_k"
 			"pcf"		"particles/smissmas2022_unusuals.pcf"
 		}
-		"222"
+		"223"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_storm_parent_o"
 			"pcf"		"particles/smissmas2022_unusuals.pcf"
 		}
-		"223"
+		"224"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_festivelights_teamcolor_red"
 			"pcf"		"particles/smissmas2022_unusuals.pcf"
 		}
-		"224"
+		"225"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_festivelights_teamcolor_blue"
 			"pcf"		"particles/smissmas2022_unusuals.pcf"
 		}
-		"225"
+		"226"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_glow_spirit_parent_cr"
 			"pcf"		"particles/smissmas2022_unusuals.pcf"
 		}
-		"226"
+		"227"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_glow_spirit_parent_og"
 			"pcf"		"particles/smissmas2022_unusuals.pcf"
 		}
-		"227"
+		"228"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_glow_spirit_parent_pp"
 			"pcf"		"particles/smissmas2022_unusuals.pcf"
 		}
-		"228"
+		"229"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_snowflakesaura_parent"
 			"pcf"		"particles/smissmas2022_unusuals.pcf"
 		}
-		"229"
+		"230"
 		{
 			"type"		"header"
 			"text"		"Summer 2023"
 		}
-		"230"
+		"231"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_sun_sand_rays_parent"
 			"pcf"		"particles/summer2023_unusuals.pcf"
 		}
-		"231"
+		"232"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_undersea_teamcolor_red"
 			"pcf"		"particles/summer2023_unusuals.pcf"
 		}
-		"232"
+		"233"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_undersea_teamcolor_blue"
 			"pcf"		"particles/summer2023_unusuals.pcf"
 		}
-		"233"
+		"234"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_lavalamp_green_parent"
 			"pcf"		"particles/summer2023_unusuals.pcf"
 		}
-		"234"
+		"235"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_lavalamp_purple_parent"
 			"pcf"		"particles/summer2023_unusuals.pcf"
 		}
-		"235"
+		"236"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_lavalamp_yellow_parent"
 			"pcf"		"particles/summer2023_unusuals.pcf"
 		}
-		"236"
+		"237"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_fish_parent"
 			"pcf"		"particles/summer2023_unusuals.pcf"
 		}
-		"237"
+		"238"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_rainbow_teamcolor_red"
 			"pcf"		"particles/summer2023_unusuals.pcf"
 		}
-		"238"
+		"239"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_rainbow_teamcolor_blue"
 			"pcf"		"particles/summer2023_unusuals.pcf"
 		}
-		"239"
+		"240"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_wild_meadows_parent"
 			"pcf"		"particles/summer2023_unusuals.pcf"
 		}
-		"240"
+		"241"
 		{
 			"type"		"header"
 			"text"		"Halloween 2023"
 		}
-		"241"
+		"242"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_krakenmouth_green_parent"
 			"pcf"		"particles/halloween2023_unusuals.pcf"
 		}
-		"242"
+		"243"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_krakenmouth_purple_parent"
 			"pcf"		"particles/halloween2023_unusuals.pcf"
 		}
-		"243"
+		"244"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_leaftaunt_parent"
 			"pcf"		"particles/halloween2023_unusuals.pcf"
 		}
-		"244"
+		"245"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_graveparty_parent"
 			"pcf"		"particles/halloween2023_unusuals.pcf"
 		}
-		"245"
+		"246"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_spellsplash_parent"
 			"pcf"		"particles/halloween2023_unusuals.pcf"
 		}
-		"246"
+		"247"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_cremation_purple_parent"
 			"pcf"		"particles/halloween2023_unusuals.pcf"
 		}
-		"247"
+		"248"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_cremation_black_parent"
 			"pcf"		"particles/halloween2023_unusuals.pcf"
 		}
-		"248"
+		"249"
 		{
 			"type"		"header"
 			"text"		"Smissmas 2023"
 		}
-		"249"
+		"250"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_snowfall_parent"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"250"
+		"251"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_constellations_teamcolor_red"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"251"
+		"252"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_constellations_teamcolor_blue"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"252"
+		"253"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_constellations_purple_parent"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"253"
+		"254"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_constellations_pink_parent"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"254"
+		"255"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_wispyworks_orangegreen_parent"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"255"
+		"256"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_wispyworks_purpleblue_parent"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"256"
+		"257"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_wispyworks_yellowpurple_parent"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"257"
+		"258"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_innerblizzard_teamcolor_red"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"258"
+		"259"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_innerblizzard_teamcolor_blue"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"259"
+		"260"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_innerblizzard_purple_parent"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"260"
+		"261"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_spotlight_parent"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"261"
+		"262"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_pedalfly_teamcolor_red"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"262"
+		"263"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_pedalfly_teamcolor_blue"
 			"pcf"		"particles/smissmas2023_unusuals.pcf"
 		}
-		"263"
+		"264"
 		{
 			"type"		"header"
 			"text"		"Summer 2024"
 		}
-		"264"
+		"265"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_dragonfly_teamcolor_red"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"265"
+		"266"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_dragonfly_teamcolor_blue"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"266"
+		"267"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_dragonfly_green_parent"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"267"
+		"268"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_dragonfly_purple_parent"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"268"
+		"269"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_demigodery_teamcolor_red"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"269"
+		"270"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_demigodery_teamcolor_blue"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"270"
+		"271"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_signalflares_teamcolor_red"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"271"
+		"272"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_signalflares_green_parent"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"272"
+		"273"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_signalflares_teamcolor_blue"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"273"
+		"274"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_celebrationtime_teamcolor_red"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"274"
+		"275"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_celebrationtime_teamcolor_blue"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"275"
+		"276"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_celebrationtime_yellow_parent"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"276"
+		"277"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_god_lava_teamcolor_red"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"277"
+		"278"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_god_lava_teamcolor_blue"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"278"
+		"279"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_god_gold_parent"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"279"
+		"280"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_aestheticlogo_teamcolor_red"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"280"
+		"281"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_aestheticlogo_teamcolor_blue"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"281"
+		"282"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_aestheticlogo_orange_parent"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"282"
+		"283"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_desert_wind_parent"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"283"
+		"284"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_desert_monsoon_parent"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"284"
+		"285"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_treasure_teamcolor_red"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"285"
+		"286"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_treasure_teamcolor_blue"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"286"
+		"287"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_hearttreasure_parent"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"287"
+		"288"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_wiggletube_teamcolor_red"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"288"
+		"289"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_wiggletube_teamcolor_blue"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"289"
+		"290"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_wiggletube_coffee_parent"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"290"
+		"291"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_flowerrain_teamcolor_red"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"291"
+		"292"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_flowerrain_teamcolor_blue"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"292"
+		"293"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_flowerrain_purple_parent"
 			"pcf"		"particles/summer2024_unusuals.pcf"
 		}
-		"293"
+		"294"
 		{
 			"type"		"header"
 			"text"		"Halloween 2024"
 		}
-		"294"
+		"295"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_poweraura_teamcolor_red"
 			"pcf"		"particles/halloween2024_unusuals.pcf"
 		}
-		"295"
+		"296"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_poweraura_teamcolor_blue"
 			"pcf"		"particles/halloween2024_unusuals.pcf"
 		}
-		"296"
+		"297"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_poweraura_green_parent"
 			"pcf"		"particles/halloween2024_unusuals.pcf"
 		}
-		"297"
+		"298"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_poweraura_purple_parent"
 			"pcf"		"particles/halloween2024_unusuals.pcf"
 		}
-		"298"
+		"299"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_poweraura_yellow_parent"
 			"pcf"		"particles/halloween2024_unusuals.pcf"
 		}
-		"299"
+		"300"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_mysticfusion_parent"
 			"pcf"		"particles/halloween2024_unusuals.pcf"
 		}
-		"300"
+		"301"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_confetti_gy_parent"
 			"pcf"		"particles/halloween2024_unusuals.pcf"
 		}
-		"301"
+		"302"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_confetti_pp_parent"
 			"pcf"		"particles/halloween2024_unusuals.pcf"
 		}
-		"302"
+		"303"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_confetti_yp_parent"
 			"pcf"		"particles/halloween2024_unusuals.pcf"
 		}
-		"303"
+		"304"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_heavyrain_parent"
 			"pcf"		"particles/halloween2024_unusuals.pcf"
 		}
-		"304"
+		"305"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_field_parent"
 			"pcf"		"particles/halloween2024_unusuals.pcf"
 		}
-		"305"
+		"306"
 		{
 			"type"		"header"
 			"text"		"Smissmas 2024"
 		}
-		"306"
+		"307"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_whitesmissmas_parent"
 			"pcf"		"particles/smissmas2024_unusuals.pcf"
 		}
-		"307"
+		"308"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_busysnow_teamcolor_red"
 			"pcf"		"particles/smissmas2024_unusuals.pcf"
 		}
-		"308"
+		"309"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_busysnow_teamcolor_blue"
 			"pcf"		"particles/smissmas2024_unusuals.pcf"
 		}
-		"309"
+		"310"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_busysnow_parent_p"
 			"pcf"		"particles/smissmas2024_unusuals.pcf"
 		}
-		"310"
+		"311"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_busysnow_parent_g"
 			"pcf"		"particles/smissmas2024_unusuals.pcf"
 		}
-		"311"
+		"312"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_roses_teamcolor_red"
 			"pcf"		"particles/smissmas2024_unusuals.pcf"
 		}
-		"312"
+		"313"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_roses_teamcolor_blue"
 			"pcf"		"particles/smissmas2024_unusuals.pcf"
 		}
-		"313"
+		"314"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_roses_gold_parent"
 			"pcf"		"particles/smissmas2024_unusuals.pcf"
 		}
-		"314"
+		"315"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_tangledlights_parent"
 			"pcf"		"particles/smissmas2024_unusuals.pcf"
 		}
-		"315"
+		"316"
 		{
 			"type"		"header"
 			"text"		"Summer 2025"
 		}
-		"316"
+		"317"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_seamine_teamcolor_red"
 			"pcf"		"particles/summer2025_unusuals.pcf"
 		}
-		"317"
+		"318"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_seamine_teamcolor_blue"
 			"pcf"		"particles/summer2025_unusuals.pcf"
 		}
-		"318"
+		"319"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_iconicoutline_teamcolor_red"
 			"pcf"		"particles/summer2025_unusuals.pcf"
 		}
-		"319"
+		"320"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_iconicoutline_teamcolor_blue"
 			"pcf"		"particles/summer2025_unusuals.pcf"
 		}
-		"320"
+		"321"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_iconicoutline_pink_parent"
 			"pcf"		"particles/summer2025_unusuals.pcf"
 		}
-		"321"
+		"322"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_oceanreef_parent"
 			"pcf"		"particles/summer2025_unusuals.pcf"
 		}
-		"322"
+		"323"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_signalinterference_parent"
 			"pcf"		"particles/summer2025_unusuals.pcf"
 		}
-		"323"
+		"324"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_waterwave_parent"
 			"pcf"		"particles/summer2025_unusuals.pcf"
 		}
-		"324"
+		"325"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_sharkfin2_parent"
 			"pcf"		"particles/summer2025_unusuals.pcf"
 		}
-		"325"
+		"326"
 		{
 			"type"		"header"
 			"text"		"Halloween 2025"
 		}
-		"326"
+		"327"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_phantasam_green_parent"
 			"pcf"		"particles/halloween2025_unusuals.pcf"
 		}
-		"327"
+		"328"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_phantasam_grey_parent"
 			"pcf"		"particles/halloween2025_unusuals.pcf"
 		}
-		"328"
+		"329"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_phantasam_purple_parent"
 			"pcf"		"particles/halloween2025_unusuals.pcf"
 		}
-		"329"
+		"330"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_multicurse_teamcolor_red"
 			"pcf"		"particles/halloween2025_unusuals.pcf"
 		}
-		"330"
+		"331"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_multicurse_teamcolor_blue"
 			"pcf"		"particles/halloween2025_unusuals.pcf"
 		}
-		"331"
+		"332"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_voidcrawlers_parent"
 			"pcf"		"particles/halloween2025_unusuals.pcf"
 		}
-		"332"
+		"333"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_tarpit_dinos_parent"
 			"pcf"		"particles/halloween2025_unusuals.pcf"
 		}
-		"333"
+		"334"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_tarpit_people_parent"
 			"pcf"		"particles/halloween2025_unusuals.pcf"
 		}
-		"334"
+		"335"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_morbed_teamcolor_red"
 			"pcf"		"particles/halloween2025_unusuals.pcf"
 		}
-		"335"
+		"336"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_morbed_teamcolor_blue"
 			"pcf"		"particles/halloween2025_unusuals.pcf"
 		}
-		"336"
+		"337"
 		{
 			"type"		"header"
 			"text"		"Smissmas 2025"
 		}
-		"337"
+		"338"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_2fort_teamc_teamcolor_red"
 			"pcf"		"particles/smissmas2025_unusuals.pcf"
 		}
-		"338"
+		"339"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_2fort_teamc_teamcolor_blue"
 			"pcf"		"particles/smissmas2025_unusuals.pcf"
 		}
-		"339"
+		"340"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_burningdesire_green_parent"
 			"pcf"		"particles/smissmas2025_unusuals.pcf"
 		}
-		"340"
+		"341"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_burningdesire_orange_parent"
 			"pcf"		"particles/smissmas2025_unusuals.pcf"
 		}
-		"341"
+		"342"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_spacecoated_2colored_parent_pb"
 			"pcf"		"particles/smissmas2025_unusuals.pcf"
 		}
-		"342"
+		"343"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_spacecoated_2colored_parent_pg"
 			"pcf"		"particles/smissmas2025_unusuals.pcf"
 		}
-		"343"
+		"344"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_aurora25_teamcolor_red"
 			"pcf"		"particles/smissmas2025_unusuals.pcf"
 		}
-		"344"
+		"345"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_aurora25_teamcolor_blue"
 			"pcf"		"particles/smissmas2025_unusuals.pcf"
 		}
-		"345"
+		"346"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_aurora25_parent_purple"
 			"pcf"		"particles/smissmas2025_unusuals.pcf"
 		}
-		"346"
+		"347"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_chillingmist_parent"
 			"pcf"		"particles/smissmas2025_unusuals.pcf"
 		}
-		"347"
+		"348"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_80smalfunction_parent"
 			"pcf"		"particles/smissmas2025_unusuals.pcf"
 		}
-		"348"
+		"349"
 		{
 			"type"		"header"
 			"text"		"Unused unusual taunts"
 		}
-		"349"
+		"350"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"utaunt_busysnow_parent"
 			"pcf"		"particles/smissmas2024_unusuals.pcf"
 		}
-		"350"
+		"351"
 		{
 			"type"		"partctrl"
 			"path"		"tf"

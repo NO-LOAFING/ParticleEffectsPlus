@@ -153,8 +153,6 @@ function ENT:Think()
 			end
 		end
 
-		self:UpdateRelativeCPoints()
-
 
 		//Handle pausing/unpausing the effect
 		local ispaused = false
@@ -208,6 +206,8 @@ function ENT:Think()
 			end
 		end
 
+		if !ispaused then self:UpdateCPoints() end
+
 
 		//Do renderbounds
 		local function GetCPointPos(k)
@@ -232,6 +232,7 @@ function ENT:Think()
 			//Cache which cpoint the renderbounds are relative to, so we don't have to keep retrieving this
 			if self.ParticleInfo_LastCPoint == nil then
 				for k, v in pairs (self.ParticleInfo) do
+					if self.AdvBoneCPointsToUpdate and self.AdvBoneCPointsToUpdate[k] then continue end //bounds are actually relative to the last position cpoint that *isn't* using PATTACH_CUSTOMORIGIN; if all pos cpoints are using that, then they're relative to worldspace
 					if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
 						self.ParticleInfo_LastCPoint = k
 						if self.ParticleInfo_FirstPos == nil then
@@ -246,49 +247,52 @@ function ENT:Think()
 			//run our Draw func whenever any part of the particles are visible; these are relative to the last position cpoint
 			local pos
 			local k = self.ParticleInfo_LastCPoint
-			if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
-				k = self.ParticleInfo_FirstPos
+			if k then
+				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+					k = self.ParticleInfo_FirstPos
+				end
+				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+					pos = GetCPointPos(k)
+				end
 			end
-			if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
-				pos = GetCPointPos(k)
-			end
-			if pos then
-				local mins, maxs
-				local function AddParticleRenderBounds(part)
-					if IsValid(part) and part.GetRenderBounds then
-						local mins2, maxs2 = part:GetRenderBounds()
+			local mins, maxs
+			local function AddParticleRenderBounds(part)
+				if IsValid(part) and part.GetRenderBounds then
+					local mins2, maxs2 = part:GetRenderBounds()
+					if pos then
 						mins2 = mins2 + pos
 						maxs2 = maxs2 + pos
-						if !mins then
-							mins = mins2
-							maxs = maxs2
-						else
-							mins = Vector(math.min(mins.x,mins2.x), math.min(mins.y,mins2.y), math.min(mins.z,mins2.z))
-							maxs = Vector(math.max(maxs.x,maxs2.x), math.max(maxs.y,maxs2.y), math.max(maxs.z,maxs2.z))
-						end
+					end
+					if !mins then
+						mins = mins2
+						maxs = maxs2
+					else
+						mins = Vector(math.min(mins.x,mins2.x), math.min(mins.y,mins2.y), math.min(mins.z,mins2.z))
+						maxs = Vector(math.max(maxs.x,maxs2.x), math.max(maxs.y,maxs2.y), math.max(maxs.z,maxs2.z))
 					end
 				end
-				AddParticleRenderBounds(self.particle)
-				for k, v in pairs (self.OldParticles) do
-					AddParticleRenderBounds(v)
-				end
-				if ispaused then
-					//When the effect is paused, its renderbounds no longer update to contain its cpoint positions, which means 
-					//helpers can stop rendering if we move them so that the effect is off-screen. Fix this by adding cpoint 
-					//positions to the renderbounds if paused.
-					for k2, v2 in pairs (self.ParticleInfo) do
-						local pos2 = GetCPointPos(k2)
-						if pos2 then
-							mins = Vector(math.min(mins.x,pos2.x), math.min(mins.y,pos2.y), math.min(mins.z,pos2.z))
-							maxs = Vector(math.max(maxs.x,pos2.x), math.max(maxs.y,pos2.y), math.max(maxs.z,pos2.z))
-						end
+			end
+			AddParticleRenderBounds(self.particle)
+			for k, v in pairs (self.OldParticles) do
+				AddParticleRenderBounds(v)
+			end
+			if ispaused then
+				//When the effect is paused, its renderbounds no longer update to contain its cpoint positions, which means 
+				//helpers can stop rendering if we move them so that the effect is off-screen. Fix this by adding cpoint 
+				//positions to the renderbounds if paused.
+				for k2, v2 in pairs (self.ParticleInfo) do
+					local pos2 = GetCPointPos(k2)
+					if pos2 then
+						mins = Vector(math.min(mins.x,pos2.x), math.min(mins.y,pos2.y), math.min(mins.z,pos2.z))
+						maxs = Vector(math.max(maxs.x,pos2.x), math.max(maxs.y,pos2.y), math.max(maxs.z,pos2.z))
 					end
 				end
-				if mins and maxs then
-					self:SetRenderBoundsWS(mins, maxs, extra)
-					//self._wsmins = mins
-					//self._wsmaxs = maxs
-				end
+			end
+			if mins and maxs then
+				//debugoverlay.Box(Vector(0,0,0), mins - extra, maxs + extra, 0.1, Color(255,255,0,0))
+				self:SetRenderBoundsWS(mins, maxs, extra)
+				//self._wsmins = mins
+				//self._wsmaxs = maxs
 			end
 		else
 			//For utilfx, just make our renderbounds a box around all the cpoints, so that helpers render when any cpoint is on-screen
@@ -777,32 +781,62 @@ if CLIENT then
 
 	end
 
-	function ENT:UpdateRelativeCPoints()
+	function ENT:UpdateCPoints()
 
-		if !self.RelativeCPointsToUpdate then return end
-		for k, v in pairs (self.RelativeCPointsToUpdate) do
-			local tab = self.ParticleInfo[v]
-			if tab and IsValid(tab.ent) then
-				local ang = nil
-				if IsValid(tab.ent.AttachedEntity) then
-					ang = tab.ent.AttachedEntity:GetAttachment(tab.attach)
-				else
-					ang = tab.ent:GetAttachment(tab.attach)
+		//Update the positions of control points that aren't handled automatically by PATTACH_ enums
+
+		//Update axis/vector controls that are rotated relative to another cpoint (used for velocity sliders, 
+		//which we want to go forward/left/etc. relative to the direction the main position cpoint is facing)
+		if self.RelativeCPointsToUpdate then
+			for k, v in pairs (self.RelativeCPointsToUpdate) do
+				local tab = self.ParticleInfo[v]
+				if tab and IsValid(tab.ent) then
+					local ang = nil
+					if IsValid(tab.ent.AttachedEntity) then
+						ang = tab.ent.AttachedEntity:GetAttachment(tab.attach)
+					else
+						ang = tab.ent:GetAttachment(tab.attach)
+					end
+					if istable(ang) then
+						ang = ang.Ang
+					else
+						ang = tab.ent:GetAngles()
+					end
+					if ang then
+						//update the cpoint on both old particles and new particles
+						if IsValid(self.particle) and self.particle.SetControlPoint then
+							self.particle:SetControlPoint(k, LocalToWorld(self.ParticleInfo[k].val, angle_zero, vector_origin, ang))
+						end
+						if self.OldParticles then
+							for _, part in pairs (self.OldParticles) do
+								if IsValid(part) and part.SetControlPoint then
+									part:SetControlPoint(k, LocalToWorld(self.ParticleInfo[k].val, angle_zero, vector_origin, ang))
+								end	
+							end
+						end
+					end
 				end
-				if istable(ang) then
-					ang = ang.Ang
-				else
-					ang = tab.ent:GetAngles()
-				end
-				if ang then
+			end
+		end
+
+		//Update position controls that belong to a particle grip point attached to a model with Advanced Bonemerge
+		if self.AdvBoneCPointsToUpdate then
+			for k, tabk in pairs (self.AdvBoneCPointsToUpdate) do
+				local ent = self.ParticleInfo[tabk].ent
+				if IsValid(ent) then
+					//if the grip point is parented, then its position will be out of date
+					//unless we force it to update again right now
+					if IsValid(ent:GetParent()) and IsValid(ent:GetParent():GetParent()) then ent:Think() end
 					//update the cpoint on both old particles and new particles
 					if IsValid(self.particle) and self.particle.SetControlPoint then
-						self.particle:SetControlPoint(k, LocalToWorld(self.ParticleInfo[k].val, angle_zero, vector_origin, ang))
+						self.particle:SetControlPoint(k, ent:GetPos())
+						self.particle:SetControlPointOrientation(k, ent:GetAngles())
 					end
 					if self.OldParticles then
 						for _, part in pairs (self.OldParticles) do
 							if IsValid(part) and part.SetControlPoint then
-								part:SetControlPoint(k, LocalToWorld(self.ParticleInfo[k].val, angle_zero, vector_origin, ang))
+								part:SetControlPoint(k, ent:GetPos())
+								part:SetControlPointOrientation(k, ent:GetAngles())
 							end	
 						end
 					end
@@ -849,20 +883,44 @@ if CLIENT then
 			self.precached = true
 		end
 
+		self.RelativeCPointsToUpdate = nil
+		self.AdvBoneCPointsToUpdate = nil
+
 		//Create our particle system and attach it to our first position cpoint
 		local firstcpoint = nil
 		local ptab = PartCtrl_ProcessedPCFs[pcf][name]
 		local function DoFirstCPoint(k)
 			if istable(self.ParticleInfo[k]) and ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION and IsValid(self.ParticleInfo[k].ent) then
 				local ent = self.ParticleInfo[k].ent
-				if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
-				local attach = self.ParticleInfo[k].attach
-				local pattach = PATTACH_POINT_FOLLOW
-				if attach == 0 then
-					attach = nil
-					pattach = PATTACH_ABSORIGIN_FOLLOW
+				local attach
+				local pattach
+				if (ent.GetPartCtrl_MergedGrip and ent:GetPartCtrl_MergedGrip()) then
+					//This cpoint's ent is a particle grip point that was attached to a model with Advanced Bonemerge.
+					//We want the cpoint to follow the attached grip, but also still associate model-covering fx with
+					//the parent model it was attached to. To accomplish this, we set ent to the parent model, and 
+					//then continuously update the cpoint to the grip's pos/ang in self:UpdateCPoints().
+					self.AdvBoneCPointsToUpdate = self.AdvBoneCPointsToUpdate or {}
+					self.AdvBoneCPointsToUpdate[k] = k
+					ent = ent:GetParent()
+					pattach = PATTACH_CUSTOMORIGIN
+				else
+					attach = self.ParticleInfo[k].attach
+					if attach == 0 then
+						attach = nil
+						pattach = PATTACH_ABSORIGIN_FOLLOW
+					else
+						pattach = PATTACH_POINT_FOLLOW
+					end
 				end
-				self.particle = CreateParticleSystem(ent, name, pattach, attach)
+				if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+				self.particle = CreateParticleSystem(ent, name, pattach, attach, nil)
+				if pattach == PATTACH_CUSTOMORIGIN and self.particle and self.particle:IsValid() then 
+					//For merged grip fx; if ent is parented, then PATTACH_ABSORIGIN (and PATTACH_POINT) gets overwritten 
+					//to act like the _FOLLOW versions anyway for some reason, which makes UpdateCPoints not work at all. (https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/shared/particle_property.cpp#L544-L547)
+					//Instead, use PATTACH_CUSTOMORIGIN, and then associate the cpoint with the ent manually afterward 
+					//to make model-covering fx still work properly. (we got lucky that this happens to work)
+					self.particle:SetControlPointEntity(k, ent)
+				end
 				//if self.particle and self.particle:IsValid() then
 				//	self.particle:SetIsViewModelEffect(false) //thought this would fix the position issues on viewmodel effects, but it doesn't change anything
 				//end
@@ -885,8 +943,6 @@ if CLIENT then
 			self.ParticleStartTime = CurTime()
 		end
 
-		self.RelativeCPointsToUpdate = nil
-
 		if self.particle and self.particle.IsValid and self.particle:IsValid() then
 			//Do other cpoints
 			for k, v in pairs (ptab.cpoints) do
@@ -902,17 +958,35 @@ if CLIENT then
 						if tab then
 							local ent = tab.ent
 							if IsValid(ent) then
-								if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
-								//unlike CreateParticleSystem, the attachment id arg for this function actually needs to be a string
-								local attachstr = ent:GetAttachments()
-								local pattach = PATTACH_POINT_FOLLOW
-								if attachstr[tab.attach] and attachstr[tab.attach].name then
-									attachstr = attachstr[tab.attach].name
+								local attachstr
+								local pattach
+								if (ent.GetPartCtrl_MergedGrip and ent:GetPartCtrl_MergedGrip()) then
+									self.AdvBoneCPointsToUpdate = self.AdvBoneCPointsToUpdate or {}
+									if mode == PARTCTRL_CPOINT_MODE_POSITION then
+										self.AdvBoneCPointsToUpdate[k] = k
+									else//if mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+										self.AdvBoneCPointsToUpdate[k] = firstcpoint
+									end
+									ent = ent:GetParent()
+									if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+									pattach = PATTACH_CUSTOMORIGIN
 								else
-									attachstr = nil
-									pattach = PATTACH_ABSORIGIN_FOLLOW
+									if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
+									//unlike CreateParticleSystem, the attachment id arg for this function actually needs to be a string
+									attachstr = ent:GetAttachments()
+									if attachstr[tab.attach] and attachstr[tab.attach].name then
+										attachstr = attachstr[tab.attach].name
+										pattach = PATTACH_POINT_FOLLOW
+									else
+										attachstr = nil
+										pattach = PATTACH_ABSORIGIN_FOLLOW
+									end
+									self.BoundsAreNonLocal = false
 								end
 								self.particle:AddControlPoint(k, ent, pattach, attachstr)
+								if pattach == PATTACH_CUSTOMORIGIN then 
+									self.particle:SetControlPointEntity(k, ent)
+								end
 							end
 						end
 					elseif mode == PARTCTRL_CPOINT_MODE_VECTOR or mode == PARTCTRL_CPOINT_MODE_AXIS then
@@ -970,7 +1044,7 @@ if CLIENT then
 							if ptab.cpoints[rel_ang] != nil then
 								self.RelativeCPointsToUpdate = self.RelativeCPointsToUpdate or {}
 								self.RelativeCPointsToUpdate[k] = rel_ang
-								//this has to be done in a separate self:UpdateRelativeCPoints() function so Think can keep the position updated after this
+								//this has to be done in a separate self:UpdateCPoints() function so Think can keep the position updated after this
 							end
 						else
 							//Otherwise, just set this cpoint to its value
@@ -982,7 +1056,7 @@ if CLIENT then
 				end
 			end
 
-			self:UpdateRelativeCPoints()
+			self:UpdateCPoints()
 			
 			PartCtrl_AddParticles_CrashCheck[pcf] = PartCtrl_AddParticles_CrashCheck[pcf] or {}
 			PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = true
@@ -1222,7 +1296,7 @@ else
 		if !IsValid(ent) then return false end
 
 		//If the ent is an adv bonemerged grip point, then unmerge it instead
-		if ent.PartCtrl_MergedGrip then
+		if (ent.GetPartCtrl_MergedGrip and ent:GetPartCtrl_MergedGrip()) then
 			if ent:Unmerge(ply) then
 				ply:SendLua("GAMEMODE:AddNotify('#undone_AdvBonemerge', NOTIFY_UNDO, 2)")
 				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
@@ -1909,7 +1983,7 @@ if SERVER then
 		const:Spawn()
 		const:Activate()
 
-		if !(Ent2.PartCtrl_Grip or Ent2.PartCtrl_MergedGrip) then
+		if !(Ent2.PartCtrl_Grip or (Ent2.GetPartCtrl_MergedGrip and Ent2:GetPartCtrl_MergedGrip())) then
 			//If the constraint is removed by an Undo, unmerge the second entity - this shouldn't do anything if the constraint's removed some other way i.e. one of the ents is removed
 			timer.Simple(0.1, function()  //CallOnRemove won't do anything if we try to run it now instead of on a timer
 				if const:GetTable() then  //CallOnRemove can error if this table doesn't exist - this can happen if the constraint is removed at the same time it's created for some reason
@@ -1933,7 +2007,7 @@ if SERVER then
 			Ent1:SetParent(Ent2)
 		end
 
-		if (Ent2.PartCtrl_Grip or Ent2.PartCtrl_MergedGrip) then
+		if (Ent2.PartCtrl_Grip or (Ent2.GetPartCtrl_MergedGrip and Ent2:GetPartCtrl_MergedGrip())) then
 			Ent1:DeleteOnRemove(Ent2)
 		end
 		Ent2:DeleteOnRemove(Ent1)

@@ -619,7 +619,7 @@ function PANEL:RebuildControls()
 									ent2:DoInput("cpoint_position_ent_setwithtool", k)
 								end
 							else
-								if modelent:GetNWBool("PartCtrl_MergedGrip") and IsValid(modelent:GetParent()) then
+								if (modelent.GetPartCtrl_MergedGrip and modelent:GetPartCtrl_MergedGrip()) and IsValid(modelent:GetParent()) then
 									button:SetText("Unmerge from model (" .. string.GetFileFromFilename(modelent:GetParent():GetModel()) .. ")")
 								else
 									button:SetText("Detach from model (" .. string.GetFileFromFilename(modelent:GetModel()) .. ")")
@@ -1197,7 +1197,7 @@ function PANEL:RebuildControls()
 						ent:DoInput("attachment_ent_setwithtool")
 					end
 				else
-					if modelent:GetNWBool("PartCtrl_MergedGrip") and IsValid(modelent:GetParent()) then
+					if (modelent.GetPartCtrl_MergedGrip and modelent:GetPartCtrl_MergedGrip()) and IsValid(modelent:GetParent()) then
 						button:SetText("Unmerge from model (" .. string.GetFileFromFilename(modelent:GetParent():GetModel()) .. ")")
 					else
 						button:SetText("Detach from model (" .. string.GetFileFromFilename(modelent:GetModel()) .. ")")
