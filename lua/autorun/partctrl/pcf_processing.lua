@@ -2213,6 +2213,16 @@ local processfuncs = {
 					["default"] = 1,
 				})
 			end
+			//TODO: do we want to handle attrib["emission_start_time max"], which is unique to this one? https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_emitters.cpp#L139
+		end,
+		["_generic"] = function(processed, attrib)
+			//store the time it takes for the emitter to start emitting particles; we use this to display info text if necessary
+			local starttime = math.max((attrib["emission_start_time"] or attrib["emission start time"] or 0), (attrib["operator start fadein"] or 0)) //"emit to maintain count" doesn't have underscores in "emission start time"; some fx use fadein instead (l4d2's barricade_groundfire)
+			if processed["starttime_raw"] != nil then
+				processed["starttime_raw"] = math.min(processed["starttime_raw"], starttime)
+			else
+				processed["starttime_raw"] = starttime
+			end
 		end,
 	},
 	["forces"] = { //ForceGenerator
@@ -2962,6 +2972,51 @@ function PartCtrl_ProcessPCF(filename)
 							end
 							PartCtrl_AddInfoText(t2[particle], text)
 						end
+					end
+				end
+			end
+
+			//Inherit starttime from children, and add info text if necessary
+			local starttime = t2[particle].starttime_raw
+			local function StartTimeFromChildren(particle2, depth, child_delay)
+				depth = depth or 0
+				depth = depth + 1
+				if depth > 99 then
+					MsgN("PartCtrl: ", filename, " ", particle2, " StartTimeFromChildren has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
+					return
+				end
+
+				if istable(t2[particle2].children) then
+					for _, childtab in pairs (t2[particle2].children) do
+						if !t2[childtab.child] then
+							if dodebug then MsgN("PartCtrl: ", filename, " ", particle2, " StartTimeFromChildren tried to get nonexistent child effect ", child) end
+						else
+							if t2[childtab.child].starttime_raw != nil then
+								if starttime == nil then
+									starttime = t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay
+								else
+									starttime = math.min(t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay, starttime)
+								end
+							end
+							if childtab["end cap effect"] then
+								t2[particle].test_hasendcap = true
+							end
+							//Now inherit from the child's children, and so on
+							//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
+							StartTimeFromChildren(childtab.child, depth, (childtab.delay or 0) + child_delay)
+						end
+					end
+				end
+			end
+			StartTimeFromChildren(particle, nil, 0)
+			if starttime != nil then
+				starttime = math.Round(starttime, 3)
+				if starttime > 0.5 then
+					t2[particle].starttime = starttime
+					if starttime == 1 then
+						PartCtrl_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " second.")
+					else
+						PartCtrl_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " seconds.")
 					end
 				end
 			end
