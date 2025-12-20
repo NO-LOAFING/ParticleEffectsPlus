@@ -2265,7 +2265,7 @@ function PartCtrl_GetParticleDefaultPositions(pcf, name)
 		end
 	end
 	//Center the grip points and mins/maxs
-	local midpoint = mins + maxs / 2
+	local midpoint = (mins + maxs) / 2
 	for k, v in pairs (grips) do
 		grips[k] = v - midpoint
 	end
