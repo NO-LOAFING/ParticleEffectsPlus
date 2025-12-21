@@ -2182,6 +2182,9 @@ local processfuncs = {
 		["emit_continuously"] = function(processed, attrib)
 			if (attrib["emission_rate"] or 100) > 0 then
 				processed["has_emitter"] = true
+				if processed["do_starttime_raw_fromrate"] then
+					attrib["_starttime_raw_fromrate"] = 1 / (attrib["emission_rate"] or 100) //store this in the unprocessed operator so the _generic func below can access it
+				end
 			end
 			local axis = attrib["emission count scale control point field"] or 0
 			if axis > -1 then
@@ -2217,7 +2220,9 @@ local processfuncs = {
 		end,
 		["_generic"] = function(processed, attrib)
 			//store the time it takes for the emitter to start emitting particles; we use this to display info text if necessary
-			local starttime = math.max((attrib["emission_start_time"] or attrib["emission start time"] or 0), (attrib["operator start fadein"] or 0)) //"emit to maintain count" doesn't have underscores in "emission start time"; some fx use fadein instead (l4d2's barricade_groundfire)
+			local starttime = math.max((attrib["emission_start_time"] or attrib["emission start time"] or 0),  //"emit to maintain count" doesn't have underscores in "emission start time"
+			(attrib["operator start fadein"] or 0)) //some fx use fadein instead (l4d2's barricade_groundfire)
+			+ (attrib["_starttime_raw_fromrate"] or 0) //also add extra time from emission rate
 			if processed["starttime_raw"] != nil then
 				processed["starttime_raw"] = math.min(processed["starttime_raw"], starttime)
 			else
@@ -2298,6 +2303,7 @@ function PartCtrl_ProcessPCF(filename)
 				["cpoints"] = {},
 				["children"] = t[particle].children,
 				["parents"] = {},
+				["do_starttime_raw_fromrate"] = (t[particle]["initial_particles"] or 0) <= 0 //for emitter starttime calculation, don't add extra time from the emission rate if we have initial particles; have to do this here because the processfunc needs this info
 			}
 			//Go through all of the effects's operators (initializers, operators, renderers, etc. are all called "operators" internally, it's confusing) 
 			//and use the corresponding functions in processfuncs to "process" them (populate the table above with all their relevant cpoint info). 
@@ -3010,7 +3016,7 @@ function PartCtrl_ProcessPCF(filename)
 			end
 			StartTimeFromChildren(particle, nil, 0)
 			if starttime != nil then
-				starttime = math.Round(starttime, 3)
+				starttime = math.Round(starttime, 2)
 				if starttime > 0.5 then
 					t2[particle].starttime = starttime
 					if starttime == 1 then
