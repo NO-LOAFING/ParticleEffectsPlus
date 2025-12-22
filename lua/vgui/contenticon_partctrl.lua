@@ -42,15 +42,19 @@ end
 function PANEL:Setup(pcf, name, path)
 
 	self.pcf = pcf
-	self.name = name
+	self.name = string.lower(name)
 	self.path = path
-	self:SetName(name) //display name on icon
-	self:SetContentType("partctrl")
 
+	self.nicename = name //display name on icon; use the name with caps because it looks nicer
+	if PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)] and PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name] then
+		self.nicename = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].nicename
+	end
+	self:SetName(self.nicename)
+	
+	self:SetContentType("partctrl")
 	if pcf == "UtilFx" then
 		self:SetMaterial("icon16/cog.png") //icon_utilfx) //why doesn't this one take a Material()? whatever
 	end
-
 	self.DoneSetup = true
 
 end
@@ -74,32 +78,31 @@ function PANEL:Paint(w, h)
 	PartCtrl_IconFx[pcf][name].panels = PartCtrl_IconFx[pcf][name].panels or {}
 	
 	local itab = PartCtrl_IconFx[pcf][name]
-	local tooltip = itab.tooltip
+	local tooltip = self.nicename .. (itab.tooltip or "") //nicename is supplied by the contenticon, so that fx that are currently invalid (i.e. in a spawnlist, but from a currently unmounted game) can still retrieve it
 	local overridden = self:IsCurrentlyOverridden(pcf, name)
-	if tooltip then
-		local path_nice = ""
-		local path_dev = ""
-		if self.path then
-			path_nice = self.path
-			for k, v in pairs (engine.GetGames()) do
-				if v.folder == self.path then
-					path_nice = v.title
-					break
-				end
-			end
-			path_nice = ", probably from game " .. path_nice
-			if GetConVarNumber("developer") >= 1 then
-				path_dev = "\n(path: " .. self.path .. ")"
+
+	local path_nice = ""
+	local path_dev = ""
+	if self.path then
+		path_nice = self.path
+		for k, v in pairs (engine.GetGames()) do
+			if v.folder == self.path then
+				path_nice = v.title
+				break
 			end
 		end
-		local override_pcf = "this file"
-		if overridden then
-			override_pcf = '"' .. overridden .. '"'
+		path_nice = ", probably from game " .. path_nice
+		if GetConVarNumber("developer") >= 1 then
+			path_dev = "\n(path: " .. self.path .. ")"
 		end
-		tooltip = string.Replace(tooltip, "%PATH_NICE", path_nice)
-		tooltip = string.Replace(tooltip, "%PATH_DEV", path_dev)
-		tooltip = string.Replace(tooltip, "%OVERRIDE_PCF", override_pcf)
 	end
+	local override_pcf = "this file"
+	if overridden then
+		override_pcf = '"' .. overridden .. '"'
+	end
+	tooltip = string.Replace(tooltip, "%PATH_NICE", path_nice)
+	tooltip = string.Replace(tooltip, "%PATH_DEV", path_dev)
+	tooltip = string.Replace(tooltip, "%OVERRIDE_PCF", override_pcf)
 	self:SetTooltip(tooltip)
 
 	
@@ -364,7 +367,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 
 			//Store first-time info
 			if !self.tooltip then
-				local tooltip = name .. "\n(" .. PartCtrl_GetDataPCFNiceName(pcf) .. ")%PATH_DEV"
+				local tooltip = "\n(" .. PartCtrl_GetDataPCFNiceName(pcf) .. ")%PATH_DEV"
 				
 				self.icons = {}
 				if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) or !istable(PartCtrl_ProcessedPCFs[pcf][name].cpoints) then
@@ -808,7 +811,7 @@ function PANEL:OpenMenu()
 	local menu = DermaMenu()
 	local pcf = PartCtrl_GetGamePCF(self.pcf, self.path) //use this unless we're doing something that handles the path arg on its own, like spawning an effect
 
-	menu:AddOption("Copy effect name to clipboard", function() SetClipboardText(self.name) end):SetIcon("icon16/page_copy.png")
+	menu:AddOption("Copy effect name to clipboard", function() SetClipboardText(self.nicename) end):SetIcon("icon16/page_copy.png")
 	if pcf != "UtilFx" then 
 		menu:AddOption("Copy .pcf file path to clipboard", function() 
 			SetClipboardText(self.pcf)
@@ -967,7 +970,7 @@ function PANEL:ToTable(bigtable)
 	local tab = {}
 
 	tab.type = self:GetContentType()
-	tab.name = self.name
+	tab.name = self.nicename or self.name //save the name with caps here instead, so that fx that are currently invalid (i.e. in a spawnlist, but from a currently unmounted game) can still retrieve it
 	tab.pcf = self.pcf
 	tab.path = self.path
 

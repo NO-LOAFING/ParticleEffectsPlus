@@ -47,34 +47,6 @@ include("partctrl/pcf_crash_prevention.lua")
 
 
 
-//Custom version of SortedPairs to sort by table key, but caps-agnostically (see original: https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/extensions/table.lua#L539-L576)
-//This is used to match how the particle editor sorts particle names, so we don't sort capitalized particles above uncapitalized ones.
-
-function PartCtrl_SortedPairsLower(pTable)
-
-	local keys = table.GetKeys(pTable) //use the global getkeys instead of the local one used in the SortedPairs code, so we don't have to copy as much
-
-	//if ( Desc ) then //we don't care about this
-	//	table.sort( keys, function( a, b )
-	//		return string.lower(a) > string.lower(b) 
-	//	end )
-	//else
-		table.sort( keys, function( a, b )
-			return string.lower(a) < string.lower(b) //this is the only functional change
-		end )
-	//end
-
-	local i, key = 1, nil
-	return function()
-		key, i = keys[ i ], i + 1
-		return key, pTable[ key ]
-	end
-
-end
-
-
-
-
 //Cleanup and limit
 cleanup.Register("partctrl")
 if SERVER then

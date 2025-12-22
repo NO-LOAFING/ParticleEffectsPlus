@@ -851,6 +851,7 @@ if CLIENT then
 		if !self.ParticleInfo then return end
 		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
 		local name = self:GetParticleName()
+		local ptab = PartCtrl_ProcessedPCFs[pcf][name]
 
 		//If doing utilfx, then do that and stop here
 		if self.utilfx then
@@ -865,7 +866,7 @@ if CLIENT then
 			if bad then return end
 			self.cpoint_posang = {} //Reset this table every time
 			local ed = EffectData()
-			if list.GetForEdit("PartCtrl_UtilFx", true)[name].DoEffect(self, ed) then
+			if ptab.utilfx_doeffect(self, ed) then
 				//If the normal is pointed exactly up or down, it results in bad effects (see AR2Explosion), so tilt it just a bit in those cases
 				local norm = ed:GetNormal()
 				if math.Round(norm.x, 6) == 0 and math.Round(norm.y, 6) == 0 then
@@ -888,7 +889,6 @@ if CLIENT then
 
 		//Create our particle system and attach it to our first position cpoint
 		local firstcpoint = nil
-		local ptab = PartCtrl_ProcessedPCFs[pcf][name]
 		local function DoFirstCPoint(k)
 			if istable(self.ParticleInfo[k]) and ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION and IsValid(self.ParticleInfo[k].ent) then
 				local ent = self.ParticleInfo[k].ent
@@ -2142,6 +2142,8 @@ duplicator.RegisterEntityClass("ent_partctrl", function(ply, data)
 
 	//default dtvars for old dupes that don't have them
 	if data.DT.PauseTime == nil then data.DT.PauseTime = -1 end
+	//fix old dupes from before all the effect names were converted to lowercase
+	if isstring(data.DT.ParticleName) then data.DT.ParticleName = string.lower(data.DT.ParticleName) end
 
 	//duplicator.GenericDuplicatorFunction(ply, data)
 	duplicator.DoGeneric(ent, data)
@@ -2296,6 +2298,9 @@ if SERVER then
 	end
 
 	function PartCtrl_SpawnParticle(ply, pos, name, pcf_original, path)
+
+		//MsgN("PartCtrl_SpawnParticle ", name, " ", pcf_original, " ", path)
+		local name = string.lower(name)
 
 		if !IsValid(ply) and pos == nil then
 			MsgN("PartCtrl_SpawnParticle has no player or position, can't get spawn location")

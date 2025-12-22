@@ -82,7 +82,9 @@ PartCtrl_EditProperty_MenuOpen = function(self, option, ent)
 
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
 			local str = k.PrintName
-			if k.GetParticleName then str = k:GetParticleName() end
+			if (k.GetParticleName and PartCtrl_ProcessedPCFs[k:GetPCF()] and PartCtrl_ProcessedPCFs[k:GetPCF()][k:GetParticleName()]) then
+				str = PartCtrl_ProcessedPCFs[k:GetPCF()][k:GetParticleName()].nicename
+			end
 			option:SetText("Edit Particle Effect (" .. str .. ")")
 			option.DoClick = function() OpenPartCtrlEditor(k) end
 		end
@@ -93,7 +95,9 @@ PartCtrl_EditProperty_MenuOpen = function(self, option, ent)
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
 			if IsValid(k) and ((k.PartCtrl_Ent and k.GetPCF) or k.PartCtrl_SpecialEffect) then
 				local str = k.PrintName
-				if k.GetParticleName then str = k:GetParticleName() end
+				if (k.GetParticleName and PartCtrl_ProcessedPCFs[k:GetPCF()] and PartCtrl_ProcessedPCFs[k:GetPCF()][k:GetParticleName()]) then
+					str = PartCtrl_ProcessedPCFs[k:GetPCF()][k:GetParticleName()].nicename
+				end
 				local opt = submenu:AddOption(str)
 				opt.DoClick = function() OpenPartCtrlEditor(k) end
 			end

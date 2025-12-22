@@ -22,7 +22,7 @@ if CLIENT then
 			local dochildfx = cv_childfx_spawnlist:GetInt()
 			if dochildfx == 0 then
 				//No child fx
-				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
+				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
 					if !PartCtrl_ProcessedPCFs[pcf2][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][particle].parents) < 1 then
 						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = pcf, ["name"] = particle, ["path"] = path})
 					end
@@ -30,7 +30,7 @@ if CLIENT then
 			elseif dochildfx == 1 then
 				local tab = {}
 				//Separate child fx
-				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
+				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
 					if !PartCtrl_ProcessedPCFs[pcf2][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][particle].parents) < 1 then
 						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = pcf, ["name"] = particle, ["path"] = path})
 					else
@@ -45,7 +45,7 @@ if CLIENT then
 				end
 			else
 				//All fx sorted alphabetically
-				for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
+				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
 					spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = pcf, ["name"] = particle, ["path"] = path})
 				end
 			end
@@ -64,7 +64,7 @@ if CLIENT then
 		if !istable(PartCtrl_UtilFxByTitle[name]) then
 			MsgN("OnUtilFxNodeSelected tried to make spawnlist for invalid title ", name)
 		else
-			for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
+			for particle, _ in SortedPairs (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
 				spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = "UtilFx", ["name"] = particle})
 			end
 		end
@@ -170,7 +170,7 @@ if CLIENT then
 
 						menu:AddOption("#spawnmenu.createautospawnlist", function()
 							local tab = {}
-							for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
+							for particle, _ in SortedPairs (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
 								table.insert(tab, {["pcf"] = "UtilFx", ["particle"] = particle})
 							end
 							PartCtrl_CreateCustomSpawnlist(tab, "Scripted Effects", "icon16/page_gear.png")
@@ -226,7 +226,7 @@ if CLIENT then
 
 							menu:AddOption("#spawnmenu.createautospawnlist", function()
 								local tab = {}
-								for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[filename2]) do //sort them in alphabetical order
+								for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[filename2]) do //sort them in alphabetical order
 									table.insert(tab, {["pcf"] = filename, ["particle"] = particle, ["path"] = path})
 								end
 								PartCtrl_CreateCustomSpawnlist(tab, name)
@@ -439,7 +439,7 @@ if CLIENT then
 			searchParticles = {}
 			for pcf, _ in SortedPairs (PartCtrl_ProcessedPCFs) do
 				if !PartCtrl_AllDataPCFs[pcf] then
-					for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do
+					for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do
 						table.insert(searchParticles, {
 							["name"] = particle, 
 							["searchtext"] = particle:lower() .. " " .. pcf:lower(), //lowercase needs to be separate, because effect names are case-sensitive when spawning them
@@ -448,7 +448,7 @@ if CLIENT then
 						}) 
 					end
 				else
-					for particle, _ in PartCtrl_SortedPairsLower (PartCtrl_ProcessedPCFs[pcf]) do
+					for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do
 						table.insert(searchParticles, {
 							["name"] = particle, 
 							["searchtext"] = particle:lower() .. " " .. pcf:lower() .. " " .. PartCtrl_GetDataPCFNiceName(pcf):lower(), //let us search for both the nicename and internal name

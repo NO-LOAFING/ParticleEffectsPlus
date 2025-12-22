@@ -16,7 +16,7 @@ AddCSLuaFile()
 		//Function, used to set up the controls for the util effect by defining CONTROL POINTS, just like we do with PCF effects.
 		//A control point can be:
 		// A: a POSITION control, which spawns a grip point and uses its position value, and can also be attached to an entity to use its position or the position of one of its attachments
-		// B: a VECTOR control, which has 3 sliders to set the X, Y, and Z value of the vector
+		// B: a VECTOR control, which has 3 sliders or a color picker to set the X, Y, and Z value of the vector
 		// C: an AXIS control, which can seperately define controls for any combination of its X, Y, or Z values; each axis can use a slider, dropdown, or checkboxes to set its value.
 		
 		//Adds a position control for cpoint 0
@@ -69,7 +69,7 @@ AddCSLuaFile()
 
 	DoEffect = function(self, ed)
 		//Function, used when we're playing the effect to set its EffectData values, usually by grabbing information from the control points we set up earlier.
-		//"self" arg is the particle entity which has all the cpoint info, "ed" is the CEffectData object. https://wiki.facepunch.com/gmod/CEffectData
+		//"self" arg is the particle controller entity which has all the cpoint info, "ed" is the CEffectData object. https://wiki.facepunch.com/gmod/CEffectData
 
 		//Sets the Origin, Angles and Normal from cpoint 0 - the particle entity has a self:CPointPosAng() func that returns the position and angle of a cpoint
 		ed:SetOrigin(self:CPointPosAng(0).pos)
@@ -1938,11 +1938,14 @@ function PartCtrl_ProcessUtilFx()
 
 	if istable(utilfx) then
 		for k, v in pairs (utilfx) do
+			local name = string.lower(k) //hey, guess what, turns out utilfx are caps-agnostic internally as well!
 			local t = {
 				["cpoints"] = {},
 				["utilfx"] = true,
 				["default_time"] = v.default_time,
-				["cpoint_distance_overrides"] = v.cpoint_distance_overrides
+				["cpoint_distance_overrides"] = v.cpoint_distance_overrides,
+				["nicename"] = k,
+				["utilfx_doeffect"] = v.DoEffect,
 			}
 			if t.default_time == nil then t.default_time = 1 end
 			//everything else expects the info to be a table of strings
@@ -1981,7 +1984,7 @@ function PartCtrl_ProcessUtilFx()
 			//Add to table of all utilfx by "title" value (what game or addon folder they're placed in)
 			local function addtotab(str)
 				PartCtrl_UtilFxByTitle[str] = PartCtrl_UtilFxByTitle[str] or {}
-				PartCtrl_UtilFxByTitle[str][k] = true
+				PartCtrl_UtilFxByTitle[str][name] = true
 			end
 			if istable(v.title) then
 				for _, str in pairs (v.title) do
@@ -1992,10 +1995,10 @@ function PartCtrl_ProcessUtilFx()
 			end
 			//Also add it to the "All" subtable; dumb, but this is easier than cluttering up AddBrowseContentParticle to add a special case for All that loads all the subtables
 			PartCtrl_UtilFxByTitle.All = PartCtrl_UtilFxByTitle.All or {}
-			PartCtrl_UtilFxByTitle.All[k] = true
+			PartCtrl_UtilFxByTitle.All[name] = true
 
 			utilfx2 = utilfx2 or {}
-			utilfx2[k] = t
+			utilfx2[name] = t
 		end
 	end
 

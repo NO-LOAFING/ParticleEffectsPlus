@@ -130,7 +130,7 @@ table.insert(a, "ATTRIBUTE_MATRIX_ARRAY")
 //reference:
 //https://developer.valvesoftware.com/wiki/PCF, https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3, https://developer.valvesoftware.com/wiki/DMX/Binary
 
-local cache_version = "1" //update this in case ReadPCF is updated to return a different table
+local cache_version = "1" //update this in case ReadPCF is updated post-release to return a different table
 local docache = GetConVar("sv_partctrl_cachereadpcf")
 
 function PartCtrl_ReadPCF(filename, path) 
@@ -410,7 +410,7 @@ function PartCtrl_ReadPCF(filename, path)
 											if dodebug then MsgN("PartCtrl: ", filename, " DmeParticleChild tried to get nil element ", et2_i) end
 										else
 											//table.insert(tab, ElementsUnsorted[et2_i].k.Name)
-											childName = ElementsUnsorted[et2_i].k.Name
+											childName = string.lower(ElementsUnsorted[et2_i].k.Name) //for this addon's purposes, we make effect names all lowercase, see below
 										end
 									end
 									ElementsUnsorted[et_i].v.child = childName
@@ -429,6 +429,15 @@ function PartCtrl_ReadPCF(filename, path)
 			Elements[ElementsUnsorted[i].k.Name] = ElementsUnsorted[i].v
 		end
 	end
+
+	//Particle effect names are caps-agnostic internally, so for this addon's purposes, we'll make them all lowercase to avoid issues further 
+	//down the line (effects with the same name but capitalized differently will conflict with each other, so make sure we detect those properly)
+	local Elements2 = {}
+	for k, v in pairs (Elements) do
+		v._nicename = k //store the capitalized name so we can use it for display purposes
+		Elements2[string.lower(k)] = v
+	end
+	Elements = Elements2
 
 	if docache:GetBool() then
 		local str = util.TableToJSON(Elements)
@@ -742,7 +751,7 @@ function PartCtrl_GetParticlesWithAttrib(desiredfunc, filename, extended)
 	local function GetAttribsFromFile(desiredfunc, filename, extended)
 		local tab = PartCtrl_ReadPCF(filename)
 		if tab then
-			for particle, ptab in PartCtrl_SortedPairsLower (tab) do
+			for particle, ptab in SortedPairs (tab) do
 				for category, attribs in pairs (ptab) do
 					if istable(attribs) then
 						for k, v in pairs (attribs) do
@@ -868,7 +877,7 @@ function PartCtrl_ComparePCFs(file1, file2, shownil)
 			allkeys[k] = true
 		end
 		local results = {}
-		for k, _ in PartCtrl_SortedPairsLower (allkeys) do
+		for k, _ in SortedPairs (allkeys) do
 			if spew or t1[k] != t2[k] then
 				if istable(t1[k]) and istable(t2[k]) then
 					//They're both tables, compare their contents
@@ -2303,7 +2312,8 @@ function PartCtrl_ProcessPCF(filename)
 				["cpoints"] = {},
 				["children"] = t[particle].children,
 				["parents"] = {},
-				["do_starttime_raw_fromrate"] = (t[particle]["initial_particles"] or 0) <= 0 //for emitter starttime calculation, don't add extra time from the emission rate if we have initial particles; have to do this here because the processfunc needs this info
+				["do_starttime_raw_fromrate"] = (t[particle]["initial_particles"] or 0) <= 0, //for emitter starttime calculation, don't add extra time from the emission rate if we have initial particles; have to do this here because the processfunc needs this info
+				["nicename"] = t[particle]._nicename,
 			}
 			//Go through all of the effects's operators (initializers, operators, renderers, etc. are all called "operators" internally, it's confusing) 
 			//and use the corresponding functions in processfuncs to "process" them (populate the table above with all their relevant cpoint info). 
@@ -3587,7 +3597,7 @@ if CLIENT then
 							end
 						end
 
-						for k, _ in PartCtrl_SortedPairsLower (allkeys) do
+						for k, _ in SortedPairs (allkeys) do
 							if !is_dupe then return end
 							if t1[k] != nil and t2[k] != nil then //if a value exists in one table but not another, then ignore it; newer pcf versions omit keys with default values, but older versions don't
 								if istable(t1[k]) and istable(t2[k]) then
