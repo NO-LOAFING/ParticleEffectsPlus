@@ -843,6 +843,7 @@ function PANEL:OpenMenu()
 				end
 				if PartCtrl_ProcessedPCFs[pcf][child] and !listed_fx[child] then
 					listed_fx[child] = true
+					local nicename = PartCtrl_ProcessedPCFs[pcf][child].nicename
 					local OnClick = function()
 						RunConsoleCommand("partctrl_spawnparticle", child, self.pcf, self.path)
 						surface.PlaySound("ui/buttonclickrelease.wav")
@@ -850,10 +851,10 @@ function PANEL:OpenMenu()
 					local submenu2
 					local option2
 					if PartCtrl_ProcessedPCFs[pcf][child][tabname] and table.Count(PartCtrl_ProcessedPCFs[pcf][child][tabname]) > 0 then
-						submenu2, option2 = submenu:AddSubMenu(child, OnClick)
+						submenu2, option2 = submenu:AddSubMenu(nicename, OnClick)
 						ListChildFx(submenu2, option2, child, tabname)
 					else
-						option2 = submenu:AddOption(child, OnClick)
+						option2 = submenu:AddOption(nicename, OnClick)
 					end
 					if PartCtrl_CulledFx[pcf] and PartCtrl_CulledFx[pcf][child] then //in developer mode, add warnings to culled fx
 						option2:SetMaterial(icon_invalid)
