@@ -902,6 +902,7 @@ if CLIENT then
 					self.AdvBoneCPointsToUpdate = self.AdvBoneCPointsToUpdate or {}
 					self.AdvBoneCPointsToUpdate[k] = k
 					ent = ent:GetParent()
+					if !IsValid(ent) then return end
 					pattach = PATTACH_CUSTOMORIGIN
 				else
 					attach = self.ParticleInfo[k].attach
@@ -968,6 +969,7 @@ if CLIENT then
 										self.AdvBoneCPointsToUpdate[k] = firstcpoint
 									end
 									ent = ent:GetParent()
+									if !IsValid(ent) then self.particle:StopEmissionAndDestroyImmediately() return end //if you merge an ent that has a grip merged to it, this might return NULL for a frame or two, so just wait until it resolves itself; this is quick enough to be seamless
 									if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
 									pattach = PATTACH_CUSTOMORIGIN
 								else
@@ -1779,8 +1781,20 @@ else
 				net.WriteEntity(ent)
 			net.Broadcast()
 		else
-			for k, v in pairs (ent:GetChildren()) do
-				PartCtrl_RefreshAllChildFx(v)
+			local tab = {}
+			//Add all children of the ent to the list
+			for _, v in pairs (ent:GetChildren()) do
+				tab[v] = true
+			end
+			//Also add all particle effect ents attached to the ent to the list; these won't be 
+			//listed by GetChildren if they're attached by a position cpoint after the first
+			for _, v in pairs (constraint.FindConstraints(ent, "PartCtrl_Ent")) do
+				if IsValid(v.Ent1) then 
+					tab[v.Ent1] = true
+				end
+			end
+			for k, _ in pairs (tab) do
+				PartCtrl_RefreshAllChildFx(k)
 			end
 		end
 
