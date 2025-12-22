@@ -2407,13 +2407,13 @@ function PartCtrl_ProcessPCF(filename)
 					return cpoints
 				end
 				for _, childtab in pairs (t[particle2].children) do
-					if t2[childtab.child] then
+					if t2[childtab.child] and !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
 						local cpoints2 = table.Copy(t2[childtab.child].cpoints)
 						//make sure the child has also inherited cpoints from its own children
 						if istable(t[childtab.child].children) then
 							//if #t[childtab.child].children > 0 then MsgN("children of ", childtab.child, ":") PrintTable(t[childtab.child].children) end
 							for _, childtab2 in pairs (t[childtab.child].children) do
-								if t2[childtab2.child] then
+								if t2[childtab2.child] and !childtab2["end cap effect"] then
 									local cpoints3 = cpoints_from_child_fx(table.Copy(t2[childtab2.child].cpoints), childtab2.child, depth)
 									for i, tab in pairs (cpoints3) do
 										cpoints2[i] = cpoints2[i] or {}
@@ -2724,7 +2724,7 @@ function PartCtrl_ProcessPCF(filename)
 					for _, childtab in pairs (t2[particle2].children) do
 						if !t2[childtab.child] then
 							if dodebug then MsgN("PartCtrl: ", filename, " ", particle2, " CPointModesFromChildren tried to get nonexistent child effect ", child) end
-						else
+						elseif !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
 							SetCPointModes(childtab.child, particle2)
 							//Now inherit from the child's children, and so on
 							//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
@@ -3006,16 +3006,13 @@ function PartCtrl_ProcessPCF(filename)
 					for _, childtab in pairs (t2[particle2].children) do
 						if !t2[childtab.child] then
 							if dodebug then MsgN("PartCtrl: ", filename, " ", particle2, " StartTimeFromChildren tried to get nonexistent child effect ", child) end
-						else
+						elseif !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
 							if t2[childtab.child].starttime_raw != nil then
 								if starttime == nil then
 									starttime = t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay
 								else
 									starttime = math.min(t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay, starttime)
 								end
-							end
-							if childtab["end cap effect"] then
-								t2[particle].test_hasendcap = true
 							end
 							//Now inherit from the child's children, and so on
 							//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
