@@ -1038,7 +1038,7 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 	if op then
 		//if an output has a fadein/fadeout, then it isn't always overriding this cpoint, so we don't care about it - reject it
 		if (processedk == "output" or processedk == "output_axis" or processedk == "output_children")
-		and !string.StartsWith(name, "initializer") then //the operator fadein/out values exist on the only initializer output (initializer Velocity Repulse from World), but don't seem to work, so ignore them
+		and op._categoryName != "initializer" then //the operator fadein/out values exist on the only initializer output (initializer Velocity Repulse from World), but don't seem to work, so ignore them
 			for bad, v in pairs (badoutputparams) do
 				if (op[bad] or 0) > v then //yes, they all default to 0
 					//MsgN(name, " output doesn't always override cpoint because ", bad, " ", op[bad], " > ", v, ", rejecting") //no way to get the name of the particle with the output we're rejecting, argh
@@ -1140,7 +1140,7 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 			)
 		end
 	end
-	processedv["name"] = name
+	processedv.name = name
 	processed.cpoints[k] = processed.cpoints[k] or {}
 	processed.cpoints[k][processedk] = processed.cpoints[k][processedk] or {}
 
