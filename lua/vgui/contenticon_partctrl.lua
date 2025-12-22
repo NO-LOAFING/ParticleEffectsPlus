@@ -579,7 +579,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 			if !utilfx and !PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] then //if this effect is being throttled, then we want the crash prevention func to handle removing it, not remove it here
 				if !self.reset and table.Count(self.panels) > 0
 				and istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][name]) //run remove particle check if these fail, because it's possible for a pcf or effect to become invalid after refreshing a pcf file
-				and !PartCtrl_ProcessedPCFs[pcf][name].prevent_name_based_lookup then //don't bother trying to create fx with this attribute, even in developer mode, it'll just fail and spam the console with errors
+				and !PartCtrl_ProcessedPCFs[pcf][name].prevent_name_based_lookup then //don't bother trying to create fx with this value, even in developer mode, it'll just fail and spam the console with errors
 					if !(self.particle and self.particle.IsValid and self.particle:IsValid()) then
 
 						//Create the particle
