@@ -509,6 +509,8 @@ if CLIENT then
 
 		ReadSpawnlist("gmod", par)
 
+		ReadSpawnlist("portal", par, "portal")
+
 		//HL2 spawnlists also include all the stock source pcfs, so no mount requirement for these ones
 		local hl2par = ReadSpawnlist("hl2", par)
 		local hl2 = {}
@@ -539,8 +541,6 @@ if CLIENT then
 			if i >= 10 then zero = "" end
 			tf[i] = ReadSpawnlist("tf_" .. zero .. i, ipar or tfpar, "tf")
 		end
-
-		//TODO: portal spawnlists?
 
 		ReadSpawnlist("cstrike", par, "cstrike")
 
