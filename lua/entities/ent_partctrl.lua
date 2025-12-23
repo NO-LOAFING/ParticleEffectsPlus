@@ -276,19 +276,19 @@ function ENT:Think()
 			for k, v in pairs (self.OldParticles) do
 				AddParticleRenderBounds(v)
 			end
-			if ispaused then
-				//When the effect is paused, its renderbounds no longer update to contain its cpoint positions, which means 
-				//helpers can stop rendering if we move them so that the effect is off-screen. Fix this by adding cpoint 
-				//positions to the renderbounds if paused.
-				for k2, v2 in pairs (self.ParticleInfo) do
-					local pos2 = GetCPointPos(k2)
-					if pos2 then
-						mins = Vector(math.min(mins.x,pos2.x), math.min(mins.y,pos2.y), math.min(mins.z,pos2.z))
-						maxs = Vector(math.max(maxs.x,pos2.x), math.max(maxs.y,pos2.y), math.max(maxs.z,pos2.z))
+			if mins and maxs then
+				if ispaused then
+					//When the effect is paused, its renderbounds no longer update to contain its cpoint positions, which means 
+					//helpers can stop rendering if we move them so that the effect is off-screen. Fix this by adding cpoint 
+					//positions to the renderbounds if paused.
+					for k2, v2 in pairs (self.ParticleInfo) do
+						local pos2 = GetCPointPos(k2)
+						if pos2 then
+							mins = Vector(math.min(mins.x,pos2.x), math.min(mins.y,pos2.y), math.min(mins.z,pos2.z))
+							maxs = Vector(math.max(maxs.x,pos2.x), math.max(maxs.y,pos2.y), math.max(maxs.z,pos2.z))
+						end
 					end
 				end
-			end
-			if mins and maxs then
 				//debugoverlay.Box(Vector(0,0,0), mins - extra, maxs + extra, 0.1, Color(255,255,0,0))
 				self:SetRenderBoundsWS(mins, maxs, extra)
 				//self._wsmins = mins

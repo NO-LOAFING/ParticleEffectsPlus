@@ -1076,7 +1076,7 @@ function ENT:SpecialEffectThink()
 			if IsValid(proj) then
 				if time >= dietime then
 					if CLIENT then
-						if IsValid(proj) and IsValid(self) then
+						if IsValid(proj) and !proj.DontDoExpire and IsValid(self) then
 							if self.ProjectileHitData[proj] then
 								self:StartParticle(proj, self.ProjectileHitData[proj].HitPos, -self.ProjectileHitData[proj].HitNormal)
 							else
@@ -1084,7 +1084,7 @@ function ENT:SpecialEffectThink()
 							end
 						end
 					else
-						if IsValid(proj) then
+						if IsValid(proj) and !proj.DontDoExpire then
 							if self.ProjectileHitData[proj] then
 								proj:DoExpire(self.ProjectileHitData[proj].HitPos, -self.ProjectileHitData[proj].HitNormal)
 							else
@@ -1510,7 +1510,10 @@ function ENT:SpecialEffectRefresh()
 	//reset projectile ents and numpad on both server and client
 	if self.ProjectileEnts then
 		for _, proj in pairs (self.ProjectileEnts) do
-			if IsValid(proj) then proj:Remove() end
+			if IsValid(proj) then
+				proj.DontDoExpire = true //make sure they don't make expire fx on reset; this can happen if we reset this effect after it's been paused for a long time
+				proj:Remove()
+			end
 		end
 		self.ProjectileEnts = {}
 	end
