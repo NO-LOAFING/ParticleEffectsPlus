@@ -434,7 +434,7 @@ function PartCtrl_ReadPCF(filename, path)
 	//down the line (effects with the same name but capitalized differently will conflict with each other, so make sure we detect those properly)
 	local Elements2 = {}
 	for k, v in pairs (Elements) do
-		v._nicename = k //store the capitalized name so we can use it for display purposes
+		if CLIENT then v._nicename = k end //store the capitalized name so we can use it for display purposes
 		Elements2[string.lower(k)] = v
 	end
 	Elements = Elements2
@@ -2570,11 +2570,11 @@ function PartCtrl_ProcessPCF(filename)
 									end
 									if modes[k] == PARTCTRL_CPOINT_MODE_POSITION then
 										//also make a list of all the cpoints that have "on_model" fx so that we can print extra info about it in spawnicons
-										if v2["on_model"] then
+										if CLIENT and v2["on_model"] then
 											on_model = on_model or {}
 											on_model[k] = true
 										end
-										//also make a list of cpoints that define a cull plane, so we can draw helpers for them
+										//also make a list of cpoints that define a cull plane, so we can reposition them and draw helpers for them
 										if v2["plane"] then
 											cpoint_planes = cpoint_planes or {}
 											cpoint_planes[k] = cpoint_planes[k] or {}
@@ -2692,21 +2692,23 @@ function PartCtrl_ProcessPCF(filename)
 					if t2[particle2].screenspace then
 						t2[particle].screenspace_from_child = true
 					end
-					//Also inherit spawnicon_playerposfix from children here
-					if t2[particle2].spawnicon_playerposfix then
-						t2[particle].spawnicon_playerposfix = true
-					end
-					//Also inherit spawnicon_forcedpositions from children here
-					if t2[particle2].spawnicon_forcedpositions then
-						t2[particle].spawnicon_forcedpositions = t2[particle].spawnicon_forcedpositions or {0,0,0,0,0,0}
-						t2[particle].spawnicon_forcedpositions = {
-							math.min(t2[particle].spawnicon_forcedpositions[1], t2[particle2].spawnicon_forcedpositions[1]),
-							math.min(t2[particle].spawnicon_forcedpositions[2], t2[particle2].spawnicon_forcedpositions[2]),
-							math.min(t2[particle].spawnicon_forcedpositions[3], t2[particle2].spawnicon_forcedpositions[3]),
-							math.max(t2[particle].spawnicon_forcedpositions[4], t2[particle2].spawnicon_forcedpositions[4]),
-							math.max(t2[particle].spawnicon_forcedpositions[5], t2[particle2].spawnicon_forcedpositions[5]),
-							math.max(t2[particle].spawnicon_forcedpositions[6], t2[particle2].spawnicon_forcedpositions[6]),
-						}
+					if CLIENT then
+						//Also inherit spawnicon_playerposfix from children here
+						if t2[particle2].spawnicon_playerposfix then
+							t2[particle].spawnicon_playerposfix = true
+						end
+						//Also inherit spawnicon_forcedpositions from children here
+						if t2[particle2].spawnicon_forcedpositions then
+							t2[particle].spawnicon_forcedpositions = t2[particle].spawnicon_forcedpositions or {0,0,0,0,0,0}
+							t2[particle].spawnicon_forcedpositions = {
+								math.min(t2[particle].spawnicon_forcedpositions[1], t2[particle2].spawnicon_forcedpositions[1]),
+								math.min(t2[particle].spawnicon_forcedpositions[2], t2[particle2].spawnicon_forcedpositions[2]),
+								math.min(t2[particle].spawnicon_forcedpositions[3], t2[particle2].spawnicon_forcedpositions[3]),
+								math.max(t2[particle].spawnicon_forcedpositions[4], t2[particle2].spawnicon_forcedpositions[4]),
+								math.max(t2[particle].spawnicon_forcedpositions[5], t2[particle2].spawnicon_forcedpositions[5]),
+								math.max(t2[particle].spawnicon_forcedpositions[6], t2[particle2].spawnicon_forcedpositions[6]),
+							}
+						end
 					end
 				end
 			end
@@ -2848,7 +2850,7 @@ function PartCtrl_ProcessPCF(filename)
 			t2[particle]["sets_particle_pos"] = sets_particle_pos_2
 
 			//Do info text for on_model
-			if on_model then
+			if CLIENT and on_model then
 				local text = ""
 				local docomma = false
 				for k, _ in pairs (on_model) do
@@ -2887,21 +2889,23 @@ function PartCtrl_ProcessPCF(filename)
 						end
 						t2[particle].cpoint_planes[k] = newplanes
 					end
-					//Add info text for planes
-					local text = ""
-					local docomma = false
-					for k, _ in pairs (t2[particle].cpoint_planes) do
-						if docomma then text = text .. ", " end
-						text = text .. k
-						docomma = true
+					if CLIENT then
+						//Add info text for planes
+						local text = ""
+						local docomma = false
+						for k, _ in pairs (t2[particle].cpoint_planes) do
+							if docomma then text = text .. ", " end
+							text = text .. k
+							docomma = true
+						end
+						local text2
+						if table.Count(t2[particle].cpoint_planes) > 1 then
+							text2 = "Control points %CPOINTS control planes that prevent particles from passing through."
+						else
+							text2 = "Control point %CPOINTS controls a plane that prevents particles from passing through."
+						end
+						PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 					end
-					local text2
-					if table.Count(t2[particle].cpoint_planes) > 1 then
-						text2 = "Control points %CPOINTS control planes that prevent particles from passing through."
-					else
-						text2 = "Control point %CPOINTS controls a plane that prevents particles from passing through."
-					end
-					PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 				end
 
 				//Do min cpoint distance for tracer fx
@@ -2955,81 +2959,85 @@ function PartCtrl_ProcessPCF(filename)
 						end
 						if is_non_spp then
 							t2[particle].cpoint_distance_overrides[k].offset_from_main_row = true
-							//Do info text
-							local identical = false
-							if table.Count(text.increase) == table.Count(text.decrease) then
-								identical = true
-								for k, _ in pairs (text.increase) do
-									if !text.decrease[k] then identical = false break end
+							if CLIENT then
+								//Do info text
+								local identical = false
+								if table.Count(text.increase) == table.Count(text.decrease) then
+									identical = true
+									for k, _ in pairs (text.increase) do
+										if !text.decrease[k] then identical = false break end
+									end
 								end
-							end
-							local text_increase = ""
-							local docomma = false
-							for k, _ in SortedPairs (text.increase) do
-								if docomma then text_increase = text_increase .. ", " end
-								text_increase = text_increase .. k
-								docomma = true
-							end
-							local text_decrease = ""
-							docomma = false
-							for k, _ in SortedPairs (text.decrease) do
-								if docomma then text_decrease = text_decrease .. ", " end
-								text_decrease = text_decrease .. k
-								docomma = true
-							end
-							if identical then
-								text = "Control point " .. k .. " increases and decreases " .. text_decrease .. " of particles as they get closer to it."
-							elseif table.Count(text.increase) == 0 then
-								text = "Control point " .. k .. " decreases " .. text_decrease .. " of particles as they get closer to it."
-							elseif table.Count(text.decrease) == 0 then
-								text = "Control point " .. k .. " increases " .. text_increase .. " of particles as they get closer to it."
-							else
-								text = "Control point " .. k .. " increases " .. text_increase .. " and decreases " .. text_decrease .. " of particles as they get closer to it."
-							end
-							PartCtrl_AddInfoText(t2[particle], text)
-						end
-					end
-				end
-			end
-
-			//Inherit starttime from children, and add info text if necessary
-			local starttime = t2[particle].starttime_raw
-			local function StartTimeFromChildren(particle2, depth, child_delay)
-				depth = depth or 0
-				depth = depth + 1
-				if depth > 99 then
-					MsgN("PartCtrl: ", filename, " ", particle2, " StartTimeFromChildren has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
-					return
-				end
-
-				if istable(t2[particle2].children) then
-					for _, childtab in pairs (t2[particle2].children) do
-						if !t2[childtab.child] then
-							if dodebug then MsgN("PartCtrl: ", filename, " ", particle2, " StartTimeFromChildren tried to get nonexistent child effect ", child) end
-						elseif !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
-							if t2[childtab.child].starttime_raw != nil then
-								if starttime == nil then
-									starttime = t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay
+								local text_increase = ""
+								local docomma = false
+								for k, _ in SortedPairs (text.increase) do
+									if docomma then text_increase = text_increase .. ", " end
+									text_increase = text_increase .. k
+									docomma = true
+								end
+								local text_decrease = ""
+								docomma = false
+								for k, _ in SortedPairs (text.decrease) do
+									if docomma then text_decrease = text_decrease .. ", " end
+									text_decrease = text_decrease .. k
+									docomma = true
+								end
+								if identical then
+									text = "Control point " .. k .. " increases and decreases " .. text_decrease .. " of particles as they get closer to it."
+								elseif table.Count(text.increase) == 0 then
+									text = "Control point " .. k .. " decreases " .. text_decrease .. " of particles as they get closer to it."
+								elseif table.Count(text.decrease) == 0 then
+									text = "Control point " .. k .. " increases " .. text_increase .. " of particles as they get closer to it."
 								else
-									starttime = math.min(t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay, starttime)
+									text = "Control point " .. k .. " increases " .. text_increase .. " and decreases " .. text_decrease .. " of particles as they get closer to it."
 								end
+								PartCtrl_AddInfoText(t2[particle], text)
 							end
-							//Now inherit from the child's children, and so on
-							//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
-							StartTimeFromChildren(childtab.child, depth, (childtab.delay or 0) + child_delay)
 						end
 					end
 				end
 			end
-			StartTimeFromChildren(particle, nil, 0)
-			if starttime != nil then
-				starttime = math.Round(starttime, 2)
-				if starttime > 0.5 then
-					t2[particle].starttime = starttime
-					if starttime == 1 then
-						PartCtrl_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " second.")
-					else
-						PartCtrl_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " seconds.")
+
+			if CLIENT then
+				//Inherit starttime from children, and add info text if necessary
+				local starttime = t2[particle].starttime_raw
+				local function StartTimeFromChildren(particle2, depth, child_delay)
+					depth = depth or 0
+					depth = depth + 1
+					if depth > 99 then
+						MsgN("PartCtrl: ", filename, " ", particle2, " StartTimeFromChildren has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
+						return
+					end
+
+					if istable(t2[particle2].children) then
+						for _, childtab in pairs (t2[particle2].children) do
+							if !t2[childtab.child] then
+								if dodebug then MsgN("PartCtrl: ", filename, " ", particle2, " StartTimeFromChildren tried to get nonexistent child effect ", child) end
+							elseif !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
+								if t2[childtab.child].starttime_raw != nil then
+									if starttime == nil then
+										starttime = t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay
+									else
+										starttime = math.min(t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay, starttime)
+									end
+								end
+								//Now inherit from the child's children, and so on
+								//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
+								StartTimeFromChildren(childtab.child, depth, (childtab.delay or 0) + child_delay)
+							end
+						end
+					end
+				end
+				StartTimeFromChildren(particle, nil, 0)
+				if starttime != nil then
+					starttime = math.Round(starttime, 2)
+					if starttime > 0.5 then
+						t2[particle].starttime = starttime
+						if starttime == 1 then
+							PartCtrl_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " second.")
+						else
+							PartCtrl_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " seconds.")
+						end
 					end
 				end
 			end
@@ -3143,10 +3151,10 @@ function PartCtrl_ProcessPCF(filename)
 			if screenspace then
 				if blacklist_screenfx:GetBool() then
 					PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_ScreenSpace_Blacklisted")
-				else
+				elseif CLIENT then
 					PartCtrl_AddInfoText(t2[particle], "Screenspace effect: draws an overlay directly onto the screen")
 				end
-			elseif vm then
+			elseif CLIENT and vm then
 				//Also add info text for viewmodel effects here, because this isn't inherited and doesn't apply to screenspace fx
 				PartCtrl_AddInfoText(t2[particle], "Viewmodel effect: draws in front of everything, and has a distorted position unless attached to a model on a non-0 attachment.")
 			end
