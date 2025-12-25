@@ -841,6 +841,8 @@ function ENT:SpecialEffectInitialize()
 		local key = self:GetNumpad()
 		self.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", self, true)
 		self.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", self, false)
+
+		self:StopParticles() //if the projectile model has its own built-in particle fx, don't show them on this ent (i.e. tf2 sentry rockets)
 	else
 		self.SpecialEffectChildrenSorted = self.SpecialEffectChildrenSorted or {[false] = {}, [true] = {}, ["bad"] = {}}
 	end
@@ -1074,6 +1076,7 @@ function ENT:SpecialEffectThink()
 	if !ispaused then
 		for proj, dietime in pairs (self.ProjectileTimers) do
 			if IsValid(proj) then
+				if CLIENT then proj:FrameAdvance() end //make clientside projs play their idle animation, if applicable
 				if time >= dietime then
 					if CLIENT then
 						if IsValid(proj) and !proj.DontDoExpire and IsValid(self) then
@@ -1921,6 +1924,7 @@ else
 		elseif input == "projvis_model" then
 
 			self:SetModel(net.ReadString())
+			self:StopParticles() //if the projectile model has its own built-in particle fx, don't show them on this ent (i.e. tf2 sentry rockets)
 			refreshtable = true
 
 		elseif input == "projvis_skin" then

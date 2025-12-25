@@ -9,6 +9,7 @@ ENT.Type			= "anim"
 ENT.Spawnable			= false 
 ENT.DoNotDuplicate		= true //which of these actually works? doesn't matter, use them both
 ENT.DisableDuplicator		= true
+ENT.AutomaticFrameAdvance	= true
 
 if CLIENT then
 	language.Add("ent_partctrl_proj", "Physics Object")  //for killfeed notices
@@ -35,6 +36,9 @@ function ENT:Initialize()
 	if !self.PhysicsSounds then
 		self.PartCtrl_ProjDisableSounds = true
 	end
+
+	//Play the idle animation, if applicable
+	self:ResetSequence(0)
 
 end
 
