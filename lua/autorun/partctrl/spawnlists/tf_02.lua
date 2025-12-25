@@ -1243,2093 +1243,2135 @@
 		{
 			"type"		"partctrl"
 			"path"		"tf"
+			"name"		"ExplosionCore_MidAir"
+			"pcf"		"particles/explosion.pcf"
+		}
+		"185"
+		{
+			"type"		"partctrl"
+			"path"		"tf"
+			"name"		"ExplosionCore_Wall"
+			"pcf"		"particles/explosion.pcf"
+		}
+		"186"
+		{
+			"type"		"partctrl"
+			"path"		"tf"
+			"name"		"ExplosionCore_MidAir_underwater"
+			"pcf"		"particles/explosion.pcf"
+		}
+		"187"
+		{
+			"type"		"partctrl"
+			"path"		"tf"
+			"name"		"ExplosionCore_Wall_underwater"
+			"pcf"		"particles/explosion.pcf"
+		}
+		"188"
+		{
+			"type"		"partctrl"
+			"path"		"tf"
+			"name"		"halloween_explosion"
+			"pcf"		"particles/halloween.pcf"
+		}
+		"189"
+		{
+			"type"		"partctrl"
+			"path"		"tf"
+			"name"		"pyrovision_explosion"
+			"pcf"		"particles/explosion.pcf"
+		}
+		"190"
+		{
+			"type"		"partctrl"
+			"path"		"tf"
 			"name"		"laser_sight_beam"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"185"
+		"191"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"turret_shield"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"186"
+		"192"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"cart_flashinglight_red"
 			"pcf"		"particles/flag_particles.pcf"
 		}
-		"187"
+		"193"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"cart_flashinglight"
 			"pcf"		"particles/flag_particles.pcf"
 		}
-		"188"
+		"194"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"sentrydamage_1"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"189"
+		"195"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"sentrydamage_2"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"190"
+		"196"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"sentrydamage_3"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"191"
+		"197"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"sentrydamage_4"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"192"
+		"198"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"ExplosionCore_buildings"
 			"pcf"		"particles/explosion.pcf"
 		}
-		"193"
+		"199"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spark_electric01"
 			"pcf"		"particles/sparks.pcf"
 		}
-		"194"
+		"200"
 		{
 			"type"		"model"
 			"model"		"models/buildables/sentry3_rockets.mdl"
 		}
-		"195"
+		"201"
 		{
 			"type"		"header"
 			"text"		"Dispensers"
 		}
-		"196"
+		"202"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dispenser_heal_red"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"197"
+		"203"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dispenser_heal_blue"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"198"
+		"204"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dispenserdamage_1"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"199"
+		"205"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dispenserdamage_2"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"200"
+		"206"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dispenserdamage_3"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"201"
+		"207"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dispenserdamage_4"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"202"
+		"208"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"ExplosionCore_buildings"
 			"pcf"		"particles/explosion.pcf"
 		}
-		"203"
+		"209"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spark_electric01"
 			"pcf"		"particles/sparks.pcf"
 		}
-		"204"
+		"210"
 		{
 			"type"		"header"
 			"text"		"Teleporters"
 		}
-		"205"
+		"211"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_arms_circle_red_blink"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"206"
+		"212"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_arms_circle_blue_blink"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"207"
+		"213"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_arms_circle_red"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"208"
+		"214"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_arms_circle_blue"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"209"
+		"215"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_red_entrance_level1"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"210"
+		"216"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_blue_entrance_level1"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"211"
+		"217"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_red_entrance_level2"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"212"
+		"218"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_blue_entrance_level2"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"213"
+		"219"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_red_entrance_level3"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"214"
+		"220"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_blue_entrance_level3"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"215"
+		"221"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_red_exit_level1"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"216"
+		"222"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_blue_exit_level1"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"217"
+		"223"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_red_exit_level2"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"218"
+		"224"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_blue_exit_level2"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"219"
+		"225"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_red_exit_level3"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"220"
+		"226"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_blue_exit_level3"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"221"
+		"227"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_red_charged_level1"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"222"
+		"228"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_blue_charged_level1"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"223"
+		"229"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_red_charged_level2"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"224"
+		"230"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_blue_charged_level2"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"225"
+		"231"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_red_charged_level3"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"226"
+		"232"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_blue_charged_level3"
 			"pcf"		"particles/teleport_status.pcf"
 		}
-		"227"
+		"233"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleported_red"
 			"pcf"		"particles/teleported_fx.pcf"
 		}
-		"228"
+		"234"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleported_blue"
 			"pcf"		"particles/teleported_fx.pcf"
 		}
-		"229"
+		"235"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"player_sparkles_red"
 			"pcf"		"particles/player_recent_teleport.pcf"
 		}
-		"230"
+		"236"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"player_sparkles_blue"
 			"pcf"		"particles/player_recent_teleport.pcf"
 		}
-		"231"
+		"237"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleportedin_red"
 			"pcf"		"particles/teleported_fx.pcf"
 		}
-		"232"
+		"238"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleportedin_blue"
 			"pcf"		"particles/teleported_fx.pcf"
 		}
-		"233"
+		"239"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"tpdamage_1"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"234"
+		"240"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"tpdamage_2"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"235"
+		"241"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"tpdamage_3"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"236"
+		"242"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"tpdamage_4"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"237"
+		"243"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"ExplosionCore_buildings"
 			"pcf"		"particles/explosion.pcf"
 		}
-		"238"
+		"244"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spark_electric01"
 			"pcf"		"particles/sparks.pcf"
 		}
-		"239"
+		"245"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleported_mvm_bot"
 			"pcf"		"particles/teleported_fx.pcf"
 		}
-		"240"
+		"246"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"teleporter_mvm_bot_persist"
 			"pcf"		"particles/teleported_fx.pcf"
 		}
-		"241"
+		"247"
 		{
 			"type"		"header"
 			"text"		"Short Circuit"
 		}
-		"242"
+		"248"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_lightningball_parent_red"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"243"
+		"249"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_lightningball_parent_blue"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"244"
+		"250"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_lightningball_hit_red"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"245"
+		"251"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_lightningball_hit_blue"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"246"
+		"252"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_cow_explosioncore_normal"
 			"pcf"		"particles/drg_cowmangler.pcf"
 		}
-		"247"
+		"253"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_cow_explosioncore_normal_blue"
 			"pcf"		"particles/drg_cowmangler.pcf"
 		}
-		"248"
+		"254"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_arm_muzzleflash"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"249"
+		"255"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_arm_muzzleflash2"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"250"
+		"256"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_arm_impact"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"251"
+		"257"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_sniper_fizzle"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"252"
+		"258"
 		{
 			"type"		"header"
 			"text"		"Wrenches and Rescue Ranger"
 		}
-		"253"
+		"259"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"nutsnbolts_build"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
-		"254"
+		"260"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"repair_claw_heal_red"
 			"pcf"		"particles/items_engineer.pcf"
 		}
-		"255"
+		"261"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"repair_claw_heal_blue"
 			"pcf"		"particles/items_engineer.pcf"
 		}
-		"256"
+		"262"
 		{
 			"type"		"model"
 			"model"		"models/weapons/w_models/w_repair_claw.mdl"
 		}
-		"257"
+		"263"
 		{
 			"type"		"model"
 			"model"		"models/weapons/w_models/w_repair_claw.mdl"
 			"skin"		"1"
 		}
-		"258"
+		"264"
 		{
 			"type"		"model"
 			"model"		"models/weapons/w_models/w_repair_claw_gib1.mdl"
 		}
-		"259"
+		"265"
 		{
 			"type"		"model"
 			"model"		"models/weapons/w_models/w_repair_claw_gib2.mdl"
 		}
-		"260"
+		"266"
 		{
 			"type"		"header"
 			"text"		"Syringe guns"
 		}
-		"261"
+		"267"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"muzzle_syringe"
 			"pcf"		"particles/muzzle_flash.pcf"
 		}
-		"262"
+		"268"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"nailtrails_medic_red"
 			"pcf"		"particles/nailtrails.pcf"
 		}
-		"263"
+		"269"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"nailtrails_medic_blue"
 			"pcf"		"particles/nailtrails.pcf"
 		}
-		"264"
+		"270"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"nailtrails_medic_red_crit"
 			"pcf"		"particles/nailtrails.pcf"
 		}
-		"265"
+		"271"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"nailtrails_medic_blue_crit"
 			"pcf"		"particles/nailtrails.pcf"
 		}
-		"266"
+		"272"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"healshot_trail_red"
 			"pcf"		"particles/rockettrail.pcf"
 		}
-		"267"
+		"273"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"healshot_trail_blue"
 			"pcf"		"particles/rockettrail.pcf"
 		}
-		"268"
+		"274"
 		{
 			"type"		"model"
 			"model"		"models/weapons/w_models/w_syringe_proj.mdl"
 		}
-		"269"
+		"275"
 		{
 			"type"		"model"
 			"model"		"models/weapons/w_models/w_syringe_proj.mdl"
 			"skin"		"1"
 		}
-		"270"
+		"276"
 		{
 			"type"		"header"
 			"text"		"Mediguns"
 		}
-		"271"
+		"277"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"medicgun_beam_red"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"272"
+		"278"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"medicgun_beam_blue"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"273"
+		"279"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"medicgun_beam_red_targeted"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"274"
+		"280"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"medicgun_beam_blue_targeted"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"275"
+		"281"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"medicgun_beam_attrib_overheal_red"
 			"pcf"		"particles/medicgun_attrib.pcf"
 		}
-		"276"
+		"282"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"medicgun_beam_attrib_overheal_blue"
 			"pcf"		"particles/medicgun_attrib.pcf"
 		}
-		"277"
+		"283"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"medicgun_beam_attrib_overheal"
 			"pcf"		"particles/medicgun_attrib.pcf"
 		}
-		"278"
+		"284"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"medicgun_invulnstatus_fullcharge_red"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"279"
+		"285"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"medicgun_invulnstatus_fullcharge_blue"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"280"
+		"286"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"medicgun_beam_red_invun"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"281"
+		"287"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"medicgun_beam_blue_invun"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"282"
+		"288"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"critgun_weaponmodel_red"
 			"pcf"		"particles/firstperson_weapon_fx.pcf"
 		}
-		"283"
+		"289"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"critgun_weaponmodel_blu"
 			"pcf"		"particles/firstperson_weapon_fx.pcf"
 		}
-		"284"
+		"290"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drain_effect"
 			"pcf"		"particles/medicgun_attrib.pcf"
 		}
-		"285"
+		"291"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"mvm_shield_impact"
 			"pcf"		"particles/mvm.pcf"
 		}
-		"286"
+		"292"
 		{
 			"type"		"header"
 			"text"		"Sniper rifles and Huntsman"
 		}
-		"287"
+		"293"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"muzzle_sniperrifle"
 			"pcf"		"particles/muzzle_flash.pcf"
 		}
-		"288"
+		"294"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"peejar_impact_small"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"289"
+		"295"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_sniper_muzzleflash"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"290"
+		"296"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_sniper_fizzle"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"291"
+		"297"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_sniper_rail"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"292"
+		"298"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_sniper_rail_red"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"293"
+		"299"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_sniper_rail_blue"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"294"
+		"300"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"tfc_sniper_charge_red"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"295"
+		"301"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"tfc_sniper_charge_blue"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"296"
+		"302"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"tfc_sniper_distortion_trail"
 			"pcf"		"particles/bullet_tracers.pcf"
 		}
-		"297"
+		"303"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"flaming_arrow"
 			"pcf"		"particles/burningplayer.pcf"
 		}
-		"298"
+		"304"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"v_flaming_arrow"
 			"pcf"		"particles/burningplayer.pcf"
 		}
-		"299"
+		"305"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"flying_flaming_arrow"
 			"pcf"		"particles/burningplayer.pcf"
 		}
-		"300"
+		"306"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"pyrovision_flaming_arrow"
 			"pcf"		"particles/burningplayer.pcf"
 		}
-		"301"
+		"307"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"pyrovision_v_flaming_arrow"
 			"pcf"		"particles/burningplayer.pcf"
 		}
-		"302"
+		"308"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"pyrovision_flying_flaming_arrow"
 			"pcf"		"particles/burningplayer.pcf"
 		}
-		"303"
+		"309"
 		{
 			"type"		"model"
 			"model"		"models/weapons/w_models/w_arrow.mdl"
 		}
-		"304"
+		"310"
 		{
 			"type"		"model"
 			"model"		"models/weapons/w_models/w_arrow_gib1.mdl"
 		}
-		"305"
+		"311"
 		{
 			"type"		"model"
 			"model"		"models/weapons/w_models/w_arrow_gib2.mdl"
 		}
-		"306"
+		"312"
 		{
 			"type"		"header"
 			"text"		"Sappers"
 		}
-		"307"
+		"313"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"sapper_sentry1_fx"
 			"pcf"		"particles/sparks.pcf"
 		}
-		"308"
+		"314"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bread_sapper_bolts"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"309"
+		"315"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"ExplosionCore_sapperdestroyed"
 			"pcf"		"particles/explosion.pcf"
 		}
-		"310"
+		"316"
 		{
 			"type"		"header"
 			"text"		"Spy-cicle"
 		}
-		"311"
+		"317"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"xms_icicle_idle"
 			"pcf"		"particles/xms.pcf"
 		}
-		"312"
+		"318"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"xms_icicle_impact"
 			"pcf"		"particles/xms.pcf"
 		}
-		"313"
+		"319"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"xms_icicle_impact_dryice"
 			"pcf"		"particles/xms.pcf"
 		}
-		"314"
+		"320"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"xms_icicle_melt"
 			"pcf"		"particles/xms.pcf"
 		}
-		"315"
+		"321"
 		{
 			"type"		"header"
 			"text"		"Throwables"
 		}
-		"316"
+		"322"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"stunballtrail_red"
 			"pcf"		"particles/stickybomb.pcf"
 		}
-		"317"
+		"323"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"stunballtrail_blue"
 			"pcf"		"particles/stickybomb.pcf"
 		}
-		"318"
+		"324"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"stunballtrail_red_crit"
 			"pcf"		"particles/stickybomb.pcf"
 		}
-		"319"
+		"325"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"stunballtrail_blue_crit"
 			"pcf"		"particles/stickybomb.pcf"
 		}
-		"320"
+		"326"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"xms_ornament_smash_blue"
 			"pcf"		"particles/xms.pcf"
 		}
-		"321"
+		"327"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"xms_ornament_smash_red"
 			"pcf"		"particles/xms.pcf"
 		}
-		"322"
+		"328"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"xms_ornament_glitter"
 			"pcf"		"particles/xms.pcf"
 		}
-		"323"
+		"329"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"peejar_trail_red"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"324"
+		"330"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"peejar_trail_blu"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"325"
+		"331"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"peejar_impact"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"326"
+		"332"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"peejar_impact_milk"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"327"
+		"333"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"gas_can_impact_red"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"328"
+		"334"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"gas_can_impact_blue"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"329"
+		"335"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"gas_can_red"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"330"
+		"336"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"gas_can_blue"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"331"
+		"337"
 		{
 			"type"		"model"
 			"model"		"models/weapons/w_models/w_baseball.mdl"
 		}
-		"332"
+		"338"
 		{
 			"type"		"model"
 			"model"		"models/weapons/c_models/c_xms_festive_ornament.mdl"
 		}
-		"333"
+		"339"
 		{
 			"type"		"model"
 			"model"		"models/weapons/c_models/c_xms_festive_ornament.mdl"
 			"skin"		"1"
 		}
-		"334"
+		"340"
 		{
 			"type"		"model"
 			"model"		"models/weapons/c_models/urinejar.mdl"
 		}
-		"335"
+		"341"
 		{
 			"type"		"model"
 			"model"		"models/weapons/c_models/c_madmilk/c_madmilk.mdl"
 		}
-		"336"
+		"342"
 		{
 			"type"		"model"
 			"model"		"models/workshop_partner/weapons/c_models/c_sd_cleaver/c_sd_cleaver.mdl"
 		}
-		"337"
+		"343"
 		{
 			"type"		"model"
 			"model"		"models/weapons/c_models/c_gascan/c_gascan.mdl"
 		}
-		"338"
+		"344"
 		{
 			"type"		"model"
 			"model"		"models/weapons/c_models/c_gascan/c_gascan.mdl"
 			"skin"		"1"
 		}
-		"339"
+		"345"
 		{
 			"type"		"header"
 			"text"		"Colorable Dr. Grordbort effects"
 		}
-		"340"
+		"346"
 		{
 			"type"		"header"
 			"text"		"RED colors: 184 56 59, 128 46 32"
 		}
-		"341"
+		"347"
 		{
 			"type"		"header"
 			"text"		"BLU colors: 88 133 162, 37 109 140"
 		}
-		"342"
+		"348"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_cowmangler_idle"
 			"pcf"		"particles/drg_cowmangler.pcf"
 		}
-		"343"
+		"349"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_cowmangler_muzzleflash_normal"
 			"pcf"		"particles/drg_cowmangler.pcf"
 		}
-		"344"
+		"350"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_cowmangler_muzzleflash_chargeup"
 			"pcf"		"particles/drg_cowmangler.pcf"
 		}
-		"345"
+		"351"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_cowmangler_muzzleflash_charged"
 			"pcf"		"particles/drg_cowmangler.pcf"
 		}
-		"346"
+		"352"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_cowmangler_trail_normal"
 			"pcf"		"particles/drg_cowmangler.pcf"
 		}
-		"347"
+		"353"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_cowmangler_trail_charged"
 			"pcf"		"particles/drg_cowmangler.pcf"
 		}
-		"348"
+		"354"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_cowmangler_impact_normal"
 			"pcf"		"particles/drg_cowmangler.pcf"
 		}
-		"349"
+		"355"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_cowmangler_impact_charged"
 			"pcf"		"particles/drg_cowmangler.pcf"
 		}
-		"350"
+		"356"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_bison_idle"
 			"pcf"		"particles/drg_bison.pcf"
 		}
-		"351"
+		"357"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_bison_muzzleflash"
 			"pcf"		"particles/drg_bison.pcf"
 		}
-		"352"
+		"358"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_bison_projectile"
 			"pcf"		"particles/drg_bison.pcf"
 		}
-		"353"
+		"359"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_bison_projectile_crit"
 			"pcf"		"particles/drg_bison.pcf"
 		}
-		"354"
+		"360"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_bison_impact"
 			"pcf"		"particles/drg_bison.pcf"
 		}
-		"355"
+		"361"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_bison_reload"
 			"pcf"		"particles/drg_bison.pcf"
 		}
-		"356"
+		"362"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_pomson_idle"
 			"pcf"		"particles/drg_engineer.pcf"
 		}
-		"357"
+		"363"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_pomson_muzzleflash"
 			"pcf"		"particles/drg_engineer.pcf"
 		}
-		"358"
+		"364"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_pomson_projectile"
 			"pcf"		"particles/drg_engineer.pcf"
 		}
-		"359"
+		"365"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_pomson_projectile_crit"
 			"pcf"		"particles/drg_engineer.pcf"
 		}
-		"360"
+		"366"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_pomson_impact"
 			"pcf"		"particles/drg_engineer.pcf"
 		}
-		"361"
+		"367"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_pomson_impact_drain"
 			"pcf"		"particles/drg_engineer.pcf"
 		}
-		"362"
+		"368"
 		{
 			"type"		"header"
 			"text"		"C.A.P.P.E.R."
 		}
-		"363"
+		"369"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"muzzle_raygun_red"
 			"pcf"		"particles/invasion_ray_gun_fx.pcf"
 		}
-		"364"
+		"370"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"muzzle_raygun_blue"
 			"pcf"		"particles/invasion_ray_gun_fx.pcf"
 		}
-		"365"
+		"371"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bullet_tracer_raygun_red"
 			"pcf"		"particles/invasion_ray_gun_fx.pcf"
 		}
-		"366"
+		"372"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bullet_tracer_raygun_blue"
 			"pcf"		"particles/invasion_ray_gun_fx.pcf"
 		}
-		"367"
+		"373"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bullet_tracer_raygun_red_crit"
 			"pcf"		"particles/invasion_ray_gun_fx.pcf"
 		}
-		"368"
+		"374"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bullet_tracer_raygun_blue_crit"
 			"pcf"		"particles/invasion_ray_gun_fx.pcf"
 		}
-		"369"
+		"375"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"raygun_projectile_red"
 			"pcf"		"particles/invasion_ray_gun_fx.pcf"
 		}
-		"370"
+		"376"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"raygun_projectile_blue"
 			"pcf"		"particles/invasion_ray_gun_fx.pcf"
 		}
-		"371"
+		"377"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"raygun_projectile_red_crit"
 			"pcf"		"particles/invasion_ray_gun_fx.pcf"
 		}
-		"372"
+		"378"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"raygun_projectile_blue_crit"
 			"pcf"		"particles/invasion_ray_gun_fx.pcf"
 		}
-		"373"
+		"379"
 		{
 			"type"		"header"
 			"text"		"Pumpkin bombs and Halloween spells"
 		}
-		"374"
+		"380"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"pumpkin_explode"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"375"
+		"381"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spellbook_minor_burning"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"376"
+		"382"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spellbook_major_burning"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"377"
+		"383"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spellbook_rainbow"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"378"
+		"384"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_cast_wheel_red"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"379"
+		"385"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_cast_wheel_blue"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"380"
+		"386"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_batball_throw_red"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"381"
+		"387"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_batball_throw_blue"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"382"
+		"388"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_batball_impact_red"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"383"
+		"389"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_batball_impact_blue"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"384"
+		"390"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_batball_red"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"385"
+		"391"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_batball_blue"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"386"
+		"392"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_fireball_small_red"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"387"
+		"393"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_fireball_small_blue"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"388"
+		"394"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_fireball_tendril_parent_red"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"389"
+		"395"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_fireball_tendril_parent_blue"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"390"
+		"396"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_lightningball_parent_red"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"391"
+		"397"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_lightningball_parent_blue"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"392"
+		"398"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_lightningball_hit_red"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"393"
+		"399"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_lightningball_hit_blue"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"394"
+		"400"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_overheal_red"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"395"
+		"401"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_overheal_blue"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"396"
+		"402"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_pumpkin_mirv_goop_red"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"397"
+		"403"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_pumpkin_mirv_goop_blue"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"398"
+		"404"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_skeleton_goop_green"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"399"
+		"405"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_teleport_red"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"400"
+		"406"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spell_teleport_blue"
 			"pcf"		"particles/halloween.pcf"
 		}
-		"401"
+		"407"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"eyeboss_tp_player"
 			"pcf"		"particles/eyeboss.pcf"
 		}
-		"402"
+		"408"
 		{
 			"type"		"header"
 			"text"		"Mannpower powerups"
 		}
-		"403"
+		"409"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"powerup_supernova_ready"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"404"
+		"410"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"powerup_supernova_explode_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"405"
+		"411"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"powerup_supernova_explode_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"406"
+		"412"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"powerup_supernova_strike_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"407"
+		"413"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"powerup_supernova_strike_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"408"
+		"414"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"powerup_king_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"409"
+		"415"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"powerup_king_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"410"
+		"416"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"plague_transmission"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"411"
+		"417"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"powerup_plague_carrier"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"412"
+		"418"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"plague_healthkit_pickup"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"413"
+		"419"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"mannpower_imbalance_red"
 			"pcf"		"particles/level_fx.pcf"
 		}
-		"414"
+		"420"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"mannpower_imbalance_blue"
 			"pcf"		"particles/level_fx.pcf"
 		}
-		"415"
+		"421"
 		{
 			"type"		"header"
 			"text"		"Unused weapon effects"
 		}
-		"416"
+		"422"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"Explosion_ShockWave_01"
 			"pcf"		"particles/explosion.pcf"
 		}
-		"417"
+		"423"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"rocket_trail_classic"
 			"pcf"		"particles/classic_rocket_trail.pcf"
 		}
-		"418"
+		"424"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"rocket_trail_classic_crit_red"
 			"pcf"		"particles/classic_rocket_trail.pcf"
 		}
-		"419"
+		"425"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"rocket_trail_classic_crit_blue"
 			"pcf"		"particles/classic_rocket_trail.pcf"
 		}
-		"420"
+		"426"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"rocket_explosion_classic"
 			"pcf"		"particles/classic_rocket_trail.pcf"
 		}
-		"421"
+		"427"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"rocket_explosion_classic_crit_blue"
 			"pcf"		"particles/classic_rocket_trail.pcf"
 		}
-		"422"
+		"428"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"rocket_explosion_classic_crit_red"
 			"pcf"		"particles/classic_rocket_trail.pcf"
 		}
-		"423"
+		"429"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"mvm_soldier_shockwave_stun"
 			"pcf"		"particles/mvm.pcf"
 		}
-		"424"
+		"430"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"mvm_soldier_shockwave_stun2"
 			"pcf"		"particles/mvm.pcf"
 		}
-		"425"
+		"431"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"mvm_soldier_shockwave_stun3"
 			"pcf"		"particles/mvm.pcf"
 		}
-		"426"
+		"432"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"mvm_soldier_shockwave_stun4"
 			"pcf"		"particles/mvm.pcf"
 		}
-		"427"
+		"433"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"cowmangler_idle_child_beam01"
 			"pcf"		"particles/drg_cowmangler.pcf"
 		}
-		"428"
+		"434"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bison_muzzleflash_child_beam01"
 			"pcf"		"particles/drg_bison.pcf"
 		}
-		"429"
+		"435"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bison_muzzleflash_child_beam02"
 			"pcf"		"particles/drg_bison.pcf"
 		}
-		"430"
+		"436"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bison_muzzleflash_child_beam04"
 			"pcf"		"particles/drg_bison.pcf"
 		}
-		"431"
+		"437"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bison_muzzleflash_child_beam05"
 			"pcf"		"particles/drg_bison.pcf"
 		}
-		"432"
+		"438"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bison_muzzleflash_child_beam06"
 			"pcf"		"particles/drg_bison.pcf"
 		}
-		"433"
+		"439"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"flamethrower_fire_singular"
 			"pcf"		"particles/flamethrower.pcf"
 		}
-		"434"
+		"440"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"flamethrower_rope"
 			"pcf"		"particles/flamethrower.pcf"
 		}
-		"435"
+		"441"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"flamethrower_rainbow_FP_BACKUP"
 			"pcf"		"particles/flamethrower.pcf"
 		}
-		"436"
+		"442"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"flamethrower_rainbow_FP_BACKUP2"
 			"pcf"		"particles/flamethrower.pcf"
 		}
-		"437"
+		"443"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"projectile_fireball_ring_fire"
 			"pcf"		"particles/flamethrower.pcf"
 		}
-		"438"
+		"444"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"torch_player_burn"
 			"pcf"		"particles/flamethrower.pcf"
 		}
-		"439"
+		"445"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"torch_red_core_1"
 			"pcf"		"particles/flamethrower.pcf"
 		}
-		"440"
+		"446"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"torch_red_temp"
 			"pcf"		"particles/flamethrower.pcf"
 		}
-		"441"
+		"447"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"furious_flyer_activated"
 			"pcf"		"particles/rockettrail.pcf"
 		}
-		"442"
+		"448"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"rocketpack_exhaust_fire"
 			"pcf"		"particles/rocketpack.pcf"
 		}
-		"443"
+		"449"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"rocketpack_exhaust_launch_backup"
 			"pcf"		"particles/rocketpack.pcf"
 		}
-		"444"
+		"450"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_3rd_idle"
 			"pcf"		"particles/drg_pyro.pcf"
 		}
-		"445"
+		"451"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_3rd_trail"
 			"pcf"		"particles/drg_pyro.pcf"
 		}
-		"446"
+		"452"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_3rd_impact"
 			"pcf"		"particles/drg_pyro.pcf"
 		}
-		"447"
+		"453"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"flaming_slap"
 			"pcf"		"particles/burningplayer.pcf"
 		}
-		"448"
+		"454"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"flaming_slap_2"
 			"pcf"		"particles/burningplayer.pcf"
 		}
-		"449"
+		"455"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"flaming_slap_3"
 			"pcf"		"particles/burningplayer.pcf"
 		}
-		"450"
+		"456"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"loose_cannon_buildup_glow"
 			"pcf"		"particles/items_demo.pcf"
 		}
-		"451"
+		"457"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"loose_cannon_buildup_smoke1"
 			"pcf"		"particles/items_demo.pcf"
 		}
-		"452"
+		"458"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"loose_cannon_buildup_smoke2"
 			"pcf"		"particles/items_demo.pcf"
 		}
-		"453"
+		"459"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"loose_cannon_buildup_smoke3a"
 			"pcf"		"particles/items_demo.pcf"
 		}
-		"454"
+		"460"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"loose_cannon_smoke"
 			"pcf"		"particles/items_demo.pcf"
 		}
-		"455"
+		"461"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"loose_cannon_smoke3a"
 			"pcf"		"particles/items_demo.pcf"
 		}
-		"456"
+		"462"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"loose_cannon_sparks2"
 			"pcf"		"particles/items_demo.pcf"
 		}
-		"457"
+		"463"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"loose_cannon_sparks_bang"
 			"pcf"		"particles/items_demo.pcf"
 		}
-		"458"
+		"464"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bread_gloves_crumbs"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"459"
+		"465"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bread_gloves_goop"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"460"
+		"466"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"pomson_muzzleflash_cone"
 			"pcf"		"particles/drg_engineer.pcf"
 		}
-		"461"
+		"467"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"wrenchmotron_idle_electro"
 			"pcf"		"particles/drg_engineer.pcf"
 		}
-		"462"
+		"468"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"drg_wrenchmotron_impact"
 			"pcf"		"particles/drg_engineer.pcf"
 		}
-		"463"
+		"469"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"wrenchmotron_teleport_sparks"
 			"pcf"		"particles/drg_engineer.pcf"
 		}
-		"464"
+		"470"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_widowmaker_metalabsorb"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"465"
+		"471"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"widowmaker_shelleject_nutsnbolts"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"466"
+		"472"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"arm_muzzleflash_test"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"467"
+		"473"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"arm_muzzleflash_zap3"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"468"
+		"474"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"medicgun_beam_machinery"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"469"
+		"475"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"vaccinator_red_beam1"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"470"
+		"476"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"vaccinator_blue_beam1"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"471"
+		"477"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"vaccinator_red_beam2"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"472"
+		"478"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"vaccinator_blue_beam2"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"473"
+		"479"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"vaccinator_red_beam3"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"474"
+		"480"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"vaccinator_blue_beam3"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"475"
+		"481"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bonersaw_temp"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"476"
+		"482"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_sniper_laser_red"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"477"
+		"483"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"dxhr_sniper_laser_blue"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"478"
+		"484"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"sniper_dxhr_laser_linetest"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"479"
+		"485"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"sniper_dxhr_laser_red_pulse"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"480"
+		"486"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"sniper_dxhr_laser_red_pulse_cp0"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"481"
+		"487"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"sniper_dxhr_laser_red_pulse_cp1"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"482"
+		"488"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"sniper_dxhr_laser_red_pulse_line"
 			"pcf"		"particles/dxhr_fx.pcf"
 		}
-		"483"
+		"489"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"bullet_distortion_trail"
 			"pcf"		"particles/rockettrail.pcf"
 		}
-		"484"
+		"490"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"breadjar_impact"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"485"
+		"491"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"tranq_distortion_trail"
 			"pcf"		"particles/rockettrail.pcf"
 		}
-		"486"
+		"492"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"tranq_tracer_teamcolor_blue"
 			"pcf"		"particles/rockettrail.pcf"
 		}
-		"487"
+		"493"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"tranq_tracer_teamcolor_red"
 			"pcf"		"particles/rockettrail.pcf"
 		}
-		"488"
+		"494"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"grenade_smoke"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"489"
+		"495"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"grenade_smoke_cycle"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"490"
+		"496"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spy_stolen_smoke_blue"
 			"pcf"		"particles/disguise.pcf"
 		}
-		"491"
+		"497"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
 			"name"		"spy_stolen_smoke_red"
 			"pcf"		"particles/disguise.pcf"
 		}
-		"492"
+		"498"
 		{
 			"type"		"partctrl"
 			"path"		"tf"
