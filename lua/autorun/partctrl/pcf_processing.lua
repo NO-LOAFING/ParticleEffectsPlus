@@ -2911,20 +2911,24 @@ function PartCtrl_ProcessPCF(filename)
 
 			//Do info text for on_model
 			if CLIENT and on_model then
-				local text = ""
-				local docomma = false
-				for k, _ in pairs (on_model) do
-					if docomma then text = text .. ", " end
-					text = text .. k
-					docomma = true
-				end
-				local text2
-				if table.Count(on_model) > 1 then
-					text2 = "This effect applies to a whole model if control points %CPOINTS are attached"
+				if pos_control_count and pos_control_count == 1 then
+					PartCtrl_AddInfoText(t2[particle], "Applies to a whole model if attached")
 				else
-					text2 = "This effect applies to a whole model if control point %CPOINTS is attached"
+					local text = ""
+					local docomma = false
+					for k, _ in pairs (on_model) do
+						if docomma then text = text .. ", " end
+						text = text .. k
+						docomma = true
+					end
+					local text2
+					if table.Count(on_model) > 1 then
+						text2 = "Applies to a whole model if control points %CPOINTS are attached"
+					else
+						text2 = "Applies to a whole model if control point %CPOINTS is attached"
+					end
+					PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 				end
-				PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 			end
 
 			if pos_control_count and pos_control_count > 1 then

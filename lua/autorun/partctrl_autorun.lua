@@ -35,9 +35,54 @@ end
 
 
 
+//Blacklist bad effects from being loaded, and add info text for unintutive ones; this was a lot more extensive in development, but 
+//shrunk down considerably as we figured out how to handle conflicting fx better and auto-detect more things that need info text.
+
+//The actual .pcf loading is done inside of ent_partctrl.lua, because entity code always runs after autorun code -
+//we want to be sure every addon that wants to add its own blacklist has the chance to do so before the .pcf files actually get read.
+
+local tf2_unusual_wep_pcfs = {
+	["particles/weapon_unusual_cool.pcf"] = true,
+	["particles/weapon_unusual_energyorb.pcf"] = true,
+	["particles/weapon_unusual_hot.pcf"] = true,
+	["particles/weapon_unusual_isotope.pcf"] = true
+}
+local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all conflicting duplicates of other unusual weapon fx"
+hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
+	//These are useless and clog up searches for any TF2 weapon, get rid of them
+	if tf2_unusual_wep_pcfs[filename] then
+		for k, v in pairs (tab) do
+			if string.StartsWith(k, "_unusual_parent_") then
+				PartCtrl_AddCullReason(filename, k, tf2_unusual_wep_blacklist_text)
+			end
+		end
+	end
+end)
+
+local default_comments = {
+	//Team Fortress 2
+	["particles/coin_spin.pcf"] = {
+		coin_spin = "Only creates particles while moving" //this works by outputting a speed value to a cpoint with one operator, and then remapping that value to particle radius with another, which is too complex to auto-detect
+	},
+	["particles/stamp_spin.pcf"] = {
+		stamp_spin = "Only creates particles while moving" //^
+	},
+}
+hook.Add("PartCtrl_PostProcessPCF", "default_comments", function(filename, tab)
+	if default_comments[filename] then
+		for k, v in pairs (tab) do
+			if default_comments[filename][k] then
+				PartCtrl_AddInfoText(tab[k], default_comments[filename][k])
+			end
+		end
+	end
+end)
+
+
+
+
 //Run sub-files because this addon has way too much autorun code; the order here matters
 
-include("partctrl/default_lists.lua")
 include("partctrl/utilfx.lua")
 include("partctrl/pcf_processing.lua")
 include("partctrl/spawnmenu.lua")
