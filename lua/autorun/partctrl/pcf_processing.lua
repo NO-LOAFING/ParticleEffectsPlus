@@ -2920,9 +2920,9 @@ function PartCtrl_ProcessPCF(filename)
 				end
 				local text2
 				if table.Count(on_model) > 1 then
-					text2 = "This effect applies to a whole model if control points %CPOINTS are attached."
+					text2 = "This effect applies to a whole model if control points %CPOINTS are attached"
 				else
-					text2 = "This effect applies to a whole model if control point %CPOINTS is attached."
+					text2 = "This effect applies to a whole model if control point %CPOINTS is attached"
 				end
 				PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 			end
@@ -2960,9 +2960,9 @@ function PartCtrl_ProcessPCF(filename)
 						end
 						local text2
 						if table.Count(t2[particle].cpoint_planes) > 1 then
-							text2 = "Control points %CPOINTS control planes that prevent particles from passing through."
+							text2 = "Control points %CPOINTS control planes that prevent particles from passing through"
 						else
-							text2 = "Control point %CPOINTS controls a plane that prevents particles from passing through."
+							text2 = "Control point %CPOINTS controls a plane that prevents particles from passing through"
 						end
 						PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 					end
@@ -3043,13 +3043,13 @@ function PartCtrl_ProcessPCF(filename)
 									docomma = true
 								end
 								if identical then
-									text = "Control point " .. k .. " increases and decreases " .. text_decrease .. " of particles as they get closer to it."
+									text = "Control point " .. k .. " increases and decreases " .. text_decrease .. " of particles as they get closer to it"
 								elseif table.Count(text.increase) == 0 then
-									text = "Control point " .. k .. " decreases " .. text_decrease .. " of particles as they get closer to it."
+									text = "Control point " .. k .. " decreases " .. text_decrease .. " of particles as they get closer to it"
 								elseif table.Count(text.decrease) == 0 then
-									text = "Control point " .. k .. " increases " .. text_increase .. " of particles as they get closer to it."
+									text = "Control point " .. k .. " increases " .. text_increase .. " of particles as they get closer to it"
 								else
-									text = "Control point " .. k .. " increases " .. text_increase .. " and decreases " .. text_decrease .. " of particles as they get closer to it."
+									text = "Control point " .. k .. " increases " .. text_increase .. " and decreases " .. text_decrease .. " of particles as they get closer to it"
 								end
 								PartCtrl_AddInfoText(t2[particle], text)
 							end
@@ -3136,9 +3136,9 @@ function PartCtrl_ProcessPCF(filename)
 					if starttime > 0.5 then
 						t2[particle].starttime = starttime
 						if starttime == 1 then
-							PartCtrl_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " second.")
+							PartCtrl_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " second")
 						else
-							PartCtrl_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " seconds.")
+							PartCtrl_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " seconds")
 						end
 					end
 				end
@@ -3273,7 +3273,7 @@ function PartCtrl_ProcessPCF(filename)
 				end
 			elseif CLIENT and vm then
 				//Also add info text for viewmodel effects here, because this isn't inherited and doesn't apply to screenspace fx
-				PartCtrl_AddInfoText(t2[particle], "Viewmodel effect: draws in front of everything, and has a distorted position unless attached to a model on a non-0 attachment.")
+				PartCtrl_AddInfoText(t2[particle], "Viewmodel effect: draws in front of everything, and has a distorted position unless attached to a model on a non-0 attachment")
 			end
 		end
 		//Now that the processed table is finished, let hook funcs modify it arbitrarily (including deciding which fx to cull)
