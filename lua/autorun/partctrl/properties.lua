@@ -82,8 +82,11 @@ PartCtrl_EditProperty_MenuOpen = function(self, option, ent)
 
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
 			local str = k.PrintName
-			if (k.GetParticleName and PartCtrl_ProcessedPCFs[k:GetPCF()] and PartCtrl_ProcessedPCFs[k:GetPCF()][k:GetParticleName()]) then
-				str = PartCtrl_ProcessedPCFs[k:GetPCF()][k:GetParticleName()].nicename
+			if k.GetParticleName then
+				local pcf = PartCtrl_GetGamePCF(k:GetPCF(), k:GetPath())
+				if PartCtrl_ProcessedPCFs[pcf] and PartCtrl_ProcessedPCFs[pcf][k:GetParticleName()] then
+					str = PartCtrl_ProcessedPCFs[pcf][k:GetParticleName()].nicename
+				end
 			end
 			option:SetText("Edit Particle Effect (" .. str .. ")")
 			option.DoClick = function() OpenPartCtrlEditor(k) end
@@ -95,8 +98,11 @@ PartCtrl_EditProperty_MenuOpen = function(self, option, ent)
 		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
 			if IsValid(k) and ((k.PartCtrl_Ent and k.GetPCF) or k.PartCtrl_SpecialEffect) then
 				local str = k.PrintName
-				if (k.GetParticleName and PartCtrl_ProcessedPCFs[k:GetPCF()] and PartCtrl_ProcessedPCFs[k:GetPCF()][k:GetParticleName()]) then
-					str = PartCtrl_ProcessedPCFs[k:GetPCF()][k:GetParticleName()].nicename
+				if k.GetParticleName then
+					local pcf = PartCtrl_GetGamePCF(k:GetPCF(), k:GetPath())
+					if PartCtrl_ProcessedPCFs[pcf] and PartCtrl_ProcessedPCFs[pcf][k:GetParticleName()] then
+						str = PartCtrl_ProcessedPCFs[pcf][k:GetParticleName()].nicename
+					end
 				end
 				local opt = submenu:AddOption(str)
 				opt.DoClick = function() OpenPartCtrlEditor(k) end
