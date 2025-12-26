@@ -55,35 +55,13 @@ end)
 
 //Default comments for unintuitive fx; we should really be autodetecting these things
 
-local tooclose_comment = "Not visible if too close to the camera"
 local default_comments = {
-	//Default
-	["particles/fire_01.pcf"] = {
-		burning_vehicle = tooclose_comment //also it doesn't render if hl2 isn't mounted, because that's where the vmt is, but that doesn't seem reasonable to check for
-	},
 	//Team Fortress 2
 	["particles/coin_spin.pcf"] = {
 		coin_spin = "Only creates particles while moving"
 	},
 	["particles/stamp_spin.pcf"] = {
 		stamp_spin = "Only creates particles while moving"
-	},
-	//Portal
-	["particles/neurotoxins.pcf"] = {
-		neurotoxins_step1 = tooclose_comment,
-	},
-	["particles/portals.pcf"] = {
-		portal_1_vacuum = tooclose_comment,
-		portal_2_vacuum = tooclose_comment,
-		portal_1_particles = tooclose_comment,
-		portal_2_particles = tooclose_comment,
-	},
-	["particles/tubes.pcf"] = {
-		broken_tube_suck_b = tooclose_comment,
-	},
-	//TF2 map particles addon
-	["particles/koth_probed_fx.pcf"] = {
-		alien_abduction_glow2 = tooclose_comment
 	},
 }
 hook.Add("PartCtrl_PostProcessPCF", "default_comments", function(filename, tab)

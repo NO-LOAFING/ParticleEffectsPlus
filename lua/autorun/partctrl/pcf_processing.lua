@@ -2417,9 +2417,27 @@ function PartCtrl_ProcessPCF(filename)
 			if PartCtrl_BadMaterials[mat] == nil then PartCtrl_BadMaterials[mat] = file.Exists(mat, "GAME") end
 			if !PartCtrl_BadMaterials[mat] then
 				t2[particle].has_renderer = false
-			//Don't count fx as having a renderer if they have 0 alpha, since they won't render visibly
-			elseif processed["has_zero_alpha"] and !processed["ignore_zero_alpha"] then
-				processed["has_renderer"] = false
+			else
+				//Don't count fx as having a renderer if they have 0 alpha, since they won't render visibly
+				if processed["has_zero_alpha"] and !processed["ignore_zero_alpha"] then
+					processed["has_renderer"] = false
+				end
+				//Get and cache particle min distance from materials (used for info text)
+				//The intention here is to prevent cases where a player spawns an effect on the ground in front 
+				//of them, can't see anything because it's too close to render, and mistakenly thinks it's broken.
+				if CLIENT and t2[particle].has_renderer and t2[particle].has_emitter then
+					if true or isbool(PartCtrl_BadMaterials[mat]) then
+						local mat2 = Material(string.Replace(string.TrimLeft(mat, "materials/"), "\\", "/"))
+						PartCtrl_BadMaterials[mat] = {
+							["min"] = mat2:GetFloat("$endfadesize") or 20, //for mats that don't have these values at all (not SpriteCard), act as if they're default
+							["min_alt"] = mat2:GetFloat("$maxsize") or 20,
+							//["max"] = mat2:GetFloat("$maxdistance") or 100000 //actually this isn't necessary
+						}
+					end
+					processed["dist_min"] = PartCtrl_BadMaterials[mat].min
+					processed["dist_min_alt"] =  PartCtrl_BadMaterials[mat].min_alt
+					//processed["dist_max"] = PartCtrl_BadMaterials[mat].max 
+				end
 			end
 		end
 		for particle, _ in pairs (t2) do
@@ -3070,8 +3088,12 @@ function PartCtrl_ProcessPCF(filename)
 			end
 
 			if CLIENT then
-				//Inherit starttime from children, and add info text if necessary
+				//Inherit starttime and min particle distance from children, and add info text if necessary
 				local starttime = t2[particle].starttime_raw
+				local min = t2[particle].dist_min
+				local min_alt = t2[particle].dist_min_alt
+				//local max = t2[particle].dist_max
+				//local max_alt = t2[particle].dist_max_alt
 				local function StartTimeFromChildren(particle2, depth, child_delay)
 					depth = depth or 0
 					depth = depth + 1
@@ -3086,11 +3108,33 @@ function PartCtrl_ProcessPCF(filename)
 								if dodebug then MsgN("PartCtrl: ", filename, " ", particle2, " StartTimeFromChildren tried to get nonexistent child effect ", child) end
 							elseif !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
 								if t2[childtab.child].starttime_raw != nil then
+									//starttime
 									if starttime == nil then
 										starttime = t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay
 									else
 										starttime = math.min(t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay, starttime)
 									end
+									//particle distance
+									if min == nil then
+										min = t2[childtab.child].dist_min
+									elseif t2[childtab.child].dist_min != nil then
+										min = math.max(min, t2[childtab.child].dist_min)
+									end
+									if min_alt == nil then
+										min_alt = t2[childtab.child].dist_min_alt
+									elseif t2[childtab.child].dist_min_alt != nil then
+										min_alt = math.max(min, t2[childtab.child].dist_min_alt)
+									end
+									--[[if max == nil then
+										max = t2[childtab.child].dist_max
+									elseif t2[childtab.child].dist_max != nil then
+										max = math.max(max, t2[childtab.child].dist_max)
+									end
+									if max_alt == nil then
+										max_alt = t2[childtab.child].dist_max_alt
+									elseif t2[childtab.child].dist_max_alt != nil then
+										max_alt = math.max(max_alt, t2[childtab.child].dist_max_alt)
+									end]] //actually this isn't necessary
 								end
 								//Now inherit from the child's children, and so on
 								//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
@@ -3100,6 +3144,7 @@ function PartCtrl_ProcessPCF(filename)
 					end
 				end
 				StartTimeFromChildren(particle, nil, 0)
+				//starttime
 				if starttime != nil then
 					starttime = math.Round(starttime, 2)
 					if starttime > 0.5 then
@@ -3111,6 +3156,30 @@ function PartCtrl_ProcessPCF(filename)
 						end
 					end
 				end
+				//particle distance
+				//fadesize is based off the fraction of the screen taken up by the particle (i.e. 0.75 means
+				//particles stops rendering once they're 75% the width of the screen), which means the distance 
+				//where it takes effect scales with particle radius. we could either A: hook into every single 
+				//operator that can modify radius, which would be too much work, or B: be conservative here and 
+				//only display this for materials that *definitely* need it, disregarding edge cases. 
+				//(for example, hl2's explosion_huge_flames uses the same mat as a bunch of other stock flame fx, 
+				//with a fadesize of 0.55, but it's only an issue with the former because it has abnormally large
+				//particles, so err on the side of not cluttering up info text with false positives for the latter.)
+				if (min != nil and min < 0.5) //then //min < 20 then
+				//	PartCtrl_AddInfoText(t2[particle], "min_dist = " .. PartCtrl_BadMaterials[mat].min) //test
+				//for mats like materials\particle\smoke1\dust_motes.vmt that use a very
+				//low maxsize value to become extremely difficult to see when close up
+				or (min_alt != nil and min_alt < 0.01) then //min_alt < 20 then
+					//PartCtrl_AddInfoText(t2[particle], "min_dist_alt = " .. PartCtrl_BadMaterials[mat].min_alt) //test
+					PartCtrl_AddInfoText(t2[particle], "Not visible if too close to the camera")
+				end
+				--[[//very few mats use maxdistance, so for now we'll just catch anything with a non-default value
+				if (max != nil and max < 100000) then
+					//PartCtrl_AddInfoText(t2[particle], "max_dist = " .. PartCtrl_BadMaterials[mat].max) //test
+					PartCtrl_AddInfoText(t2[particle], "Not visible if too far from the camera")
+					t2[particle].test2 = true
+				end
+				//TODO: also handle "Visibility input distance minimum"/maximum from renderer op?]]
 			end
 		end
 		for particle, _ in pairs (t2) do
