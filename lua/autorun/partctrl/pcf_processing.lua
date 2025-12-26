@@ -2431,12 +2431,10 @@ function PartCtrl_ProcessPCF(filename)
 						PartCtrl_BadMaterials[mat] = {
 							["min"] = mat2:GetFloat("$endfadesize") or 20, //for mats that don't have these values at all (not SpriteCard), act as if they're default
 							["min_alt"] = mat2:GetFloat("$maxsize") or 20,
-							//["max"] = mat2:GetFloat("$maxdistance") or 100000 //actually this isn't necessary
 						}
 					end
 					processed["dist_min"] = PartCtrl_BadMaterials[mat].min
 					processed["dist_min_alt"] =  PartCtrl_BadMaterials[mat].min_alt
-					//processed["dist_max"] = PartCtrl_BadMaterials[mat].max 
 				end
 			end
 		end
@@ -3092,8 +3090,6 @@ function PartCtrl_ProcessPCF(filename)
 				local starttime = t2[particle].starttime_raw
 				local min = t2[particle].dist_min
 				local min_alt = t2[particle].dist_min_alt
-				//local max = t2[particle].dist_max
-				//local max_alt = t2[particle].dist_max_alt
 				local function StartTimeFromChildren(particle2, depth, child_delay)
 					depth = depth or 0
 					depth = depth + 1
@@ -3125,16 +3121,6 @@ function PartCtrl_ProcessPCF(filename)
 									elseif t2[childtab.child].dist_min_alt != nil then
 										min_alt = math.max(min, t2[childtab.child].dist_min_alt)
 									end
-									--[[if max == nil then
-										max = t2[childtab.child].dist_max
-									elseif t2[childtab.child].dist_max != nil then
-										max = math.max(max, t2[childtab.child].dist_max)
-									end
-									if max_alt == nil then
-										max_alt = t2[childtab.child].dist_max_alt
-									elseif t2[childtab.child].dist_max_alt != nil then
-										max_alt = math.max(max_alt, t2[childtab.child].dist_max_alt)
-									end]] //actually this isn't necessary
 								end
 								//Now inherit from the child's children, and so on
 								//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
@@ -3165,21 +3151,12 @@ function PartCtrl_ProcessPCF(filename)
 				//(for example, hl2's explosion_huge_flames uses the same mat as a bunch of other stock flame fx, 
 				//with a fadesize of 0.55, but it's only an issue with the former because it has abnormally large
 				//particles, so err on the side of not cluttering up info text with false positives for the latter.)
-				if (min != nil and min < 0.5) //then //min < 20 then
-				//	PartCtrl_AddInfoText(t2[particle], "min_dist = " .. PartCtrl_BadMaterials[mat].min) //test
+				if (min != nil and min < 0.5)
 				//for mats like materials\particle\smoke1\dust_motes.vmt that use a very
 				//low maxsize value to become extremely difficult to see when close up
-				or (min_alt != nil and min_alt < 0.01) then //min_alt < 20 then
-					//PartCtrl_AddInfoText(t2[particle], "min_dist_alt = " .. PartCtrl_BadMaterials[mat].min_alt) //test
+				or (min_alt != nil and min_alt < 0.01) then
 					PartCtrl_AddInfoText(t2[particle], "Not visible if too close to the camera")
 				end
-				--[[//very few mats use maxdistance, so for now we'll just catch anything with a non-default value
-				if (max != nil and max < 100000) then
-					//PartCtrl_AddInfoText(t2[particle], "max_dist = " .. PartCtrl_BadMaterials[mat].max) //test
-					PartCtrl_AddInfoText(t2[particle], "Not visible if too far from the camera")
-					t2[particle].test2 = true
-				end
-				//TODO: also handle "Visibility input distance minimum"/maximum from renderer op?]]
 			end
 		end
 		for particle, _ in pairs (t2) do
