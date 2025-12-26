@@ -164,7 +164,7 @@ list.Set("PartCtrl_UtilFx", "ManhackSparks", {
 list.Set("PartCtrl_UtilFx", "TeslaHitboxes", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.2, //default repeat rate and beam count taken from ragdoll boogie and antlion (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/RagdollBoogie.cpp#L119, https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/game/server/hl2/npc_antlion.cpp#L2254)
-	info = "This effect will apply to a whole model if control point 0 is attached.", //on_model
+	info = "This effect applies to a whole model if control point 0 is attached.", //on_model
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {

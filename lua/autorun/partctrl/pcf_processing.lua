@@ -434,7 +434,7 @@ function PartCtrl_ReadPCF(filename, path)
 	//down the line (effects with the same name but capitalized differently will conflict with each other, so make sure we detect those properly)
 	local Elements2 = {}
 	for k, v in pairs (Elements) do
-		if CLIENT then v._nicename = k end //store the capitalized name so we can use it for display purposes
+		v._nicename = k //store the capitalized name so we can use it for display purposes
 		Elements2[string.lower(k)] = v
 	end
 	Elements = Elements2
@@ -1343,7 +1343,7 @@ local processfuncs = {
 				}		
 			})
 		end,
-		["cull when crossing sphere"] = function(processed, op) cpoint_from_op_value(processed, op, "Control Point", 0) end,
+		["cull when crossing sphere"] = function(processed, op) cpoint_from_op_value(processed, op, "Control Point", 0) end, //TODO: this should have its own special handling similar to cull planes
 		["lifespan decay"] = function(processed, op)
 			//only do tracer_min_distance if we have one of the right decay operators; tracer fx using other things 
 			//(i.e. alien swarm tracers using "alpha fade and decay for tracers") don't have a minimum length between cpoints to render
@@ -1377,8 +1377,10 @@ local processfuncs = {
 			//add to support it. leave this blank until we find an effect we need to add support for.
 		end,]]
 		["movement dampen relative to control point"] = function(processed, op) 
-			if op["falloff range"] >= 5 then //don't process if this value is too small to do anything (lots of ep2 electrical fx have extra useless cpoints with only these for whatever reason)
-				cpoint_from_op_value(processed, op, "control_point_number", 0)
+			if (op["falloff range"] or 100) >= 5 then //don't process if this value is too small to do anything (lots of ep2 electrical fx have extra useless cpoints with only these for whatever reason)
+				cpoint_from_op_value(processed, op, "control_point_number", 0, nil, {
+					["info"] = "slows down nearby particles"
+				})
 			end
 		end,
 		["movement lock to bone"] = function(processed, op)
@@ -1446,7 +1448,9 @@ local processfuncs = {
 			cpoint_from_op_value(processed, op, "reference CP 1", -1, "position_combine")
 			cpoint_from_op_value(processed, op, "reference CP 2", -1, "position_combine")
 		end,]]
-		["movement rotate particle around axis"] = function(processed, op) cpoint_from_op_value(processed, op, "Control Point", 0) end,
+		["movement rotate particle around axis"] = function(processed, op) cpoint_from_op_value(processed, op, "Control Point", 0, nil, {
+			["info"] = "is a target for particles to rotate around"
+		}) end,
 		["normal lock to control point"] = function(processed, op) cpoint_from_op_value(processed, op, "control_point_number", 0, "position_combine") end, //controls angle of Render Models fx; this is an angle control, so combine it
 		["remap average scalar value to cp"] = function(processed, op) cpoint_from_op_value(processed, op, "output control point", 1, "output") end, //overrides the cpoint's position to Vector(result,0,0) (https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_ops.cpp#L2602)
 		["remap control point direction to vector"] = function(processed, op) 
@@ -1510,6 +1514,7 @@ local processfuncs = {
 		["remap distance between two control points to cp"] = function(processed, op)
 			//i guess we could convert this into a relative_to_cp vector control just like "remap distance between two control points to scalar" below,
 			//but what would we actually describe the control as? can't find any existing fx using this, so just add normal position controls and output for now.
+			//not sure how we'd do info text for this, either, since we can't intuitively figure out what the output cpoint does here.
 			cpoint_from_op_value(processed, op, "starting control point", 0)
 			cpoint_from_op_value(processed, op, "ending control point", 1)
 			local axis = op["output control point field"] or 0
@@ -1553,12 +1558,14 @@ local processfuncs = {
 		["remap percentage between two control points to scalar"] = function(processed, op)
 			//sets a scalar value on *each individual particle* based on what percentage of the distance between two cpoints it's covered
 			//TODO: do we need to handle this like distance scalars?
+			//TODO: info text? are there any fx with cpoints only used for this?
 			cpoint_from_op_value(processed, op, "starting control point", 0)
 			cpoint_from_op_value(processed, op, "ending control point", 1)
 		end,
 		["remap percentage between two control points to vector"] = function(processed, op)
 			//sets a vector value on *each individual particle* based on what percentage of the distance between two cpoints it's covered
 			//TODO: do we need to handle this like distance scalars?
+			//TODO: info text? are there any fx with cpoints only used for this?
 			cpoint_from_op_value(processed, op, "starting control point", 0)
 			cpoint_from_op_value(processed, op, "ending control point", 1)
 		end,
@@ -1575,7 +1582,11 @@ local processfuncs = {
 				})
 			end
 		end,
-		["rotation orient relative to cp"] = function(processed, op) cpoint_from_op_value(processed, op, "Control Point", 0) end,
+		["rotation orient relative to cp"] = function(processed, op) 
+			cpoint_from_op_value(processed, op, "Control Point", 0, {
+			//	["info"] = "something something rotation orient" //TODO: can't find any existing fx with a cpoint for just this, so don't worry about info text until we need it
+			})
+		end,
 		["set child control points from particle positions"] = function(processed, op)
 			local groupid = op["Group ID to affect"] or 0
 			local startp = op["First control point to set"] or 0
@@ -1720,7 +1731,8 @@ local processfuncs = {
 			//"ending" control points, uses it to scale a value relative to a fourth "offset" control point, and then outputs 
 			//that to a fifth "output" control point.
 			//no existing portal2/asw/l4d2 fx use this, what could this possibly be for? just handle the output and then do 
-			//normal position controls for the rest, until we find an effect we need to accomodate.
+			//normal position controls for the rest, until we find an effect we need to accomodate. no idea how we'd do info
+			//text for this, either, since, again, we don't actually know what the output does.
 			cpoint_from_op_value(processed, op, "starting control point", 0)
 			cpoint_from_op_value(processed, op, "ending control point", 1)
 			cpoint_from_op_value(processed, op, "offset control point", 2)
@@ -1797,7 +1809,7 @@ local processfuncs = {
 			if (op["scale from conrol point (radius 1/radius 2/offset)"] or -1) > -1 then //sic (conrol point)
 				local function DoEpitrochoidAxis(axis, axisv, default, min)
 					if (op[axisv] or default) != 0 then
-						cpoint_from_op_value(processed, op, "scale from conrol point (radius 1/radius 2/offset)", -1, "axis", {
+						cpoint_from_op_value(processed, op, "scale from conrol point (radius 1/radius 2/offset)", -1, "axis", { //sic
 							["axis"] = axis,
 							["label"] = "Epitrochoid " .. axisv .. " multiplier",
 							["inMin"] = min,
@@ -1924,7 +1936,9 @@ local processfuncs = {
 			local max = op["warp max"] or Vector(1,1,1)
 			local time = op["warp transition time (treats min/max as start/end sizes)"] or 0
 			if time == 0 and min != max then
-				cpoint_from_op_value(processed, op, "control point number", 0)
+				cpoint_from_op_value(processed, op, "control point number", 0, nil, {
+					["info"] = "warps particle positions" //eh, good enough, only test fx have a separate cpoint for just this
+				})
 			else
 				cpoint_from_op_value(processed, op, "control point number", 0, "position_combine")
 			end
@@ -2242,13 +2256,36 @@ local processfuncs = {
 	["forces"] = { //ForceGenerator
 		["force based on distance from plane"] = function(processed, op) cpoint_from_op_value(processed, op, "Control point number", 0) end, //don't know if the extra overrides on "pull toward control point" are necessary here, i don't think any existing fx need them
 		["pull towards control point"] = function(processed, op)
+			local force = op["amount of force"] or 0
+			local falloff = (op["falloff power"] or 2)
 			local type = nil
-			if math.abs(op["amount of force"] or 0) < 10 then //can be negative to push particles away
+			local text = nil
+			if (math.abs(force) < 10 and falloff >= 0) //force can be negative to push particles away; falloff power can be negative to make it stronger the farther away it gets
+			or falloff >= 3 then
 				//a lot of effects have this operator with miniscule force values, for whatever reason. they don't visibly appear to do anything, maybe it's part of some hacky workaround
 				//that particle developers use, i don't know. either way, don't let them create their own position control in these cases, because they aren't useful.
-				type = "position_combine" 
+				type = "position_combine"
+			else
+				if force > 0 then
+					if falloff > 0 then
+						text = "pulls nearby particles toward itself"
+					else
+						text = "pulls particles toward itself"
+					end
+				else
+					if falloff > 0 then
+						text = "pushes nearby particles away"
+					else
+						text = "pushes particles away"
+					end
+				end
 			end
-			cpoint_from_op_value(processed, op, "control point number", 0, type, {["overridable_by_constraint"] = true, ["overridable_by_drag"] = true, ["dont_offset_distance_scalar"] = true})
+			cpoint_from_op_value(processed, op, "control point number", 0, type, {
+				["overridable_by_constraint"] = true, 
+				["overridable_by_drag"] = true, 
+				["dont_offset_distance_scalar"] = true,
+				["info"] = text,
+			})
 		end
 	},
 	["constraints"] = {
@@ -2313,8 +2350,8 @@ function PartCtrl_ProcessPCF(filename)
 				["children"] = t[particle].children,
 				["parents"] = {},
 				["do_starttime_raw_fromrate"] = (t[particle]["initial_particles"] or 0) <= 0, //for emitter starttime calculation, don't add extra time from the emission rate if we have initial particles; have to do this here because the processfunc needs this info
-				["nicename"] = t[particle]._nicename,
 			}
+			if CLIENT then processed["nicename"] = t[particle]._nicename end //properly capitalized name for display purposes
 			//Go through all of the effects's operators (initializers, operators, renderers, etc. are all called "operators" internally, it's confusing) 
 			//and use the corresponding functions in processfuncs to "process" them (populate the table above with all their relevant cpoint info). 
 			//This is the meat of this function, everything else is just working with this info.
@@ -2468,6 +2505,7 @@ function PartCtrl_ProcessPCF(filename)
 			local distance_scalars = nil
 			local dont_offset_distance_scalar = nil
 			local tracer_min_distance = nil
+			local cpoint_info_text = nil
 			local sets_particle_pos = nil
 			local copy_sets_particle_pos = nil
 			local remove_if_other_cpoint_is_empty = {}
@@ -2590,6 +2628,12 @@ function PartCtrl_ProcessPCF(filename)
 										if v2["tracer_min_distance"] and t2[particle2].tracer_min_distance_hasdecay then
 											tracer_min_distance = tracer_min_distance or {}
 											tracer_min_distance[k] = math.max((tracer_min_distance[k] or 0), v2["tracer_min_distance"])
+										end
+										//also inherit cpoint info text
+										if CLIENT and v2["info"] then
+											cpoint_info_text = cpoint_info_text or {}
+											cpoint_info_text[k] = cpoint_info_text[k] or {}
+											cpoint_info_text[k][v2["info"]] = true
 										end
 										//also check for "remove_if_other_cpoint_is_empty"; we only care about this if ALL position controls for this cpoint have this
 										local remove = v2["remove_if_other_cpoint_is_empty"]
@@ -2860,9 +2904,9 @@ function PartCtrl_ProcessPCF(filename)
 				end
 				local text2
 				if table.Count(on_model) > 1 then
-					text2 = "This effect will apply to a whole model if control points %CPOINTS are attached."
+					text2 = "This effect applies to a whole model if control points %CPOINTS are attached."
 				else
-					text2 = "This effect will apply to a whole model if control point %CPOINTS is attached."
+					text2 = "This effect applies to a whole model if control point %CPOINTS is attached."
 				end
 				PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 			end
@@ -2993,6 +3037,33 @@ function PartCtrl_ProcessPCF(filename)
 								end
 								PartCtrl_AddInfoText(t2[particle], text)
 							end
+						end
+					end
+				end
+
+				//Do position control info text
+				if CLIENT and cpoint_info_text and t2[particle].sets_particle_pos then
+					for k, v in pairs (cpoint_info_text) do
+						//This is for position control cpoints that don't set particle positions, but are instead used for some
+						//less intuitive purpose like applying force or acting as a rotation target. 
+						//
+						//The idea is that if a cpoint is being used to spawn or constrain particles, then it should immediately 
+						//be visually obvious that the cpoint is useful, meaning no text is required and any other things like 
+						//forces on the same cpoint are just a bonus (i.e. don't clutter up info text with a dozen tiny nuances 
+						//on top of positioning that the player doesn't care about). 
+						//
+						//On the other hand, if a cpoint is ONLY used for one of these other things, then the player will spawn 
+						//the effect and see an extra cpoint with no immediately clear purpose - these we need to explain.
+						if !t2[particle].sets_particle_pos[k] then
+							local text = "Control point " .. k .. " "
+							local docomma = false
+							for k2, _ in pairs (v) do
+								if docomma then text = text .. ", " end
+								text = text .. k2
+								docomma = true
+							end
+							PartCtrl_AddInfoText(t2[particle], text)
+							t2[particle].test_hasinfotext = true
 						end
 					end
 				end

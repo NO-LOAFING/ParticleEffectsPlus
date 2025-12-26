@@ -35,7 +35,7 @@ hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
 			end
 		end
 	end
-	//i dont think any of this is necessary now that the way duplicate fx are handled is no longer awful
+	//i dont think any of this is necessary now that we handle duplicate fx better
 	--[[if default_blacklist[filename] then
 		for k, v in pairs (tab) do
 			//if blacklist is present, blacklist all listed fx
@@ -55,7 +55,6 @@ end)
 
 //Default comments for unintuitive fx; we should really be autodetecting these things
 
-local stove_comment = "Control point 1 pushes the flame away; it's very subtle"
 local tooclose_comment = "Not visible if too close to the camera"
 local default_comments = {
 	//Default
@@ -63,24 +62,6 @@ local default_comments = {
 		burning_vehicle = tooclose_comment //also it doesn't render if hl2 isn't mounted, because that's where the vmt is, but that doesn't seem reasonable to check for
 	},
 	//Team Fortress 2
-	["particles/halloween2024_unusuals.pcf"] = {
-		unusual_stove_flame_point_1 = stove_comment,
-		unusual_stove_flame_point_1_red = stove_comment,
-		unusual_stove_flame_point_2 = stove_comment,
-		unusual_stove_flame_point_2_red = stove_comment,
-		unusual_stove_flame_point_3 = stove_comment,
-		unusual_stove_flame_point_3_red = stove_comment,
-		unusual_stove_flame_point_4 = stove_comment,
-		unusual_stove_flame_point_4_red = stove_comment,
-		unusual_stove_flame_point_5 = stove_comment,
-		unusual_stove_flame_point_5_red = stove_comment,
-		unusual_stove_flame_point_6 = stove_comment,
-		unusual_stove_flame_point_6_red = stove_comment,
-		unusual_stove_flame_point_7 = stove_comment,
-		unusual_stove_flame_point_7_red = stove_comment,
-		unusual_stove_flame_point_8 = stove_comment,
-		unusual_stove_flame_point_8_red = stove_comment,
-	},
 	["particles/coin_spin.pcf"] = {
 		coin_spin = "Only creates particles while moving"
 	},
@@ -100,16 +81,9 @@ local default_comments = {
 	["particles/tubes.pcf"] = {
 		broken_tube_suck_b = tooclose_comment,
 	},
-	["particles/portal_projectile.pcf"] = {
-		portal_2_overlap_ = "Control point 1 pushes particles away"
-	},
 	//TF2 map particles addon
 	["particles/koth_probed_fx.pcf"] = {
 		alien_abduction_glow2 = tooclose_comment
-	},
-	//Invasion mashup pack addon
-	["particles/alien_fantasmos_fx2_extras.pcf"] = { 
-		alien_jumppad_centerglow3 = "Control point 0 pulls particles toward itself; it's very subtle"
 	},
 }
 hook.Add("PartCtrl_PostProcessPCF", "default_comments", function(filename, tab)
