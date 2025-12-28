@@ -980,7 +980,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
-			["label"] = "Alpha, Spark Count Multiplier",
+			["label"] = "Alpha, Spark Count Scale",
 			["min"] = 0,
 			["max"] = 255/1.2, //again, this uses the gauss damage value, but the alpha for the impact sprite uses magnitude*1.2, so we have to cap this at 255/1.2 so the alpha won't overflow and glitch out
 			["default"] = 200,
@@ -1003,7 +1003,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 0, //x
-			["label"] = "Alpha, Lifetime Multiplier", //still uses the damage value for alpha, but also controls the lifetime of the sprite (flMagnitude * 0.05) 
+			["label"] = "Alpha, Lifetime Scale", //still uses the damage value for alpha, but also controls the lifetime of the sprite (flMagnitude * 0.05) 
 			["min"] = 0,
 			["max"] = 255,
 			["default"] = 100, //for this effect, gauss code scales the damage by the angle of the reflect, and the highest possible scalar for a reflect is 0.5 https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_weapon_gauss.cpp#L485-L506
@@ -1251,9 +1251,9 @@ list.Set("PartCtrl_UtilFx", "ElectricSpark", {
 		})
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 1, //y
-			["label"] = "Spark Count, Lifetime Multiplier",
+			["label"] = "Spark Count, Lifetime Scale",
 			["min"] = 0,
-			["max"] = 4, //because this is also a lifetime multiplier (and the default lifetime of some sparks is multiple secs), if this goes too high, it can easily hit an internal limit that makes particles stop spawning entirely, so cap it at the max value used in code (combine ball). if players want more sparks, then they can spawn more effects. https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/hl2/c_prop_combine_ball.cpp#L337
+			["max"] = 4, //because this is also a lifetime scalar (and the default lifetime of some sparks is multiple secs), if this goes too high, it can easily hit an internal limit that makes particles stop spawning entirely, so cap it at the max value used in code (combine ball). if players want more sparks, then they can spawn more effects. https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/hl2/c_prop_combine_ball.cpp#L337
 			["default"] = 1,
 		})
 	end,
@@ -1281,7 +1281,7 @@ list.Set("PartCtrl_UtilFx", "Sparks", {
 		})
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			["axis"] = 1, //y
-			["label"] = "Spark Count, Lifetime Multiplier",
+			["label"] = "Spark Count, Lifetime Scale",
 			["min"] = 0,
 			["max"] = 4, //see previous effect
 			["default"] = 1,
@@ -1970,10 +1970,9 @@ function PartCtrl_ProcessUtilFx()
 				elseif v.axis then
 					t.cpoints[k].mode = PARTCTRL_CPOINT_MODE_AXIS
 					for i = 0, 2 do
-						t.cpoints[k]["which_" .. i] = 0
 						for k2, v2 in pairs (v.axis) do
 							if v2.axis == i then 
-								t.cpoints[k]["which_" .. i] = k2
+								t.cpoints[k]["axis_" .. i] = v2
 								break
 							end
 						end

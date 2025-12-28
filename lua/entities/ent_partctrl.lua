@@ -1002,7 +1002,7 @@ if CLIENT then
 							end
 						end
 						if !rel and ptab.cpoints[k].axis then
-							local axistab = ptab.cpoints[k].axis[ptab.cpoints[k]["which_0"]]
+							local axistab = ptab.cpoints[k].axis_0
 							if istable(axistab) then
 								rel = axistab.relative_to_cpoint
 								rel_ang = axistab.relative_to_cpoint_angle
@@ -1660,7 +1660,7 @@ else
 			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_AXIS then return end
 
 			//Sanity check: for some axis controls ("Emission Count Scale"), going out of range causes a crash, so make sure that doesn't happen
-			local tab = cpointtab.axis[cpointtab["which_" .. axis-1]]
+			local tab = cpointtab["axis_" .. axis-1]
 			if istable(tab) then
 				if tab.inMin then
 					new = math.max(tab.inMin, new)
@@ -1907,7 +1907,7 @@ else
 				v.val = Vector(net.ReadFloat(), net.ReadFloat(), net.ReadFloat())
 				for i = 0, 2 do
 					//Sanity check: for some axis controls ("Emission Count Scale"), going out of range causes a crash, so make sure that doesn't happen
-					local tab2 = ptab.cpoints[k].axis[ptab.cpoints[k]["which_" .. i]]
+					local tab2 = ptab.cpoints[k]["axis_" .. i]
 					if istable(tab2) then
 						if tab2.inMin then
 							v.val[i+1] = math.max(tab2.inMin, v.val[i+1])
@@ -2359,7 +2359,7 @@ if SERVER then
 					val = Vector(0,0,0)
 				}
 				for i = 0, 2 do
-					axistab = v.axis[v["which_" .. i]]
+					axistab = v["axis_" .. i]
 					if istable(axistab) then
 						if axistab.default then
 							tab[k]["val"][i+1] = axistab.default

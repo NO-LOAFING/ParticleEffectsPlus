@@ -739,7 +739,7 @@ function PANEL:RebuildControls()
 						elseif tab.textentry then
 							local done_first = false
 							for i = 1, 3 do
-								if tab1["which_" .. i-1] != -1 then //don't create an entry for an axis that's being overwritten by output_axis
+								if !tab1["axis_overridden_" .. i-1] then //don't create an entry for an axis that's being overwritten by output_axis
 									local entrypnl = vgui.Create("Panel", pnl)
 									entrypnl:SetHeight(20)
 									entrypnl:Dock(TOP)
@@ -803,7 +803,7 @@ function PANEL:RebuildControls()
 						else
 							local done_first = false
 							for i = 1, 3 do
-								if tab1["which_" .. i-1] != -1 then //don't create a slider for an axis that's being overwritten by output_axis
+								if !tab1["axis_overridden_" .. i-1] then //don't create a slider for an axis that's being overwritten by output_axis
 									local slider = vgui.Create("DNumSlider", pnl)
 									if tab.label == "Roll" then
 										if i == 1 then
@@ -873,8 +873,7 @@ function PANEL:RebuildControls()
 				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 					local slidercount = 0
 					for i = 1, 3 do
-						local tab = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k]
-						tab = tab.axis[tab["which_" .. i-1]]
+						local tab = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k]["axis_" .. i-1]
 						if istable(tab) then
 							//For axis controls, min/max are optional. If a value isn't supplied, then use an arbitrary value and unclamp the slider in that direction.
 							local unclampMin = (tab.inMin == nil and tab.outMin == nil)
@@ -935,7 +934,7 @@ function PANEL:RebuildControls()
 								end
 							else
 								local slider = vgui.Create("DNumSlider", pnl)
-								slider:SetText(tab.label)
+								slider:SetText(string.Replace(tab.label, ", ", "\n")) //replace commas with newlines, to try to reduce window stretching
 								if outMax < outMin then
 									//tf2 speech_mediccall has a silly outmax of 0 and outmin of 1, presumably because the player's health percentage is used as the input. stop it from breaking the slider.
 									slider:SetMinMax(outMax, outMin)
@@ -949,7 +948,9 @@ function PANEL:RebuildControls()
 								end
 								if tab.decimals != nil then slider:SetDecimals(tab.decimals) end //don't "or" this because then it won't work if it's set to 0
 								slider:SetDark(true)
-								slider:SetHeight(18)
+								//adjust the slider's height to accomodate multiline labels
+								slider.Label:SizeToContents()
+								slider:SetHeight(slider.Label:GetTall() + 5) //slider:SetHeight(18)
 								slider:Dock(TOP)
 								slidercount = slidercount + 1
 								if slidercount == 1 then

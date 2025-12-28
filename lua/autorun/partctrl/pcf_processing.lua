@@ -1296,7 +1296,7 @@ local processfuncs = {
 				if scalar then
 					scalar = scalar .. " scale"
 					cpoint_from_op_value(processed, op, "scale CP end", -1, "axis", {
-						["axis"] = 0, //arbitrary; any axis could work for this, but ent_partctrl:StartParticle checks which_0 for relative_to_cpoint
+						["axis"] = 0, //arbitrary; any axis could work for this, but ent_partctrl:StartParticle checks axis_0 for relative_to_cpoint
 						["label"] = scalar,
 						["inMin"] = 0,
 						["outMin"] = 0,
@@ -1526,7 +1526,7 @@ local processfuncs = {
 			//this uses all the same scalars as remap control point to scalar, but actually uses the distance between two positions to get the value
 			local tab = DoScalarIO(op, true)
 			cpoint_from_op_value(processed, op, "ending control point", 1, "axis", {
-				["axis"] = 0, //arbitrary; any axis could work for this, but ent_partctrl:StartParticle checks which_0 for relative_to_cpoint
+				["axis"] = 0, //arbitrary; any axis could work for this, but ent_partctrl:StartParticle checks axis_0 for relative_to_cpoint
 				["label"] = tab.label,
 				["inMin"] = tab.inMin,
 				["inMax"] = tab.inMax,
@@ -1811,7 +1811,7 @@ local processfuncs = {
 					if (op[axisv] or default) != 0 then
 						cpoint_from_op_value(processed, op, "scale from conrol point (radius 1/radius 2/offset)", -1, "axis", { //sic
 							["axis"] = axis,
-							["label"] = "Epitrochoid " .. axisv .. " multiplier",
+							["label"] = "Epitrochoid " .. string.NiceName(axisv) .. " Scale",
 							["inMin"] = min,
 							["outMin"] = min,
 							//no max
@@ -1878,7 +1878,7 @@ local processfuncs = {
 						if axisv == "initial radius" then axisv = "radius" end //nicer name for slider label
 						cpoint_from_op_value(processed, op, cpoint, -1, "axis", {
 							["axis"] = axis,
-							["label"] = "Ring " .. axisv .. " multiplier",
+							["label"] = "Ring " .. string.NiceName(axisv) .. " Scale",
 							["inMin"] = min,
 							["outMin"] = min,
 							//no max
@@ -1983,7 +1983,7 @@ local processfuncs = {
 					if doaxis then
 						cpoint_from_op_value(processed, op, "scale cp (distance/speed/local speed)", -1, "axis", {
 							["axis"] = axis,
-							["label"] = "Sphere " .. label .. " multiplier",
+							["label"] = "Sphere " .. label .. " Scale",
 							["inMin"] = min,
 							["outMin"] = min,
 							//no max
@@ -1991,9 +1991,9 @@ local processfuncs = {
 						})
 					end
 				end
-				DoSphereAxis(0, "distance", {["distance_min"] = 0, ["distance_max"] = 0}, 0) //no point in negative scale for this one
-				DoSphereAxis(1, "speed", {["speed_min"] = 0, ["speed_max"] = 0})
-				DoSphereAxis(2, "local speed", {["speed_in_local_coordinate_system_min"] = Vector(), ["speed_in_local_coordinate_system_max"] = Vector()})
+				DoSphereAxis(0, "Distance", {["distance_min"] = 0, ["distance_max"] = 0}, 0) //no point in negative scale for this one
+				DoSphereAxis(1, "Speed", {["speed_min"] = 0, ["speed_max"] = 0})
+				DoSphereAxis(2, "Local Speed", {["speed_in_local_coordinate_system_min"] = Vector(), ["speed_in_local_coordinate_system_max"] = Vector()})
 			end
 		end,
 		["remap control point to scalar"] = function(processed, op)
@@ -2476,6 +2476,9 @@ function PartCtrl_ProcessPCF(filename)
 												if v["name"] then
 													processedv[k]["name"] = "child " .. childtab2.child .. " | " .. processedv[k]["name"]
 												end
+												if v["label"] then
+													processedv[k]["label_childname"] = processedv[k]["label_childname"] or (string.TrimLeft(string.Replace(childtab2.child, particle, ""), "_") .. " ")
+												end
 											end
 											if istable(cpoints2[i][processedk]) then
 												table.Add(cpoints2[i][processedk], processedv)
@@ -2495,6 +2498,9 @@ function PartCtrl_ProcessPCF(filename)
 									//mark operators as being inherited from a child
 									if v["name"] then
 										processedv[k]["name"] = "child " .. childtab.child .. " | " .. processedv[k]["name"]
+									end
+									if v["label"] then
+										processedv[k]["label_childname"] = processedv[k]["label_childname"] or (string.TrimLeft(string.Replace(childtab.child, particle, ""), "_") .. " ")
 									end
 								end
 								if istable(cpoints[i][processedk]) then
@@ -3178,10 +3184,16 @@ function PartCtrl_ProcessPCF(filename)
 					for k2, v2 in pairs (v.vector) do
 						if v.vector[k2] != nil then
 							local newtab = table.Copy(v2)
+							newtab.labels = {[v2.label_childname or ""] = {[v2.label] = true}}
 							for k3, v3 in pairs (v.vector) do
-								if k3 != k2 and v3.label == v2.label and v3.inMin == v2.inMin and v3.inMax == v2.inMax
-								and v3.outMin == v2.outMin and v3.outMax == v2.outMax then
+								if k3 != k2 and v3.inMin == v2.inMin and v3.inMax == v2.inMax and v3.outMin == v2.outMin
+								and v3.outMax == v2.outMax and v3.default == v2.default and v3.decimals == v2.decimals
+								and v3.relative_to_cpoint == v2.relative_to_cpoint and v3.relative_to_cpoint_angle ==
+								v2.relative_to_cpoint_angle and v3.colorpicker == v2.colorpicker and v3.textentry == 
+								v2.textentry then
 									newtab.name = newtab.name .. ",\n" .. v3.name
+									newtab.labels[v3.label_childname or ""] = newtab.labels[v3.label_childname or ""] or {}
+									newtab.labels[v3.label_childname or ""][v3.label] = true
 									v.vector[k3] = nil
 								end
 							end
@@ -3199,35 +3211,123 @@ function PartCtrl_ProcessPCF(filename)
 				end
 				if v.output_axis then
 					for k2, v2 in pairs (v.output_axis) do
-						t2[particle].cpoints[k]["which_" .. v2.axis] = -1 //special value for both vector and axis controls to check for, so they can remove a specific axis being overwritten
+						t2[particle].cpoints[k]["axis_overridden_" .. v2.axis] = true //special value for both vector and axis controls to check for, so they can remove a specific axis being overwritten
 					end
 				end
 				if v.axis then
 					//Squish together axis entries that have the same values except for the name
 					local newaxes = {}
+					local newaxes_by_axis = {
+						[0] = {},
+						[1] = {},
+						[2] = {},
+					}
 					for k2, v2 in pairs (v.axis) do
 						if v.axis[k2] != nil then
 							local newtab = table.Copy(v2)
+							newtab.labels = {[v2.label_childname or ""] = {[v2.label] = true}}
 							for k3, v3 in pairs (v.axis) do
-								if k3 != k2 and v3.label == v2.label and v3.inMin == v2.inMin and v3.inMax == v2.inMax
-								and v3.outMin == v2.outMin and v3.outMax == v2.outMax and v3.axis == v2.axis then
+								if k3 != k2 and v3.axis == v2.axis and v3.inMin == v2.inMin and v3.inMax == v2.inMax 
+								and v3.outMin == v2.outMin and v3.outMax == v2.outMax  and v3.default == v2.default 
+								and v3.decimals == v2.decimals and v3.relative_to_cpoint == v2.relative_to_cpoint then
 									newtab.name = newtab.name .. ",\n" .. v3.name
+									newtab.labels[v3.label_childname or ""] = newtab.labels[v3.label_childname or ""] or {}
+									newtab.labels[v3.label_childname or ""][v3.label] = true
 									v.axis[k3] = nil
 								end
 							end
 							v.axis[k2] = nil
-							table.insert(newaxes, newtab)
+							local i = table.insert(newaxes, newtab)
+							table.insert(newaxes_by_axis[v2.axis], i)
 						end
 					end
 					t2[particle].cpoints[k].axis = newaxes
-					//set "which" value for each axis (which entry in v.axis for the particle entity, edit window, etc. to get values like inMin and label from)
-					for i = 0, 2 do
-						if t2[particle].cpoints[k]["which_" .. i] != -1 then
-							t2[particle].cpoints[k]["which_" .. i] = 0
-							for k2, v2 in pairs (newaxes) do
-								if v2.axis == i then 
-									t2[particle].cpoints[k]["which_" .. i] = k2
-									break
+					if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+						for i = 0, 2 do
+							if !t2[particle].cpoints[k]["axis_overridden_" .. i] then
+								if #newaxes_by_axis[i] == 1 then
+									//If there's only one entry, use that one
+									t2[particle].cpoints[k]["axis_" .. i] = newaxes[newaxes_by_axis[i][1]]
+								elseif #newaxes_by_axis[i] > 1 then
+									//If there are multiple entries with different values, try to combine them together
+									local newtab = table.Copy(newaxes[newaxes_by_axis[i][1]])
+									for i2 = 2, #newaxes_by_axis[i] do
+										local tab2 = newaxes[newaxes_by_axis[i][i2]]
+										//TODO: If we encounter a conflicting value that can't be combined, bail out!
+										//
+										//inMin/inMax is the real value of the cpoint; make it as large as 
+										//possible to make the full range of settings accessible to the user
+										if newtab.inMin != nil or tab2.inMin != nil then
+											if newtab.inMin == nil then
+												newtab.inMin = tab2.inMin
+											elseif tab2.inMin != nil then
+												newtab.inMin = math.min(newtab.inMin, tab2.inMin)
+											end
+										end
+										if newtab.inMax != nil or tab2.inMax != nil then
+											if newtab.inMax == nil then
+												newtab.inMax = tab2.inMax
+											elseif tab2.inMax != nil then
+												newtab.inMax = math.max(newtab.inMax, tab2.inMax)
+											end
+										end
+										//outMin/OutMax is the display value of the cpoint; there's no good way to 
+										//reconcile this with different cpoints at different scales, so don't bother
+										newtab.outMin = newtab.inMin
+										newtab.outMax = newtab.inMax
+										//Err on the side of larger defaults, to try to avoid cases where something
+										//like a radius scalar is too small to be visible by default
+										if newtab.default != nil or tab2.default != nil then
+											if newtab.default == nil then
+												newtab.default = tab2.default
+											elseif tab2.default != nil then
+												newtab.default = math.max(newtab.default, tab2.default)
+											end
+										end
+										//Add labels
+										newtab.labels[tab2.label_childname or ""] = newtab.labels[tab2.label_childname or ""] or {}
+										newtab.labels[tab2.label_childname or ""][tab2.label] = true
+
+										t2[particle].test = true
+									end
+									t2[particle].cpoints[k]["axis_" .. i] = newtab
+								end
+								//Make a big combined label name of all the things the control does
+								local tab = t2[particle].cpoints[k]["axis_" .. i]
+								if tab then
+									local str = ""
+									local docomma = false
+									for effectname, v in pairs (tab.labels) do
+										--[[local str2
+										local docomma2 = false
+										for label, _ in pairs (v) do
+											if !str2 then 
+												str2 = effectname
+												if effectname != "" then
+													str2 = str2 .. " "
+												end
+											end
+											if docomma2 then str2 = str2 .. ", " end
+											str2 = str2 .. label
+											docomma2 = true
+										end
+										if str2 then
+											if docomma then str = str .. "; " end
+											str = str .. str2
+											docomma = true
+										end]]
+										for label, _ in pairs (v) do
+											if docomma then str = str .. ", " end
+											--[[str = str .. effectname
+											if effectname != "" then
+												str = str .. " "
+											end
+											str = str .. label]]
+											str = str .. effectname .. label
+											docomma = true
+										end
+									end
+									tab.label = str
 								end
 							end
 						end

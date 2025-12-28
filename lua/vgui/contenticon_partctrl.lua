@@ -434,7 +434,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						elseif v.mode == PARTCTRL_CPOINT_MODE_AXIS then
 							self.EditCPoints[k] = Vector(0,0,0)
 							for i = 0, 2 do
-								axistab = v.axis[v["which_" .. i]]
+								axistab = v["axis_" .. i]
 								if istable(axistab) then
 									self.EditCPoints[k][i+1] = axistab.default or 0
 									table.insert(self.EditCPointsText, axistab.label)
