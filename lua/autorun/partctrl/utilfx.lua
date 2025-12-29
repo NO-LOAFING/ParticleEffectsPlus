@@ -23,7 +23,8 @@ AddCSLuaFile()
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Normal, Entity, Attachment") //by default, this adds a position control
 
 		//Adds a vector control for cpoint 1
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "vector", { 
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "axis", { 
+			["vector"] = true,
 			["label"] = "Start",
 			["min"] = Vector(-512,-512,-512),
 			["max"] = Vector(512,512,512),
@@ -844,7 +845,8 @@ if IsMounted("hl1") then //these two fx have error models or textures if hl1 is 
 		default_time = 1,
 		DoProcess = function(tab)
 			PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
-			PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "vector", {
+			PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "axis", {
+				["vector"] = true,
 				["label"] = "Velocity",
 				["min"] = Vector(-512,-512,-512),
 				["max"] = Vector(512,512,512),
@@ -1732,7 +1734,8 @@ list.Set("PartCtrl_UtilFx", "balloon_pop", {
 	default_time = 3, //arbitrary; lifetime from code is 10, but this looks silly because most of the time is just spent with nearly invisible particles sitting on the ground
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "vector", {
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "axis", {
+			["vector"] = true,
 			["label"] = "Color",
 			//["min"] = Vector(0,0,0),
 			//["max"] = Vector(255,255,255),
@@ -1955,30 +1958,38 @@ function PartCtrl_ProcessUtilFx()
 			//Use the effect's DoProcess func to set up cpoints
 			v.DoProcess(t, v.DoProcessExtras)
 
-			//Set cpoint modes and "which" values
-			//TODO: is there any case where we need to make these editable by modders somehow? PCFs can override these with PostProcessPCF, but that's not an option here.
+			//Set cpoint modes
 			for k, v in pairs (t.cpoints) do
 				if v.position then
 					t.cpoints[k].mode = PARTCTRL_CPOINT_MODE_POSITION
-				elseif v.vector then
-					t.cpoints[k].mode = PARTCTRL_CPOINT_MODE_VECTOR
-					t.cpoints[k].which = 0
-					for k2, v2 in pairs (v.vector) do
-						t.cpoints[k].which = k2
-						break
-					end
 				elseif v.axis then
 					t.cpoints[k].mode = PARTCTRL_CPOINT_MODE_AXIS
 					for i = 0, 2 do
 						for k2, v2 in pairs (v.axis) do
-							if v2.axis == i then 
+							if v2.axis != nil and v2.axis == i then 
 								t.cpoints[k]["axis_" .. i] = v2
+								break
+							elseif v2.vector then
+								local newtab = table.Copy(v2)
+								for k, v in pairs (newtab) do
+									if isvector(v) then
+										newtab[k] = v[i+1]
+									end
+								end
+								//Special handling for colorpicker, see comments in ProcessPCF
+								if newtab.colorpicker then
+									newtab.outMin2 = math.Min(newtab.outMin, 0)
+									newtab.outMax2 = math.Max(newtab.outMax, 1)
+								end
+								t.cpoints[k]["axis_" .. i] = newtab
 								break
 							end
 						end
 					end
 				end
 			end
+
+			//TODO: is there any case where we need to make this table editable by modders somehow? PCFs can override these with PostProcessPCF, but that's not an option here.
 
 			//Add to table of all utilfx by "title" value (what game or addon folder they're placed in)
 			local function addtotab(str)

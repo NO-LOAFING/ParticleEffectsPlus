@@ -697,49 +697,119 @@ function PANEL:RebuildControls()
 
 						if ent.SpecialEffectAddRoleControls then ent:SpecialEffectAddRoleControls(self, pnl, k, v2, ent2) end
 					end
-				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
-					local tab1 = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k]
-					local tab = tab1.vector[tab1.which]
-					if istable(tab) then
-						//Roll sets the angle of the particle, with the putput measured in radians (pi radians = 180 degrees). Output maximum/minimum sets how many radians it can be rotated up to, 
-						//with values past pi just rotating it past 180 degrees. With a standard render_animated_sprites, only the x value does anything, regardless of orientation type. With render 
-						//models, this is broken and spawns models at random rotations regardless of the cpoint value.
-						//Position sets the position of the particle, with the output measured in hammer units i think?
-						//Color sets the color of the particle, with the output measured in 0 0 0 = black and 1 1 1 = white. Output values under 0 or over 1 don't seem to do anything different, so
-						//no additive color or negative color wackiness here.
-	
-						if tab.colorpicker then
-							local col = vgui.Create("DColorMixer", pnl)
-							col:SetAlphaBar(false)
-							col:Dock(TOP)
-							col:DockMargin(padding,betweenitems,padding,0)
-							col:SetLabel(tab.label)
-	
-							function col.PerformLayout(self, x, y)
-								//Modified version of CtrlColor:PerformLayout (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/spawnmenu/controls/ctrlcolor.lua#L13)
-								//Only does palette button sizes, doesn't clamp their sizes and resizes them more smoothly
-								local ColorRows = #self.Palette:GetChildren() / 3
-								self.Palette:SetButtonSize(self:GetWide() / ColorRows)
-							end
+				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
+					local tab = {
+						[1] = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k]["axis_0"],
+						[2] = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k]["axis_1"],
+						[3] = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k]["axis_2"]
+					}
+					if istable(tab[1]) and istable(tab[2]) and istable(tab[3]) and tab[1].colorpicker then
+						local col = vgui.Create("DColorMixer", pnl)
+						col:SetAlphaBar(false)
+						col:Dock(TOP)
+						col:DockMargin(padding,betweenitems,padding,0)
+						col:SetLabel(string.Replace(tab[1].label, ", ", "\n")) //replace commas with newlines, to try to reduce window stretching
+						//adjust the label's height to accomodate multiline labels
+						col.label:SizeToContents()
+						col.label:SetTall(col.label:GetTall() + 7) //matches default height of 20 for one line
 
-							local vec = Vector(v2.val)
-							vec.x = math.Remap(vec.x, tab.inMin.x, tab.inMax.x, tab.outMin2.x, tab.outMax2.x)
-							vec.y = math.Remap(vec.y, tab.inMin.y, tab.inMax.y, tab.outMin2.y, tab.outMax2.y)
-							vec.z = math.Remap(vec.z, tab.inMin.z, tab.inMax.z, tab.outMin2.z, tab.outMax2.z)
-							col:SetVector(vec)
-							function col.ValueChanged(_, val)
-								local vec = Vector()
-								vec.x = math.Remap(val.r/255, tab.outMin2.x, tab.outMax2.x, tab.inMin.x, tab.inMax.x)
-								vec.y = math.Remap(val.g/255, tab.outMin2.y, tab.outMax2.y, tab.inMin.y, tab.inMax.y)
-								vec.z = math.Remap(val.b/255, tab.outMin2.z, tab.outMax2.z, tab.inMin.z, tab.inMax.z)
-								ent2:DoInput("cpoint_vector_val_all", k, vec)
-							end
+						function col.PerformLayout(self, x, y)
+							//Modified version of CtrlColor:PerformLayout (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/spawnmenu/controls/ctrlcolor.lua#L13)
+							//Only does palette button sizes, doesn't clamp their sizes and resizes them more smoothly
+							local ColorRows = #self.Palette:GetChildren() / 3
+							self.Palette:SetButtonSize(self:GetWide() / ColorRows)
+						end
 
-							//TODO: how should we handle an axis being overwritten by output_axis?
-						elseif tab.textentry then
-							local done_first = false
-							for i = 1, 3 do
-								if !tab1["axis_overridden_" .. i-1] then //don't create an entry for an axis that's being overwritten by output_axis
+						local vec = Vector(v2.val)
+						vec.x = math.Remap(vec.x, tab[1].inMin, tab[1].inMax, tab[1].outMin2, tab[1].outMax2)
+						vec.y = math.Remap(vec.y, tab[2].inMin, tab[2].inMax, tab[2].outMin2, tab[2].outMax2)
+						vec.z = math.Remap(vec.z, tab[3].inMin, tab[3].inMax, tab[3].outMin2, tab[3].outMax2)
+						col:SetVector(vec)
+						function col.ValueChanged(_, val)
+							local vec = Vector()
+							vec.x = math.Remap(val.r/255, tab[1].outMin2, tab[1].outMax2, tab[1].inMin, tab[1].inMax)
+							vec.y = math.Remap(val.g/255, tab[2].outMin2, tab[2].outMax2, tab[2].inMin, tab[2].inMax)
+							vec.z = math.Remap(val.b/255, tab[3].outMin2, tab[3].outMax2, tab[3].inMin, tab[3].inMax)
+							ent2:DoInput("cpoint_axis_val_all", k, vec)
+						end
+
+						//TODO: currently, if an axis is being overwritten by output_axis, 
+						//	we don't do the colorpicker at all. is there a better way?
+					else
+						local done_first = false
+						for i = 1, 3 do
+							local tab = tab[i]
+							if istable(tab) then
+								//For axis controls, min/max are optional. If a value isn't supplied, then use an arbitrary value and unclamp the slider in that direction.
+								local unclampMin = (tab.inMin == nil and tab.outMin == nil)
+								local unclampMax = (tab.inMax == nil and tab.outMax == nil)
+								local inMin = tab.inMin or -10
+								local inMax = tab.inMax or 10
+								local outMin = tab.outMin or -10
+								local outMax = tab.outMax or 10
+
+								if tab.dropdown then
+									local drop = vgui.Create("Panel", pnl)
+		
+									drop.Label = vgui.Create("DLabel", drop)
+									drop.Label:SetDark(true)
+									drop.Label:SetText(tab.label)
+									drop.Label:Dock(LEFT)
+							
+									drop.Combo = vgui.Create("DComboBox", drop)
+									drop.Combo:SetHeight(25)
+									drop.Combo:Dock(FILL)
+		
+									if tab.dropdown[v2.val[i]] then
+										drop.Combo:SetValue(v2.val[i] .. ": " .. tab.dropdown[v2.val[i]])
+									end
+									for k, v in pairs (tab.dropdown) do
+										drop.Combo:AddChoice(k .. ": " .. v, k)
+									end
+									function drop.Combo.OnSelect(_, index, value, data)
+										ent2:DoInput("cpoint_axis_val", k, i, data)
+									end
+							
+									drop:SetHeight(25)
+									drop:Dock(TOP)
+									drop:DockMargin(padding,betweenitems,padding,0)
+									//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
+									function drop.PerformLayout(_, w, h)
+										drop.Label:SetWide(w / 2.4)
+									end
+								elseif tab.checkboxes then
+									local checkboxes = {}
+									for checkk, checkv in SortedPairs (tab.checkboxes) do
+										local check = vgui.Create( "DCheckBoxLabel", pnl)
+										check:SetText(checkv)
+										check:SetDark(true)
+										check:SetHeight(15)
+										check:Dock(TOP)
+										check:DockMargin(padding,betweenitems,0,0)
+										checkboxes[checkk] = check
+							
+										check:SetValue(bit.band(checkk, v2.val[i]) == checkk)
+										check.OnChange = function(_, val)
+											local total = 0
+											for checkk2, checkv2 in pairs (checkboxes) do
+												if checkv2:GetChecked() then total = total + checkk2 end
+											end
+											ent2:DoInput("cpoint_axis_val", k, i, total)
+										end
+									end
+								elseif tab.textentry then
+									if tab.textentry.info and !done_first then
+										local text = vgui.Create("DLabel", pnl)
+										text:SetDark(true)
+										text:SetWrap(true)
+										text:SetTextInset(0, 0)
+										text:SetText(tab.textentry.info)
+										text:SetContentAlignment(5)
+										text:SetAutoStretchVertical(true)
+										text:DockMargin(padding,betweenitems,padding,0)
+										text:Dock(TOP)
+									end
+
 									local entrypnl = vgui.Create("Panel", pnl)
 									entrypnl:SetHeight(20)
 									entrypnl:Dock(TOP)
@@ -752,32 +822,26 @@ function PANEL:RebuildControls()
 							
 									local label = vgui.Create("DLabel", entrypnl)
 									label:SetDark(true)
-									if i == 1 then
-										label:SetText(tab.label .. " X")
-									elseif i == 2 then
-										label:SetText(tab.label .. " Y")
-									else
-										label:SetText(tab.label .. " Z")
-									end
+									label:SetText(tab.label)
 									label:Dock(LEFT)
 							
 									local entry = vgui.Create("DTextEntry", entrypnl)
 									entry:SetNumeric(true)
 									entry:SetHeight(20)
 									entry:Dock(FILL)
-									local val = math.Remap(v2.val[i], tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i])
+									local val = math.Remap(v2.val[i], tab.inMin, tab.inMax, tab.outMin, tab.outMax)
 									if tab.decimals != nil then val = math.Round(val, tab.decimals) end
 									entry:SetText(val)
 							
 									entry.OnEnter = function()
 										//Set the displayed text to the actual number value we're using
-										local val = math.Clamp(tonumber(entry:GetText()) or 0, tab.outMin[i], tab.outMax[i])
+										local val = math.Clamp(tonumber(entry:GetText()) or 0, tab.outMin, tab.outMax)
 										if tab.decimals != nil then val = math.Round(val, tab.decimals) end
 										entry:SetText(val)
 
 										//Then send it to the server
-										val = math.Remap(val, tab.outMin[i], tab.outMax[i], tab.inMin[i], tab.inMax[i])
-										ent2:DoInput("cpoint_vector_val_axis", k, i, val)
+										val = math.Remap(val, tab.outMin, tab.outMax, tab.inMin, tab.inMax)
+										ent2:DoInput("cpoint_axis_val", k, i, val)
 									end
 									entry.OnFocusChanged = function(_, b) 
 										if !b then entry:OnEnter() end
@@ -787,60 +851,25 @@ function PANEL:RebuildControls()
 										local w2, h2 = label:GetTextSize()
 										label:SetWide(w2 + padding*2)
 									end
-								end
-							end
-							if tab.textentry.info then
-								local text = vgui.Create("DLabel", pnl)
-								text:SetDark(true)
-								text:SetWrap(true)
-								text:SetTextInset(0, 0)
-								text:SetText(tab.textentry.info)
-								text:SetContentAlignment(5)
-								text:SetAutoStretchVertical(true)
-								text:DockMargin(padding,betweenitems,padding,0)
-								text:Dock(TOP)
-							end
-						else
-							local done_first = false
-							for i = 1, 3 do
-								if !tab1["axis_overridden_" .. i-1] then //don't create a slider for an axis that's being overwritten by output_axis
+								else
 									local slider = vgui.Create("DNumSlider", pnl)
-									if tab.label == "Roll" then
-										if i == 1 then
-											slider:SetText("Pitch")
-										elseif i == 2 then
-											slider:SetText("Yaw")
-										else
-											slider:SetText("Roll")
-										end
-										slider:SetMinMax(-180, 180)
+									slider:SetText(string.Replace(tab.label, ", ", "\n")) //replace commas with newlines, to try to reduce window stretching
+									if outMax < outMin then
+										//tf2 speech_mediccall has a silly outmax of 0 and outmin of 1, presumably because the player's health percentage is used as the input. stop it from breaking the slider.
+										slider:SetMinMax(outMax, outMin)
 									else
-										if tab.label == "Velocity" or "Velocity Direction" then
-											if i == 1 then
-												slider:SetText(tab.label .. " Back/Fwd")
-											elseif i == 2 then
-												slider:SetText(tab.label .. " Right/Left")
-											else
-												slider:SetText(tab.label .. " Down/Up")
-											end
-										else
-											if i == 1 then
-												slider:SetText(tab.label .. " X")
-											elseif i == 2 then
-												slider:SetText(tab.label .. " Y")
-											else
-												slider:SetText(tab.label .. " Z")
-											end
-										end
-										slider:SetMinMax(tab.outMin[i], tab.outMax[i])
+										slider:SetMinMax(outMin, outMax)
 									end
 									if tab.default != nil then
-										slider:SetDefaultValue(math.Remap(tab.default[i], tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i]))
+										slider:SetDefaultValue(math.Remap(tab.default, inMin, inMax, outMin, outMax))
 									else
 										slider:SetDefaultValue(0)
 									end
+									if tab.decimals != nil then slider:SetDecimals(tab.decimals) end //don't "or" this because then it won't work if it's set to 0
 									slider:SetDark(true)
-									slider:SetHeight(18)
+									//adjust the slider's height to accomodate multiline labels
+									slider.Label:SizeToContents()
+									slider:SetHeight(slider.Label:GetTall() + 5) //matches old height of 18 for one line
 									slider:Dock(TOP)
 									if !done_first then
 										slider:DockMargin(padding,betweenitems,0,3)
@@ -848,139 +877,32 @@ function PANEL:RebuildControls()
 									else
 										slider:DockMargin(padding,0,0,3) //no top padding, squish these 3 together
 									end
+
+									//Only unclamp these if they're using a fallback value, otherwise they'll either A: do nothing, or B: in case of "Emission Count Scale" going below 0, crash
+									if unclampMin and unclampMax then
+										slider.ValueChanged = SliderValueChangedUnclamped
+										slider.SetValue = SliderSetValueUnclamped
+									elseif unclampMin then
+										slider.ValueChanged = SliderValueChangedUnclampedMin
+										slider.SetValue = SliderSetValueUnclampedMin
+									elseif unclampMax then
+										slider.ValueChanged = SliderValueChangedUnclampedMax
+										slider.SetValue = SliderSetValueUnclampedMax
+									end
 		
-									//Go ahead and unclamp these; for pos, they won't do anything anyway, and for roll, they just keep rotating
-									slider.ValueChanged = SliderValueChangedUnclamped
-									slider.SetValue = SliderSetValueUnclamped
-			
-									if tab.label == "Roll" then
-										slider:SetValue(math.Remap(math.deg(v2.val[i]), tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i]))
-									else
-										slider:SetValue(math.Remap(v2.val[i], tab.inMin[i], tab.inMax[i], tab.outMin[i], tab.outMax[i]))
-									end
+									//slider:SetValue(math.Remap(math.deg(v2.val[i]), inMin, inMax, outMin, outMax)) //TODO: alt version for Roll control; figure out how to do this in DoVectorIO instead!
+									slider:SetValue(math.Remap(v2.val[i], inMin, inMax, outMin, outMax))
+									slider.val = slider:GetValue()
 									function slider.OnValueChanged(_, val)
-										if tab.label == "Roll" then
-											val = math.Remap(math.rad(val), tab.outMin[i], tab.outMax[i], tab.inMin[i], tab.inMax[i])
-										else
-											val = math.Remap(val, tab.outMin[i], tab.outMax[i], tab.inMin[i], tab.inMax[i])
+										if tab.decimals != nil then
+											val = math.Round(val, tab.decimals)
+											if val == slider.val then return end //don't send updates if the number didn't actually change
+											slider.val = val
 										end
-										ent2:DoInput("cpoint_vector_val_axis", k, i, val)
+										//val = math.Remap(math.rad(val), outMin, outMax, inMin, inMax) //TODO: alt version for Roll control; figure out how to do this in DoVectorIO instead!
+										val = math.Remap(val, outMin, outMax, inMin, inMax)
+										ent2:DoInput("cpoint_axis_val", k, i, val)
 									end
-								end
-							end
-						end
-					end
-				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
-					local slidercount = 0
-					for i = 1, 3 do
-						local tab = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k]["axis_" .. i-1]
-						if istable(tab) then
-							//For axis controls, min/max are optional. If a value isn't supplied, then use an arbitrary value and unclamp the slider in that direction.
-							local unclampMin = (tab.inMin == nil and tab.outMin == nil)
-							local unclampMax = (tab.inMax == nil and tab.outMax == nil)
-							local inMin = tab.inMin or -10
-							local inMax = tab.inMax or 10
-							local outMin = tab.outMin or -10
-							local outMax = tab.outMax or 10
-	
-							if tab.dropdown then
-								local drop = vgui.Create("Panel", pnl)
-	
-								drop.Label = vgui.Create("DLabel", drop)
-								drop.Label:SetDark(true)
-								drop.Label:SetText(tab.label)
-								drop.Label:Dock(LEFT)
-						
-								drop.Combo = vgui.Create("DComboBox", drop)
-								drop.Combo:SetHeight(25)
-								drop.Combo:Dock(FILL)
-	
-								if tab.dropdown[v2.val[i]] then
-									drop.Combo:SetValue(v2.val[i] .. ": " .. tab.dropdown[v2.val[i]])
-								end
-								for k, v in pairs (tab.dropdown) do
-									drop.Combo:AddChoice(k .. ": " .. v, k)
-								end
-								function drop.Combo.OnSelect(_, index, value, data)
-									ent2:DoInput("cpoint_axis_val", k, i, data)
-								end
-						
-								drop:SetHeight(25)
-								drop:Dock(TOP)
-								drop:DockMargin(padding,betweenitems,padding,0)
-								//drop:DockMargin(padding,padding-9,padding,0) //-9 to base the "top" off the text, not the box
-								function drop.PerformLayout(_, w, h)
-									drop.Label:SetWide(w / 2.4)
-								end
-							elseif tab.checkboxes then
-								local checkboxes = {}
-								for checkk, checkv in SortedPairs (tab.checkboxes) do
-									local check = vgui.Create( "DCheckBoxLabel", pnl)
-									check:SetText(checkv)
-									check:SetDark(true)
-									check:SetHeight(15)
-									check:Dock(TOP)
-									check:DockMargin(padding,betweenitems,0,0)
-									checkboxes[checkk] = check
-						
-									check:SetValue(bit.band(checkk, v2.val[i]) == checkk)
-									check.OnChange = function(_, val)
-										local total = 0
-										for checkk2, checkv2 in pairs (checkboxes) do
-											if checkv2:GetChecked() then total = total + checkk2 end
-										end
-										ent2:DoInput("cpoint_axis_val", k, i, total)
-									end
-								end
-							else
-								local slider = vgui.Create("DNumSlider", pnl)
-								slider:SetText(string.Replace(tab.label, ", ", "\n")) //replace commas with newlines, to try to reduce window stretching
-								if outMax < outMin then
-									//tf2 speech_mediccall has a silly outmax of 0 and outmin of 1, presumably because the player's health percentage is used as the input. stop it from breaking the slider.
-									slider:SetMinMax(outMax, outMin)
-								else
-									slider:SetMinMax(outMin, outMax)
-								end
-								if tab.default != nil then
-									slider:SetDefaultValue(math.Remap(tab.default, inMin, inMax, outMin, outMax))
-								else
-									slider:SetDefaultValue(0)
-								end
-								if tab.decimals != nil then slider:SetDecimals(tab.decimals) end //don't "or" this because then it won't work if it's set to 0
-								slider:SetDark(true)
-								//adjust the slider's height to accomodate multiline labels
-								slider.Label:SizeToContents()
-								slider:SetHeight(slider.Label:GetTall() + 5) //slider:SetHeight(18)
-								slider:Dock(TOP)
-								slidercount = slidercount + 1
-								if slidercount == 1 then
-									slider:DockMargin(padding,betweenitems,0,3)
-								else
-									slider:DockMargin(padding,0,0,3) //no top padding, squish these 3 together
-								end
-	
-								//Only unclamp these if they're using a fallback value, otherwise they'll either A: do nothing, or B: in case of "Emission Count Scale" going below 0, crash
-								if unclampMin and unclampMax then
-									slider.ValueChanged = SliderValueChangedUnclamped
-									slider.SetValue = SliderSetValueUnclamped
-								elseif unclampMin then
-									slider.ValueChanged = SliderValueChangedUnclampedMin
-									slider.SetValue = SliderSetValueUnclampedMin
-								elseif unclampMax then
-									slider.ValueChanged = SliderValueChangedUnclampedMax
-									slider.SetValue = SliderSetValueUnclampedMax
-								end
-	
-								slider:SetValue(math.Remap(v2.val[i], inMin, inMax, outMin, outMax))
-								slider.val = slider:GetValue()
-								function slider.OnValueChanged(_, val)
-									if tab.decimals != nil then
-										val = math.Round(val, tab.decimals)
-										if val == slider.val then return end //don't send updates if the number didn't actually change
-										slider.val = val
-									end
-									val = math.Remap(val, outMin, outMax, inMin, inMax)
-									ent2:DoInput("cpoint_axis_val", k, i, val)
 								end
 							end
 						end

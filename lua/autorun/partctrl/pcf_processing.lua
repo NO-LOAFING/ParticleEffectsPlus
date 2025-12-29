@@ -3,9 +3,9 @@ AddCSLuaFile()
 //silly pretend enums
 PARTCTRL_CPOINT_MODE_NONE		= 0
 PARTCTRL_CPOINT_MODE_POSITION		= 1
-PARTCTRL_CPOINT_MODE_VECTOR		= 2
+PARTCTRL_CPOINT_MODE_POSITION_COMBINE	= 2
 PARTCTRL_CPOINT_MODE_AXIS		= 3
-PARTCTRL_CPOINT_MODE_POSITION_COMBINE	= 4
+
 //for networking convenience
 partctrl_cpointbits = 7 //-1 - 63
 
@@ -1117,27 +1117,6 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 			processedv.outMin = min
 			processedv.outMax = max
 			processedv.decimals = 0
-		elseif processedv.colorpicker then
-			//the color picker only supports colors from 0-255, which correspond to a vector value on the particle effect from 0-1.
-			//- some color controls have a narrower color range (outMin greater than 0, or outMax less than 1), and in those cases, the color picker
-			//  would just arbitrarily stop changing the color once it goes past the min/max value, so instead we rescale those so that the picker
-			//  always displays the min value as 0,0,0 and the max value as 255,255,255. (example: many portal2 colorable portalgun fx)
-			//- some color controls also have a broader color range than 0-1 (outMin less than 0, or outMax greater than 1), but supporting these
-			//  in the color picker in the same way proved not to be useful because they'd either A: stop doing anything past a value of 1, or even 
-			//  B: overflow into an entirely different color value, producing nonsense colors (example: portal2 paintgun fx)
-			//cache these here because a bunch of stuff uses this (color picker, color tool setcolor, spawnicons)
-			//TODO: this completely breaks on a test effect where outMin has a narrower range but outMax has a broader range, or vice versa;
-			//can't wrap my head around the math it would take to fix this, but thankfully i can't find any real fx that have this issue
-			processedv.outMin2 = Vector(
-				math.Min(processedv.outMin.x, 0),
-				math.Min(processedv.outMin.y, 0),
-				math.Min(processedv.outMin.z, 0)
-			)
-			processedv.outMax2 = Vector(
-				math.Max(processedv.outMax.x, 1),
-				math.Max(processedv.outMax.y, 1),
-				math.Max(processedv.outMax.z, 1)
-			)
 		end
 	end
 	processedv.name = name
@@ -1239,6 +1218,12 @@ local function DoScalarIO(op, use_distance_input, is_position_control)
 end
 
 local function DoVectorIO(op)
+	//Roll sets the angle of the particle, with the putput measured in radians (pi radians = 180 degrees). Output maximum/minimum sets how many radians it can be rotated up to, 
+	//with values past pi just rotating it past 180 degrees. With a standard render_animated_sprites, only the x value does anything, regardless of orientation type. With render 
+	//models, this is broken and spawns models at random rotations regardless of the cpoint value.
+	//Position sets the position of the particle, with the output measured in hammer units i think?
+	//Color sets the color of the particle, with the output measured in 0 0 0 = black and 1 1 1 = white. Output values under 0 or over 1 don't seem to do anything different, so
+	//no additive color or negative color wackiness here.
 	local field = op["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_XYZ //PARTICLE_ATTRIBUTE_x enum //assume the default is Position because that's what shows in pet by default, just like Radius is for scalars; can't find any v5 fx to test with that omit this value
 	local label = ParticleAttributeNames[field]
 	local inMin = op["input minimum"] or Vector()
@@ -1268,6 +1253,7 @@ local function DoVectorIO(op)
 	end
 
 	return {
+		["vector"] = true,
 		["label"] = label,
 		["inMin"] = inMin,
 		["inMax"] = inMax,
@@ -1477,7 +1463,7 @@ local processfuncs = {
 		["remap control point to vector"] = function(processed, op)
 			//Similar to above, use all 3 axes of the cpoint to set Position, Roll, or Color
 			//TF2/episodes/HL2 pcfs only have use cases for Color, so the others required some testing.
-			cpoint_from_op_value(processed, op, "input control point number", 0, "vector", DoVectorIO(op))
+			cpoint_from_op_value(processed, op, "input control point number", 0, "axis", DoVectorIO(op))
 			cpoint_from_op_value(processed, op, "local space CP", -1, "position_combine") //uses the cpoint's angles to rotate the output in some odd way, can be used to make a position sort-of-rotate with the cpoint, or make colors change as it spins
 		end,
 		["remap cp speed to cp"] = function(processed, op)
@@ -1989,7 +1975,7 @@ local processfuncs = {
 		["remap control point to vector"] = function(processed, op)
 			//same as operator of the same name; actually, orangebox only has the initializer version of this, the operator is new from pcf v5
 			//Similar to above, use all 3 axes of the cpoint to set Position, Roll, or Color
-			cpoint_from_op_value(processed, op, "input control point number", 0, "vector", DoVectorIO(op))
+			cpoint_from_op_value(processed, op, "input control point number", 0, "axis", DoVectorIO(op))
 			cpoint_from_op_value(processed, op, "local space CP", -1, "position_combine") //uses the cpoint's angles to rotate the output in some odd way, can be used to make a position sort-of-rotate with the cpoint, or make colors change as it spins
 		end,
 		["remap cp orientation to rotation"] = function(processed, op) cpoint_from_op_value(processed, op, "control point", 0, "position_combine") end, //uses the cpoint's angles to set the pitch/yaw/roll of particles; this is an angle control, so position_combine it
@@ -2037,7 +2023,8 @@ local processfuncs = {
 
 			local max = Vector(16777216, 16777216, 16777216) //largest integer value we can network as a float until we start running into precision issues
 			local min = Vector(0,0,0)
-			cpoint_from_op_value(processed, op, "control point", 1, "vector", {
+			cpoint_from_op_value(processed, op, "control point", 1, "axis", {
+				["vector"] = true,
 				["label"] = "Sprites",
 				["inMin"] = min,
 				["inMax"] = max,
@@ -2080,7 +2067,8 @@ local processfuncs = {
 				else
 					//let players manually set the values if they spawned a child effect on its own, or for some hypothetical use case where it's intended to be supplied by code or something
 					//this is silly, who's going to use this?
-					cpoint_from_op_value(processed, op, "control_point_number", 0, "vector", {
+					cpoint_from_op_value(processed, op, "control_point_number", 0, "axis", {
+						["vector"] = true,
 						["label"] = "Velocity Direction",
 						["inMin"] = Vector(-1,-1,-1),
 						["inMax"] = Vector(1,1,1),
@@ -2129,7 +2117,8 @@ local processfuncs = {
 			else
 				relative_to_cpoint_angle = nil
 			end
-			cpoint_from_op_value(processed, op, "control point number", 0, "vector", {
+			cpoint_from_op_value(processed, op, "control point number", 0, "axis", {
+				["vector"] = true,
 				["label"] = label,
 				["inMin"] = Vector(-inMax,-inMax,-inMax),
 				["inMax"] = Vector(inMax,inMax,inMax),
@@ -2694,17 +2683,13 @@ function PartCtrl_ProcessPCF(filename)
 								end
 							end
 						end
-						if v["vector"] then
-							if modes[k] == nil and (t2[particle2].has_renderer and t2[particle2].has_emitter) then
-								modes[k] = PARTCTRL_CPOINT_MODE_VECTOR
-							end
-						end
 						if v["axis"] then
 							local doaxis = false
 							if modes[k] == nil then
 								for k2, v2 in pairs (v["axis"]) do
 									//handle output_axis overriding specific axes
-									if !istable(output_axis[k]) or !output_axis[k][v2.axis] then
+									if !istable(output_axis[k]) or ((v2.axis != nil) and !output_axis[k][v2.axis]) 
+									or (v2.vector and (!output_axis[k][0] or !output_axis[k][1] or !output_axis[k][2])) then
 										doaxis = true
 									end
 								end
@@ -3143,40 +3128,9 @@ function PartCtrl_ProcessPCF(filename)
 					//Fill in empty mode entries
 					t2[particle].cpoints[k].mode = PARTCTRL_CPOINT_MODE_NONE
 				end
-				if v.vector then
-					//Squish together vector entries that have the same values except for the name
-					local newvectors = {}
-					for k2, v2 in pairs (v.vector) do
-						if v.vector[k2] != nil then
-							local newtab = table.Copy(v2)
-							newtab.labels = {[v2.label_childname or ""] = {[v2.label] = true}}
-							for k3, v3 in pairs (v.vector) do
-								if k3 != k2 and v3.inMin == v2.inMin and v3.inMax == v2.inMax and v3.outMin == v2.outMin
-								and v3.outMax == v2.outMax and v3.default == v2.default and v3.decimals == v2.decimals
-								and v3.relative_to_cpoint == v2.relative_to_cpoint and v3.relative_to_cpoint_angle ==
-								v2.relative_to_cpoint_angle and v3.colorpicker == v2.colorpicker and v3.textentry == 
-								v2.textentry then
-									newtab.name = newtab.name .. ",\n" .. v3.name
-									newtab.labels[v3.label_childname or ""] = newtab.labels[v3.label_childname or ""] or {}
-									newtab.labels[v3.label_childname or ""][v3.label] = true
-									v.vector[k3] = nil
-								end
-							end
-							v.vector[k2] = nil
-							table.insert(newvectors, newtab)
-						end
-					end
-					t2[particle].cpoints[k].vector = newvectors
-					//set "which" value (which entry in v.vector for the particle entity, edit window, etc. to get values like inMin and label from)
-					t2[particle].cpoints[k].which = 0
-					for k2, v2 in pairs (newvectors) do
-						t2[particle].cpoints[k].which = k2
-						break
-					end
-				end
 				if v.output_axis then
 					for k2, v2 in pairs (v.output_axis) do
-						t2[particle].cpoints[k]["axis_overridden_" .. v2.axis] = true //special value for both vector and axis controls to check for, so they can remove a specific axis being overwritten
+						t2[particle].cpoints[k]["axis_overridden_" .. v2.axis] = true
 					end
 				end
 				if v.axis then
@@ -3192,9 +3146,11 @@ function PartCtrl_ProcessPCF(filename)
 							local newtab = table.Copy(v2)
 							newtab.labels = {[v2.label_childname or ""] = {[v2.label] = true}}
 							for k3, v3 in pairs (v.axis) do
-								if k3 != k2 and v3.axis == v2.axis and v3.inMin == v2.inMin and v3.inMax == v2.inMax 
-								and v3.outMin == v2.outMin and v3.outMax == v2.outMax  and v3.default == v2.default 
-								and v3.decimals == v2.decimals and v3.relative_to_cpoint == v2.relative_to_cpoint then
+								if k3 != k2 and v3.axis == v2.axis and v3.vector == v2.vector and v3.inMin == v2.inMin 
+								and v3.inMax == v2.inMax and v3.outMin == v2.outMin and v3.outMax == v2.outMax and 
+								v3.default == v2.default and v3.decimals == v2.decimals and v3.relative_to_cpoint == 
+								v2.relative_to_cpoint and v3.relative_to_cpoint_angle == v2.relative_to_cpoint_angle 
+								and v3.colorpicker == v2.colorpicker and v3.textentry == v2.textentry then
 									newtab.name = newtab.name .. ",\n" .. v3.name
 									newtab.labels[v3.label_childname or ""] = newtab.labels[v3.label_childname or ""] or {}
 									newtab.labels[v3.label_childname or ""][v3.label] = true
@@ -3203,101 +3159,175 @@ function PartCtrl_ProcessPCF(filename)
 							end
 							v.axis[k2] = nil
 							local i = table.insert(newaxes, newtab)
-							table.insert(newaxes_by_axis[v2.axis], i)
+							if v2.axis != nil then
+								table.insert(newaxes_by_axis[v2.axis], i)
+							elseif v2.vector then
+								table.insert(newaxes_by_axis[0], i)
+								table.insert(newaxes_by_axis[1], i)
+								table.insert(newaxes_by_axis[2], i)
+							end
 						end
 					end
 					t2[particle].cpoints[k].axis = newaxes
 					if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
 						for i = 0, 2 do
+							local function DoVectorLabel(l)
+								if l == "Roll" then
+									if i == 0 then
+										return "Pitch"
+									elseif i == 1 then
+										return "Yaw"
+									else
+										return "Roll"
+									end
+									//TODO: back when this was done in the editor code, this set
+									//slider:SetMinMax(-180, 180) here in place of outMin/outMax; 
+									//figure out how to add this to DoVectorIO instead!
+								elseif l == "Velocity" or l == "Velocity Direction" then
+									if i == 0 then
+										return l .. " Back/Fwd"
+									elseif i == 1 then
+										return l .. " Right/Left"
+									else
+										return l .. " Down/Up"
+									end
+								elseif l != "Color" then
+									if i == 0 then
+										return l .. " X"
+									elseif i == 1 then
+										return l .. " Y"
+									else
+										return l .. " Z"
+									end
+								end
+								return l
+							end
 							if !t2[particle].cpoints[k]["axis_overridden_" .. i] then
-								if #newaxes_by_axis[i] == 1 then
-									//If there's only one entry, use that one
-									t2[particle].cpoints[k]["axis_" .. i] = newaxes[newaxes_by_axis[i][1]]
-								elseif #newaxes_by_axis[i] > 1 then
-									//If there are multiple entries with different values, try to combine them together
+								if #newaxes_by_axis[i] > 0 then
 									local newtab = table.Copy(newaxes[newaxes_by_axis[i][1]])
-									for i2 = 2, #newaxes_by_axis[i] do
-										local tab2 = newaxes[newaxes_by_axis[i][i2]]
-										//If we encounter a conflicting value that can't be combined, bail out
-										if newtab.relative_to_cpoint != tab2.relative_to_cpoint or newtab.decimals != 
-										tab2.decimals or newtab.dropdown != tab2.dropdown or newtab.checkboxes != 
-										tab2.checkboxes then
-											MsgN("PartCtrl: can't combine axis entries for ", filename, " ", particle, " cpoint ", k, " axis ", i, "; report this bug!")
-											//TODO: bail how? no existing fx run into this issue.
-										end
-										//inMin/inMax is the real value of the cpoint; make it as large as 
-										//possible to make the full range of settings accessible to the user
-										if newtab.inMin != nil or tab2.inMin != nil then
-											if newtab.inMin == nil then
-												newtab.inMin = tab2.inMin
-											elseif tab2.inMin != nil then
-												newtab.inMin = math.min(newtab.inMin, tab2.inMin)
+									if newtab.vector then
+										for k, v in pairs (newtab) do
+											if isvector(v) then
+												newtab[k] = v[i+1]
 											end
 										end
-										if newtab.inMax != nil or tab2.inMax != nil then
-											if newtab.inMax == nil then
-												newtab.inMax = tab2.inMax
-											elseif tab2.inMax != nil then
-												newtab.inMax = math.max(newtab.inMax, tab2.inMax)
+										//Replace labels with vector labels if applicable
+										for k, v in pairs (newtab.labels) do
+											local tab = {}
+											for k2, v2 in pairs (v) do
+												tab[DoVectorLabel(k2)] = true
 											end
+											newtab.labels[k] = tab
 										end
-										//"strict" inMin/inMax, for values that *must* remain within a range to 
-										//prevent a crash; these are used later to clamp the final values
-										if newtab.inMin_strict != nil or tab2.inMin_strict != nil then
-											if newtab.inMin_strict == nil then
-												newtab.inMin_strict = tab2.inMin_strict
-											elseif tab2.inMin_strict != nil then
-												newtab.inMin_strict = math.max(newtab.inMin_strict, tab2.inMin_strict)
+									end
+									//If there's only one entry, use that one; if there are multiple 
+									//entries with different values, try to combine them together
+									if #newaxes_by_axis[i] > 1 then
+										for i2 = 2, #newaxes_by_axis[i] do
+											local tab2 = newaxes[newaxes_by_axis[i][i2]]
+											//The colorpicker is mutually exclusive from other controls, and takes precedence
+											if newtab.colorpicker != tab2.colorpicker then
+												if newtab.colorpicker then
+													//newtab has colorpicker but tab2 doesn't, so just skip it
+													continue
+												else
+													//tab2 has colorpicker but newtab doesn't, so replace newtab
+													newtab = table.Copy(tab2)
+													if newtab.vector then
+														for k, v in pairs (newtab) do
+															if isvector(v) then
+																newtab[k] = v[i+1]
+															end
+														end
+														//No vector labels necessary since colors don't do this
+													end
+													continue
+												end
 											end
-										end
-										if newtab.inMax_strict != nil or tab2.inMax_strict != nil then
-											if newtab.inMax_strict == nil then
-												newtab.inMax_strict = tab2.inMax_strict
-											elseif tab2.inMax_strict != nil then
-												newtab.inMax_strict = math.min(newtab.inMax_strict, tab2.inMax_strict)
+											//If we encounter a conflicting value that can't be combined, bail out
+											if newtab.relative_to_cpoint != tab2.relative_to_cpoint 
+											or newtab.relative_to_cpoint_angle != tab2.relative_to_cpoint_angle
+											or newtab.decimals != tab2.decimals 
+											or newtab.textentry != tab2.textentry then
+												MsgN("PartCtrl: can't combine axis entries for ", filename, " ", particle, " cpoint ", k, " axis ", i, "; report this bug!")
+												//TODO: bail how? no existing fx run into this issue.
 											end
-										end
-										//Err on the side of larger defaults, to try to avoid cases where something
-										//like a radius scalar is too small to be visible by default
-										if newtab.default != nil or tab2.default != nil then
-											if newtab.default == nil then
-												newtab.default = tab2.default
-											elseif tab2.default != nil then
-												newtab.default = math.max(newtab.default, tab2.default)
+											local function CombineValues(val, mathfunc)
+												if newtab[val] != nil or tab2[val] != nil then
+													if newtab[val] == nil then
+														if tab2.vector and isvector(tab2[val]) then
+															newtab[val] = tab2[val][i+1]
+														else
+															newtab[val] = tab2[val]
+														end
+													elseif tab2[val] != nil then
+														if tab2.vector and isvector(tab2[val]) then
+															newtab[val] = math[mathfunc](newtab[val], tab2[val][i+1])
+														else
+															newtab[val] = math[mathfunc](newtab[val], tab2[val])
+														end
+													end
+												end
 											end
+											//inMin/inMax is the real value of the cpoint; make it as large as 
+											//possible to make the full range of settings accessible to the user
+											CombineValues("inMin", "min")
+											CombineValues("inMax", "max")
+											//"strict" inMin/inMax, for values that *must* remain within a range to 
+											//prevent a crash; these are used later to clamp the final values
+											CombineValues("inMin_strict", "max")
+											CombineValues("inMax_strict", "min")
+											//Err on the side of larger defaults, to try to avoid cases where something
+											//like a radius scalar is too small to be visible by default
+											CombineValues("default", "max")
+											//Add labels
+											local label = tab2.label
+											if tab2.vector then label = DoVectorLabel(label) end
+											newtab.labels[tab2.label_childname or ""] = newtab.labels[tab2.label_childname or ""] or {}
+											newtab.labels[tab2.label_childname or ""][label] = true
 										end
-										//Add labels
-										newtab.labels[tab2.label_childname or ""] = newtab.labels[tab2.label_childname or ""] or {}
-										newtab.labels[tab2.label_childname or ""][tab2.label] = true
-
+										//Clamp the final inMin/inMax, if applicable
+										if newtab.inMin_strict then
+											newtab.inMin = math.max(newtab.inMin, newtab.inMin_strict)
+										end
+										if newtab.inMax_strict then
+											newtab.inMax = math.min(newtab.inMax, newtab.inMax_strict)
+										end
+										//outMin/OutMax is the display value of the cpoint; there's no good way to reconcile 
+										//this between different controls that have different scales, so don't bother
+										newtab.outMin = newtab.inMin
+										newtab.outMax = newtab.inMax
+										//test
 										t2[particle].test = true
 									end
-									//Clamp the final inMin/inMax, if applicable
-									if newtab.inMin_strict then
-										newtab.inMin = math.max(newtab.inMin, newtab.inMin_strict)
-									end
-									if newtab.inMax_strict then
-										newtab.inMax = math.min(newtab.inMax, newtab.inMax_strict)
-									end
-									//outMin/OutMax is the display value of the cpoint; there's no good way to reconcile 
-									//this between different controls that have different scales, so don't bother
-									newtab.outMin = newtab.inMin
-									newtab.outMax = newtab.inMax
-									t2[particle].cpoints[k]["axis_" .. i] = newtab
-								end
-								//Make a big combined label for all the controls on this cpoint axis
-								local tab = t2[particle].cpoints[k]["axis_" .. i]
-								if tab then
+									//Make a big combined label for all the controls on this axis
 									local str = ""
 									local docomma = false
-									for effectname, v in pairs (tab.labels) do
+									for effectname, v in pairs (newtab.labels) do
 										for label, _ in pairs (v) do
 											if docomma then str = str .. ", " end
 											str = str .. effectname .. label
 											docomma = true
 										end
 									end
-									tab.label = str
+									newtab.label = str
+									//Special handling for colorpicker:
+									//the color picker only supports colors from 0-255, which correspond to a vector value on the particle effect from 0-1.
+									//- some color controls have a narrower color range (outMin greater than 0, or outMax less than 1), and in those cases, the color picker
+									//  would just arbitrarily stop changing the color once it goes past the min/max value, so instead we rescale those so that the picker
+									//  always displays the min value as 0,0,0 and the max value as 255,255,255. (example: many portal2 colorable portalgun fx)
+									//- some color controls also have a broader color range than 0-1 (outMin less than 0, or outMax greater than 1), but supporting these
+									//  in the color picker in the same way proved not to be useful because they'd either A: stop doing anything past a value of 1, or even 
+									//  B: overflow into an entirely different color value, producing nonsense colors (example: portal2 paintgun fx)
+									//cache these here because a bunch of stuff uses this (color picker, color tool setcolor, spawnicons)
+									//TODO: this completely breaks on a test effect where outMin has a narrower range but outMax has a broader range, or vice versa;
+									//can't wrap my head around the math it would take to fix this, but thankfully i can't find any real fx that have this issue
+									if newtab.colorpicker then
+										newtab.outMin2 = math.Min(newtab.outMin, 0)
+										newtab.outMax2 = math.Max(newtab.outMax, 1)
+									end
+									//Now use the finished table for this axis
+									t2[particle].cpoints[k]["axis_" .. i] = newtab
 								end
 							end
 						end

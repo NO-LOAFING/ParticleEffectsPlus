@@ -651,7 +651,7 @@ if CLIENT then
 			end
 
 			//Draw particle render bounds if control window is open
-			//TODO: this looks bad for fx with vector/axis controls, do we really need to port over the whole particle2 thing from the spawnicon code?
+			//TODO: this looks bad for fx with axis controls, do we really need to port over the whole particle2 thing from the spawnicon code?
 			//if window then
 			//	render.DrawWireframeBox(vector_origin, angle_zero, self._wsmins, self._wsmaxs, color_white, true)
 			//end
@@ -785,7 +785,7 @@ if CLIENT then
 
 		//Update the positions of control points that aren't handled automatically by PATTACH_ enums
 
-		//Update axis/vector controls that are rotated relative to another cpoint (used for velocity sliders, 
+		//Update axis controls that are rotated relative to another cpoint (used for velocity sliders, 
 		//which we want to go forward/left/etc. relative to the direction the main position cpoint is facing)
 		if self.RelativeCPointsToUpdate then
 			for k, v in pairs (self.RelativeCPointsToUpdate) do
@@ -991,22 +991,13 @@ if CLIENT then
 								end
 							end
 						end
-					elseif mode == PARTCTRL_CPOINT_MODE_VECTOR or mode == PARTCTRL_CPOINT_MODE_AXIS then
+					elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 						local rel = nil
 						local rel_ang = nil
-						if ptab.cpoints[k].vector then
-							local vectab = ptab.cpoints[k].vector[ptab.cpoints[k]["which"]]
-							if istable(vectab) then
-								rel = vectab.relative_to_cpoint
-								rel_ang = vectab.relative_to_cpoint_angle
-							end
-						end
-						if !rel and ptab.cpoints[k].axis then
-							local axistab = ptab.cpoints[k].axis_0
-							if istable(axistab) then
-								rel = axistab.relative_to_cpoint
-								rel_ang = axistab.relative_to_cpoint_angle
-							end
+						local axistab = ptab.cpoints[k].axis_0
+						if istable(axistab) then
+							rel = axistab.relative_to_cpoint
+							rel_ang = axistab.relative_to_cpoint_angle
 						end
 
 						if rel != nil and ptab.cpoints[rel] != nil then
@@ -1035,7 +1026,7 @@ if CLIENT then
 										end
 									end
 								end
-							elseif mode2 == PARTCTRL_CPOINT_MODE_VECTOR or mode2 == PARTCTRL_CPOINT_MODE_AXIS then
+							elseif mode2 == PARTCTRL_CPOINT_MODE_AXIS then
 								if self.ParticleInfo[k] and self.ParticleInfo[rel] then
 									self.particle:SetControlPoint(k, self.ParticleInfo[k].val + self.ParticleInfo[rel].val)
 								end
@@ -1448,9 +1439,8 @@ local EditMenuInputs = {
 	"cpoint_position_ent_detach",
 	"cpoint_position_attach",
 	"cpoint_position_sfx_role",
-	"cpoint_vector_val_all",
-	"cpoint_vector_val_axis",
 	"cpoint_axis_val",
+	"cpoint_axis_val_all",
 	"loop_mode",
 	"loop_delay",
 	"loop_safety",
@@ -1496,22 +1486,17 @@ if CLIENT then
 			elseif input == "cpoint_position_sfx_role" then
 				
 				net.WriteUInt(args[2], 2) //new value for sfx role (max 3)
-
-			elseif input == "cpoint_vector_val_all" then
-
-				net.WriteFloat(args[2].x) //new value for all 3 axes; we network vectors as 3 floats so that compression doesn't mess up precise values
-				net.WriteFloat(args[2].y)
-				net.WriteFloat(args[2].z)
-
-			elseif input == "cpoint_vector_val_axis" then
-
-				net.WriteUInt(args[2], 2) //axis (1/2/3)
-				net.WriteFloat(args[3]) //new value for axis
 				
 			elseif input == "cpoint_axis_val" then
 
 				net.WriteUInt(args[2], 2) //axis (1/2/3)
 				net.WriteFloat(args[3]) //new value for axis
+			
+			elseif input == "cpoint_axis_val_all" then
+
+				net.WriteFloat(args[2].x) //new value for all 3 axes; we network vectors as 3 floats so that compression doesn't mess up precise values
+				net.WriteFloat(args[2].y)
+				net.WriteFloat(args[2].z)
 
 			elseif input == "loop_mode" then
 
@@ -1633,25 +1618,6 @@ else
 			self.ParticleInfo[k].sfx_role = new
 			refreshtable = true
 
-		elseif input == "cpoint_vector_val_all" then
-
-			local new = Vector(net.ReadFloat(), net.ReadFloat(), net.ReadFloat())
-
-			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_VECTOR then return end
-
-			self.ParticleInfo[k].val = new
-			refreshtable = true
-
-		elseif input == "cpoint_vector_val_axis" then
-
-			local axis = net.ReadUInt(2)
-			local new = net.ReadFloat()
-
-			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_VECTOR then return end
-
-			self.ParticleInfo[k].val[axis] = new
-			refreshtable = true
-
 		elseif input == "cpoint_axis_val" then
 
 			local axis = net.ReadUInt(2)
@@ -1671,6 +1637,15 @@ else
 			end
 
 			self.ParticleInfo[k].val[axis] = new
+			refreshtable = true
+
+		elseif input == "cpoint_axis_val_all" then
+
+			local new = Vector(net.ReadFloat(), net.ReadFloat(), net.ReadFloat())
+
+			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_AXIS then return end
+
+			self.ParticleInfo[k].val = new
 			refreshtable = true
 
 		elseif input == "loop_mode" then
@@ -1860,7 +1835,7 @@ if SERVER then
 					net.WriteEntity(v.ent or NULL)
 					net.WriteUInt(v.attach or 0, 8) //don't know what the max attachment number is, assume 255
 					net.WriteUInt(v.sfx_role or 0, 2) //max of 3, since we don't need any more so far (projectile effect has 0-2)
-				elseif mode == PARTCTRL_CPOINT_MODE_VECTOR or mode == PARTCTRL_CPOINT_MODE_AXIS then
+				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 					//we network vectors as 3 floats so that compression doesn't mess up precise values
 					local val = v.val or Vector()
 					net.WriteFloat(val.x)
@@ -1901,8 +1876,6 @@ else
 
 				v.attach = net.ReadUInt(8)
 				v.sfx_role = net.ReadUInt(2)
-			elseif mode == PARTCTRL_CPOINT_MODE_VECTOR then
-				v.val = Vector(net.ReadFloat(), net.ReadFloat(), net.ReadFloat())
 			elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 				v.val = Vector(net.ReadFloat(), net.ReadFloat(), net.ReadFloat())
 				for i = 0, 2 do
@@ -2347,13 +2320,6 @@ if SERVER then
 					attach = 0,
 					sfx_role = 0,
 				}
-			elseif v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
-				tab[k] = {
-					val = Vector(0,0,0),
-				}
-				if v.vector[v.which].default then
-					tab[k]["val"] = Vector(v.vector[v.which].default)
-				end
 			elseif v.mode == PARTCTRL_CPOINT_MODE_AXIS then
 				tab[k] = {
 					val = Vector(0,0,0)
@@ -2522,16 +2488,15 @@ if SERVER then
 						if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then return end
 						local ptab = PartCtrl_ProcessedPCFs[pcf][name]
 						local refreshtable = false
+						local color2 = Vector(color.r/255, color.g/255, color.b/255)
 						for k, v in pairs (ent.ParticleInfo) do
-							if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_VECTOR then
-								local tab = ptab.cpoints[k].vector[ptab.cpoints[k].which]
-								if istable(tab) and tab.colorpicker then
-									local vec = Vector()
-									vec.x = math.Remap(color.r/255, tab.outMin2.x, tab.outMax2.x, tab.inMin.x, tab.inMax.x)
-									vec.y = math.Remap(color.g/255, tab.outMin2.y, tab.outMax2.y, tab.inMin.y, tab.inMax.y)
-									vec.z = math.Remap(color.b/255, tab.outMin2.z, tab.outMax2.z, tab.inMin.z, tab.inMax.z)
-									ent.ParticleInfo[k].val = vec
-									refreshtable = true
+							if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_AXIS then
+								for i = 0, 2 do
+									local tab = ptab.cpoints[k]["axis_" .. i]
+									if istable(tab) and tab.colorpicker then
+										ent.ParticleInfo[k].val[i+1] = math.Remap(color2[i+1], tab.outMin2, tab.outMax2, tab.inMin, tab.inMax)
+										refreshtable = true
+									end
 								end
 							end
 						end

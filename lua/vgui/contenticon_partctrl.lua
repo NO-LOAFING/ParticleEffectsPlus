@@ -328,9 +328,9 @@ local function DoColorCPoints(self)
 		local col = HSVToColor(((CurTime() * speed) + offset) % 360, 1, 1)
 		col = Vector(col.r/255, col.g/255, col.b/255)
 		local tab = self.ColorCPoints[k]
-		col.x = math.Remap(col.x, tab.outMin2.x, tab.outMax2.x, tab.inMin.x, tab.inMax.x)
-		col.y = math.Remap(col.y, tab.outMin2.y, tab.outMax2.y, tab.inMin.y, tab.inMax.y)
-		col.z = math.Remap(col.z, tab.outMin2.z, tab.outMax2.z, tab.inMin.z, tab.inMax.z)
+		col.x = math.Remap(col.x, tab[1].outMin2, tab[1].outMax2, tab[1].inMin, tab[1].inMax)
+		col.y = math.Remap(col.y, tab[2].outMin2, tab[2].outMax2, tab[2].inMin, tab[2].inMax)
+		col.z = math.Remap(col.z, tab[3].outMin2, tab[3].outMax2, tab[3].inMin, tab[3].inMax)
 		self.particle:SetControlPoint(k, col)
 	end
 
@@ -423,21 +423,21 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					self.EditCPointsText = {}
 					self.ColorCPoints = {}
 					for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
-						if v.mode == PARTCTRL_CPOINT_MODE_VECTOR then
-							if !v.vector or !v.vector[v.which] then MsgN(pcf, ": ", name, " - this effect is trying to get a vector value that it doesn't have, some dumb inheritance problem, go report this!") end
-							if v.vector[v.which].colorpicker then
-								self.ColorCPoints[k] = v.vector[v.which]
+						if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+							local tab = {
+								[1] = v["axis_0"],
+								[2] = v["axis_1"],
+								[3] = v["axis_2"]
+							}
+							if istable(tab[1]) and istable(tab[2]) and istable(tab[3]) and tab[1].colorpicker then
+								self.ColorCPoints[k] = tab
 							else
-								self.EditCPoints[k] = v.vector[v.which].default or vector_origin
-								table.insert(self.EditCPointsText, v.vector[v.which].label)
-							end
-						elseif v.mode == PARTCTRL_CPOINT_MODE_AXIS then
-							self.EditCPoints[k] = Vector(0,0,0)
-							for i = 0, 2 do
-								axistab = v["axis_" .. i]
-								if istable(axistab) then
-									self.EditCPoints[k][i+1] = axistab.default or 0
-									table.insert(self.EditCPointsText, axistab.label)
+								self.EditCPoints[k] = Vector(0,0,0)
+								for i = 1, 3 do
+									if istable(tab[i]) then
+										self.EditCPoints[k][i] = tab[i].default or 0
+										table.insert(self.EditCPointsText, tab[i].label)
+									end
 								end
 							end
 						elseif v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
@@ -457,7 +457,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						for k, v in SortedPairs (self.ColorCPoints) do
 							table.insert(self.iColorCPoints, k)
 							//do particle2 if the default is large enough to stretch the bounds
-							if !self.doparticle2 and (math.abs(v.default.x) > 1 or math.abs(v.default.y) > 1 or math.abs(v.default.z) > 1) then
+							if !self.doparticle2 and (math.abs(v[1].default) > 1 or math.abs(v[2].default) > 1 or math.abs(v[3].default) > 1) then
 								self.doparticle2 = true
 							end
 						end
@@ -638,7 +638,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 									DoPosCPoints(self, v, k)
 								end
 							end
-							//Handle axis cpoints and vector cpoints other than colors by just setting them to their default value
+							//Handle axis cpoints other than colors by just setting them to their default value
 							for k, v in pairs (self.EditCPoints) do
 								self.particle:SetControlPoint(k, v)
 							end
