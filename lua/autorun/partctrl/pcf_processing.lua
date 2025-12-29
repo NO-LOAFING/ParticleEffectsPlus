@@ -1173,6 +1173,8 @@ local function DoScalarIO(op, use_distance_input, is_position_control)
 		inMin = op["distance minimum"] or 0
 		inMax = op["distance maximum"] or 128
 	end
+	//local inMin_strict //currently unused
+	local inMax_strict
 	local outMin = op["output minimum"] or 0
 	local outMax = op["output maximum"] or 1
 	local is_multiplier = op["output is scalar of initial random range"] or op["output is scalar of current value"] //initializers don't have the latter, but this should be fine
@@ -1201,6 +1203,7 @@ local function DoScalarIO(op, use_distance_input, is_position_control)
 			//don't let sequence number scalars set the value to 64, or it'll crash (for particles/asw_order_fx.pcf order_use_item)
 			if outMax > 63 then
 				inMax = math.Remap(63, outMin, outMax, inMin, inMax)
+				inMax_strict = inMax
 				outMax = 63
 			end
 			//sequence number scalars should be whole numbers, and default to 0 (first sequence)
@@ -1226,6 +1229,8 @@ local function DoScalarIO(op, use_distance_input, is_position_control)
 		["label"] = label,
 		["inMin"] = inMin,
 		["inMax"] = inMax,
+		//["inMin_strict"] = inMin_strict, //currently unused
+		["inMax_strict"] = inMax_strict,
 		["outMin"] = outMin,
 		["outMax"] = outMax,
 		["default"] = default,
@@ -1465,31 +1470,14 @@ local processfuncs = {
 			local axis = op["input field 0-2 X/Y/Z"] or 0
 			if axis > -1 then
 				local tab = DoScalarIO(op)
-				cpoint_from_op_value(processed, op, "input control point number", 0, "axis", {
-					["axis"] = axis,
-					["label"] = tab.label,
-					["inMin"] = tab.inMin,
-					["inMax"] = tab.inMax,
-					["outMin"] = tab.outMin,
-					["outMax"] = tab.outMax,
-					["default"] = tab.default,
-					["decimals"] = tab.decimals,
-				})
+				tab.axis = axis
+				cpoint_from_op_value(processed, op, "input control point number", 0, "axis", tab)
 			end
 		end,
 		["remap control point to vector"] = function(processed, op)
 			//Similar to above, use all 3 axes of the cpoint to set Position, Roll, or Color
 			//TF2/episodes/HL2 pcfs only have use cases for Color, so the others required some testing.
-			local tab = DoVectorIO(op)
-			cpoint_from_op_value(processed, op, "input control point number", 0, "vector", {
-				["label"] = tab.label,
-				["inMin"] = tab.inMin,
-				["inMax"] = tab.inMax,
-				["outMin"] = tab.outMin,
-				["outMax"] = tab.outMax,
-				["default"] = tab.default,
-				["colorpicker"] = tab.colorpicker,
-			})
+			cpoint_from_op_value(processed, op, "input control point number", 0, "vector", DoVectorIO(op))
 			cpoint_from_op_value(processed, op, "local space CP", -1, "position_combine") //uses the cpoint's angles to rotate the output in some odd way, can be used to make a position sort-of-rotate with the cpoint, or make colors change as it spins
 		end,
 		["remap cp speed to cp"] = function(processed, op)
@@ -1525,17 +1513,9 @@ local processfuncs = {
 		["remap distance between two control points to scalar"] = function(processed, op)
 			//this uses all the same scalars as remap control point to scalar, but actually uses the distance between two positions to get the value
 			local tab = DoScalarIO(op, true)
-			cpoint_from_op_value(processed, op, "ending control point", 1, "axis", {
-				["axis"] = 0, //arbitrary; any axis could work for this, but ent_partctrl:StartParticle checks axis_0 for relative_to_cpoint
-				["label"] = tab.label,
-				["inMin"] = tab.inMin,
-				["inMax"] = tab.inMax,
-				["outMin"] = tab.outMin,
-				["outMax"] = tab.outMax,
-				["default"] = tab.default,
-				["decimals"] = tab.decimals,
-				["relative_to_cpoint"] = op["starting control point"] or 0 //?
-			})
+			tab.axis = 0 //arbitrary; any axis could work for this, but ent_partctrl:StartParticle checks axis_0 for relative_to_cpoint
+			tab.relative_to_cpoint = op["starting control point"] or 0 //?
+			cpoint_from_op_value(processed, op, "ending control point", 1, "axis", tab)
 			cpoint_from_op_value(processed, op, "starting control point", 0, "position_combine") //this is iffy; we assume the start cpoint might be attached to something while the end point isn't, which *is* the case with all existing fx, but doesn't necessarily have to be
 		end,
 		["remap distance to control point to scalar"] = function(processed, op)
@@ -2002,31 +1982,14 @@ local processfuncs = {
 			local axis = op["input field 0-2 X/Y/Z"] or 0
 			if axis > -1 then
 				local tab = DoScalarIO(op)
-				cpoint_from_op_value(processed, op, "input control point number", 0, "axis", {
-					["axis"] = axis,
-					["label"] = tab.label,
-					["inMin"] = tab.inMin,
-					["inMax"] = tab.inMax,
-					["outMin"] = tab.outMin,
-					["outMax"] = tab.outMax,
-					["default"] = tab.default,
-					["decimals"] = tab.decimals,
-				})
+				tab.axis = axis
+				cpoint_from_op_value(processed, op, "input control point number", 0, "axis", tab)
 			end
 		end,
 		["remap control point to vector"] = function(processed, op)
 			//same as operator of the same name; actually, orangebox only has the initializer version of this, the operator is new from pcf v5
 			//Similar to above, use all 3 axes of the cpoint to set Position, Roll, or Color
-			local tab = DoVectorIO(op)
-			cpoint_from_op_value(processed, op, "input control point number", 0, "vector", {
-				["label"] = tab.label,
-				["inMin"] = tab.inMin,
-				["inMax"] = tab.inMax,
-				["outMin"] = tab.outMin,
-				["outMax"] = tab.outMax,
-				["default"] = tab.default,
-				["colorpicker"] = tab.colorpicker,
-			})
+			cpoint_from_op_value(processed, op, "input control point number", 0, "vector", DoVectorIO(op))
 			cpoint_from_op_value(processed, op, "local space CP", -1, "position_combine") //uses the cpoint's angles to rotate the output in some odd way, can be used to make a position sort-of-rotate with the cpoint, or make colors change as it spins
 		end,
 		["remap cp orientation to rotation"] = function(processed, op) cpoint_from_op_value(processed, op, "control point", 0, "position_combine") end, //uses the cpoint's angles to set the pitch/yaw/roll of particles; this is an angle control, so position_combine it
@@ -2215,6 +2178,7 @@ local processfuncs = {
 					["axis"] = axis,
 					["label"] = "Emission Count Scale",
 					["inMin"] = 0,
+					["inMin_strict"] = 0, //if this control goes below 0, it'll crash
 					["outMin"] = 0,
 					//no max
 					["default"] = 1,
@@ -2234,6 +2198,7 @@ local processfuncs = {
 					["axis"] = axis,
 					["label"] = "Emission Count Scale",
 					["inMin"] = 0,
+					["inMin_strict"] = 0, //if this control goes below 0, it'll crash
 					["outMin"] = 0,
 					//no max
 					["default"] = 1,
@@ -2477,7 +2442,7 @@ function PartCtrl_ProcessPCF(filename)
 													processedv[k]["name"] = "child " .. childtab2.child .. " | " .. processedv[k]["name"]
 												end
 												if v["label"] then
-													processedv[k]["label_childname"] = processedv[k]["label_childname"] or (string.TrimLeft(string.Replace(childtab2.child, particle, ""), "_") .. " ")
+													processedv[k]["label_childname"] = processedv[k]["label_childname"] or (childtab2.child .. " ")
 												end
 											end
 											if istable(cpoints2[i][processedk]) then
@@ -2500,7 +2465,7 @@ function PartCtrl_ProcessPCF(filename)
 										processedv[k]["name"] = "child " .. childtab.child .. " | " .. processedv[k]["name"]
 									end
 									if v["label"] then
-										processedv[k]["label_childname"] = processedv[k]["label_childname"] or (string.TrimLeft(string.Replace(childtab.child, particle, ""), "_") .. " ")
+										processedv[k]["label_childname"] = processedv[k]["label_childname"] or (childtab.child .. " ")
 									end
 								end
 								if istable(cpoints[i][processedk]) then
@@ -3253,8 +3218,13 @@ function PartCtrl_ProcessPCF(filename)
 									local newtab = table.Copy(newaxes[newaxes_by_axis[i][1]])
 									for i2 = 2, #newaxes_by_axis[i] do
 										local tab2 = newaxes[newaxes_by_axis[i][i2]]
-										//TODO: If we encounter a conflicting value that can't be combined, bail out!
-										//
+										//If we encounter a conflicting value that can't be combined, bail out
+										if newtab.relative_to_cpoint != tab2.relative_to_cpoint or newtab.decimals != 
+										tab2.decimals or newtab.dropdown != tab2.dropdown or newtab.checkboxes != 
+										tab2.checkboxes then
+											MsgN("PartCtrl: can't combine axis entries for ", filename, " ", particle, " cpoint ", k, " axis ", i, "; report this bug!")
+											//TODO: bail how? no existing fx run into this issue.
+										end
 										//inMin/inMax is the real value of the cpoint; make it as large as 
 										//possible to make the full range of settings accessible to the user
 										if newtab.inMin != nil or tab2.inMin != nil then
@@ -3271,10 +3241,22 @@ function PartCtrl_ProcessPCF(filename)
 												newtab.inMax = math.max(newtab.inMax, tab2.inMax)
 											end
 										end
-										//outMin/OutMax is the display value of the cpoint; there's no good way to 
-										//reconcile this with different cpoints at different scales, so don't bother
-										newtab.outMin = newtab.inMin
-										newtab.outMax = newtab.inMax
+										//"strict" inMin/inMax, for values that *must* remain within a range to 
+										//prevent a crash; these are used later to clamp the final values
+										if newtab.inMin_strict != nil or tab2.inMin_strict != nil then
+											if newtab.inMin_strict == nil then
+												newtab.inMin_strict = tab2.inMin_strict
+											elseif tab2.inMin_strict != nil then
+												newtab.inMin_strict = math.max(newtab.inMin_strict, tab2.inMin_strict)
+											end
+										end
+										if newtab.inMax_strict != nil or tab2.inMax_strict != nil then
+											if newtab.inMax_strict == nil then
+												newtab.inMax_strict = tab2.inMax_strict
+											elseif tab2.inMax_strict != nil then
+												newtab.inMax_strict = math.min(newtab.inMax_strict, tab2.inMax_strict)
+											end
+										end
 										//Err on the side of larger defaults, to try to avoid cases where something
 										//like a radius scalar is too small to be visible by default
 										if newtab.default != nil or tab2.default != nil then
@@ -3290,39 +3272,27 @@ function PartCtrl_ProcessPCF(filename)
 
 										t2[particle].test = true
 									end
+									//Clamp the final inMin/inMax, if applicable
+									if newtab.inMin_strict then
+										newtab.inMin = math.max(newtab.inMin, newtab.inMin_strict)
+									end
+									if newtab.inMax_strict then
+										newtab.inMax = math.min(newtab.inMax, newtab.inMax_strict)
+									end
+									//outMin/OutMax is the display value of the cpoint; there's no good way to reconcile 
+									//this between different controls that have different scales, so don't bother
+									newtab.outMin = newtab.inMin
+									newtab.outMax = newtab.inMax
 									t2[particle].cpoints[k]["axis_" .. i] = newtab
 								end
-								//Make a big combined label name of all the things the control does
+								//Make a big combined label for all the controls on this cpoint axis
 								local tab = t2[particle].cpoints[k]["axis_" .. i]
 								if tab then
 									local str = ""
 									local docomma = false
 									for effectname, v in pairs (tab.labels) do
-										--[[local str2
-										local docomma2 = false
-										for label, _ in pairs (v) do
-											if !str2 then 
-												str2 = effectname
-												if effectname != "" then
-													str2 = str2 .. " "
-												end
-											end
-											if docomma2 then str2 = str2 .. ", " end
-											str2 = str2 .. label
-											docomma2 = true
-										end
-										if str2 then
-											if docomma then str = str .. "; " end
-											str = str .. str2
-											docomma = true
-										end]]
 										for label, _ in pairs (v) do
 											if docomma then str = str .. ", " end
-											--[[str = str .. effectname
-											if effectname != "" then
-												str = str .. " "
-											end
-											str = str .. label]]
 											str = str .. effectname .. label
 											docomma = true
 										end

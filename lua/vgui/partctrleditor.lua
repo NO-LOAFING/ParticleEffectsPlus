@@ -180,7 +180,7 @@ function PANEL:RebuildControls()
 			text:SetDark(true)
 			text:SetWrap(true)
 			text:SetTextInset(0, 0)
-			text:SetText(table.concat(info, "/n"))
+			text:SetText(table.concat(info, "\n"))
 			text:SetContentAlignment(5)
 			text:SetAutoStretchVertical(true)
 			text:DockMargin(padding,padding-1,padding,0) //padding-1 for top is trial and error, results in nice 16px spacing on both top and bottom of text
