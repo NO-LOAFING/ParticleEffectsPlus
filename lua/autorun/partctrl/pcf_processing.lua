@@ -1814,12 +1814,12 @@ local processfuncs = {
 				local endp = op["end control point number"] or 0
 				local name = op._categoryName .. " " .. op.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 				for i = startp, endp do
-					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {["sets_particle_pos"] = true}, op)
+					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true}, op)
 				end
 			else
 				//uses start and end cpoint only
-				cpoint_from_op_value(processed, op, "start control point number", 0, nil, {["sets_particle_pos"] = true})
-				cpoint_from_op_value(processed, op, "end control point number", 0, nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
+				cpoint_from_op_value(processed, op, "start control point number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
+				cpoint_from_op_value(processed, op, "end control point number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
 			end
 		end,
 		["position along path sequential"] = function(processed, op)
@@ -1830,6 +1830,7 @@ local processfuncs = {
 				local name = op._categoryName .. " " .. op.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 				for i = startp, endp-startp do //note: if the starting cpoint is non-0, it behaves oddly and deducts that many cpoints from the other end, see portal2 particles/debug.pcf debug_sc_square; this is almost certainly a bug, but a valve effect was designed with it in mind, so we're going with it
 					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {
+						["overridable_by_constraint"] = true,
 						["sets_particle_pos"] = true, 
 						["pathseqcheck_min_particles"] = ((op["particles to map from start to end"] or 100) / (endp - startp)) * (i - startp - 1)
 					}, op)
@@ -1837,8 +1838,8 @@ local processfuncs = {
 				processed["pathseqcheck"] = true
 			else
 				//uses start and end cpoint only
-				cpoint_from_op_value(processed, op, "start control point number", 0, nil, {["sets_particle_pos"] = true})
-				cpoint_from_op_value(processed, op, "end control point number", 0, nil, {["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
+				cpoint_from_op_value(processed, op, "start control point number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
+				cpoint_from_op_value(processed, op, "end control point number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true}) //pet adds controls for all the cpoints between these two, but the effect itself still only seems to use the start and end
 			end
 		end,
 		["position along ring"] = function(processed, op)
