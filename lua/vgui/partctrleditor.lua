@@ -814,7 +814,7 @@ function PANEL:RebuildControls()
 									entrypnl:SetHeight(20)
 									entrypnl:Dock(TOP)
 									if !done_first then
-										entrypnl:DockMargin(padding,padding,padding,3)
+										entrypnl:DockMargin(padding,betweenitems,padding,3)
 										done_first = true
 									else
 										entrypnl:DockMargin(padding,0,padding,3) //no top padding, squish these 3 together

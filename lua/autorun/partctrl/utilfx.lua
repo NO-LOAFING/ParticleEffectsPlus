@@ -61,7 +61,7 @@ AddCSLuaFile()
 		//Adds axis controls for cpoint 2's X, Y and Z axis
 		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Start", "axis", { 
 			["vector"] = true, //this setting tells it to add a control for all 3 axes; min/max/default also use vectors in this mode
-			["label"] = "Start",
+			["label"] = {"Start X", "Start Y", "Start Z"} //can optionally be a table of 3 different labels
 			["min"] = Vector(-512,-512,-512),
 			["max"] = Vector(512,512,512),
 			["default"] = Vector(0,0,0),
@@ -93,7 +93,8 @@ AddCSLuaFile()
 		ed:SetColor(self.ParticleInfo[1].val.y)
 		ed:SetFlags(self.ParticleInfo[1].val.z + 128) //let's say there's a flag you always want to be set, instead of making a checkbox for it. sure, you can do that.
 
-		//Sets the Start to the vector value from cpoint 2's axis controls
+		//Sets the Start to the vector value from cpoint 2's axis controls; let's say this is some 
+		//other vector value that doesn't represent a point in space, like velocity or a color picker.
 		ed:SetStart(self.ParticleInfo[2].val)
 
 		ed:SetMagnitude(10) //of course, you can set values manually if you don't want to add controls for them
@@ -851,7 +852,7 @@ if IsMounted("hl1") then //these two fx have error models or textures if hl1 is 
 			PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
 			PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "axis", {
 				["vector"] = true,
-				["label"] = "Velocity",
+				["label"] = {"Velocity Back/Fwd", "Velocity Right/Left", "Velocity Down/Up"},
 				["min"] = Vector(-512,-512,-512),
 				["max"] = Vector(512,512,512),
 				["default"] = Vector(0,-65,137.5), //average velocity from hgrunt/assassin code (https://github.com/nillerusr/source-engine/blob/master/game/server/hl1/hl1_npc_hgrunt.cpp#L1235 / https://github.com/nillerusr/source-engine/blob/master/game/server/hl1/hl1_npc_hassassin.cpp#L601), which is also fairly close to the average velocity from hl1 weapon code (https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_basecombatweapon_shared.cpp#L75)
@@ -1971,7 +1972,7 @@ function PartCtrl_ProcessUtilFx()
 							elseif v2.vector then
 								local newtab = table.Copy(v2)
 								for k, v in pairs (newtab) do
-									if isvector(v) then
+									if isvector(v) or istable(v) then
 										newtab[k] = v[i+1]
 									end
 								end

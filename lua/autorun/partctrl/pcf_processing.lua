@@ -1232,7 +1232,7 @@ local function DoVectorIO(op)
 	//Position sets the position of the particle, with the output measured in hammer units i think?
 	//Color sets the color of the particle, with the output measured in 0 0 0 = black and 1 1 1 = white. Output values under 0 or over 1 don't seem to do anything different, so
 	//no additive color or negative color wackiness here.
-	local field = op["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_XYZ //PARTICLE_ATTRIBUTE_x enum //assume the default is Position because that's what shows in pet by default, just like Radius is for scalars; can't find any v5 fx to test with that omit this value
+	local field = op["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_XYZ //PARTICLE_ATTRIBUTE_x enum
 	local label = ParticleAttributeNames[field]
 	local inMin = op["input minimum"] or Vector()
 	local inMax = op["input maximum"] or Vector()
@@ -1263,6 +1263,11 @@ local function DoVectorIO(op)
 	end
 	if is_multiplier then
 		label = label .. " Scale"
+	end
+	if field == PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION then
+		label = {"Pitch", "Yaw", "Roll"}
+	elseif field != PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB then
+		label = {label .. " X", label .. " Y", label .. " Z"}
 	end
 
 	return {
@@ -2037,7 +2042,7 @@ local processfuncs = {
 			local min = Vector(0,0,0)
 			cpoint_from_op_value(processed, op, "control point", 1, "axis", {
 				["vector"] = true,
-				["label"] = "Sprites",
+				["label"] = {"Sprites 1", "Sprites 2", "Sprites 3"},
 				["inMin"] = min,
 				["inMax"] = max,
 				["outMin"] = min,
@@ -2081,7 +2086,7 @@ local processfuncs = {
 					//this is silly, who's going to use this?
 					cpoint_from_op_value(processed, op, "control_point_number", 0, "axis", {
 						["vector"] = true,
-						["label"] = "Velocity Direction",
+						["label"] = {"Velocity Direction Back/Fwd", "Velocity Direction Right/Left", "Velocity Direction Down/Up"},
 						["inMin"] = Vector(-1,-1,-1),
 						["inMax"] = Vector(1,1,1),
 						["outMin"] = Vector(-1,-1,-1),
@@ -2116,12 +2121,12 @@ local processfuncs = {
 			local outMax = 1024 //arbitrary
 			local inMax = outMax / (op["velocity scale"] or 1)
 			local default = 100 / (op["velocity scale"] or 1)
-			local label = "Velocity"
+			local label = {"Velocity Back/Fwd", "Velocity Right/Left", "Velocity Down/Up"}
 			if op["direction only"] then
 				inMax = 1
 				outMax = 1
 				default = 1
-				label = "Velocity Direction"
+				label = {"Velocity Direction Back/Fwd", "Velocity Direction Right/Left", "Velocity Direction Down/Up"}
 			end
 			local relative_to_cpoint_angle = op["local space control point number"] or -1
 			if !(relative_to_cpoint_angle > -1) then
@@ -3183,34 +3188,6 @@ function PartCtrl_ProcessPCF(filename)
 					t2[particle].cpoints[k].axis = newaxes
 					if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
 						for i = 0, 2 do
-							local function DoVectorLabel(l)
-								if l == "Roll" then
-									if i == 0 then
-										return "Pitch"
-									elseif i == 1 then
-										return "Yaw"
-									else
-										return "Roll"
-									end
-								elseif l == "Velocity" or l == "Velocity Direction" then
-									if i == 0 then
-										return l .. " Back/Fwd"
-									elseif i == 1 then
-										return l .. " Right/Left"
-									else
-										return l .. " Down/Up"
-									end
-								elseif l != "Color" and l != "Color Scale" then
-									if i == 0 then
-										return l .. " X"
-									elseif i == 1 then
-										return l .. " Y"
-									else
-										return l .. " Z"
-									end
-								end
-								return l
-							end
 							if !t2[particle].cpoints[k]["axis_overridden_" .. i] then
 								if #newaxes_by_axis[i] > 0 then
 									local newtab = table.Copy(newaxes[newaxes_by_axis[i][1]])
@@ -3219,14 +3196,6 @@ function PartCtrl_ProcessPCF(filename)
 											if isvector(v) then
 												newtab[k] = v[i+1]
 											end
-										end
-										//Replace labels with vector labels if applicable
-										for k, v in pairs (newtab.labels) do
-											local tab = {}
-											for k2, v2 in pairs (v) do
-												tab[DoVectorLabel(k2)] = true
-											end
-											newtab.labels[k] = tab
 										end
 									end
 									//If there's only one entry, use that one; if there are multiple 
@@ -3251,7 +3220,6 @@ function PartCtrl_ProcessPCF(filename)
 																newtab[k] = v[i+1]
 															end
 														end
-														//No vector labels necessary since colors don't do this
 													end
 													continue
 												end
@@ -3300,10 +3268,15 @@ function PartCtrl_ProcessPCF(filename)
 											//like a radius scalar is too small to be visible by default
 											CombineValues("default", "max")
 											//Add labels
-											local label = tab2.label
-											if tab2.vector then label = DoVectorLabel(label) end
-											newtab.labels[tab2.label_childname or ""] = newtab.labels[tab2.label_childname or ""] or {}
-											newtab.labels[tab2.label_childname or ""][label] = true
+											for childname, labels in pairs (tab2.labels) do
+												if !newtab.labels[childname] then
+													newtab.labels[childname] = labels
+												else
+													for label, _ in pairs (labels) do
+														newtab.labels[childname][label] = true
+													end
+												end
+											end
 										end
 										//Clamp the final inMin/inMax, if applicable
 										if newtab.inMin_strict then
@@ -3316,6 +3289,20 @@ function PartCtrl_ProcessPCF(filename)
 									//Make a big combined label for all the controls on this axis
 									local str = ""
 									local docomma = false
+									//First de-tableize vector labels to make sure they don't contain dupes
+									local tab = {}
+									for effectname, v in pairs (newtab.labels) do
+										tab[effectname] = {}
+										for label, _ in pairs (v) do
+											if istable(label) then
+												tab[effectname][label[i+1]] = true
+											else
+												tab[effectname][label] = true
+											end
+										end
+									end
+									newtab.labels = tab
+									//Then make the string
 									for effectname, v in pairs (newtab.labels) do
 										for label, _ in pairs (v) do
 											if docomma then str = str .. ", " end
