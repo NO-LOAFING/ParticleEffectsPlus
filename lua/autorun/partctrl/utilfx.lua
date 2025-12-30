@@ -10,29 +10,23 @@ AddCSLuaFile()
 	default_time = 1,	//Float, default setting of "seconds between repeats" on newly spawned fx, should roughly correspond to how long it takes for the effect to "finish", defaults to 1 if absent
 	info = "Text text text",//String, optional, adds extra info to the spawnicon and edit window
 	info_sfx = "Text text", //String, optional, alternative info text used instead of the above if attached to a special effect (tracer/beam/projectile)
-	cpoint_distance_overrides = {[1] = {["min"] = 129}},	//Table, optional, overrides how far apart the grip points will spawn; used by some tracer fx that don't render if the points are too close together
+	cpoint_distance_overrides = {[1] = {["min"] = 129}},	//Table, optional, overrides how far apart the position controls will spawn; used by some tracer fx that don't render if the points are too close together
 
 	DoProcess = function(tab, extras)
 		//Function, used to set up the controls for the util effect by defining CONTROL POINTS, just like we do with PCF effects.
-		//A control point can be:
-		// A: a POSITION control, which spawns a grip point and uses its position value, and can also be attached to an entity to use its position or the position of one of its attachments
-		// B: a VECTOR control, which has 3 sliders or a color picker to set the X, Y, and Z value of the vector
-		// C: an AXIS control, which can seperately define controls for any combination of its X, Y, or Z values; each axis can use a slider, dropdown, or checkboxes to set its value.
+		//A control point can have:
+		// A: a POSITION control, which spawns a grip point and sets the control point's XYZ values to its position.
+		//    Can also be attached to an entity, or one of its attachment points. Use this to add controls for 
+		//    selecting a position in worldspace, selecting an entity, or selecting an entity's attachment point.
+		// B: up to 3 AXIS controls, which use sliders, checkboxes, or other controls in the edit window to set the 
+		//    control point's X, Y or Z values *manually*. Use these to add controls for any other vars that aren't 
+		//    related to the former.
 		
 		//Adds a position control for cpoint 0
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Normal, Entity, Attachment") //by default, this adds a position control
-
-		//Adds a vector control for cpoint 1
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "axis", { 
-			["vector"] = true,
-			["label"] = "Start",
-			["min"] = Vector(-512,-512,-512),
-			["max"] = Vector(512,512,512),
-			["default"] = Vector(0,0,0),
-		})
+		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Normal, Entity, Attachment") //by default, this function adds a position control
 		
-		//Adds an axis control for cpoint 2's x axis; by default, this is a slider
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Scale", "axis", { 
+		//Adds an axis control for cpoint 1's X axis; by default, this is a slider
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", { 
 			["axis"] = 0, //x
 			["label"] = "Scale",
 			["min"] = 1,
@@ -40,8 +34,8 @@ AddCSLuaFile()
 			["default"] = 1,
 			["decimals"] = 0, //optional
 		})
-		//Adds an axis control for cpoint 2's y axis, with a dropdown
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Color", "axis", {
+		//Adds an axis control for cpoint 1's Y axis, with a dropdown
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
 			["axis"] = 1, //y
 			["label"] = "Color",
 			["default"] = 0,
@@ -53,8 +47,8 @@ AddCSLuaFile()
 				[3000] = "Vantablack",
 			},
 		})
-		//Adds an axis control for cpoint 2's z axis, with checkboxes
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+		//Adds an axis control for cpoint 1's Z axis, with checkboxes
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			["axis"] = 2, //z
 			["default"] = 0,
 			["checkboxes"] = { //adds a checkbox for each option; the axis gets set to the SUM of all the boxes that are checked
@@ -62,6 +56,15 @@ AddCSLuaFile()
 				[32] = "Some Other Flag"
 				[64] = "You Get The Idea"
 			},
+		})
+		
+		//Adds axis controls for cpoint 2's X, Y and Z axis
+		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Start", "axis", { 
+			["vector"] = true, //this setting tells it to add a control for all 3 axes; min/max/default also use vectors in this mode
+			["label"] = "Start",
+			["min"] = Vector(-512,-512,-512),
+			["max"] = Vector(512,512,512),
+			["default"] = Vector(0,0,0),
 		})
 
 		//See the effects below for more examples.
@@ -85,13 +88,13 @@ AddCSLuaFile()
 		//Sets the Attachment from cpoint 0's attachment setting - this will always be 0 if it's not attached to an entity
 		ed:SetAttachment(self.ParticleInfo[0].attach)
 
-		//Sets the Start to the value from cpoint 1's vector control
-		ed:SetStart(self.ParticleInfo[1].val)
+		//Sets the Scale, Color and Flags to the values from cpoint 1's axis controls
+		ed:SetScale(self.ParticleInfo[1].val.x)
+		ed:SetColor(self.ParticleInfo[1].val.y)
+		ed:SetFlags(self.ParticleInfo[1].val.z + 128) //let's say there's a flag you always want to be set, instead of making a checkbox for it. sure, you can do that.
 
-		//Sets the Scale, Color and Flags to the values from cpoint 2's axis controls
-		ed:SetScale(self.ParticleInfo[2].val.x)
-		ed:SetColor(self.ParticleInfo[2].val.y)
-		ed:SetFlags(self.ParticleInfo[2].val.z + 128) //let's say there's a flag you always want to be set, instead of making a checkbox for it. sure, you can do that.
+		//Sets the Start to the vector value from cpoint 2's axis controls
+		ed:SetStart(self.ParticleInfo[2].val)
 
 		ed:SetMagnitude(10) //of course, you can set values manually if you don't want to add controls for them
 
@@ -274,7 +277,8 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 				//[8] = "MUZZLEFLASH_COMBINE_TURRET", //does nothing, prints error in console
 			},
 		})
-		//looks bad, renders in front of everything and gets skewed wildly by the camera angle
+		//looks bad, renders in front of everything and gets skewed wildly by the camera angle, 
+		//and unlike pcf firstperson fx, we can't even fix this by attaching it to an entity
 		--[[PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			["axis"] = 1, //y
 			["default"] = 0,
@@ -1737,13 +1741,8 @@ list.Set("PartCtrl_UtilFx", "balloon_pop", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "axis", {
 			["vector"] = true,
 			["label"] = "Color",
-			//["min"] = Vector(0,0,0),
-			//["max"] = Vector(255,255,255),
-			//color picker code expects outMin/Max to be 0-1
-			["inMin"] = Vector(0,0,0),
-			["inMax"] = Vector(255,255,255),
-			["outMin"] = Vector(0,0,0),
-			["outMax"] = Vector(1,1,1),
+			["min"] = Vector(0,0,0),
+			["max"] = Vector(255,255,255),
 			["default"] = Vector(255,255,255), 
 			["colorpicker"] = true,
 		})
@@ -1976,7 +1975,7 @@ function PartCtrl_ProcessUtilFx()
 										newtab[k] = v[i+1]
 									end
 								end
-								//Special handling for colorpicker, see comments in ProcessPCF
+								//Special handling for colorpicker, see comments in ProcessPCF where we do the same thing
 								if newtab.colorpicker then
 									newtab.outMin2 = math.Min(newtab.outMin, 0)
 									newtab.outMax2 = math.Max(newtab.outMax, 1)

@@ -1069,12 +1069,20 @@ function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processe
 		//Convenience handling to convert min/max to inMin/outMin + inMax/outMax, for utilfx that don't need to define these separately
 		if processedv.min then
 			processedv.inMin = processedv.min
-			processedv.outMin = processedv.min
+			if processedv.colorpicker then
+				processedv.outMin = Vector(0,0,0) //color picker code expects outMin/Max to be 0-1
+			else
+				processedv.outMin = processedv.min
+			end
 			processedv.min = nil
 		end
 		if processedv.max then
 			processedv.inMax = processedv.max
-			processedv.outMax = processedv.max
+			if processedv.colorpicker then
+				processedv.outMax = Vector(1,1,1) //color picker code expects outMin/Max to be 0-1
+			else
+				processedv.outMax = processedv.max
+			end
 			processedv.max = nil
 		end
 		//Convenience handling for axis dropdown and checkbox controls:
@@ -1218,7 +1226,7 @@ local function DoScalarIO(op, use_distance_input, is_position_control)
 end
 
 local function DoVectorIO(op)
-	//Roll sets the angle of the particle, with the putput measured in radians (pi radians = 180 degrees). Output maximum/minimum sets how many radians it can be rotated up to, 
+	//Roll sets the angle of the particle, with the output measured in radians (pi radians = 180 degrees). Output maximum/minimum sets how many radians it can be rotated up to, 
 	//with values past pi just rotating it past 180 degrees. With a standard render_animated_sprites, only the x value does anything, regardless of orientation type. With render 
 	//models, this is broken and spawns models at random rotations regardless of the cpoint value.
 	//Position sets the position of the particle, with the output measured in hammer units i think?
@@ -1233,6 +1241,11 @@ local function DoVectorIO(op)
 	local is_multiplier = op["output is scalar of initial random range"] or op["output is scalar of current value"] //initializers don't have the latter, but this should be fine
 	local default = nil
 	local colorpicker = nil
+	if field == PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION then
+		//Convert roll controls from radians to degrees to make them more user-friendly
+		outMin = Vector(math.deg(outMin.x), math.deg(outMin.y), math.deg(outMin.z))
+		outMax = Vector(math.deg(outMax.x), math.deg(outMax.y), math.deg(outMax.z))
+	end
 	if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB or is_multiplier then
 		//Color should default to the equivalent of 1,1,1 (white),
 		//and multipliers should default to 100%
@@ -1272,20 +1285,19 @@ local processfuncs = {
 			if ((op["scale CP start"] or -1) > -1) and ((op["scale CP end"] or -1) > -1) then
 				local scalar = nil
 				for varname, label in pairs({
-					["scale texture by CP distance"] = "texture",
-					["scale scroll by CP distance"] = "scroll",
-					["scale offset by CP distance"] = "offset",
+					["scale texture by CP distance"] = "Texture",
+					["scale scroll by CP distance"] = "Scroll",
+					["scale offset by CP distance"] = "Offset",
 				}) do
 					if op[varname] then
 						if !scalar then
-							scalar = "Rope " .. label
+							scalar = "Rope " .. label .. " Scale"
 						else
-							scalar = scalar .. ", " .. label
+							scalar = scalar .. ", Rope " .. label .. " Scale"
 						end
 					end
 				end
 				if scalar then
-					scalar = scalar .. " scale"
 					cpoint_from_op_value(processed, op, "scale CP end", -1, "axis", {
 						["axis"] = 0, //arbitrary; any axis could work for this, but ent_partctrl:StartParticle checks axis_0 for relative_to_cpoint
 						["label"] = scalar,
@@ -3180,9 +3192,6 @@ function PartCtrl_ProcessPCF(filename)
 									else
 										return "Roll"
 									end
-									//TODO: back when this was done in the editor code, this set
-									//slider:SetMinMax(-180, 180) here in place of outMin/outMax; 
-									//figure out how to add this to DoVectorIO instead!
 								elseif l == "Velocity" or l == "Velocity Direction" then
 									if i == 0 then
 										return l .. " Back/Fwd"
@@ -3191,7 +3200,7 @@ function PartCtrl_ProcessPCF(filename)
 									else
 										return l .. " Down/Up"
 									end
-								elseif l != "Color" then
+								elseif l != "Color" and l != "Color Scale" then
 									if i == 0 then
 										return l .. " X"
 									elseif i == 1 then
@@ -3223,6 +3232,9 @@ function PartCtrl_ProcessPCF(filename)
 									//If there's only one entry, use that one; if there are multiple 
 									//entries with different values, try to combine them together
 									if #newaxes_by_axis[i] > 1 then
+										//This value is used to round outMins/outMaxs to nice even numbers for things like 
+										//texture selectors; this won't function at all if we rescale the values
+										newtab.decimals = nil
 										for i2 = 2, #newaxes_by_axis[i] do
 											local tab2 = newaxes[newaxes_by_axis[i][i2]]
 											//The colorpicker is mutually exclusive from other controls, and takes precedence
@@ -3247,7 +3259,6 @@ function PartCtrl_ProcessPCF(filename)
 											//If we encounter a conflicting value that can't be combined, bail out
 											if newtab.relative_to_cpoint != tab2.relative_to_cpoint 
 											or newtab.relative_to_cpoint_angle != tab2.relative_to_cpoint_angle
-											or newtab.decimals != tab2.decimals 
 											or newtab.textentry != tab2.textentry then
 												MsgN("PartCtrl: can't combine axis entries for ", filename, " ", particle, " cpoint ", k, " axis ", i, "; report this bug!")
 												//TODO: bail how? no existing fx run into this issue.
@@ -3269,14 +3280,22 @@ function PartCtrl_ProcessPCF(filename)
 													end
 												end
 											end
-											//inMin/inMax is the real value of the cpoint; make it as large as 
-											//possible to make the full range of settings accessible to the user
+											//inMin/inMax is the real value that the cpoint itself will get set to;
+											//make its range as wide as possible to make the full breadth of possible
+											//settings accessible to the user
 											CombineValues("inMin", "min")
 											CombineValues("inMax", "max")
 											//"strict" inMin/inMax, for values that *must* remain within a range to 
 											//prevent a crash; these are used later to clamp the final values
 											CombineValues("inMin_strict", "max")
 											CombineValues("inMax_strict", "min")
+											//outMin/outMax is the "display" value of the cpoint, corresponding to
+											//the color, radius, etc. value that the cpoint will set on the effect.
+											//the numbers created from combining disparate controls together here
+											//are basically meaningless, but this is necessary to make combined 
+											//colorpicker controls function properly.
+											CombineValues("outMin", "min")
+											CombineValues("outMax", "max")
 											//Err on the side of larger defaults, to try to avoid cases where something
 											//like a radius scalar is too small to be visible by default
 											CombineValues("default", "max")
@@ -3293,12 +3312,6 @@ function PartCtrl_ProcessPCF(filename)
 										if newtab.inMax_strict then
 											newtab.inMax = math.min(newtab.inMax, newtab.inMax_strict)
 										end
-										//outMin/OutMax is the display value of the cpoint; there's no good way to reconcile 
-										//this between different controls that have different scales, so don't bother
-										newtab.outMin = newtab.inMin
-										newtab.outMax = newtab.inMax
-										//test
-										t2[particle].test = true
 									end
 									//Make a big combined label for all the controls on this axis
 									local str = ""

@@ -890,7 +890,6 @@ function PANEL:RebuildControls()
 										slider.SetValue = SliderSetValueUnclampedMax
 									end
 		
-									//slider:SetValue(math.Remap(math.deg(v2.val[i]), inMin, inMax, outMin, outMax)) //TODO: alt version for Roll control; figure out how to do this in DoVectorIO instead!
 									slider:SetValue(math.Remap(v2.val[i], inMin, inMax, outMin, outMax))
 									slider.val = slider:GetValue()
 									function slider.OnValueChanged(_, val)
@@ -899,7 +898,6 @@ function PANEL:RebuildControls()
 											if val == slider.val then return end //don't send updates if the number didn't actually change
 											slider.val = val
 										end
-										//val = math.Remap(math.rad(val), outMin, outMax, inMin, inMax) //TODO: alt version for Roll control; figure out how to do this in DoVectorIO instead!
 										val = math.Remap(val, outMin, outMax, inMin, inMax)
 										ent2:DoInput("cpoint_axis_val", k, i, val)
 									end
