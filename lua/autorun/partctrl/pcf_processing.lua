@@ -1169,15 +1169,15 @@ local function DoScalarIO(op, use_distance_input, is_position_control)
 	local decimals = nil
 	if !is_position_control then
 		//Defaults for axis controls (slider in options menu)
+		local big = 4096 //10000 //arbitrary; for reference, a radius of 15359 is big enough to cover the entirety of flatgrass if spawned at the center; i could conceivably see a dev want to make effects bigger than this, but probably not with a scalar control, so err on the side of player usability here
+		if outMax > big then
+			//Sanity check for really big scalars; we don't want the max value to be so high the slider is unusable
+			inMax = math.Remap(big, outMin, outMax, inMin, inMax)
+			outMax = big
+		end
 		if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS and !is_multiplier then
 			//radius scalars should default to a nice big size, not 1 pixel
 			default = math.Remap(32, outMin, outMax, inMin, inMax)
-			//sanity check for really big radius scalars; we don't want the max value to be so high the slider is unusable
-			local big = 4096 //10000 //arbitrary; for reference, 15359 is big enough to cover the entirety of flatgrass if spawned at the center; i could conceivably see a dev want to make effects bigger than this, but probably not with a radius scalar, so err on the side of player usability here
-			if outMax > big then
-				inMax = math.Remap(big, outMin, outMax, inMin, inMax)
-				outMax = big
-			end
 		elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
 			//Alpha should always default to max visibility;
 			//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
