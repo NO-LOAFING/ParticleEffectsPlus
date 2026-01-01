@@ -1374,9 +1374,9 @@ local processfuncs = {
 		end,
 		["movement basic"] = function(processed, op)
 			if processed.drag_for_override then //global value on the effect, not cpoint-specific
-				processed.drag_for_override = math.min(processed.drag_for_override, op["drag"])
+				processed.drag_for_override = math.min(processed.drag_for_override, op.drag)
 			else
-				processed.drag_for_override = op["drag"]
+				processed.drag_for_override = op.drag
 			end
 		end,
 		--[[["movement lag compensation"] = function(processed, op)
@@ -1397,12 +1397,12 @@ local processfuncs = {
 		["movement lock to bone"] = function(processed, op)
 			cpoint_from_op_value(processed, op, "control_point_number", 0, "position_combine", {["ignore_outputs"] = true}) //this cpoint sets an associated model, not a position, so outputs don't override it
 			processed.movement_lock = processed.movement_lock or {}
-			processed.movement_lock[op["control_point_number"] or 0] = true
+			processed.movement_lock[op.control_point_number or 0] = true
 		end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Movement_Lock_to_Bone)
 		["movement lock to control point"] = function(processed, op)
 			cpoint_from_op_value(processed, op, "control_point_number", 0, "position_combine")
 			processed.movement_lock = processed.movement_lock or {}
-			processed.movement_lock[op["control_point_number"] or 0] = true
+			processed.movement_lock[op.control_point_number or 0] = true
 		end,
 		["movement lock to saved position along path"] = function(processed, op)
 			//this is intended to use matching cpoints with position along path sequential, but you can set them to different
@@ -1766,12 +1766,12 @@ local processfuncs = {
 		["alpha random"] = function(processed, op)
 			//some fx use an alpha of 0 to make it invisible?? who does that??
 			//(particles/scary_ghost (plr_hacksaw_event).pcf: halloween_boss_eye_glow)
-			if (op["alpha_max"] or 255) == 0 and (op["alpha_min"] or 255) == 0 then
+			if (op.alpha_max or 255) == 0 and (op.alpha_min or 255) == 0 then
 				processed.has_zero_alpha = true
 			end
 		end,
 		["color random"] = function(processed, op)
-			if (op["tint_perc"] or 0) > 0 then //by default, the value of "tint control point" is 0, not -1, so pet adds a control for it by default, but in code, this isn't used unless tint_perc is non-zero (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L1705)
+			if (op.tint_perc or 0) > 0 then //by default, the value of "tint control point" is 0, not -1, so pet adds a control for it by default, but in code, this isn't used unless tint_perc is non-zero (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L1705)
 				cpoint_from_op_value(processed, op, "tint control point", 0, "position_combine") //samples the lighting from this cpoint's position (https://developer.valvesoftware.com/wiki/Particle_System_Initializers#Color_Random)
 			end
 		end,
@@ -2066,8 +2066,8 @@ local processfuncs = {
 			end
 		end,
 		["velocity random"] = function(processed, op)
-			local lmin = op["speed_in_local_coordinate_system_min"] or Vector()
-			local lmax = op["speed_in_local_coordinate_system_max"] or Vector()
+			local lmin = op.speed_in_local_coordinate_system_min or Vector()
+			local lmax = op.speed_in_local_coordinate_system_max or Vector()
 			if lmin != vector_origin or lmax != vector_origin then //code uses this cpoint if bHasLocalSpeed (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L892), which is determined by this same check (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L855)
 				//if !(lmin.x == lmin.y and lmin.x == lmin.z and lmin.x == -lmax.x and lmin.y == -lmax.y and lmin.z == -lmax.z) then
 					cpoint_from_op_value(processed, op, "control_point_number", 0, "position_combine")
@@ -2133,7 +2133,7 @@ local processfuncs = {
 							["relative_to_cpoint_angle"] = -1, //-1 value tells the particle entity to use the angle of the first available position control
 							["overridable_by_drag"] = drag,
 						})
-						local cpoint = op["control_point_number"] or 0
+						local cpoint = op.control_point_number or 0
 						local name = op._categoryName .. " " .. op.functionName .. ": control_point_number (+ 1 for Inherit from parent)"
 						PartCtrl_CPoint_AddToProcessed(processed, cpoint + 1, name, "axis", {
 							["axis"] = 0,
@@ -2215,10 +2215,10 @@ local processfuncs = {
 			processed.pathseqcheck_disable = true
 		end,
 		["emit_continuously"] = function(processed, op)
-			if (op["emission_rate"] or 100) > 0 then
+			if (op.emission_rate or 100) > 0 then
 				processed.has_emitter = true
 				if processed.do_starttime_raw_fromrate then
-					op["_starttime_raw_fromrate"] = 1 / (op["emission_rate"] or 100) //store this in the unprocessed operator so the _generic func below can access it
+					op._starttime_raw_fromrate = 1 / (op.emission_rate or 100) //store this in the unprocessed operator so the _generic func below can access it
 				end
 			end
 			local axis = op["emission count scale control point field"] or 0
@@ -2237,9 +2237,9 @@ local processfuncs = {
 		end,
 		//"emit noise" and "emit_continuously" have "scale emission to used control points", which wiki claims is a cpoint id, but it's actually a float that's multiplied by the number of cpoints the effect has, we don't care about this (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_emitters.cpp#L449)
 		["emit_instantaneously"] = function(processed, op)
-			if (op["num_to_emit_minimum"] or -1) > 0 or (op["num_to_emit"] or 100) > 0 then
+			if (op.num_to_emit_minimum or -1) > 0 or (op.num_to_emit or 100) > 0 then
 				processed.has_emitter = true
-				processed.pathseqcheck_particles = (op["num_to_emit"] or 100) //TODO: do we need to account for num_to_emit_minimum here?
+				processed.pathseqcheck_particles = (op.num_to_emit or 100) //TODO: do we need to account for num_to_emit_minimum here?
 			end
 			local axis = op["emission count scale control point field"] or 0
 			if axis > -1 then
@@ -2259,7 +2259,7 @@ local processfuncs = {
 			//store the time it takes for the emitter to start emitting particles; we use this to display info text if necessary
 			local starttime = math.max((op["emission_start_time"] or op["emission start time"] or 0),  //"emit to maintain count" doesn't have underscores in "emission start time"
 			(op["operator start fadein"] or 0)) //some fx use fadein instead (l4d2's barricade_groundfire)
-			+ (op["_starttime_raw_fromrate"] or 0) //also add extra time from emission rate
+			+ (op._starttime_raw_fromrate or 0) //also add extra time from emission rate
 			if processed.starttime_raw != nil then
 				processed.starttime_raw = math.min(processed.starttime_raw, starttime)
 			else
@@ -2388,7 +2388,7 @@ function PartCtrl_ProcessPCF(filename)
 				end
 			end
 			//also process a couple things that are stored in the main table and not in operators
-			if (ptab["cull_radius"] or 0) > 0 then //(https://github.com/VSES/SourceEngine2007/blob/master/src_main/particles/particles.cpp#L500-L503)
+			if (ptab.cull_radius or 0) > 0 then //(https://github.com/VSES/SourceEngine2007/blob/master/src_main/particles/particles.cpp#L500-L503)
 				cpoint_from_op_value(processed, ptab, "cull_control_point", 0, "position_combine", {
 					["ignore_outputs"] = true, //unlike the other things that ignore outputs, this one actually does set a position, but outputs still don't override it because it runs first i guess
 					["dont_inherit"] = true,
@@ -2398,10 +2398,10 @@ function PartCtrl_ProcessPCF(filename)
 				["ignore_outputs"] = true, //this cpoint sets an associated model, not a position, so outputs don't override it
 				["dont_inherit"] = true,
 			}) //makes the particle not render if this cpoint is attached to the ent the camera is viewing from (i.e. the player, or a camera ent they're using)
-			if ptab["preventNameBasedLookup"] then
+			if ptab.preventNameBasedLookup then
 				processed.prevent_name_based_lookup = true //makes the particle impossible to spawn on its own, but still usable as a child. not sure what the point of this is.
 			end
-			if (ptab["initial_particles"] or 0) > 0 then
+			if (ptab.initial_particles or 0) > 0 then
 				processed.has_emitter = true
 			end
 			t2[particle] = processed
