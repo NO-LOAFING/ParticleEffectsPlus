@@ -436,7 +436,9 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 								for i = 1, 3 do
 									if istable(tab[i]) then
 										self.EditCPoints[k][i] = tab[i].default or 0
-										table.insert(self.EditCPointsText, tab[i].label)
+										if !tab[i].hidden then
+											table.insert(self.EditCPointsText, tab[i].label)
+										end
 									end
 								end
 							end
@@ -463,10 +465,12 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						end
 					end
 					if table.Count(self.EditCPoints) > 0 then
-						table.insert(self.icons, {["icon"] = icon_edit})
-						tooltip = tooltip .. "\n\nThis effect has editable properties:"
-						for _, v in pairs (self.EditCPointsText) do
-							tooltip = tooltip .. "\n" .. v
+						if table.Count(self.EditCPointsText) > 0 then
+							table.insert(self.icons, {["icon"] = icon_edit})
+							tooltip = tooltip .. "\n\nThis effect has editable properties:"
+							for _, v in pairs (self.EditCPointsText) do
+								tooltip = tooltip .. "\n" .. v
+							end
 						end
 						for k, v in pairs (self.EditCPoints) do
 							//do particle2 if the default is large enough to stretch the bounds

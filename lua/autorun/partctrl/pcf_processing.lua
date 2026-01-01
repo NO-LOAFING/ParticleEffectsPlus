@@ -1209,7 +1209,7 @@ local function DoScalarIO(op, use_distance_input, is_position_control)
 		//Defaults for position controls (movable cpoint in the world)
 		//clamping in/outMin/Max is not applicable to these, since we can't actually clamp where the player can move the position control to
 		//don't print "Scale" in label for these ones, this looks bad
-		default = (inMin + inMax) / 2 //test: set the default distance to the midpoint of the effective radius, so players can visibly see what the scalar cpoint is doing
+		default = (inMin + inMax) / 2 //set the default distance to the midpoint of the effective radius, so players can visibly see what the scalar cpoint is doing
 	end
 
 	return {
@@ -1266,6 +1266,8 @@ local function DoVectorIO(op)
 	end
 	if field == PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION then
 		label = {"Pitch", "Yaw", "Roll"}
+	elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_XYZ then
+		label = {label .. " Back/Fwd", label .. " Right/Left", label .. " Down/Up"}
 	elseif field != PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB then
 		label = {label .. " X", label .. " Y", label .. " Z"}
 	end
@@ -1371,9 +1373,10 @@ local processfuncs = {
 			end
 		end,
 		["movement basic"] = function(processed, op)
-			//stupid handling for one effect that has a cpoint with just a force "move towards control point", but also maximum drag on its movement basic that makes the force not work (particles/taunt_fx.pcf taunt_yeti_fistslam_whirlwind)
-			if (op["drag"] or 0) >= 0.98 then
-				processed["drag_does_override"] = true //global value on the effect, not cpoint-specific
+			if processed.drag_for_override then //global value on the effect, not cpoint-specific
+				processed.drag_for_override = math.min(processed.drag_for_override, op["drag"])
+			else
+				processed.drag_for_override = op["drag"]
 			end
 		end,
 		--[[["movement lag compensation"] = function(processed, op)
@@ -2083,29 +2086,68 @@ local processfuncs = {
 						PartCtrl_CPoint_AddToProcessed(processed, i + 1, name, "output_children", {["groupid"] = groupid}, op) //this sets axis 0 to a force value, and the other two to 0 (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3586)
 					end
 				else
-					//let players manually set the values if they spawned a child effect on its own, or for some hypothetical use case where it's intended to be supplied by code or something
-					//this is silly, who's going to use this?
-					cpoint_from_op_value(processed, op, "control_point_number", 0, "axis", {
-						["vector"] = true,
-						["label"] = {"Velocity Direction Back/Fwd", "Velocity Direction Right/Left", "Velocity Direction Down/Up"},
-						["inMin"] = Vector(-1,-1,-1),
-						["inMax"] = Vector(1,1,1),
-						["outMin"] = Vector(-1,-1,-1),
-						["outMax"] = Vector(1,1,1),
-						["default"] = Vector(1,0,0),
-						["relative_to_cpoint_angle"] = -1 //-1 value tells the particle entity to use the angle of the first available position control
-					})
-					local cpoint = op["control_point_number"] or 0
-					local name = op._categoryName .. " " .. op.functionName .. ": control_point_number (+ 1 for Inherit from parent)"
-					PartCtrl_CPoint_AddToProcessed(processed, cpoint + 1, name, "axis", {
-						["axis"] = 0,
-						["label"] = "Velocity Scale",
-						["inMin"] = 0,
-						["inMax"] = 1,
-						["outMin"] = 0, //I'd like the slider to use maximum/minimum velocity instead so it looks nicer,
-						["outMax"] = 1, //but unfortunately those can be different for each axis, which doesn't work here
-						["default"] = 1,
-					}, op)
+					//let players manually set the values if they spawned a child effect on its own, or for some hypothetical use case where it's 
+					//intended to be supplied by code or something.
+					//the way this works is a little complex; the operator has two velocity vectors, "maximum velocity" (min) and "minimum 
+					//velocity" (max). by default, the 1st cpoint (a vector) sets the particle velocity to (its vector value * max), so 
+					//inputting (1,1,1) sets them to max, while inputting (-1,-1,-1) sets them to negative max. the 2nd cpoint interpolates 
+					//it between using min (at 0) to max (at 1) as the multiplier, so at either extreme, it only uses one of the values.
+					local sets_pos = op["Offset instead of accelerate"]
+					local max = (op["maximum velocity"] or Vector(1,1,1)) //these are in worldspace, so if any of the axes are asymmetrical, the velocity will change as your rotate the effect.
+					local min = (op["minimum velocity"] or Vector(0,0,0))
+					local use_max = math.abs(max.x) > 0 or math.abs(max.y) > 0 or math.abs(max.z) > 0
+					local use_min = min != -max and (math.abs(min.x) > 0 or math.abs(min.y) > 0 or math.abs(min.z) > 0) //if min is just negative max, don't bother
+					
+					if use_max then
+						//max/min are in worldspace, so if any of the axes are asymmetrical, the velocity will change as your rotate the effect,
+						//so we need to display sliders as 0-1 scalars instead of showing the velocity values. of course. if we're using both
+						//max and min, the velocity we're setting will change as we modify the 2nd cpoint, so show a 0-1 scalar in those cases too.
+						local is_scalar
+						if use_min or max.x != max.y or max.x != max.z or max.y != max.z then
+							is_scalar = true
+						end
+						local outMax
+						local label = "Velocity"
+						if sets_pos then label = "Position" end
+						if is_scalar then
+							outMax = Vector(1,1,1)
+							label = label .. " Scale"
+						else
+							outMax = max
+						end
+						//don't create controls for velocity values that are too small and are just going to get wiped out by drag
+						local drag
+						if !sets_pos then
+							drag = math.max(math.abs(max.x),math.abs(max.y),math.abs(max.z))
+							if do_min then drag = math.max(drag, math.abs(min.x),math.abs(min.y),math.abs(min.z)) end
+							drag = drag / 5
+						end
+						cpoint_from_op_value(processed, op, "control_point_number", 0, "axis", {
+							["vector"] = true,
+							["label"] = {label .. " Back/Fwd", label .. " Right/Left", label .. " Down/Up"},
+							["inMin"] = Vector(-1,-1,-1),
+							["inMax"] = Vector(1,1,1),
+							["outMin"] = -outMax,
+							["outMax"] = outMax,
+							["default"] = Vector(0,0,0),
+							["relative_to_cpoint_angle"] = -1, //-1 value tells the particle entity to use the angle of the first available position control
+							["overridable_by_drag"] = drag,
+						})
+						local cpoint = op["control_point_number"] or 0
+						local name = op._categoryName .. " " .. op.functionName .. ": control_point_number (+ 1 for Inherit from parent)"
+						PartCtrl_CPoint_AddToProcessed(processed, cpoint + 1, name, "axis", {
+							["axis"] = 0,
+							["label"] = "Alternate " .. label .. " Value", //TODO: add explanation for player; no existing fx actually have use_min true for now
+							["inMin"] = 0,
+							["inMax"] = 1,
+							["outMin"] = 0,
+							["outMax"] = 1,
+							["default"] = 1,
+							["hidden"] = !use_min, //if the min value isn't useful to the player, then don't add a control, just set the cpoint to 1 in the background
+							["overridable_by_drag"] = drag,
+						}, op)
+						//TODO: add handling for cases where use_min is true but use_max is false; no existing fx actually have use_min true for now
+					end
 					//according to code, broadcast to children doesn't run if inheriting
 				end
 			end
@@ -2254,7 +2296,7 @@ local processfuncs = {
 			end
 			cpoint_from_op_value(processed, op, "control point number", 0, type, {
 				["overridable_by_constraint"] = true, 
-				["overridable_by_drag"] = true, 
+				["overridable_by_drag"] = 0.98, //stupid handling for one effect that has a cpoint with just a force "move towards control point", but also maximum drag on its movement basic that makes the force not work (particles/taunt_fx.pcf taunt_yeti_fistslam_whirlwind)
 				["dont_offset_distance_scalar"] = true,
 				["info"] = text,
 			})
@@ -2592,8 +2634,9 @@ function PartCtrl_ProcessPCF(filename)
 								if v2["pathseqcheck_fail"] then continue end
 								if (t2[particle2].has_renderer and t2[particle2].has_emitter) or v2["doesnt_need_renderer_or_emitter"] then
 									if modes[k] == nil or modes[k] == PARTCTRL_CPOINT_MODE_POSITION_COMBINE or (did_output and ignore_outputs) then
-										if t2[particle2].constraint_does_override and v2["overridable_by_constraint"]
-										or t2[particle2].drag_does_override and v2["overridable_by_drag"] then
+										if (t2[particle2].constraint_does_override and v2["overridable_by_constraint"])
+										or (v2.overridable_by_drag and t2[particle2].drag_for_override 
+										and t2[particle2].drag_for_override >= v2.overridable_by_drag) then
 											modes[k] = PARTCTRL_CPOINT_MODE_POSITION_COMBINE
 										else
 											modes[k] = PARTCTRL_CPOINT_MODE_POSITION
@@ -2705,9 +2748,11 @@ function PartCtrl_ProcessPCF(filename)
 							local doaxis = false
 							if modes[k] == nil then
 								for k2, v2 in pairs (v["axis"]) do
+									if !(v2["overridable_by_drag"] and t2[particle2].drag_for_override 
+									and t2[particle2].drag_for_override >= v2.overridable_by_drag)
 									//handle output_axis overriding specific axes
-									if !istable(output_axis[k]) or ((v2.axis != nil) and !output_axis[k][v2.axis]) 
-									or (v2.vector and (!output_axis[k][0] or !output_axis[k][1] or !output_axis[k][2])) then
+									and (!istable(output_axis[k]) or ((v2.axis != nil) and !output_axis[k][v2.axis]) 
+									or (v2.vector and (!output_axis[k][0] or !output_axis[k][1] or !output_axis[k][2]))) then
 										doaxis = true
 									end
 								end
@@ -3057,7 +3102,6 @@ function PartCtrl_ProcessPCF(filename)
 								docomma = true
 							end
 							PartCtrl_AddInfoText(t2[particle], text)
-							t2[particle].test_hasinfotext = true
 						end
 					end
 				end
@@ -3162,7 +3206,8 @@ function PartCtrl_ProcessPCF(filename)
 					for k2, v2 in pairs (v.axis) do
 						if v.axis[k2] != nil then
 							local newtab = table.Copy(v2)
-							newtab.labels = {[v2.label_childname or ""] = {[v2.label] = true}}
+							newtab.labels = {}
+							if !newtab.hidden then newtab.labels = {[v2.label_childname or ""] = {[v2.label] = true}} end
 							for k3, v3 in pairs (v.axis) do
 								if k3 != k2 and v3.axis == v2.axis and v3.vector == v2.vector and v3.inMin == v2.inMin 
 								and v3.inMax == v2.inMax and v3.outMin == v2.outMin and v3.outMax == v2.outMax and 
@@ -3170,8 +3215,10 @@ function PartCtrl_ProcessPCF(filename)
 								v2.relative_to_cpoint and v3.relative_to_cpoint_angle == v2.relative_to_cpoint_angle 
 								and v3.colorpicker == v2.colorpicker and v3.textentry == v2.textentry then
 									newtab.name = newtab.name .. ",\n" .. v3.name
-									newtab.labels[v3.label_childname or ""] = newtab.labels[v3.label_childname or ""] or {}
-									newtab.labels[v3.label_childname or ""][v3.label] = true
+									if !newtab.hidden then
+										newtab.labels[v3.label_childname or ""] = newtab.labels[v3.label_childname or ""] or {}
+										newtab.labels[v3.label_childname or ""][v3.label] = true
+									end
 									v.axis[k3] = nil
 								end
 							end
@@ -3225,6 +3272,22 @@ function PartCtrl_ProcessPCF(filename)
 													continue
 												end
 											end
+											//If an entry should be skipped due to drag, don't use it
+											if (tab2.overridable_by_drag and t2[particle].drag_for_override 
+											and t2[particle].drag_for_override >= tab2.overridable_by_drag) then
+												continue
+											elseif (newtab.overridable_by_drag and t2[particle].drag_for_override 
+											and t2[particle].drag_for_override >= newtab.overridable_by_drag) then
+												newtab = table.Copy(tab2)
+												if newtab.vector then
+													for k, v in pairs (newtab) do
+														if isvector(v) then
+															newtab[k] = v[i+1]
+														end
+													end
+												end
+												continue
+											end
 											//If we encounter a conflicting value that can't be combined, bail out
 											if newtab.relative_to_cpoint != tab2.relative_to_cpoint 
 											or newtab.relative_to_cpoint_angle != tab2.relative_to_cpoint_angle
@@ -3268,13 +3331,17 @@ function PartCtrl_ProcessPCF(filename)
 											//Err on the side of larger defaults, to try to avoid cases where something
 											//like a radius scalar is too small to be visible by default
 											CombineValues("default", "max")
-											//Add labels
-											for childname, labels in pairs (tab2.labels) do
-												if !newtab.labels[childname] then
-													newtab.labels[childname] = labels
-												else
-													for label, _ in pairs (labels) do
-														newtab.labels[childname][label] = true
+											if !tab2.hidden then
+												//Don't hide the control unless all combined values are hidden
+												newtab.hidden = nil
+												//Add labels
+												for childname, labels in pairs (tab2.labels) do
+													if !newtab.labels[childname] then
+														newtab.labels[childname] = labels
+													else
+														for label, _ in pairs (labels) do
+															newtab.labels[childname][label] = true
+														end
 													end
 												end
 											end

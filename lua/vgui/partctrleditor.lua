@@ -739,7 +739,7 @@ function PANEL:RebuildControls()
 						local done_first = false
 						for i = 1, 3 do
 							local tab = tab[i]
-							if istable(tab) then
+							if istable(tab) and !tab.hidden then
 								//For axis controls, min/max are optional. If a value isn't supplied, then use an arbitrary value and unclamp the slider in that direction.
 								local unclampMin = (tab.inMin == nil and tab.outMin == nil)
 								local unclampMax = (tab.inMax == nil and tab.outMax == nil)
@@ -903,6 +903,11 @@ function PANEL:RebuildControls()
 									end
 								end
 							end
+						end
+						//if all controls are hidden, then don't show this cpoint
+						if !done_first then
+							cat:DockMargin(0,0,0,0)
+							cat:Hide()
 						end
 					end
 				end
