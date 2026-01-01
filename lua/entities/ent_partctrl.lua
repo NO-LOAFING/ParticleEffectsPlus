@@ -2048,8 +2048,8 @@ if SERVER then
 
 		//Don't store these DTvars
 		if data.DT then
-			data.DT["NumpadState"] = nil
-			data.DT["SpecialEffectParent"] = nil
+			data.DT.NumpadState = nil
+			data.DT.SpecialEffectParent = nil
 		end
 
 		//Clear out entity values when copying the ParticleInfo table, these won't dupe correctly anyway and will be filled back in by constraints
@@ -2328,7 +2328,7 @@ if SERVER then
 					axistab = v["axis_" .. i]
 					if istable(axistab) then
 						if axistab.default then
-							tab[k]["val"][i+1] = axistab.default
+							tab[k].val[i+1] = axistab.default
 						end
 					end
 				end

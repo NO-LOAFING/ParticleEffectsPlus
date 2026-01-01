@@ -802,7 +802,7 @@ if CLIENT then
 		pnl2.Think = function(...)
 			pnl2.ShouldShow = pnl2.ShouldShow or false
 			if !IsValid(self) then return end
-			local new_shouldshow = self.SpecialEffectChildrenSorted["bad"][ent2] and self.SpecialEffectChildrenSorted["bad"][ent2][k]
+			local new_shouldshow = self.SpecialEffectChildrenSorted.bad[ent2] and self.SpecialEffectChildrenSorted.bad[ent2][k]
 			if pnl2.ShouldShow != new_shouldshow then
 				if new_shouldshow then
 					pnl2:DockPadding(16+padding,0,0,padding) //extra left to make room for the info icon; DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
@@ -1503,7 +1503,7 @@ function ENT:SpecialEffectRefresh()
 						local tab = {}
 						table.Merge(tab, attach_to_proj)
 						table.Merge(tab, attach_to_expire)
-						self.SpecialEffectChildrenSorted["bad"][child] = tab
+						self.SpecialEffectChildrenSorted.bad[child] = tab
 					end
 				end
 			end
@@ -1985,8 +1985,8 @@ if SERVER then
 
 		//Don't store these DTvars
 		if data.DT then
-			data.DT["NumpadState"] = nil
-			data.DT["SpecialEffectParent"] = nil
+			data.DT.NumpadState = nil
+			data.DT.SpecialEffectParent = nil
 		end
 
 		//Don't store this either

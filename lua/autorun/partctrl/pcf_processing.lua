@@ -337,8 +337,8 @@ function PartCtrl_ReadPCF(filename, path)
 	local ElementsUnsorted = {}
 	for i, index in pairs (ElementIndex) do
 		local tab = {}
-		//tab["k"] = index["Type"] .. " " .. index["Name"]
-		tab["k"] = index
+		//tab.k = index.Type .. " " .. index.Name
+		tab.k = index
 
 		local v = {}
 		if !ElementBodies[i] then
@@ -358,7 +358,7 @@ function PartCtrl_ReadPCF(filename, path)
 					v[attrib.Name] = attrib.Value
 				end
 			end
-			tab["v"] = v
+			tab.v = v
 			ElementsUnsorted[i] = tab
 		end
 	end
@@ -1136,7 +1136,7 @@ end
 
 local function cpoint_from_op_value(processed, op, value, default_k, processedk, processedv)
 	local k = op[value] or default_k
-	if k > -1 or (processedv and processedv["force_allow_-1"]) then
+	if k > -1 or (processedv and processedv.force_allow_minusone) then
 		local name = value
 		if op.functionName then
 			name = op.functionName .. ": " .. name
@@ -1286,7 +1286,7 @@ end
 
 local processfuncs = {
 	["renderers"] = {
-		["render models"] = function(processed, op) processed["has_renderer"] = true end, //add this value manually for each renderer operator, rather than doing it in _generic, so that we can catch fx that don't have a valid one, like those ep2 blob fx
+		["render models"] = function(processed, op) processed.has_renderer = true end, //add this value manually for each renderer operator, rather than doing it in _generic, so that we can catch fx that don't have a valid one, like those ep2 blob fx
 		["render_rope"] = function(processed, op)
 			//this definitely isn't how this is intended to be used lol; GOTTA SUPPORT IT ANYWAY
 			if ((op["scale CP start"] or -1) > -1) and ((op["scale CP end"] or -1) > -1) then
@@ -1318,12 +1318,12 @@ local processfuncs = {
 					cpoint_from_op_value(processed, op, "scale CP start", -1, "position_combine") //this is iffy; we assume the start cpoint might be attached to something while the end point isn't
 				end
 			end
-			processed["has_renderer"] = true
+			processed.has_renderer = true
 		end,
-		["render_sprite_trail"] = function(processed, op) processed["has_renderer"] = true end,
+		["render_sprite_trail"] = function(processed, op) processed.has_renderer = true end,
 		["render_animated_sprites"] = function(processed, op)
 			cpoint_from_op_value(processed, op, "orientation control point", -1, "position_combine")
-			processed["has_renderer"] = true //global value on the effect, not cpoint-specfic
+			processed.has_renderer = true //global value on the effect, not cpoint-specfic
 		end, //TODO: limit this to "orientation_type" cases where the orientation is actually used for something? this is sort of dependent on the VMT to work actually
 		["_generic"] = function(processed, op) cpoint_from_op_value(processed, op, "Visibility Proxy Input Control Point Number", -1, "position_combine") end, //pet doesn't add cpoint control for this; all renderers except render_rope have this; uses this position for visiblilty testing, which can then scale particle alpha/size based on how visible the area around the point is (https://developer.valvesoftware.com/wiki/Generic_Render_Operator_Visibility_Options)
 	},
@@ -1331,7 +1331,7 @@ local processfuncs = {
 		["alpha fade and decay"] = function(processed, op)
 			//only do tracer_min_distance if we have one of the right decay operators; tracer fx using other things 
 			//(i.e. alien swarm tracers using "alpha fade and decay for tracers") don't have a minimum length between cpoints to render
-			processed["tracer_min_distance_hasdecay"] = true
+			processed.tracer_min_distance_hasdecay = true
 		end,
 		["color light from control point"] = function(processed, op)
 			cpoint_from_op_value(processed, op, "Light 1 Control Point", 0, "position_combine")
@@ -1357,7 +1357,7 @@ local processfuncs = {
 		["lifespan decay"] = function(processed, op)
 			//only do tracer_min_distance if we have one of the right decay operators; tracer fx using other things 
 			//(i.e. alien swarm tracers using "alpha fade and decay for tracers") don't have a minimum length between cpoints to render
-			processed["tracer_min_distance_hasdecay"] = true
+			processed.tracer_min_distance_hasdecay = true
 		end,
 		["lifespan maintain count decay"] = function(processed, op)
 			local axis = op["maintain count scale control point field"] or 0
@@ -1396,13 +1396,13 @@ local processfuncs = {
 		end,
 		["movement lock to bone"] = function(processed, op)
 			cpoint_from_op_value(processed, op, "control_point_number", 0, "position_combine", {["ignore_outputs"] = true}) //this cpoint sets an associated model, not a position, so outputs don't override it
-			processed["movement_lock"] = processed["movement_lock"] or {}
-			processed["movement_lock"][op["control_point_number"] or 0] = true
+			processed.movement_lock = processed.movement_lock or {}
+			processed.movement_lock[op["control_point_number"] or 0] = true
 		end, //uses the model that the cpoint is attached to, so use position (https://developer.valvesoftware.com/wiki/Particle_System_Operators#Movement_Lock_to_Bone)
 		["movement lock to control point"] = function(processed, op)
 			cpoint_from_op_value(processed, op, "control_point_number", 0, "position_combine")
-			processed["movement_lock"] = processed["movement_lock"] or {}
-			processed["movement_lock"][op["control_point_number"] or 0] = true
+			processed.movement_lock = processed.movement_lock or {}
+			processed.movement_lock[op["control_point_number"] or 0] = true
 		end,
 		["movement lock to saved position along path"] = function(processed, op)
 			//this is intended to use matching cpoints with position along path sequential, but you can set them to different
@@ -1432,7 +1432,7 @@ local processfuncs = {
 			//if there's no way for other cpoint operators (like the ones that initialize in a box/sphere) to influence the particles because this operator forces them onto a very specific path, then don't make position controls for those cpoints
 			//this functionality was intended for constraints, but this operator does the same thing
 			if (op["maximum distance"] or 0) < 1 then
-				processed["constraint_does_override"] = true //global value on the effect, not cpoint-specific
+				processed.constraint_does_override = true //global value on the effect, not cpoint-specific
 			end
 		end,
 		["movement match particle velocities"] = function(processed, op) cpoint_from_op_value(processed, op, "Control Point to Broadcast Speed and Direction To", -1, "output") end, //pet doesn't add control for this; sets all 3 axes of the cpoint's position vector to the speed, and sets the cpoint's angle to face the direction (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_ops.cpp#L3788)
@@ -1584,11 +1584,11 @@ local processfuncs = {
 			//some fx (i.e. utaunt_tornado_oscillate_) emit invisible particles (no renderer) and then use them to set the position of a child control point. ordinarily, we'd cull the
 			//cpoint data from fx with no renderer, because their operators don't do anything that the player can see, but in this case, we don't want to do that, so mark as having a renderer.
 			//TODO: this might be bad if the children don't have a renderer either, can we catch those?
-			if #processed["children"] > 0 then
-				processed["has_renderer"] = true
-				processed["ignore_zero_alpha"] = true //for particles/infection_particles.pcf: zombie_lightning_controller
+			if #processed.children > 0 then
+				processed.has_renderer = true
+				processed.ignore_zero_alpha = true //for particles/infection_particles.pcf: zombie_lightning_controller
 			end
-			//processed["sets_particle_pos_on_children"] = groupid
+			//processed.sets_particle_pos_on_children = groupid
 		end,
 		["set control point positions"] = function(processed, op)
 			local cpoints = {
@@ -1639,15 +1639,15 @@ local processfuncs = {
 				if used_cpoint == -1 then used_cpoint = nil end //TODO: nothing actually does this?
 			else
 				//If set to positions in worldspace, these cpoints can break spawnicon renderbounds, so tell it to account for that
-				processed["spawnicon_forcedpositions"] = processed["spawnicon_forcedpositions"] or {0,0,0,0,0,0}
+				processed.spawnicon_forcedpositions = processed.spawnicon_forcedpositions or {0,0,0,0,0,0}
 				for k, tab in pairs (cpoints) do
 					//Create a table of 6 numbers, the mins and maxs of the forced positions
 					local function DoParticle3(i, domax, axis)
 						local val = op[tab.location] or tab.location_def
 						if !domax then
-							processed["spawnicon_forcedpositions"][i] = math.min(processed["spawnicon_forcedpositions"][i], val[axis])
+							processed.spawnicon_forcedpositions[i] = math.min(processed.spawnicon_forcedpositions[i], val[axis])
 						else
-							processed["spawnicon_forcedpositions"][i] = math.max(processed["spawnicon_forcedpositions"][i], val[axis])
+							processed.spawnicon_forcedpositions[i] = math.max(processed.spawnicon_forcedpositions[i], val[axis])
 						end
 					end
 					DoParticle3(1, false, "x")
@@ -1698,7 +1698,7 @@ local processfuncs = {
 		["set control point to particles' center"] = function(processed, op) cpoint_from_op_value(processed, op, "Control Point Number to Set", 1, "output") end,
 		["set control point to player"] = function(processed, op)
 			cpoint_from_op_value(processed, op, "Control Point Number", 1, "output")
-			processed["spawnicon_playerposfix"] = true //this operator forces a cpoint to the player's position, which can break spawnicon renderbounds, so tell it to account for that
+			processed.spawnicon_playerposfix = true //this operator forces a cpoint to the player's position, which can break spawnicon renderbounds, so tell it to account for that
 		end,
 		["set control points from particle positions"] = function(processed, op)
 			//like "set child control points from particle positions", but it sets the effect's own cpoints instead.
@@ -1745,8 +1745,8 @@ local processfuncs = {
 			//and then use them to set the position of a child control point. ordinarily, we'd cull the cpoint data from fx with no renderer, because their 
 			//operators don't do anything that the player can see, but in this case, we don't want to do that, so mark as having a renderer.
 			//TODO: this might be bad if the children don't have a renderer either, can we catch those?
-			if #processed["children"] > 0 then processed["has_renderer"] = true end
-			//processed["sets_particle_pos_on_children"] = groupid
+			if #processed.children > 0 then processed.has_renderer = true end
+			//processed.sets_particle_pos_on_children = groupid
 		end,
 		["stop effect after duration"] = function(processed, op)
 			local axis = op["Control Point Field X/Y/Z"] or 0
@@ -1767,7 +1767,7 @@ local processfuncs = {
 			//some fx use an alpha of 0 to make it invisible?? who does that??
 			//(particles/scary_ghost (plr_hacksaw_event).pcf: halloween_boss_eye_glow)
 			if (op["alpha_max"] or 255) == 0 and (op["alpha_min"] or 255) == 0 then
-				processed["has_zero_alpha"] = true
+				processed.has_zero_alpha = true
 			end
 		end,
 		["color random"] = function(processed, op)
@@ -1838,7 +1838,7 @@ local processfuncs = {
 						["pathseqcheck_min_particles"] = ((op["particles to map from start to end"] or 100) / (endp - startp)) * (i - startp - 1)
 					}, op)
 				end
-				processed["pathseqcheck"] = true
+				processed.pathseqcheck = true
 			else
 				//uses start and end cpoint only
 				cpoint_from_op_value(processed, op, "start control point number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
@@ -1888,12 +1888,12 @@ local processfuncs = {
 			//this operator's presence overrides others that would set the particle pos (i.e. "position within sphere random") and actively makes
 			//the effect unusable on its own - see l4d2's particles/firework_crate_fx.pcf firework_crate_ground_sparks_01.
 			//this shouldn't even be possible, gmod's pet doesn't let you add this operator and another position one at the same time.
-			processed["sets_particle_pos_forcedisable"] = true
+			processed.sets_particle_pos_forcedisable = true
 		end,
 		["position from parent particles"] = function(processed, op)
 			//don't cull parent fx if they don't have a valid renderer, but one of their children has this operator (i.e. parent alien_ufo_explode_trailing_bits_alt, child alien_ufo_explode_alt_trail_smoke)
-			processed["parent_force_has_renderer"] = true
-			//processed["sets_particle_pos_if_child"] = true
+			processed.parent_force_has_renderer = true
+			//processed.sets_particle_pos_if_child = true
 		end,
 		["position in cp hierarchy"] = function(processed, op)
 			//this one is a bit strange. it defines a cpoint for every id between the start and end, and then moves the particle spawn point between them all.
@@ -1954,7 +1954,7 @@ local processfuncs = {
 				cpoint_from_op_value(processed, op, "control_point_number", 0, nil, {["overridable_by_constraint"] = true, ["sets_particle_pos"] = true})
 			else
 				local name = op._categoryName .. " " .. op.functionName .. ": randomly distribute to highest supplied Control Point"
-				PartCtrl_CPoint_AddToProcessed(processed, -1, name, "position_combine", {["sets_particle_pos"] = true, ["force_allow_-1"] = true}, op)
+				PartCtrl_CPoint_AddToProcessed(processed, -1, name, "position_combine", {["sets_particle_pos"] = true, ["force_allow_minusone"] = true}, op)
 				//TODO: ehh, this makes it combine with the control of the first available position control; 
 				//works on all fx i could find, but could potentially result in bad cpoints on more complex fx 
 			end
@@ -2016,7 +2016,7 @@ local processfuncs = {
 			//overwritten by the scalar. TODO: there's almost certainly a lot of other scalar operators that could potentially do the same thing, but we'll
 			//just add those if we run into them. there's really no good reason for fx to be set up this way, it just makes alpha random do nothing.
 			if (op["output field"] or PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS) == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA then
-				processed["ignore_zero_alpha"] = true
+				processed.ignore_zero_alpha = true
 			end
 		end,
 		["remap scalar to vector"] = function(processed, op)
@@ -2193,13 +2193,13 @@ local processfuncs = {
 	["emitters"] = {
 		["emit noise"] = function(processed, op)
 			if (op["emission minimum"] or 0) > 0 or (op["emission maximum"] or 100) > 0 then
-				processed["has_emitter"] = true
+				processed.has_emitter = true
 			end
-			processed["pathseqcheck_disable"] = true
+			processed.pathseqcheck_disable = true
 		end,
 		["emit to maintain count"] = function(processed, op)
 			if (op["count to maintain"] or 100) > 0 then
-				processed["has_emitter"] = true
+				processed.has_emitter = true
 			end
 			local axis = op["maintain count scale control point field"] or 0
 			if axis > -1 then
@@ -2212,12 +2212,12 @@ local processfuncs = {
 					["default"] = 1,
 				})
 			end
-			processed["pathseqcheck_disable"] = true
+			processed.pathseqcheck_disable = true
 		end,
 		["emit_continuously"] = function(processed, op)
 			if (op["emission_rate"] or 100) > 0 then
-				processed["has_emitter"] = true
-				if processed["do_starttime_raw_fromrate"] then
+				processed.has_emitter = true
+				if processed.do_starttime_raw_fromrate then
 					op["_starttime_raw_fromrate"] = 1 / (op["emission_rate"] or 100) //store this in the unprocessed operator so the _generic func below can access it
 				end
 			end
@@ -2233,13 +2233,13 @@ local processfuncs = {
 					["default"] = 1,
 				})
 			end
-			processed["pathseqcheck_disable"] = true
+			processed.pathseqcheck_disable = true
 		end,
 		//"emit noise" and "emit_continuously" have "scale emission to used control points", which wiki claims is a cpoint id, but it's actually a float that's multiplied by the number of cpoints the effect has, we don't care about this (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_emitters.cpp#L449)
 		["emit_instantaneously"] = function(processed, op)
 			if (op["num_to_emit_minimum"] or -1) > 0 or (op["num_to_emit"] or 100) > 0 then
-				processed["has_emitter"] = true
-				processed["pathseqcheck_particles"] = (op["num_to_emit"] or 100) //TODO: do we need to account for num_to_emit_minimum here?
+				processed.has_emitter = true
+				processed.pathseqcheck_particles = (op["num_to_emit"] or 100) //TODO: do we need to account for num_to_emit_minimum here?
 			end
 			local axis = op["emission count scale control point field"] or 0
 			if axis > -1 then
@@ -2260,10 +2260,10 @@ local processfuncs = {
 			local starttime = math.max((op["emission_start_time"] or op["emission start time"] or 0),  //"emit to maintain count" doesn't have underscores in "emission start time"
 			(op["operator start fadein"] or 0)) //some fx use fadein instead (l4d2's barricade_groundfire)
 			+ (op["_starttime_raw_fromrate"] or 0) //also add extra time from emission rate
-			if processed["starttime_raw"] != nil then
-				processed["starttime_raw"] = math.min(processed["starttime_raw"], starttime)
+			if processed.starttime_raw != nil then
+				processed.starttime_raw = math.min(processed.starttime_raw, starttime)
 			else
-				processed["starttime_raw"] = starttime
+				processed.starttime_raw = starttime
 			end
 		end,
 	},
@@ -2308,7 +2308,7 @@ local processfuncs = {
 			if !op["global center point"] then //according to code, cpoint is only used if global center point is false (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_constraints.cpp#L87)
 				cpoint_from_op_value(processed, op, "control point number", 0, nil, {["sets_particle_pos"] = true}) //pet doesn't add control for this
 				if (op["maximum distance"] or 100) < 1 then
-					processed["constraint_does_override"] = true //global value on the effect, not cpoint-specific
+					processed.constraint_does_override = true //global value on the effect, not cpoint-specific
 				end
 			end
 		end,
@@ -2317,7 +2317,7 @@ local processfuncs = {
 			cpoint_from_op_value(processed, op, "end control point number", 0, nil, {["sets_particle_pos"] = true})
 			//if there's no way for other cpoint operators (like the ones that initialize in a box/sphere) to influence the particles because this constraint forces them onto a very specific path, then don't make position controls for those cpoints
 			if (op["maximum distance"] or 100) < 1 then
-				processed["constraint_does_override"] = true //global value on the effect, not cpoint-specific
+				processed.constraint_does_override = true //global value on the effect, not cpoint-specific
 			end
 		end,
 		//"constrain particles to a box" is in worldspace only?? why? what is this for?
@@ -2363,9 +2363,9 @@ function PartCtrl_ProcessPCF(filename)
 				["cpoints"] = {},
 				["children"] = t[particle].children,
 				["parents"] = {},
-				["do_starttime_raw_fromrate"] = (t[particle]["initial_particles"] or 0) <= 0, //for emitter starttime calculation, don't add extra time from the emission rate if we have initial particles; have to do this here because the processfunc needs this info
+				["do_starttime_raw_fromrate"] = (t[particle].initial_particles or 0) <= 0, //for emitter starttime calculation, don't add extra time from the emission rate if we have initial particles; have to do this here because the processfunc needs this info
 			}
-			if CLIENT then processed["nicename"] = t[particle]._nicename end //properly capitalized name for display purposes
+			if CLIENT then processed.nicename = t[particle]._nicename end //properly capitalized name for display purposes
 			//Go through all of the effects's operators (initializers, operators, renderers, etc. are all called "operators" internally, it's confusing) 
 			//and use the corresponding functions in processfuncs to "process" them (populate the table above with all their relevant cpoint info). 
 			//This is the meat of this function, everything else is just working with this info.
@@ -2381,7 +2381,7 @@ function PartCtrl_ProcessPCF(filename)
 								if fixes[name] then name = fixes[name] end
 
 								if v[name] then v[name](processed, op) end
-								if v["_generic"] then v["_generic"](processed, op) end
+								if v._generic then v._generic(processed, op) end
 							end
 						end
 					end
@@ -2399,10 +2399,10 @@ function PartCtrl_ProcessPCF(filename)
 				["dont_inherit"] = true,
 			}) //makes the particle not render if this cpoint is attached to the ent the camera is viewing from (i.e. the player, or a camera ent they're using)
 			if ptab["preventNameBasedLookup"] then
-				processed["prevent_name_based_lookup"] = true //makes the particle impossible to spawn on its own, but still usable as a child. not sure what the point of this is.
+				processed.prevent_name_based_lookup = true //makes the particle impossible to spawn on its own, but still usable as a child. not sure what the point of this is.
 			end
 			if (ptab["initial_particles"] or 0) > 0 then
-				processed["has_emitter"] = true
+				processed.has_emitter = true
 			end
 			t2[particle] = processed
 			//Also store "screen space effect" here (so we can disable these with a convar)
@@ -2412,8 +2412,8 @@ function PartCtrl_ProcessPCF(filename)
 			//"pathseqcheck": cull cpoints added by initializer "position along path sequential" that emitter "emit_instantaneously" doesn't emit enough particles to actually use; 
 			//we have to do this here because the initializer's processfunc doesn't have a way to get the emitted particle count, and we want to do all this before inheritance.
 			//(for particles/summer2025_unusuals.pcf's utaunt_waterwave_lensflare child fx)
-			if processed["pathseqcheck"] and !processed["pathseqcheck_disable"] then
-				local count = processed["pathseqcheck_particles"] or -math.huge
+			if processed.pathseqcheck and !processed.pathseqcheck_disable then
+				local count = processed.pathseqcheck_particles or -math.huge
 				for k, _ in pairs (processed.cpoints) do
 					if processed.cpoints[k].position then
 						for k2, v2 in pairs (processed.cpoints[k].position) do
@@ -2433,8 +2433,8 @@ function PartCtrl_ProcessPCF(filename)
 				t2[particle].has_renderer = false
 			else
 				//Don't count fx as having a renderer if they have 0 alpha, since they won't render visibly
-				if processed["has_zero_alpha"] and !processed["ignore_zero_alpha"] then
-					processed["has_renderer"] = false
+				if processed.has_zero_alpha and !processed.ignore_zero_alpha then
+					processed.has_renderer = false
 				end
 				//Get and cache particle min distance from materials (used for info text)
 				//The intention here is to prevent cases where a player spawns an effect on the ground in front 
@@ -2447,16 +2447,16 @@ function PartCtrl_ProcessPCF(filename)
 							["min_alt"] = mat2:GetFloat("$maxsize") or 20,
 						}
 					end
-					processed["dist_min"] = PartCtrl_BadMaterials[mat].min
-					processed["dist_min_alt"] =  PartCtrl_BadMaterials[mat].min_alt
+					processed.dist_min = PartCtrl_BadMaterials[mat].min
+					processed.dist_min_alt =  PartCtrl_BadMaterials[mat].min_alt
 				end
 			end
 		end
 		for particle, _ in pairs (t2) do
-			if !t2[particle]["has_renderer"] then
+			if !t2[particle].has_renderer then
 				for _, childtab in pairs (t2[particle].children) do
-					if t2[childtab.child] and t2[childtab.child]["parent_force_has_renderer"] then
-						t2[particle]["has_renderer"] = true 
+					if t2[childtab.child] and t2[childtab.child].parent_force_has_renderer then
+						t2[particle].has_renderer = true 
 						break
 					end
 				end
@@ -2487,11 +2487,11 @@ function PartCtrl_ProcessPCF(filename)
 										for processedk, processedv in pairs (tab) do
 											for k, v in pairs (processedv) do
 												//mark operators as being inherited from a child
-												if v["name"] then
-													processedv[k]["name"] = "child " .. childtab2.child .. " | " .. processedv[k]["name"]
+												if v.name then
+													processedv[k].name = "child " .. childtab2.child .. " | " .. processedv[k].name
 												end
-												if v["label"] then
-													processedv[k]["label_childname"] = processedv[k]["label_childname"] or (childtab2.child .. " ")
+												if v.label then
+													processedv[k].label_childname = processedv[k].label_childname or (childtab2.child .. " ")
 												end
 											end
 											if istable(cpoints2[i][processedk]) then
@@ -2510,11 +2510,11 @@ function PartCtrl_ProcessPCF(filename)
 							for processedk, processedv in pairs (tab) do
 								for k, v in pairs (processedv) do
 									//mark operators as being inherited from a child
-									if v["name"] then
-										processedv[k]["name"] = "child " .. childtab.child .. " | " .. processedv[k]["name"]
+									if v.name then
+										processedv[k].name = "child " .. childtab.child .. " | " .. processedv[k].name
 									end
-									if v["label"] then
-										processedv[k]["label_childname"] = processedv[k]["label_childname"] or (childtab.child .. " ")
+									if v.label then
+										processedv[k].label_childname = processedv[k].label_childname or (childtab.child .. " ")
 									end
 								end
 								if istable(cpoints[i][processedk]) then
@@ -2556,18 +2556,18 @@ function PartCtrl_ProcessPCF(filename)
 				if parent and !output_children[parent] then
 					tab = nil
 					for k, v in pairs (t2[parent].cpoints) do
-						if v["output_children"] then
-							for k2, v2 in pairs (v["output_children"]) do
-								if v2["groupid"] then
+						if v.output_children then
+							for k2, v2 in pairs (v.output_children) do
+								if v2.groupid then
 									tab = tab or {}
 									tab[k] = tab[k] or {}
 									//"limit" value sets the number of children to override the target cpoint on;
 									//use the largest possible limit provided, no limit provided means unlimited
-									local limit = v2["limit"] or math.huge
-									if tab[k][v2["groupid"]] then
-										limit = math.max(limit, tab[k][v2["groupid"]])
+									local limit = v2.limit or math.huge
+									if tab[k][v2.groupid] then
+										limit = math.max(limit, tab[k][v2.groupid])
 									end
-									tab[k][v2["groupid"]] = limit
+									tab[k][v2.groupid] = limit
 								end
 							end
 						end
@@ -2595,16 +2595,16 @@ function PartCtrl_ProcessPCF(filename)
 						end
 					end
 					if !doskip then
-						if v["output_axis"] then
-							for k2, v2 in pairs (v["output_axis"]) do
-								if v2["axis"] then
+						if v.output_axis then
+							for k2, v2 in pairs (v.output_axis) do
+								if v2.axis then
 									output_axis[k] = output_axis[k] or {}
-									output_axis[k][v2["axis"]] = true
+									output_axis[k][v2.axis] = true
 								end
 							end
 						end
 						local did_output = false
-						if v["output"] or (istable(output_axis[k]) and output_axis[k][0] and output_axis[k][1] and output_axis[k][2]) then
+						if v.output or (istable(output_axis[k]) and output_axis[k][0] and output_axis[k][1] and output_axis[k][2]) then
 							//- outputs override the target cpoint on the effect itself, and on all of its children
 							//- outputs on the children of an effect do NOT override the target cpoint on their parent
 							//- output_axis follows the same two rules above but only overrides a single axis
@@ -2614,27 +2614,27 @@ function PartCtrl_ProcessPCF(filename)
 							end
 						end
 						remove_if_other_cpoint_is_empty[k] = {}
-						if v["position"] then
+						if v.position then
 							//If we're inheriting the cpoint mode from a child, make sure it's not from an operator that shouldn't be inherited
 							local newtab = {}
-							for k2, v2 in pairs (v["position"]) do
-								if !(parenttab and v2["dont_inherit"]) --[[and !(t2[particle2].constraint_does_override and v2["overridable_by_constraint"])]] then
+							for k2, v2 in pairs (v.position) do
+								if !(parenttab and v2.dont_inherit) --[[and !(t2[particle2].constraint_does_override and v2.overridable_by_constraint)]] then
 									newtab[k2] = v2
 								end
 							end
 							//Make sure to check for the "ignore_outputs" value for operators that aren't overridden by output
 							local ignore_outputs = false
 							for k2, v2 in pairs (newtab) do
-								if v2["ignore_outputs"] then
+								if v2.ignore_outputs then
 									ignore_outputs = true
 									break
 								end
 							end
 							for k2, v2 in pairs (newtab) do
-								if v2["pathseqcheck_fail"] then continue end
-								if (t2[particle2].has_renderer and t2[particle2].has_emitter) or v2["doesnt_need_renderer_or_emitter"] then
+								if v2.pathseqcheck_fail then continue end
+								if (t2[particle2].has_renderer and t2[particle2].has_emitter) or v2.doesnt_need_renderer_or_emitter then
 									if modes[k] == nil or modes[k] == PARTCTRL_CPOINT_MODE_POSITION_COMBINE or (did_output and ignore_outputs) then
-										if (t2[particle2].constraint_does_override and v2["overridable_by_constraint"])
+										if (t2[particle2].constraint_does_override and v2.overridable_by_constraint)
 										or (v2.overridable_by_drag and t2[particle2].drag_for_override 
 										and t2[particle2].drag_for_override >= v2.overridable_by_drag) then
 											modes[k] = PARTCTRL_CPOINT_MODE_POSITION_COMBINE
@@ -2645,35 +2645,35 @@ function PartCtrl_ProcessPCF(filename)
 									end
 									if modes[k] == PARTCTRL_CPOINT_MODE_POSITION then
 										//also make a list of all the cpoints that have "on_model" fx so that we can print extra info about it in spawnicons
-										if CLIENT and v2["on_model"] then
+										if CLIENT and v2.on_model then
 											on_model = on_model or {}
 											on_model[k] = true
 										end
 										//also make a list of cpoints that define a cull plane, so we can reposition them and draw helpers for them
-										if v2["plane"] then
+										if v2.plane then
 											cpoint_planes = cpoint_planes or {}
 											cpoint_planes[k] = cpoint_planes[k] or {}
-											table.insert(cpoint_planes[k], v2["plane"])
+											table.insert(cpoint_planes[k], v2.plane)
 										end
 										//also make a list of distance scalars
-										if v2["distance_scalar"] then
+										if v2.distance_scalar then
 											distance_scalars = distance_scalars or {}
 											distance_scalars[k] = distance_scalars[k] or {}
-											table.insert(distance_scalars[k], v2["distance_scalar"])
+											table.insert(distance_scalars[k], v2.distance_scalar)
 										end
 										//also inherit tracer_min_distance stuff here
-										if v2["tracer_min_distance"] and t2[particle2].tracer_min_distance_hasdecay then
+										if v2.tracer_min_distance and t2[particle2].tracer_min_distance_hasdecay then
 											tracer_min_distance = tracer_min_distance or {}
-											tracer_min_distance[k] = math.max((tracer_min_distance[k] or 0), v2["tracer_min_distance"])
+											tracer_min_distance[k] = math.max((tracer_min_distance[k] or 0), v2.tracer_min_distance)
 										end
 										//also inherit cpoint info text
-										if CLIENT and v2["info"] then
+										if CLIENT and v2.info then
 											cpoint_info_text = cpoint_info_text or {}
 											cpoint_info_text[k] = cpoint_info_text[k] or {}
-											cpoint_info_text[k][v2["info"]] = true
+											cpoint_info_text[k][v2.info] = true
 										end
 										//also check for "remove_if_other_cpoint_is_empty"; we only care about this if ALL position controls for this cpoint have this
-										local remove = v2["remove_if_other_cpoint_is_empty"]
+										local remove = v2.remove_if_other_cpoint_is_empty
 										if remove != nil and remove_if_other_cpoint_is_empty[k] != nil then
 											remove_if_other_cpoint_is_empty[k][remove] = true
 										else
@@ -2681,37 +2681,37 @@ function PartCtrl_ProcessPCF(filename)
 										end
 									end
 								end
-								if v2["sets_particle_pos"] and !t2[particle2].sets_particle_pos_forcedisable then
+								if v2.sets_particle_pos and !t2[particle2].sets_particle_pos_forcedisable then
 									sets_particle_pos = sets_particle_pos or {}
 									sets_particle_pos[k] = true
 								end
-								if v2["dont_offset_distance_scalar"] then //for operators that don't set particle pos, but still should prevent distance scalar operators on the same cpoint from moving the cpoint
+								if v2.dont_offset_distance_scalar then //for operators that don't set particle pos, but still should prevent distance scalar operators on the same cpoint from moving the cpoint
 									dont_offset_distance_scalar = dont_offset_distance_scalar or {}
 									dont_offset_distance_scalar[k] = true
 								end
-								if v2["copy_sets_particle_pos"] then
+								if v2.copy_sets_particle_pos then
 									copy_sets_particle_pos = copy_sets_particle_pos or {}
 									copy_sets_particle_pos[k] = copy_sets_particle_pos[k] or {}
-									table.Merge(copy_sets_particle_pos[k], v2["copy_sets_particle_pos"]) 
+									table.Merge(copy_sets_particle_pos[k], v2.copy_sets_particle_pos) 
 								end
 							end
 						end
-						if v["position_combine"] then
+						if v.position_combine then
 							//If we're inheriting the cpoint mode from a child, make sure it's not from an operator that shouldn't be inherited
 							local newtab = {}
 							if parenttab then
-								for k2, v2 in pairs (v["position_combine"]) do
-									if !v2["dont_inherit"] then
+								for k2, v2 in pairs (v.position_combine) do
+									if !v2.dont_inherit then
 										newtab[k2] = v2
 									end
 								end
 							else
-								newtab = v["position_combine"]
+								newtab = v.position_combine
 							end
 							//Make sure to check for the "ignore_outputs" value for operators that aren't overridden by output
 							local ignore_outputs = false
 							for k2, v2 in pairs (newtab) do
-								if v2["ignore_outputs"] then
+								if v2.ignore_outputs then
 									ignore_outputs = true
 									break
 								end
@@ -2723,32 +2723,32 @@ function PartCtrl_ProcessPCF(filename)
 								if t2[particle2].movement_lock and t2[particle2].movement_lock[k] and t2[particle].movement_lock_cpoint == nil then
 									t2[particle].movement_lock_cpoint = k
 								end
-								if ((t2[particle2].has_renderer and t2[particle2].has_emitter) or v2["doesnt_need_renderer_or_emitter"]) 
+								if ((t2[particle2].has_renderer and t2[particle2].has_emitter) or v2.doesnt_need_renderer_or_emitter) 
 								and (!t2[particle2].movement_lock or !t2[particle2].movement_lock[k] or t2[particle].movement_lock_cpoint == k) then
 									if modes[k] == nil or (did_output and ignore_outputs) then
 										modes[k] = PARTCTRL_CPOINT_MODE_POSITION_COMBINE
 									end
 								end
-								if v2["sets_particle_pos"] and !t2[particle2].sets_particle_pos_forcedisable then
+								if v2.sets_particle_pos and !t2[particle2].sets_particle_pos_forcedisable then
 									sets_particle_pos = sets_particle_pos or {}
 									sets_particle_pos[k] = true
 								end
-								if v2["dont_offset_distance_scalar"] then //for operators that don't set particle pos, but still should prevent distance scalar operators on the same cpoint from moving the cpoint
+								if v2.dont_offset_distance_scalar then //for operators that don't set particle pos, but still should prevent distance scalar operators on the same cpoint from moving the cpoint
 									dont_offset_distance_scalar = dont_offset_distance_scalar or {}
 									dont_offset_distance_scalar[k] = true
 								end
-								if v2["copy_sets_particle_pos"] then
+								if v2.copy_sets_particle_pos then
 									copy_sets_particle_pos = copy_sets_particle_pos or {}
 									copy_sets_particle_pos[k] = copy_sets_particle_pos[k] or {}
-									table.Merge(copy_sets_particle_pos[k], v2["copy_sets_particle_pos"])
+									table.Merge(copy_sets_particle_pos[k], v2.copy_sets_particle_pos)
 								end
 							end
 						end
-						if v["axis"] then
+						if v.axis then
 							local doaxis = false
 							if modes[k] == nil then
-								for k2, v2 in pairs (v["axis"]) do
-									if !(v2["overridable_by_drag"] and t2[particle2].drag_for_override 
+								for k2, v2 in pairs (v.axis) do
+									if !(v2.overridable_by_drag and t2[particle2].drag_for_override 
 									and t2[particle2].drag_for_override >= v2.overridable_by_drag)
 									//handle output_axis overriding specific axes
 									and (!istable(output_axis[k]) or ((v2.axis != nil) and !output_axis[k][v2.axis]) 
@@ -2854,7 +2854,7 @@ function PartCtrl_ProcessPCF(filename)
 				end
 			end
 			if shouldcull then
-				t2[particle]["renderer_emitter_shouldcull"] = true
+				t2[particle].renderer_emitter_shouldcull = true
 			end
 			if needfallback then
 				if !modes[0] then
@@ -2926,7 +2926,7 @@ function PartCtrl_ProcessPCF(filename)
 					end
 				end
 			end
-			t2[particle]["sets_particle_pos"] = sets_particle_pos_2
+			t2[particle].sets_particle_pos = sets_particle_pos_2
 
 			//Do info text for on_model
 			if CLIENT and on_model then

@@ -468,7 +468,7 @@ if SERVER then
 
 		//Don't store this DTvar
 		if data.DT then
-			data.DT["SpecialEffectParent"] = nil
+			data.DT.SpecialEffectParent = nil
 		end
 
 	end

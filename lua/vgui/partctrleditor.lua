@@ -699,9 +699,9 @@ function PANEL:RebuildControls()
 					end
 				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
 					local tab = {
-						[1] = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k]["axis_0"],
-						[2] = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k]["axis_1"],
-						[3] = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k]["axis_2"]
+						[1] = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k].axis_0,
+						[2] = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k].axis_1,
+						[3] = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k].axis_2
 					}
 					if istable(tab[1]) and istable(tab[2]) and istable(tab[3]) and tab[1].colorpicker then
 						local col = vgui.Create("DColorMixer", pnl)

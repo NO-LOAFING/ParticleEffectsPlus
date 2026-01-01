@@ -836,8 +836,8 @@ if SERVER then
 
 		//Don't store these DTvars
 		if data.DT then
-			data.DT["NumpadState"] = nil
-			data.DT["SpecialEffectParent"] = nil
+			data.DT.NumpadState = nil
+			data.DT.SpecialEffectParent = nil
 		end
 
 	end

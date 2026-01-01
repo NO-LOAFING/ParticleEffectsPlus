@@ -425,9 +425,9 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
 						if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
 							local tab = {
-								[1] = v["axis_0"],
-								[2] = v["axis_1"],
-								[3] = v["axis_2"]
+								[1] = v.axis_0,
+								[2] = v.axis_1,
+								[3] = v.axis_2
 							}
 							if istable(tab[1]) and istable(tab[2]) and istable(tab[3]) and tab[1].colorpicker then
 								self.ColorCPoints[k] = tab
