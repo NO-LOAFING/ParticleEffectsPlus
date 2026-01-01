@@ -3,8 +3,8 @@ TOOL.Name = "Particle Attacher"
 TOOL.Command = nil
 TOOL.ConfigName = ""
 
-TOOL.ClientConVar["attachnum"] = "0"
-TOOL.ClientConVar["drawhalo"] = "1"
+TOOL.ClientConVar.attachnum = "0"
+TOOL.ClientConVar.drawhalo = "1"
 
 TOOL.Information = {
 	{name = "left0", stage = 0, icon = "gui/lmb.png"},

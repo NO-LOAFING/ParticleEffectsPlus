@@ -844,7 +844,7 @@ function ENT:SpecialEffectInitialize()
 
 		self:StopParticles() //if the projectile model has its own built-in particle fx, don't show them on this ent (i.e. tf2 sentry rockets)
 	else
-		self.SpecialEffectChildrenSorted = self.SpecialEffectChildrenSorted or {[false] = {}, [true] = {}, ["bad"] = {}}
+		self.SpecialEffectChildrenSorted = self.SpecialEffectChildrenSorted or {[false] = {}, [true] = {}, bad = {}}
 	end
 
 	//list of projectile entities we've created; we use this to clean them up
@@ -904,8 +904,8 @@ function ENT:SpecialEffectThink()
 							self.ProjectileStoredVel = self.ProjectileStoredVel or {}
 							if !self.ProjectileStoredVel[proj] then
 								self.ProjectileStoredVel[proj] = {
-									["vel"] = phys:GetVelocity(),
-									["angvel"] = phys:GetAngleVelocity()
+									vel = phys:GetVelocity(),
+									angvel = phys:GetAngleVelocity()
 								}
 								didpause = true //don't update the pausetime if we get unfrozen by the physgun while paused
 							end
@@ -1465,7 +1465,7 @@ function ENT:SpecialEffectRefresh()
 
 	if CLIENT then
 		if self.SpecialEffectChildren then
-			self.SpecialEffectChildrenSorted = {[false] = {}, [true] = {}, ["bad"] = {}}
+			self.SpecialEffectChildrenSorted = {[false] = {}, [true] = {}, bad = {}}
 
 			for child, _ in pairs (self.SpecialEffectChildren) do
 				child:BeginNewParticle()
@@ -1949,7 +1949,7 @@ else
 
 		elseif input == "projvis_material" then
 
-			local Data = {["MaterialOverride"] = net.ReadString()}
+			local Data = {MaterialOverride = net.ReadString()}
 			
 			//duplicate of SetMaterial from the material stool, this is dumb but it gets the job done
 			--
@@ -1962,7 +1962,7 @@ else
 
 		elseif input == "projvis_color" then
 			
-			local Data = {["Color"] = net.ReadColor()}
+			local Data = {Color = net.ReadColor()}
 
 			self:SetColor(Data.Color)
 

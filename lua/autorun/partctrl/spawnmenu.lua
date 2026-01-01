@@ -24,7 +24,7 @@ if CLIENT then
 				//No child fx
 				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
 					if !PartCtrl_ProcessedPCFs[pcf2][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][particle].parents) < 1 then
-						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = pcf, ["name"] = particle, ["path"] = path})
+						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {pcf = pcf, name = particle, path = path})
 					end
 				end
 			elseif dochildfx == 1 then
@@ -32,21 +32,21 @@ if CLIENT then
 				//Separate child fx
 				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
 					if !PartCtrl_ProcessedPCFs[pcf2][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][particle].parents) < 1 then
-						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = pcf, ["name"] = particle, ["path"] = path})
+						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {pcf = pcf, name = particle, path = path})
 					else
 						table.insert(tab, particle)
 					end
 				end
 				if table.Count(tab) > 0 then
-					spawnmenu.CreateContentIcon("header", ViewPanel, {["text"] = "Child effects"})
+					spawnmenu.CreateContentIcon("header", ViewPanel, {text = "Child effects"})
 					for k, particle in pairs (tab) do
-						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = pcf, ["name"] = particle, ["path"] = path})
+						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {pcf = pcf, name = particle, path = path})
 					end
 				end
 			else
 				//All fx sorted alphabetically
 				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
-					spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = pcf, ["name"] = particle, ["path"] = path})
+					spawnmenu.CreateContentIcon("partctrl", ViewPanel, {pcf = pcf, name = particle, path = path})
 				end
 			end
 		end
@@ -65,7 +65,7 @@ if CLIENT then
 			MsgN("OnUtilFxNodeSelected tried to make spawnlist for invalid title ", name)
 		else
 			for particle, _ in SortedPairs (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
-				spawnmenu.CreateContentIcon("partctrl", ViewPanel, {["pcf"] = "UtilFx", ["name"] = particle})
+				spawnmenu.CreateContentIcon("partctrl", ViewPanel, {pcf = "UtilFx", name = particle})
 			end
 		end
 
@@ -86,7 +86,7 @@ if CLIENT then
 			for k, v in pairs (tab) do
 				local pcf2 = PartCtrl_GetGamePCF(v.pcf, v.path)
 				if !PartCtrl_ProcessedPCFs[pcf2][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][v.particle].parents) < 1 then
-					table.insert(tab2, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle, ["path"] = v.path})
+					table.insert(tab2, {type = "partctrl", pcf = v.pcf, name = v.particle, path = v.path})
 				end
 			end
 		elseif dochildfx == 1 then
@@ -95,19 +95,19 @@ if CLIENT then
 			for k, v in pairs (tab) do
 				local pcf2 = PartCtrl_GetGamePCF(v.pcf, v.path)
 				if !PartCtrl_ProcessedPCFs[pcf2][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][v.particle].parents) < 1 then
-					table.insert(tab2, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle, ["path"] = v.path})
+					table.insert(tab2, {type = "partctrl", pcf = v.pcf, name = v.particle, path = v.path})
 				else
-					table.insert(tab3, {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle, ["path"] = v.path})
+					table.insert(tab3, {type = "partctrl", pcf = v.pcf, name = v.particle, path = v.path})
 				end
 			end
 			if table.Count(tab3) > 0 then
-				table.insert(tab2, {["type"] = "header", ["text"] = "Child effects"})
+				table.insert(tab2, {type = "header", text = "Child effects"})
 				table.Add(tab2, tab3)
 			end
 		else
 			//All fx sorted alphabetically
 			for k, v in pairs (tab) do
-				tab2[k] = {["type"] = "partctrl", ["pcf"] = v.pcf, ["name"] = v.particle, ["path"] = v.path}
+				tab2[k] = {type = "partctrl", pcf = v.pcf, name = v.particle, path = v.path}
 			end
 		end
 
@@ -171,7 +171,7 @@ if CLIENT then
 						menu:AddOption("#spawnmenu.createautospawnlist", function()
 							local tab = {}
 							for particle, _ in SortedPairs (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
-								table.insert(tab, {["pcf"] = "UtilFx", ["particle"] = particle})
+								table.insert(tab, {pcf = "UtilFx", particle = particle})
 							end
 							PartCtrl_CreateCustomSpawnlist(tab, "Scripted Effects", "icon16/page_gear.png")
 						end):SetIcon("icon16/page_add.png")
@@ -227,7 +227,7 @@ if CLIENT then
 							menu:AddOption("#spawnmenu.createautospawnlist", function()
 								local tab = {}
 								for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[filename2]) do //sort them in alphabetical order
-									table.insert(tab, {["pcf"] = filename, ["particle"] = particle, ["path"] = path})
+									table.insert(tab, {pcf = filename, particle = particle, path = path})
 								end
 								PartCtrl_CreateCustomSpawnlist(tab, name)
 							end):SetIcon("icon16/page_add.png")
@@ -264,7 +264,7 @@ if CLIENT then
 							for path2, pcf2 in pairs (PartCtrl_GamePCFs[pcf]) do
 								if pcf2 != pcf then
 									table.insert(tab, {
-										["name"] = name .. " (" .. path2  .. ")", ["pcf"] = pcf, ["path"] = path2
+										name = name .. " (" .. path2  .. ")", pcf = pcf, path = path2
 									})
 								end
 							end
@@ -286,7 +286,7 @@ if CLIENT then
 						end
 
 						table.insert(tab, 1, {
-							["name"] = name, ["pcf"] = pcf, ["path"] = file_path
+							name = name, pcf = pcf, path = file_path
 						})
 						for _, v in pairs (tab) do
 							AddFile(v.name, v.pcf, v.path)
@@ -441,19 +441,19 @@ if CLIENT then
 				if !PartCtrl_AllDataPCFs[pcf] then
 					for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do
 						table.insert(searchParticles, {
-							["name"] = particle, 
-							["searchtext"] = particle:lower() .. " " .. pcf:lower(), //lowercase needs to be separate, because effect names are case-sensitive when spawning them
-							["pcf"] = pcf,
-							["path"] = PartCtrl_GamePCFs_DefaultPaths[pcf] //optional, can be nil
+							name = particle, 
+							searchtext = particle:lower() .. " " .. pcf:lower(), //lowercase needs to be separate, because effect names are case-sensitive when spawning them
+							pcf = pcf,
+							path = PartCtrl_GamePCFs_DefaultPaths[pcf] //optional, can be nil
 						}) 
 					end
 				else
 					for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do
 						table.insert(searchParticles, {
-							["name"] = particle, 
-							["searchtext"] = particle:lower() .. " " .. pcf:lower() .. " " .. PartCtrl_GetDataPCFNiceName(pcf):lower(), //let us search for both the nicename and internal name
-							["pcf"] = PartCtrl_AllDataPCFs[pcf].original_filename,
-							["path"] = PartCtrl_AllDataPCFs[pcf].path
+							name = particle, 
+							searchtext = particle:lower() .. " " .. pcf:lower() .. " " .. PartCtrl_GetDataPCFNiceName(pcf):lower(), //let us search for both the nicename and internal name
+							pcf = PartCtrl_AllDataPCFs[pcf].original_filename,
+							path = PartCtrl_AllDataPCFs[pcf].path
 						}) 
 					end
 				end
@@ -472,7 +472,7 @@ if CLIENT then
 					elseif k2 == #searchTerms then
 						local entry = {
 							text = v.name,
-							icon = spawnmenu.CreateContentIcon("partctrl", g_SpawnMenu.SearchPropPanel, {["pcf"] = v.pcf, ["name"] = v.name, ["path"] = v.path}),
+							icon = spawnmenu.CreateContentIcon("partctrl", g_SpawnMenu.SearchPropPanel, {pcf = v.pcf, name = v.name, path = v.path}),
 							words = {v.name}
 						}
 						table.insert(results, entry)

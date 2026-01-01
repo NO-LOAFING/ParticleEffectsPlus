@@ -397,11 +397,11 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					else
 						tooltip = tooltip .. "\n\n\nERROR: Invalid particle effect (No effect with this name in this .pcf)"
 					end
-					table.insert(self.icons, {["icon"] = icon_invalid})
+					table.insert(self.icons, {icon = icon_invalid})
 				else
 					if PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][name] then
 						tooltip = tooltip .. "\n\nThis is a duplicate of \"" .. name .. "\" from \"" .. PartCtrl_GetDataPCFNiceName(PartCtrl_DuplicateFx[pcf][name]) .. "\"."
-						table.insert(self.icons, {["icon"] = Material("icon16/page_paste.png")})
+						table.insert(self.icons, {icon = Material("icon16/page_paste.png")})
 					end
 			
 					local types = {}
@@ -411,7 +411,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					end
 			
 					if types[PARTCTRL_CPOINT_MODE_POSITION] > 1 then
-						table.insert(self.icons, {["icon"] = icon_position, ["num"] = types[PARTCTRL_CPOINT_MODE_POSITION]})
+						table.insert(self.icons, {icon = icon_position, num = types[PARTCTRL_CPOINT_MODE_POSITION]})
 					end
 			
 					self.particle2_playerposfix = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_playerposfix //particle operator "set control point to player" sets this to true
@@ -455,7 +455,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						else
 							tooltip = tooltip .. "\n\nThis effect has " .. num .. " editable colors. You can set them all at once\nwith the color tool, or set them separately in the edit window."
 						end
-						table.insert(self.icons, {["icon"] = icon_color, ["num"] = num})
+						table.insert(self.icons, {icon = icon_color, num = num})
 						for k, v in SortedPairs (self.ColorCPoints) do
 							table.insert(self.iColorCPoints, k)
 							//do particle2 if the default is large enough to stretch the bounds
@@ -466,7 +466,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 					end
 					if table.Count(self.EditCPoints) > 0 then
 						if table.Count(self.EditCPointsText) > 0 then
-							table.insert(self.icons, {["icon"] = icon_edit})
+							table.insert(self.icons, {icon = icon_edit})
 							tooltip = tooltip .. "\n\nThis effect has editable properties:"
 							for _, v in pairs (self.EditCPointsText) do
 								tooltip = tooltip .. "\n" .. v
@@ -480,7 +480,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						end
 					end
 					if PartCtrl_ProcessedPCFs[pcf][name].info then
-						table.insert(self.icons, {["icon"] = icon_info})
+						table.insert(self.icons, {icon = icon_info})
 						tooltip = tooltip .. "\n\nInfo:\n" .. table.concat(PartCtrl_ProcessedPCFs[pcf][name].info, "\n")
 					end
 
@@ -491,7 +491,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							tooltip = tooltip .. "\n\n" .. language.GetPhrase(v) //use verbose cull reasons for this one
 						end
 						//tooltip reaches max length if lots of errors are on one effect, but whatever
-						table.insert(self.icons, {["icon"] = icon_invalid})
+						table.insert(self.icons, {icon = icon_invalid})
 					end
 
 					//warning for multiply defined fx
@@ -566,14 +566,14 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							elseif conflicting_children then
 								tooltip = tooltip .. "\n\n\nWarning: This particle effect's children are defined in multiple files:" .. text .. "\n\nCurrently, the ones from %OVERRIDE_PCF are loaded.\nOnly one effect with the same name can be loaded at a time.\nIf you load effects from any of these files, even in spawnicons, then\nit will use the ones from the most recently loaded file."
 							end
-							table.insert(self.icons, {["icon"] = icon_multiplydefined, ["icon2"] = icon_multiplydefined_2})
+							table.insert(self.icons, {icon = icon_multiplydefined, icon2 = icon_multiplydefined_2})
 							self.MultiplyDefined = true
 						end
 					end
 			
 					//test lots of icons
 					--[[for i = 1, 20 do
-						table.insert(self.icons, {["icon"] = icon_test, ["num"] = i})
+						table.insert(self.icons, {icon = icon_test, num = i})
 					end]]
 				end
 				self.tooltip = tooltip

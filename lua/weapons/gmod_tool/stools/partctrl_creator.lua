@@ -1,10 +1,10 @@
 TOOL.AddToMenu = false
 
-TOOL.ClientConVar["pcf"] = "particles/fire_01.pcf"
-TOOL.ClientConVar["name"] = "env_fire_large"
-TOOL.ClientConVar["path"] = ""
+TOOL.ClientConVar.pcf = "particles/fire_01.pcf"
+TOOL.ClientConVar.name = "env_fire_large"
+TOOL.ClientConVar.path = ""
 
-TOOL.Information = { { name = "left" } }
+TOOL.Information = {{name = "left"}}
 
 //If we really wanted to pretend this was the same tool as the standard creator, I guess we could try to copy its strings, but that's not worth the trouble and this is funnier
 if CLIENT then
