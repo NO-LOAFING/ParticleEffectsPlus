@@ -1,6 +1,6 @@
 CreateConVar("sv_partctrl_particlesperent", 32, FCVAR_REPLICATED, "Max number of effect instances (or projectiles) that a single particle effect entity can have active at once.", 1)
-//Assume that most servers won't want serverside projectile fx because they're too easy to grief with, 
-//and won't want ReadPCF caching because we can't assume connecting clients will use this addon more than once.
+//Assume that most servers won't want serverside projectile fx or screenspace fx because they're too easy to grief with, 
+//and won't want ReadPCF caching because we can't assume each connecting client will load this addon more than once.
 //Is this right? No idea, I don't run a server.
 local int_sp
 if game.SinglePlayer() then
@@ -9,7 +9,7 @@ else
 	int_sp = 0
 end
 CreateConVar("sv_partctrl_allowserverprojectiles", int_sp, FCVAR_REPLICATED, "If 0, disables the serverside projectiles option on projectile effects.", 0, 1)
-CreateConVar("sv_partctrl_cachereadpcf", int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, the results of PartCtrl_ReadPCF are cached to the data folder. This makes subsequent startups 2-3x faster, but the first time quite a bit slower as it saves ~50MB to the data folder.", 0, 1)
+CreateConVar("sv_partctrl_cachereadpcf", int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, the results of PartCtrl_ReadPCF are cached to the data folder.\nThis makes subsequent startups over 3x faster by saving >50MB to the data folder, but if a player only loads this addon once (i.e. randomly connecting players in MP servers), it adds load time for no benefit.", 0, 1)
 CreateConVar("sv_partctrl_blacklist_screenspace", 1-int_sp, {FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If 1, effects with the var \"screen space effect\" are blacklisted from being loaded.\nNote: Changing this value will reload *all* PCF files, temporarily freezing the game for all clients. Be careful!", 0, 1)
 if SERVER then
 	cvars.AddChangeCallback("sv_partctrl_blacklist_screenspace", function(cvname, old, new)

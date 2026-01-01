@@ -1137,12 +1137,15 @@ end
 local function cpoint_from_op_value(processed, op, value, default_k, processedk, processedv)
 	local k = op[value] or default_k
 	if k > -1 or (processedv and processedv.force_allow_minusone) then
-		local name = value
-		if op.functionName then
-			name = op.functionName .. ": " .. name
-		end
-		if op._categoryName then
-			name = op._categoryName .. " " .. name
+		local name
+		if CLIENT and (GetConVarNumber("developer") >= 1) then //these names are only used by the "print processed pcf data" debug option
+			name = value
+			if op.functionName then
+				name = op.functionName .. ": " .. name
+			end
+			if op._categoryName then
+				name = op._categoryName .. " " .. name
+			end
 		end
 		PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processedv, op)
 	end
@@ -3214,7 +3217,7 @@ function PartCtrl_ProcessPCF(filename)
 								v3.default == v2.default and v3.decimals == v2.decimals and v3.relative_to_cpoint == 
 								v2.relative_to_cpoint and v3.relative_to_cpoint_angle == v2.relative_to_cpoint_angle 
 								and v3.colorpicker == v2.colorpicker and v3.textentry == v2.textentry then
-									newtab.name = newtab.name .. ",\n" .. v3.name
+									if CLIENT and dodebug then newtab.name = newtab.name .. ",\n" .. v3.name end //these names are only used by the "print processed pcf data" debug option
 									if !newtab.hidden then
 										newtab.labels[v3.label_childname or ""] = newtab.labels[v3.label_childname or ""] or {}
 										newtab.labels[v3.label_childname or ""][v3.label] = true
@@ -3401,6 +3404,17 @@ function PartCtrl_ProcessPCF(filename)
 						end
 					end
 				end
+				if SERVER or !dodebug then
+					//If we're not in debug mode, then discard all but the essential info to save memory
+					//(the extended info is only used by the "print processed pcf data" debug option)
+					local newtab = {
+						mode = v.mode,
+						axis_0 = v.axis_0,
+						axis_1 = v.axis_1,
+						axis_2 = v.axis_2
+					}
+					t2[particle].cpoints[k] = newtab
+				end
 			end
 
 			//Flag effects for culling - we do this before calling the PostProcessPCF hook, so that the hook can override it
@@ -3453,7 +3467,7 @@ function PartCtrl_ProcessPCF(filename)
 		for particle, _ in pairs (t2) do
 			//Cull bad effects from the table.
 			//If the player starts up the game in developer mode, effects aren't culled, but instead have a warning in the spawnicon telling the dev why they won't show up to players.
-			if PartCtrl_CulledFx[filename][particle] and GetConVarNumber("developer") < 1 then
+			if PartCtrl_CulledFx[filename][particle] and !dodebug then
 				t2[particle] = nil
 			end
 		end
