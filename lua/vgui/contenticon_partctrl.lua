@@ -509,24 +509,22 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							local this_listed_invalids = {}
 							local this_pcfs_added = 0
 							for _, v in pairs (PartCtrl_PCFsByParticleName[name2]) do
-								//if PartCtrl_PCFsWithConflicts[v] then //if every single conflicting effect in a pcf is culled or a duplicate, then there's no chance of the player reloading it, so don't bother listing it
-									if PartCtrl_ProcessedPCFs[v][name2] and PartCtrl_DuplicateFx[v][name2] then
-										if listed_dupes[v] == nil then
-											this_listed_dupes[v] = PartCtrl_DuplicateFx[v][name2]
-										end
-									else
-										this_listed_dupes[v] = false
-										this_pcfs_added = this_pcfs_added + 1
+								if PartCtrl_ProcessedPCFs[v][name2] and PartCtrl_DuplicateFx[v][name2] then
+									if listed_dupes[v] == nil then
+										this_listed_dupes[v] = PartCtrl_DuplicateFx[v][name2]
 									end
-									if PartCtrl_CulledFx[v] and PartCtrl_CulledFx[v][name2] then
-										if listed_invalids[v] == nil then
-											this_listed_invalids[v] = true
-										end
-									else
-										this_listed_invalids[v] = false
+								else
+									this_listed_dupes[v] = false
+									this_pcfs_added = this_pcfs_added + 1
+								end
+								if PartCtrl_CulledFx[v] and PartCtrl_CulledFx[v][name2] then
+									if listed_invalids[v] == nil then
+										this_listed_invalids[v] = true
 									end
-									this_listed_pcfs[v] = true
-								//end
+								else
+									this_listed_invalids[v] = false
+								end
+								this_listed_pcfs[v] = true
 							end
 							if this_pcfs_added > 1 then
 								//Don't add conflict warnings for dupes unless there's at least 2 non-dupe fx with that name 

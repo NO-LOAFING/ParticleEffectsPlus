@@ -227,3 +227,182 @@ properties.Add("partctrl_dev_printparticleinfo", {
 
 	end
 })
+
+
+
+
+//Backwards compatibility
+
+properties.Add("partctrl_backcomp", {
+	MenuLabel = "Update Advanced Particle Controller effects to NEW ADDON NAME HERE", //TODO
+	Order = 89999,
+	PrependSpacer = true,
+	MenuIcon = "icon16/fire.png",
+	
+	Filter = function(self, ent, ply)
+
+		if !IsValid(ent) then return false end
+		if !gamemode.Call("CanProperty", ply, "partctrl_backcomp", ent) then return false end
+
+		local function CheckForChildFx(ent2)
+			if ent2.ParticleControl_FxForBackcomp then
+				for k, _ in pairs (ent2.ParticleControl_FxForBackcomp) do
+					if k.GetTargetEnt2 and k:GetTargetEnt2() == ent2 then return true end
+				end
+			end
+			for _, v in pairs (ent2:GetChildren()) do
+				local class = v:GetClass()
+				if class == "particlecontroller_normal" or class == "particlecontroller_proj" or class == "particlecontroller_tracer" then
+					return true
+				else
+					CheckForChildFx(v)
+				end
+			end
+		end
+
+		return CheckForChildFx(ent)
+
+	end,
+
+	Action = function(self, ent)
+
+		self:MsgStart()
+			net.WriteEntity( ent )
+		self:MsgEnd()
+
+	end,
+
+	Receive = function(self, length, ply)
+
+		local ent = net.ReadEntity()
+		if !IsValid(ent) or !IsValid(ply) or !properties.CanBeTargeted(ent, ply) or !self:Filter(ent, ply) then return end
+
+		local OldGameFx = {
+			["particles/achievement_cstrike.pcf"] = {pcf = "particles/achievement.pcf", path = "cstrike", badprefix = "cstrike_"},
+			["particles/fire_01_portal.pcf"] = {pcf = "particles/fire_02.pcf", path = "portal", badprefix = "portal_"},
+			["particles/blood_impact_tf2.pcf"] = {pcf = "particles/blood_impact.pcf", path = "tf", badprefix = "tf2_"},
+			["particles/explosion_ep2.pcf"] = {pcf = "particles/explosion.pcf", path = "hl2", badprefix = "ep2_", exceptions = {smoke_blackbillow = "particles/vistasmokev1.pcf"}}
+		}
+		local function FindPCFFromEffect(name)
+			local pcf, path
+			if string.StartsWith(name, "!UTILEFFECT!") then
+				name = string.TrimLeft(name, "!UTILEFFECT!")
+				pcf = "UtilFx"
+				for i = 1, 9 do
+					if string.find(name, "!FLAG" .. i .. "!") then name = string.Replace(name, "!FLAG" .. i .. "!", "") end
+					if string.find(name, "!COLOR" .. i .. "!") then name = string.Replace(name, "!COLOR" .. i .. "!", "") end
+					//TODO: store these and use them when restoring utilfx
+				end
+			else
+				//Get the first pcf containing this particle name; don't overthink it, the old addon had no concept of conflicting effect names
+				if !PartCtrl_PCFsByParticleName[string.lower(name)] then MsgN(name, " couldn't find PartCtrl_PCFsByParticleName") return end
+				for k, v in pairs (PartCtrl_PCFsByParticleName[string.lower(name)]) do
+					pcf = v
+					break
+				end
+				local old = OldGameFx[pcf]
+				if old then
+					//The old addon handled conflicting pcf and effect names by including custom-made pcfs with different file names
+					//and, when necessary, different effect names. Redirect these to use the correct game pcf instead.
+					name = string.TrimLeft(name, old.badprefix)
+					if old.exceptions and old.exceptions[name] then
+						pcf = old.exceptions[name]
+					else
+						pcf = old.pcf
+					end
+					path = old.path
+				else
+					if !PartCtrl_AllDataPCFs[pcf] then
+						path = PartCtrl_GamePCFs_DefaultPaths[pcf] //optional, can be nil
+					else
+						pcf = PartCtrl_AllDataPCFs[pcf].original_filename
+						path = PartCtrl_AllDataPCFs[pcf].path
+					end
+				end
+			end
+			return name, pcf, path
+		end
+
+		local function UpdateOldEffect(ent2)
+			if !IsValid(ent2) then return false end
+			local class = ent2:GetClass()
+			if class == "particlecontroller_normal" then
+
+				local name, pcf, path
+				name = ent2:GetEffectName()
+				name, pcf, path = FindPCFFromEffect(name)
+				MsgN(name, ", ", pcf, ", ", path, ", ", ent2:GetPlayer())
+				if name == nil then return end //TODO: return something else that lets us print an error message
+				local p = PartCtrl_SpawnParticle(ent2:GetPlayer(), ent2:GetPos(), name, pcf, path)
+				if IsValid(p) then
+					local t1 = ent2:GetTargetEnt()
+					local t2 = ent2:GetTargetEnt2()
+					if !IsValid(t2) then t2 = nil end
+					local c = ent2:GetColor()
+					if !(c.r == 0 and c.g == 0 and c.b == 0) then
+						if c.a == 1 then
+							c = Vector(c.r / 255, c.g / 255, c.b / 255)
+						else
+							c = Vector(c.r, c.g, c.b)
+						end
+					else
+						c = nil
+					end
+					local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
+					local done_first = false
+					for k, v in pairs (cpointtab) do
+						if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+							if !done_first or !t2 then
+								p:AttachToEntity(t1, k, ent2:GetAttachNum(), ent2:GetPlayer(), false)
+								done_first = true
+							else
+								p:AttachToEntity(t2, k, ent2:GetAttachNum2(), ent2:GetPlayer(), false)
+							end
+						elseif c and v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+							for i = 0, 2 do
+								if v["axis_" .. i] and v["axis_" .. i].colorpicker then
+									p.ParticleInfo[k].val = Vector(c)
+								end
+							end
+						end
+					end
+
+					//TODO: transfer over all other values
+					//RepeatRate
+					//RepeatSafety
+					//NumpadKey
+					//Active
+					//Toggle
+					//UtilEffectInfo (x = scale, y = magnitude, x = radius; also color/flags from earlier)
+
+					ent2:Remove()
+					return true
+				end
+
+			elseif class == "particlecontroller_proj" then
+
+			elseif class == "particlecontroller_tracer" then
+				
+			else
+				return false
+			end
+		end
+
+		local function CheckForChildFx(ent2)
+			if ent2.ParticleControl_FxForBackcomp then //TODO: this is serverside, change this
+				for k, _ in pairs (ent2.ParticleControl_FxForBackcomp) do
+					if k.GetTargetEnt2 and k:GetTargetEnt2() == ent2 then UpdateOldEffect(k) end
+				end
+			end
+			for _, v in pairs (ent2:GetChildren()) do
+				local class = v:GetClass()
+				if !UpdateOldEffect(v) then
+					CheckForChildFx(v)
+				end
+			end
+		end
+	
+		CheckForChildFx(ent)
+
+	end
+})

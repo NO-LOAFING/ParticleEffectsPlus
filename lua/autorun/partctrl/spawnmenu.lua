@@ -667,6 +667,8 @@ else
 			end
 
 			if str != "UtilFx" then
+				//Run GetDuplicateFx again, to rebuild PartCtrl_PCFsByParticleName for use by backcomp
+				PartCtrl_GetDuplicateFx()
 				//Make sure the reloaded effect is highest priority
 				//(not sure if this matters serverside, but better safe than sorry)
 				game.AddParticles(str)
