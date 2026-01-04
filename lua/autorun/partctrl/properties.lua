@@ -327,7 +327,6 @@ properties.Add("partctrl_backcomp", {
 			if !IsValid(ent2) then return false end
 			local class = ent2:GetClass()
 			if class == "particlecontroller_normal" then
-
 				local name, pcf, path
 				name = ent2:GetEffectName()
 				name, pcf, path = FindPCFFromEffect(name)
@@ -368,17 +367,43 @@ properties.Add("partctrl_backcomp", {
 						end
 					end
 
-					//TODO: transfer over all other values
-					//RepeatRate
-					//RepeatSafety
-					//NumpadKey
-					//Active
-					//Toggle
-					//UtilEffectInfo (x = scale, y = magnitude, x = radius; also color/flags from earlier)
+					local safety = ent2:GetRepeatSafety()
+					local rate = ent2:GetRepeatRate()
+					if rate == 0 then
+						//Effects set to not loop should be fine to carry over either way
+						p:SetLoopMode(0)
+						p:SetLoopDelay(0)
+						p:SetLoopSafety(safety)
+					elseif !safety then
+						//Because of the changes to how repeat safety works between the new and old addon (old addon only 
+						//disables the old effect every repeat, while new addon also completely cleans up the old effect), 
+						//we can't carry over the repeat rate 1-to-1 when repeat safety is enabled, or we'll break every 
+						//single continuous effect that was unknowingly set to have a repeat rate. It seems better to make 
+						//players fix the few fx they set to some deliberate repeat rate than it does to make them fix 
+						//*every single continuous effect*, so this is what we're going with.
+						p:SetLoopMode(2)
+						p:SetLoopDelay(rate)
+						p:SetLoopSafety(safety)
+					end
+
+					local key = ent2:GetNumpadKey()
+					p:SetNumpad(key)
+					p:SetNumpadStartOn(ent2:GetActive())
+					p:SetNumpadToggle(ent2:GetToggle())
+					//Update numpad funcs
+					numpad.Remove(p.NumDown)
+					numpad.Remove(p.NumUp)
+					p.NumDown = numpad.OnDown(ent2:GetPlayer(), key, "PartCtrl_Numpad", p, true)
+					p.NumUp = numpad.OnUp(ent2:GetPlayer(), key, "PartCtrl_Numpad", p, false)
+					//If the player is holding down the old key then let go of it
+					if self.NumpadKeyDown then
+						PartCtrlNumpadFunction(ent2:GetPlayer(), p, false)
+					end
+
+					//TODO: UtilEffectInfo (x = scale, y = magnitude, x = radius; also color/flags from earlier)
 				end
 				ent2:Remove()
 				return true //TODO: return something else that lets us print a success or error message
-
 			elseif class == "particlecontroller_proj" then
 
 			elseif class == "particlecontroller_tracer" then
