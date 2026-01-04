@@ -234,7 +234,7 @@ properties.Add("partctrl_dev_printparticleinfo", {
 //Backwards compatibility
 
 properties.Add("partctrl_backcomp", {
-	MenuLabel = "Update Advanced Particle Controller effects to NEW ADDON NAME HERE", //TODO
+	MenuLabel = "Update Adv Particle Control effects to NEW ADDON NAME HERE", //TODO
 	Order = 89999,
 	PrependSpacer = true,
 	MenuIcon = "icon16/fire.png",
@@ -284,17 +284,23 @@ properties.Add("partctrl_backcomp", {
 			["particles/explosion_ep2.pcf"] = {pcf = "particles/explosion.pcf", path = "hl2", badprefix = "ep2_", exceptions = {smoke_blackbillow = "particles/vistasmokev1.pcf"}}
 		}
 		local function FindPCFFromEffect(name)
-			local pcf, path
+			local pcf, path, utilfx
 			if string.StartsWith(name, "!UTILEFFECT!") then
 				name = string.TrimLeft(name, "!UTILEFFECT!")
 				pcf = "UtilFx"
+				utilfx = {}
 				for i = 1, 9 do
-					if string.find(name, "!FLAG" .. i .. "!") then name = string.Replace(name, "!FLAG" .. i .. "!", "") end
-					if string.find(name, "!COLOR" .. i .. "!") then name = string.Replace(name, "!COLOR" .. i .. "!", "") end
-					//TODO: store these and use them when restoring utilfx
+					if string.find(name, "!FLAG" .. i .. "!") then
+						name = string.Replace(name, "!FLAG" .. i .. "!", "")
+						utilfx.Flags = (utilfx.Flags or 0) + i
+					end
+					if string.find(name, "!COLOR" .. i .. "!") then
+						name = string.Replace(name, "!COLOR" .. i .. "!", "")
+						utilfx.Color = (utilfx.Color or 0) + i
+					end
 				end
 			else
-				//Get the first pcf containing this particle name; don't overthink it, the old addon had no concept of conflicting effect names
+				//Get the first pcf containing this particle name; don't overthink it, the old addon had no concept of multiple fx sharing a name
 				if !PartCtrl_PCFsByParticleName[string.lower(name)] then MsgN(name, " couldn't find PartCtrl_PCFsByParticleName") return end
 				for k, v in pairs (PartCtrl_PCFsByParticleName[string.lower(name)]) do
 					pcf = v
@@ -320,16 +326,16 @@ properties.Add("partctrl_backcomp", {
 					end
 				end
 			end
-			return string.lower(name), pcf, path
+			return string.lower(name), pcf, path, utilfx
 		end
 
 		local function UpdateOldEffect(ent2)
 			if !IsValid(ent2) then return false end
 			local class = ent2:GetClass()
 			if class == "particlecontroller_normal" then
-				local name, pcf, path
+				local name, pcf, path, utilfx
 				name = ent2:GetEffectName()
-				name, pcf, path = FindPCFFromEffect(name)
+				name, pcf, path, utilfx = FindPCFFromEffect(name)
 				MsgN(name, ", ", pcf, ", ", path, ", ", ent2:GetPlayer())
 				if name == nil then return true end //TODO: return something else that lets us print an error message
 				local p = PartCtrl_SpawnParticle(ent2:GetPlayer(), ent2:GetPos(), name, pcf, path)
@@ -374,7 +380,7 @@ properties.Add("partctrl_backcomp", {
 						p:SetLoopMode(0)
 						p:SetLoopDelay(0)
 						p:SetLoopSafety(safety)
-					elseif !safety then
+					elseif !safety or utilfx then
 						//Because of the changes to how repeat safety works between the new and old addon (old addon only 
 						//disables the old effect every repeat, while new addon also completely cleans up the old effect), 
 						//we can't carry over the repeat rate 1-to-1 when repeat safety is enabled, or we'll break every 
@@ -400,7 +406,31 @@ properties.Add("partctrl_backcomp", {
 						PartCtrlNumpadFunction(ent2:GetPlayer(), p, false)
 					end
 
-					//TODO: UtilEffectInfo (x = scale, y = magnitude, x = radius; also color/flags from earlier)
+					if utilfx then
+						local info = ent2:GetUtilEffectInfo()
+						utilfx.Scale = info.x
+						utilfx.Magnitude = info.y
+						utilfx.Radius = info.z
+						if string.find(name, "tracer") then utilfx.Scale = 5000 end //hard-coded scale/mag values from old effect func
+						if string.find(name, "shakeropes") then utilfx.Magnitude = utilfx.Magnitude * 20 end
+						if string.find(name, "thumperdust") then utilfx.Scale = utilfx.Scale * 50 end
+						if string.find(name, "bloodspray") then utilfx.Scale = utilfx.Scale * 4  end
+						if string.find(name, "explosion") then utilfx.Flags = nil end //in the old addon, explosion's 'silent' flag was optional; this doesn't translate well
+						if string.find(name, "muzzleflash") and utilfx.Flags == 3 then utilfx.Flags = 4 end //3 is identical to 4, and is commented out in the new addon
+						for utilk, utilv in pairs (utilfx) do
+							for k, v in pairs (cpointtab) do
+								if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+									for k2, v2 in pairs (v.axis) do
+										//Find an axis control with a matching name (not label) and apply the value.
+										//I definitely knew all these overly specific name values would be good for something eventually!
+										if string.find(v2.name, utilk) then
+											p.ParticleInfo[k].val[v2.axis+1] = utilv
+										end
+									end
+								end
+							end
+						end
+					end
 				end
 				ent2:Remove()
 				return true //TODO: return something else that lets us print a success or error message

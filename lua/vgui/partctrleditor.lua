@@ -777,6 +777,7 @@ function PANEL:RebuildControls()
 									function drop.PerformLayout(_, w, h)
 										drop.Label:SetWide(w / 2.4)
 									end
+									done_first = true
 								elseif tab.checkboxes then
 									local checkboxes = {}
 									for checkk, checkv in SortedPairs (tab.checkboxes) do
@@ -797,6 +798,7 @@ function PANEL:RebuildControls()
 											ent2:DoInput("cpoint_axis_val", k, i, total)
 										end
 									end
+									done_first = true
 								elseif tab.textentry then
 									if tab.textentry.info and !done_first then
 										local text = vgui.Create("DLabel", pnl)
