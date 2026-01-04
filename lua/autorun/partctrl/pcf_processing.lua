@@ -2495,7 +2495,7 @@ function PartCtrl_ProcessPCF(filename)
 													processedv[k].name = "child " .. childtab2.child .. " | " .. processedv[k].name
 												end
 												if v.label then
-													processedv[k].label_childname = processedv[k].label_childname or (childtab2.child .. " ")
+													processedv[k].label_childname = processedv[k].label_childname or ("'" .. childtab2.child .. "' ")
 												end
 											end
 											if istable(cpoints2[i][processedk]) then
@@ -2518,7 +2518,7 @@ function PartCtrl_ProcessPCF(filename)
 										processedv[k].name = "child " .. childtab.child .. " | " .. processedv[k].name
 									end
 									if v.label then
-										processedv[k].label_childname = processedv[k].label_childname or (childtab.child .. " ")
+										processedv[k].label_childname = processedv[k].label_childname or ("'" .. childtab.child .. "' ")
 									end
 								end
 								if istable(cpoints[i][processedk]) then
