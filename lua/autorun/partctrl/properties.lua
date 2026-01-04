@@ -320,7 +320,7 @@ properties.Add("partctrl_backcomp", {
 					end
 				end
 			end
-			return name, pcf, path
+			return string.lower(name), pcf, path
 		end
 
 		local function UpdateOldEffect(ent2)
@@ -332,7 +332,7 @@ properties.Add("partctrl_backcomp", {
 				name = ent2:GetEffectName()
 				name, pcf, path = FindPCFFromEffect(name)
 				MsgN(name, ", ", pcf, ", ", path, ", ", ent2:GetPlayer())
-				if name == nil then return end //TODO: return something else that lets us print an error message
+				if name == nil then return true end //TODO: return something else that lets us print an error message
 				local p = PartCtrl_SpawnParticle(ent2:GetPlayer(), ent2:GetPos(), name, pcf, path)
 				if IsValid(p) then
 					local t1 = ent2:GetTargetEnt()
@@ -362,6 +362,7 @@ properties.Add("partctrl_backcomp", {
 							for i = 0, 2 do
 								if v["axis_" .. i] and v["axis_" .. i].colorpicker then
 									p.ParticleInfo[k].val = Vector(c)
+									break
 								end
 							end
 						end
@@ -374,10 +375,9 @@ properties.Add("partctrl_backcomp", {
 					//Active
 					//Toggle
 					//UtilEffectInfo (x = scale, y = magnitude, x = radius; also color/flags from earlier)
-
-					ent2:Remove()
-					return true
 				end
+				ent2:Remove()
+				return true //TODO: return something else that lets us print a success or error message
 
 			elseif class == "particlecontroller_proj" then
 
