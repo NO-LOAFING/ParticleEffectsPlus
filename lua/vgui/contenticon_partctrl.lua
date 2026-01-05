@@ -780,7 +780,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 
 			if self.reset then
 				//Remove all info for this particle, recreate it from scratch next frame
-				//(this is set by reloading a pcf with the partctrl_reloadpcf concommand)
+				//(this is set by reloading a pcf with the sv_partctrl_reloadpcf concommand)
 				PartCtrl_IconFx[pcf][name] = nil
 			end
 
@@ -934,7 +934,7 @@ function PANEL:OpenMenu()
 		menu:AddSpacer()
 
 		menu:AddOption("Reload " .. pcf, function()
-			RunConsoleCommand("partctrl_reloadpcf", pcf)
+			RunConsoleCommand("sv_partctrl_reloadpcf", pcf)
 		end)
 
 		if pcf != "UtilFx" then

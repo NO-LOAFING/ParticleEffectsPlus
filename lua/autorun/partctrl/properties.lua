@@ -231,10 +231,178 @@ properties.Add("partctrl_dev_printparticleinfo", {
 
 
 
-//Backwards compatibility
+//Backwards compatibility - commands to update fx from the old addon to the new addon
+
+local OldGameFx = {
+	["particles/achievement_cstrike.pcf"] = {pcf = "particles/achievement.pcf", path = "cstrike", badprefix = "cstrike_"},
+	["particles/fire_01_portal.pcf"] = {pcf = "particles/fire_02.pcf", path = "portal", badprefix = "portal_"},
+	["particles/blood_impact_tf2.pcf"] = {pcf = "particles/blood_impact.pcf", path = "tf", badprefix = "tf2_"},
+	["particles/explosion_ep2.pcf"] = {pcf = "particles/explosion.pcf", path = "hl2", badprefix = "ep2_", exceptions = {smoke_blackbillow = "particles/vistasmokev1.pcf"}}
+}
+local function FindPCFFromEffect(name)
+	if CLIENT then return end
+	local pcf, path, utilfx
+	if string.StartsWith(name, "!UTILEFFECT!") then
+		name = string.TrimLeft(name, "!UTILEFFECT!")
+		pcf = "UtilFx"
+		utilfx = {}
+		for i = 1, 9 do
+			if string.find(name, "!FLAG" .. i .. "!") then
+				name = string.Replace(name, "!FLAG" .. i .. "!", "")
+				utilfx.Flags = (utilfx.Flags or 0) + i
+			end
+			if string.find(name, "!COLOR" .. i .. "!") then
+				name = string.Replace(name, "!COLOR" .. i .. "!", "")
+				utilfx.Color = (utilfx.Color or 0) + i
+			end
+		end
+	else
+		//Get the first pcf containing this particle name; don't overthink it, the old addon had no concept of multiple fx sharing a name
+		if !PartCtrl_PCFsByParticleName[string.lower(name)] then MsgN(name, " couldn't find PartCtrl_PCFsByParticleName") return end
+		for k, v in pairs (PartCtrl_PCFsByParticleName[string.lower(name)]) do
+			pcf = v
+			break
+		end
+		local old = OldGameFx[pcf]
+		if old then
+			//The old addon handled conflicting pcf and effect names by including custom-made pcfs with different file names
+			//and, when necessary, different effect names. Redirect these to use the correct game pcf instead.
+			name = string.TrimLeft(name, old.badprefix)
+			if old.exceptions and old.exceptions[name] then
+				pcf = old.exceptions[name]
+			else
+				pcf = old.pcf
+			end
+			path = old.path
+		else
+			if !PartCtrl_AllDataPCFs[pcf] then
+				path = PartCtrl_GamePCFs_DefaultPaths[pcf] //optional, can be nil
+			else
+				path = PartCtrl_AllDataPCFs[pcf].path
+				pcf = PartCtrl_AllDataPCFs[pcf].original_filename
+			end
+		end
+	end
+	return string.lower(name), pcf, path, utilfx
+end
+
+local function UpdateOldEffect(ent2)
+	if CLIENT then return end
+	if !IsValid(ent2) then return nil end
+	local class = ent2:GetClass()
+	if class == "particlecontroller_normal" then
+		local name, pcf, path, utilfx
+		name = ent2:GetEffectName()
+		name, pcf, path, utilfx = FindPCFFromEffect(name)
+		//MsgN(name, ", ", pcf, ", ", path, ", ", ent2:GetPlayer())
+		if name == nil then return false end
+		local p = PartCtrl_SpawnParticle(ent2:GetPlayer(), ent2:GetPos(), name, pcf, path)
+		if IsValid(p) then
+			local t1 = ent2:GetTargetEnt()
+			local t2 = ent2:GetTargetEnt2()
+			if !IsValid(t2) then t2 = nil end
+			local c = ent2:GetColor()
+			if !(c.r == 0 and c.g == 0 and c.b == 0) then
+				if c.a == 1 then
+					c = Vector(c.r / 255, c.g / 255, c.b / 255)
+				else
+					c = Vector(c.r, c.g, c.b)
+				end
+			else
+				c = nil
+			end
+			local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
+			local done_first = false
+			for k, v in pairs (cpointtab) do
+				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+					if !done_first or !t2 then
+						p:AttachToEntity(t1, k, ent2:GetAttachNum(), ent2:GetPlayer(), false)
+						done_first = true
+					else
+						p:AttachToEntity(t2, k, ent2:GetAttachNum2(), ent2:GetPlayer(), false)
+					end
+				elseif c and v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+					for i = 0, 2 do
+						if v["axis_" .. i] and v["axis_" .. i].colorpicker then
+							p.ParticleInfo[k].val = Vector(c)
+							break
+						end
+					end
+				end
+			end
+
+			local safety = ent2:GetRepeatSafety()
+			local rate = ent2:GetRepeatRate()
+			if rate == 0 then
+				//Effects set to not loop should be fine to carry over either way
+				p:SetLoopMode(0)
+				p:SetLoopDelay(0)
+				p:SetLoopSafety(safety)
+			elseif !safety or utilfx then
+				//Because of the changes to how repeat safety works between the new and old addon (old addon only 
+				//disables the old effect every repeat, while new addon also completely cleans up the old effect), 
+				//we can't carry over the repeat rate 1-to-1 when repeat safety is enabled, or we'll break every 
+				//single continuous effect that was unknowingly set to have a repeat rate. It seems better to make 
+				//players fix the few fx they set to some deliberate repeat rate than it does to make them fix 
+				//*every single continuous effect*, so this is what we're going with.
+				p:SetLoopMode(2)
+				p:SetLoopDelay(rate)
+				p:SetLoopSafety(safety)
+			end
+
+			local key = ent2:GetNumpadKey()
+			p:SetNumpad(key)
+			p:SetNumpadStartOn(ent2:GetActive())
+			p:SetNumpadToggle(ent2:GetToggle())
+			//Update numpad funcs
+			numpad.Remove(p.NumDown)
+			numpad.Remove(p.NumUp)
+			p.NumDown = numpad.OnDown(ent2:GetPlayer(), key, "PartCtrl_Numpad", p, true)
+			p.NumUp = numpad.OnUp(ent2:GetPlayer(), key, "PartCtrl_Numpad", p, false)
+			//If the player is holding down the old key then let go of it
+			if p.NumpadKeyDown then
+				PartCtrlNumpadFunction(ent2:GetPlayer(), p, false)
+			end
+
+			if utilfx then
+				local info = ent2:GetUtilEffectInfo()
+				utilfx.Scale = info.x
+				utilfx.Magnitude = info.y
+				utilfx.Radius = info.z
+				if string.find(name, "tracer") then utilfx.Scale = 5000 end //hard-coded scale/mag values from old effect func
+				if string.find(name, "shakeropes") then utilfx.Magnitude = utilfx.Magnitude * 20 end
+				if string.find(name, "thumperdust") then utilfx.Scale = utilfx.Scale * 50 end
+				if string.find(name, "bloodspray") then utilfx.Scale = utilfx.Scale * 4  end
+				if string.find(name, "explosion") then utilfx.Flags = nil end //in the old addon, explosion's 'silent' flag was optional; this doesn't translate well
+				if string.find(name, "muzzleflash") and utilfx.Flags == 3 then utilfx.Flags = 4 end //3 is identical to 4, and is commented out in the new addon
+				for utilk, utilv in pairs (utilfx) do
+					for k, v in pairs (cpointtab) do
+						if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+							for k2, v2 in pairs (v.axis) do
+								//Find an axis control with a matching name (not label) and apply the value.
+								//I definitely knew all these overly specific name values would be good for something eventually!
+								if string.find(v2.name, utilk) then
+									p.ParticleInfo[k].val[v2.axis+1] = utilv
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+		ent2:Remove()
+		return IsValid(p)
+	elseif class == "particlecontroller_proj" then
+
+	elseif class == "particlecontroller_tracer" then
+		
+	else
+		return nil
+	end
+end
 
 properties.Add("partctrl_backcomp", {
-	MenuLabel = "Update Adv Particle Control effects to NEW ADDON NAME HERE", //TODO
+	MenuLabel = "Convert Adv. Particle Control effects to COOL NEW ADDON NAME HERE", //TODO
 	Order = 89999,
 	PrependSpacer = true,
 	MenuIcon = "icon16/fire.png",
@@ -255,11 +423,10 @@ properties.Add("partctrl_backcomp", {
 				if class == "particlecontroller_normal" or class == "particlecontroller_proj" or class == "particlecontroller_tracer" then
 					return true
 				else
-					CheckForChildFx(v)
+					return CheckForChildFx(v)
 				end
 			end
 		end
-
 		return CheckForChildFx(ent)
 
 	end,
@@ -277,187 +444,65 @@ properties.Add("partctrl_backcomp", {
 		local ent = net.ReadEntity()
 		if !IsValid(ent) or !IsValid(ply) or !properties.CanBeTargeted(ent, ply) or !self:Filter(ent, ply) then return end
 
-		local OldGameFx = {
-			["particles/achievement_cstrike.pcf"] = {pcf = "particles/achievement.pcf", path = "cstrike", badprefix = "cstrike_"},
-			["particles/fire_01_portal.pcf"] = {pcf = "particles/fire_02.pcf", path = "portal", badprefix = "portal_"},
-			["particles/blood_impact_tf2.pcf"] = {pcf = "particles/blood_impact.pcf", path = "tf", badprefix = "tf2_"},
-			["particles/explosion_ep2.pcf"] = {pcf = "particles/explosion.pcf", path = "hl2", badprefix = "ep2_", exceptions = {smoke_blackbillow = "particles/vistasmokev1.pcf"}}
-		}
-		local function FindPCFFromEffect(name)
-			local pcf, path, utilfx
-			if string.StartsWith(name, "!UTILEFFECT!") then
-				name = string.TrimLeft(name, "!UTILEFFECT!")
-				pcf = "UtilFx"
-				utilfx = {}
-				for i = 1, 9 do
-					if string.find(name, "!FLAG" .. i .. "!") then
-						name = string.Replace(name, "!FLAG" .. i .. "!", "")
-						utilfx.Flags = (utilfx.Flags or 0) + i
-					end
-					if string.find(name, "!COLOR" .. i .. "!") then
-						name = string.Replace(name, "!COLOR" .. i .. "!", "")
-						utilfx.Color = (utilfx.Color or 0) + i
-					end
-				end
-			else
-				//Get the first pcf containing this particle name; don't overthink it, the old addon had no concept of multiple fx sharing a name
-				if !PartCtrl_PCFsByParticleName[string.lower(name)] then MsgN(name, " couldn't find PartCtrl_PCFsByParticleName") return end
-				for k, v in pairs (PartCtrl_PCFsByParticleName[string.lower(name)]) do
-					pcf = v
-					break
-				end
-				local old = OldGameFx[pcf]
-				if old then
-					//The old addon handled conflicting pcf and effect names by including custom-made pcfs with different file names
-					//and, when necessary, different effect names. Redirect these to use the correct game pcf instead.
-					name = string.TrimLeft(name, old.badprefix)
-					if old.exceptions and old.exceptions[name] then
-						pcf = old.exceptions[name]
-					else
-						pcf = old.pcf
-					end
-					path = old.path
-				else
-					if !PartCtrl_AllDataPCFs[pcf] then
-						path = PartCtrl_GamePCFs_DefaultPaths[pcf] //optional, can be nil
-					else
-						pcf = PartCtrl_AllDataPCFs[pcf].original_filename
-						path = PartCtrl_AllDataPCFs[pcf].path
-					end
-				end
-			end
-			return string.lower(name), pcf, path, utilfx
-		end
-
-		local function UpdateOldEffect(ent2)
-			if !IsValid(ent2) then return false end
-			local class = ent2:GetClass()
-			if class == "particlecontroller_normal" then
-				local name, pcf, path, utilfx
-				name = ent2:GetEffectName()
-				name, pcf, path, utilfx = FindPCFFromEffect(name)
-				MsgN(name, ", ", pcf, ", ", path, ", ", ent2:GetPlayer())
-				if name == nil then return true end //TODO: return something else that lets us print an error message
-				local p = PartCtrl_SpawnParticle(ent2:GetPlayer(), ent2:GetPos(), name, pcf, path)
-				if IsValid(p) then
-					local t1 = ent2:GetTargetEnt()
-					local t2 = ent2:GetTargetEnt2()
-					if !IsValid(t2) then t2 = nil end
-					local c = ent2:GetColor()
-					if !(c.r == 0 and c.g == 0 and c.b == 0) then
-						if c.a == 1 then
-							c = Vector(c.r / 255, c.g / 255, c.b / 255)
-						else
-							c = Vector(c.r, c.g, c.b)
-						end
-					else
-						c = nil
-					end
-					local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
-					local done_first = false
-					for k, v in pairs (cpointtab) do
-						if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
-							if !done_first or !t2 then
-								p:AttachToEntity(t1, k, ent2:GetAttachNum(), ent2:GetPlayer(), false)
-								done_first = true
-							else
-								p:AttachToEntity(t2, k, ent2:GetAttachNum2(), ent2:GetPlayer(), false)
-							end
-						elseif c and v.mode == PARTCTRL_CPOINT_MODE_AXIS then
-							for i = 0, 2 do
-								if v["axis_" .. i] and v["axis_" .. i].colorpicker then
-									p.ParticleInfo[k].val = Vector(c)
-									break
-								end
-							end
-						end
-					end
-
-					local safety = ent2:GetRepeatSafety()
-					local rate = ent2:GetRepeatRate()
-					if rate == 0 then
-						//Effects set to not loop should be fine to carry over either way
-						p:SetLoopMode(0)
-						p:SetLoopDelay(0)
-						p:SetLoopSafety(safety)
-					elseif !safety or utilfx then
-						//Because of the changes to how repeat safety works between the new and old addon (old addon only 
-						//disables the old effect every repeat, while new addon also completely cleans up the old effect), 
-						//we can't carry over the repeat rate 1-to-1 when repeat safety is enabled, or we'll break every 
-						//single continuous effect that was unknowingly set to have a repeat rate. It seems better to make 
-						//players fix the few fx they set to some deliberate repeat rate than it does to make them fix 
-						//*every single continuous effect*, so this is what we're going with.
-						p:SetLoopMode(2)
-						p:SetLoopDelay(rate)
-						p:SetLoopSafety(safety)
-					end
-
-					local key = ent2:GetNumpadKey()
-					p:SetNumpad(key)
-					p:SetNumpadStartOn(ent2:GetActive())
-					p:SetNumpadToggle(ent2:GetToggle())
-					//Update numpad funcs
-					numpad.Remove(p.NumDown)
-					numpad.Remove(p.NumUp)
-					p.NumDown = numpad.OnDown(ent2:GetPlayer(), key, "PartCtrl_Numpad", p, true)
-					p.NumUp = numpad.OnUp(ent2:GetPlayer(), key, "PartCtrl_Numpad", p, false)
-					//If the player is holding down the old key then let go of it
-					if self.NumpadKeyDown then
-						PartCtrlNumpadFunction(ent2:GetPlayer(), p, false)
-					end
-
-					if utilfx then
-						local info = ent2:GetUtilEffectInfo()
-						utilfx.Scale = info.x
-						utilfx.Magnitude = info.y
-						utilfx.Radius = info.z
-						if string.find(name, "tracer") then utilfx.Scale = 5000 end //hard-coded scale/mag values from old effect func
-						if string.find(name, "shakeropes") then utilfx.Magnitude = utilfx.Magnitude * 20 end
-						if string.find(name, "thumperdust") then utilfx.Scale = utilfx.Scale * 50 end
-						if string.find(name, "bloodspray") then utilfx.Scale = utilfx.Scale * 4  end
-						if string.find(name, "explosion") then utilfx.Flags = nil end //in the old addon, explosion's 'silent' flag was optional; this doesn't translate well
-						if string.find(name, "muzzleflash") and utilfx.Flags == 3 then utilfx.Flags = 4 end //3 is identical to 4, and is commented out in the new addon
-						for utilk, utilv in pairs (utilfx) do
-							for k, v in pairs (cpointtab) do
-								if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
-									for k2, v2 in pairs (v.axis) do
-										//Find an axis control with a matching name (not label) and apply the value.
-										//I definitely knew all these overly specific name values would be good for something eventually!
-										if string.find(v2.name, utilk) then
-											p.ParticleInfo[k].val[v2.axis+1] = utilv
-										end
-									end
-								end
-							end
-						end
-					end
-				end
-				ent2:Remove()
-				return true //TODO: return something else that lets us print a success or error message
-			elseif class == "particlecontroller_proj" then
-
-			elseif class == "particlecontroller_tracer" then
-				
-			else
-				return false
-			end
-		end
-
+		local results = {}
 		local function CheckForChildFx(ent2)
 			if ent2.ParticleControl_FxForBackcomp then //TODO: this is serverside, change this
 				for k, _ in pairs (ent2.ParticleControl_FxForBackcomp) do
-					if k.GetTargetEnt2 and k:GetTargetEnt2() == ent2 then UpdateOldEffect(k) end
+					if k.GetTargetEnt2 and k:GetTargetEnt2() == ent2 then 
+						local result = UpdateOldEffect(k)
+						if isbool(result) then
+							results[result] = (results[result] or 0) + 1
+						end
+					end
 				end
 			end
 			for _, v in pairs (ent2:GetChildren()) do
 				local class = v:GetClass()
-				if !UpdateOldEffect(v) then
+				local result = UpdateOldEffect(v)
+				if isbool(result) then
+					results[result] = (results[result] or 0) + 1
+				else
 					CheckForChildFx(v)
 				end
 			end
 		end
-	
 		CheckForChildFx(ent)
+		//Show on-screen notifications for all fx we converted or failed to convert
+		ply:SendLua("surface.PlaySound('common/wpn_select.wav')")
+		if results[true] then
+			ply:SendLua("GAMEMODE:AddNotify('Successfully converted " .. results[true] .. " effect(s)!', NOTIFY_GENERIC, 4)")
+			ply:SendLua("surface.PlaySound('ambient/water/drip" .. math.random(1, 4) .. ".wav')")
+		end
+		if results[false] then
+			ply:SendLua("GAMEMODE:AddNotify('Failed to convert " .. results[false] .. " effect(s)!', NOTIFY_ERROR, 4)")
+			ply:SendLua("surface.PlaySound('buttons/button11.wav')")
+		end
 
 	end
 })
+
+if SERVER then
+	concommand.Add("sv_partctrl_backcomp_convert_all", function(ply, cmd, args)
+		//Only let server owners run this command because it converts everyone's spawned ents
+		if !game.SinglePlayer() and IsValid(ply) and !ply:IsListenServerHost() and !ply:IsSuperAdmin() then
+			return false
+		end
+		local results = {}
+		for _, ent in pairs (ents.GetAll()) do
+			local result = UpdateOldEffect(ent)
+			if isbool(result) then
+				results[result] = (results[result] or 0) + 1
+			end
+		end
+		//Show on-screen notifications for all fx we converted or failed to convert
+		ply:SendLua("surface.PlaySound('common/wpn_select.wav')")
+		if results[true] then
+			ply:SendLua("GAMEMODE:AddNotify('Successfully converted " .. results[true] .. " effect(s)!', NOTIFY_GENERIC, 4)")
+			ply:SendLua("surface.PlaySound('ambient/water/drip" .. math.random(1, 4) .. ".wav')")
+		end
+		if results[false] then
+			ply:SendLua("GAMEMODE:AddNotify('Failed to convert " .. results[false] .. " effect(s)!', NOTIFY_ERROR, 4)")
+			ply:SendLua("surface.PlaySound('buttons/button11.wav')")
+		end
+	end, nil, "Update all Advanced Particle Controller effects on the map to COOL NEW ADDON NAME HERE effects") //TODO
+end

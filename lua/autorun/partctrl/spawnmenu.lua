@@ -179,7 +179,7 @@ if CLIENT then
 						//developer control to reload a .pcf file manually; we want this for utilfx too just in case one of the list entries was edited
 						if GetConVarNumber("developer") >= 1 then
 							menu:AddOption("Reload UtilFx", function()
-								RunConsoleCommand("partctrl_reloadpcf", "UtilFx")
+								RunConsoleCommand("sv_partctrl_reloadpcf", "UtilFx")
 							end)
 						end
 
@@ -237,7 +237,7 @@ if CLIENT then
 								menu:AddSpacer()
 
 								menu:AddOption("Reload " .. filename2, function()
-									RunConsoleCommand("partctrl_reloadpcf", filename2)
+									RunConsoleCommand("sv_partctrl_reloadpcf", filename2)
 								end)
 							end
 
@@ -686,7 +686,7 @@ else
 
 	util.AddNetworkString("PartCtrl_ReloadPCF_SendToCl")
 
-	concommand.Add("partctrl_reloadpcf", function(ply, cmd, args)
+	concommand.Add("sv_partctrl_reloadpcf", function(ply, cmd, args)
 		//Only let server owners run this command cause it can lag everyone
 		//Mostly copied from gmod's lua/autorun/developer_functions.lua (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/autorun/developer_functions.lua#L79)
 		if !game.SinglePlayer() and IsValid(ply) and !ply:IsListenServerHost() and !ply:IsSuperAdmin() then
