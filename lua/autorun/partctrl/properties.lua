@@ -286,50 +286,90 @@ local function FindPCFFromEffect(name)
 	return string.lower(name), pcf, path, utilfx
 end
 
+//All this stuff gets reused in every conversion func, so make a separate function for it
+local function UpdateColorAndUtilFx(p, c, utilfx, info, cpointtab, name)
+	if IsColor(c) then
+		if !(c.r == 0 and c.g == 0 and c.b == 0) then
+			if c.a == 1 then
+				c = Vector(c.r / 255, c.g / 255, c.b / 255)
+			else
+				c = Vector(c.r, c.g, c.b)
+			end
+		else
+			c = nil
+		end
+	elseif c == Vector(0,0,0) then
+		c = nil
+	end
+
+	if utilfx then
+		if info then
+			utilfx.Scale = info.x
+			utilfx.Magnitude = info.y
+			utilfx.Radius = info.z
+		end
+		if string.find(name, "tracer") then utilfx.Scale = 5000 end //hard-coded scale/mag values from old effect func
+		if string.find(name, "shakeropes") then utilfx.Magnitude = utilfx.Magnitude * 20 end
+		if string.find(name, "thumperdust") then utilfx.Scale = utilfx.Scale * 50 end
+		if string.find(name, "bloodspray") then utilfx.Scale = utilfx.Scale * 4  end
+		if string.find(name, "explosion") then utilfx.Flags = nil end //in the old addon, explosion's 'silent' flag was optional; this doesn't translate well
+		if string.find(name, "muzzleflash") and utilfx.Flags == 3 then utilfx.Flags = 4 end //3 is identical to 4, and is commented out in the new addon
+	end
+
+	for k, v in pairs (cpointtab) do
+		if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+			if c then
+				for i = 0, 2 do
+					if v["axis_" .. i] and v["axis_" .. i].colorpicker then
+						p.ParticleInfo[k].val = Vector(c)
+						break
+					end
+				end
+			end
+			if utilfx then
+				for k2, v2 in pairs (v.axis) do
+					for utilk, utilv in pairs (utilfx) do
+						//Find an axis control with a matching name (not label) and apply the value.
+						//I definitely knew all these overly specific name values would be good for something eventually!
+						if string.find(v2.name, utilk) then
+							p.ParticleInfo[k].val[v2.axis+1] = utilv
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
 local function UpdateOldEffect(ent2)
 	if CLIENT then return end
 	if !IsValid(ent2) then return nil end
 	local class = ent2:GetClass()
 	if class == "particlecontroller_normal" then
+		local ply = ent2:GetPlayer()
 		local name, pcf, path, utilfx
 		name = ent2:GetEffectName()
 		name, pcf, path, utilfx = FindPCFFromEffect(name)
-		//MsgN(name, ", ", pcf, ", ", path, ", ", ent2:GetPlayer())
-		if name == nil then return false end
-		local p = PartCtrl_SpawnParticle(ent2:GetPlayer(), ent2:GetPos(), name, pcf, path)
+		//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
+		local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), name, pcf, path)
 		if IsValid(p) then
 			local t1 = ent2:GetTargetEnt()
 			local t2 = ent2:GetTargetEnt2()
 			if !IsValid(t2) then t2 = nil end
-			local c = ent2:GetColor()
-			if !(c.r == 0 and c.g == 0 and c.b == 0) then
-				if c.a == 1 then
-					c = Vector(c.r / 255, c.g / 255, c.b / 255)
-				else
-					c = Vector(c.r, c.g, c.b)
-				end
-			else
-				c = nil
-			end
+
 			local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
 			local done_first = false
 			for k, v in pairs (cpointtab) do
 				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
 					if !done_first or !t2 then
-						p:AttachToEntity(t1, k, ent2:GetAttachNum(), ent2:GetPlayer(), false)
+						p:AttachToEntity(t1, k, ent2:GetAttachNum(), ply, false)
 						done_first = true
 					else
-						p:AttachToEntity(t2, k, ent2:GetAttachNum2(), ent2:GetPlayer(), false)
-					end
-				elseif c and v.mode == PARTCTRL_CPOINT_MODE_AXIS then
-					for i = 0, 2 do
-						if v["axis_" .. i] and v["axis_" .. i].colorpicker then
-							p.ParticleInfo[k].val = Vector(c)
-							break
-						end
+						p:AttachToEntity(t2, k, ent2:GetAttachNum2(), ply, false)
 					end
 				end
 			end
+			UpdateColorAndUtilFx(p, ent2:GetColor(), utilfx, ent2:GetUtilEffectInfo(), cpointtab, name)
 
 			local safety = ent2:GetRepeatSafety()
 			local rate = ent2:GetRepeatRate()
@@ -357,54 +397,113 @@ local function UpdateOldEffect(ent2)
 			//Update numpad funcs
 			numpad.Remove(p.NumDown)
 			numpad.Remove(p.NumUp)
-			p.NumDown = numpad.OnDown(ent2:GetPlayer(), key, "PartCtrl_Numpad", p, true)
-			p.NumUp = numpad.OnUp(ent2:GetPlayer(), key, "PartCtrl_Numpad", p, false)
-			//If the player is holding down the old key then let go of it
-			if p.NumpadKeyDown then
-				PartCtrlNumpadFunction(ent2:GetPlayer(), p, false)
-			end
-
-			if utilfx then
-				local info = ent2:GetUtilEffectInfo()
-				utilfx.Scale = info.x
-				utilfx.Magnitude = info.y
-				utilfx.Radius = info.z
-				if string.find(name, "tracer") then utilfx.Scale = 5000 end //hard-coded scale/mag values from old effect func
-				if string.find(name, "shakeropes") then utilfx.Magnitude = utilfx.Magnitude * 20 end
-				if string.find(name, "thumperdust") then utilfx.Scale = utilfx.Scale * 50 end
-				if string.find(name, "bloodspray") then utilfx.Scale = utilfx.Scale * 4  end
-				if string.find(name, "explosion") then utilfx.Flags = nil end //in the old addon, explosion's 'silent' flag was optional; this doesn't translate well
-				if string.find(name, "muzzleflash") and utilfx.Flags == 3 then utilfx.Flags = 4 end //3 is identical to 4, and is commented out in the new addon
-				for utilk, utilv in pairs (utilfx) do
-					for k, v in pairs (cpointtab) do
-						if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
-							for k2, v2 in pairs (v.axis) do
-								//Find an axis control with a matching name (not label) and apply the value.
-								//I definitely knew all these overly specific name values would be good for something eventually!
-								if string.find(v2.name, utilk) then
-									p.ParticleInfo[k].val[v2.axis+1] = utilv
-								end
-							end
-						end
-					end
-				end
-			end
+			p.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", p, true)
+			p.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", p, false)
 		end
 		ent2:Remove()
 		return IsValid(p)
-	elseif class == "particlecontroller_proj" then
-
 	elseif class == "particlecontroller_tracer" then
+		local ply = ent2:GetPlayer()
+		if !gamemode.Call("PlayerSpawnSENT", ply, "ent_partctrl_sfx_tracer") then return end
+		local s = ents.Create("ent_partctrl_sfx_tracer")
+		if IsValid(s) then
+			s:SetPos(ent2:GetPos())
+			s.IsBlank = true
+			s.SetCreator(ply)
+			s:Spawn()
+			s:AttachToEntity(ent2:GetTargetEnt(), k, ent2:GetAttachNum(), ply, false)
+
+			//Tracer effect
+			local name, pcf, path, utilfx
+			name = ent2:GetEffectName()
+			name, pcf, path, utilfx = FindPCFFromEffect(name)
+			//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
+			local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), name, pcf, path)
+			if IsValid(p) then
+				p:AttachToSpecialEffect(s, ply, false)
+				local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
+				local done_first = false
+				for k, v in pairs (cpointtab) do
+					if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+						if !done_first then
+							p.ParticleInfo[k].sfx_role = 0 //start
+							done_first = true
+						else
+							p.ParticleInfo[k].sfx_role = 1 //end
+						end
+					end
+				end
+				UpdateColorAndUtilFx(p, ent2:GetColor(), utilfx, nil, cpointtab, name) //old ent doesn't actually support any utilfx controls for this effect other than tracers getting the hard-coded 5000 scale, but that's because no compatible fx in the spawnlist used them
+			end
+
+			//Impact effect
+			local name, pcf, path, utilfx
+			name = ent2:GetImpact_EffectName()
+			name, pcf, path, utilfx = FindPCFFromEffect(name)
+			//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
+			local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), name, pcf, path)
+			if IsValid(p) then
+				p:AttachToSpecialEffect(s, ply, false)
+				local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
+				local done_first = false
+				for k, v in pairs (cpointtab) do
+					if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+						p.ParticleInfo[k].sfx_role = 1 //end
+					end
+				end
+				UpdateColorAndUtilFx(p, ent2:GetImpact_ColorInfo(), utilfx, ent2:GetImpact_UtilEffectInfo(), cpointtab, name)
+			end
+
+			if ent2:GetLeaveBulletHoles() then
+				local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), "Impact_GMOD", "UtilFx")
+				if IsValid(p) then
+					p:AttachToSpecialEffect(s, ply, false)
+				end
+			end
+
+			local rate = ent2:GetRepeatRate()
+			if rate == 0 then
+				s:SetLoop(false)
+			else
+				s:SetLoopDelay(rate)
+			end
+			s:SetTracerSpread(ent2:GetTracerSpread()*90)
+			s:SetTracerCount(ent2:GetTracerCount())
+			//old ent's "EffectLifetime" value has no analog on new ent; this was a crude standin for repeat safety to prevent an infinite number of fx from piling up, but the new ent has different safeguards against that
+
+			local key = ent2:GetNumpadKey()
+			s:SetNumpad(key)
+			s:SetNumpadStartOn(ent2:GetActive())
+			s:SetNumpadToggle(ent2:GetToggle())
+			//Update numpad funcs
+			numpad.Remove(s.NumDown)
+			numpad.Remove(s.NumUp)
+			s.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", s, true)
+			s.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", s, false)
+
+			//Other generic stuff from SENT spawn func; do this last so this undo is on top of the stack (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/commands.lua#L896C1-L909C32)
+			if IsValid(ply) then
+				gamemode.Call("PlayerSpawnedSENT", ply, s)
+				undo.Create("SENT")
+					undo.SetPlayer(ply)
+					undo.AddEntity(s)
+					undo.SetCustomUndoText( "Undone " .. s.PrintName)
+				undo.Finish( "#undo.generic.entity (" .. s.PrintName .. ")" )
+				ply:AddCleanup("sents", s)
+				s:SetVar("Player", ply)
+			end
+		end
+		ent2:Remove()
+		return IsValid(s)
+	elseif class == "particlecontroller_proj" then
 		
-	else
-		return nil
 	end
 end
 
 properties.Add("partctrl_backcomp", {
 	MenuLabel = "Convert Adv. Particle Control effects to COOL NEW ADDON NAME HERE", //TODO
 	Order = 89999,
-	PrependSpacer = true,
+	PrependSpacer = false,
 	MenuIcon = "icon16/fire.png",
 	
 	Filter = function(self, ent, ply)
@@ -423,7 +522,8 @@ properties.Add("partctrl_backcomp", {
 				if class == "particlecontroller_normal" or class == "particlecontroller_proj" or class == "particlecontroller_tracer" then
 					return true
 				else
-					return CheckForChildFx(v)
+					local val = CheckForChildFx(v)
+					if val then return val end
 				end
 			end
 		end
