@@ -1164,6 +1164,9 @@ function ENT:CreateProjectile()
 	if istable(pos) then
 		ang = pos.Ang
 		pos = pos.Pos
+		//a lot of attachment points are oriented at an angle on the roll axis (i.e. hl2 gun muzzles) - correct this, we want the default projectile angle to be upright
+		local _, ang2 = WorldToLocal(pos, ang, ent:GetPos(), ent:GetAngles())
+		ang = Angle(ang.p,ang.y,ang.r - ang2.r)
 	else
 		ang = ent:GetAngles()
 		pos = ent:GetPos()
@@ -1233,20 +1236,26 @@ function ENT:CreateProjectile()
 		local projang = Angle(fwd) //create a copy of the firing direction to use for the prop angle, so we can rotate the prop without rotating the firing direction
 		local projang_ = self:GetProjAngle()
 		if projang_ == 0 then
+			//forward
 			spinang = ang_fwd
 		elseif projang_ == 1 then
+			//back
 			projang:RotateAroundAxis(fwd:Up(), 180)
 			spinang = ang_back
 		elseif projang_ == 2 then
+			//left
 			projang:RotateAroundAxis(fwd:Up(), 90)
 			spinang = ang_right //yes, this is inverted
 		elseif projang_ == 3 then
+			//right
 			projang:RotateAroundAxis(fwd:Up(), -90)
 			spinang = ang_left //^
 		elseif projang_ == 4 then
+			//up
 			projang:RotateAroundAxis(fwd:Right(), 90)
 			spinang = ang_down //^
 		else
+			//down
 			projang:RotateAroundAxis(fwd:Right(), -90)
 			spinang = ang_up //^
 		end
@@ -1635,7 +1644,7 @@ local EditMenuInputs = {
 	"projvis_material",
 	"projvis_color",
 }
-ENT.EditMenuInputs_bits = 5 //max 31
+ENT.EditMenuInputs_bits = 6 //max 63
 ENT.EditMenuInputs = table.Flip(EditMenuInputs)
 
 if CLIENT then

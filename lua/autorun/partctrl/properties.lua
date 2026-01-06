@@ -258,29 +258,32 @@ local function FindPCFFromEffect(name)
 		end
 	else
 		//Get the first pcf containing this particle name; don't overthink it, the old addon had no concept of multiple fx sharing a name
-		if !PartCtrl_PCFsByParticleName[string.lower(name)] then MsgN(name, " couldn't find PartCtrl_PCFsByParticleName") return end
-		for k, v in pairs (PartCtrl_PCFsByParticleName[string.lower(name)]) do
-			pcf = v
-			break
-		end
-		local old = OldGameFx[pcf]
-		if old then
-			//The old addon handled conflicting pcf and effect names by including custom-made pcfs with different file names
-			//and, when necessary, different effect names. Redirect these to use the correct game pcf instead.
-			name = string.TrimLeft(name, old.badprefix)
-			if old.exceptions and old.exceptions[name] then
-				pcf = old.exceptions[name]
-			else
-				pcf = old.pcf
+		if PartCtrl_PCFsByParticleName[string.lower(name)] then
+			for k, v in pairs (PartCtrl_PCFsByParticleName[string.lower(name)]) do
+				pcf = v
+				break
 			end
-			path = old.path
+			local old = OldGameFx[pcf]
+			if old then
+				//The old addon handled conflicting pcf and effect names by including custom-made pcfs with different file names
+				//and, when necessary, different effect names. Redirect these to use the correct game pcf instead.
+				name = string.TrimLeft(name, old.badprefix)
+				if old.exceptions and old.exceptions[name] then
+					pcf = old.exceptions[name]
+				else
+					pcf = old.pcf
+				end
+				path = old.path
+			else
+				if !PartCtrl_AllDataPCFs[pcf] then
+					path = PartCtrl_GamePCFs_DefaultPaths[pcf] //optional, can be nil
+				else
+					path = PartCtrl_AllDataPCFs[pcf].path
+					pcf = PartCtrl_AllDataPCFs[pcf].original_filename
+				end
+			end
 		else
-			if !PartCtrl_AllDataPCFs[pcf] then
-				path = PartCtrl_GamePCFs_DefaultPaths[pcf] //optional, can be nil
-			else
-				path = PartCtrl_AllDataPCFs[pcf].path
-				pcf = PartCtrl_AllDataPCFs[pcf].original_filename
-			end
+			MsgN("PartCtrl: ", name, " couldn't find PartCtrl_PCFsByParticleName")
 		end
 	end
 	return string.lower(name), pcf, path, utilfx
@@ -404,7 +407,7 @@ local function UpdateOldEffect(ent2)
 		return IsValid(p)
 	elseif class == "particlecontroller_tracer" then
 		local ply = ent2:GetPlayer()
-		if !gamemode.Call("PlayerSpawnSENT", ply, "ent_partctrl_sfx_tracer") then return end
+		if !gamemode.Call("PlayerSpawnSENT", ply, "ent_partctrl_sfx_tracer") then return false end
 		local s = ents.Create("ent_partctrl_sfx_tracer")
 		if IsValid(s) then
 			s:SetPos(ent2:GetPos())
@@ -439,19 +442,21 @@ local function UpdateOldEffect(ent2)
 			//Impact effect
 			local name, pcf, path, utilfx
 			name = ent2:GetImpact_EffectName()
-			name, pcf, path, utilfx = FindPCFFromEffect(name)
-			//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
-			local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), name, pcf, path)
-			if IsValid(p) then
-				p:AttachToSpecialEffect(s, ply, false)
-				local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
-				local done_first = false
-				for k, v in pairs (cpointtab) do
-					if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
-						p.ParticleInfo[k].sfx_role = 1 //end
+			if name != "" then
+				name, pcf, path, utilfx = FindPCFFromEffect(name)
+				//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
+				local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), name, pcf, path)
+				if IsValid(p) then
+					p:AttachToSpecialEffect(s, ply, false)
+					local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
+					local done_first = false
+					for k, v in pairs (cpointtab) do
+						if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+							p.ParticleInfo[k].sfx_role = 1 //end
+						end
 					end
+					UpdateColorAndUtilFx(p, ent2:GetImpact_ColorInfo(), utilfx, ent2:GetImpact_UtilEffectInfo(), cpointtab, name)
 				end
-				UpdateColorAndUtilFx(p, ent2:GetImpact_ColorInfo(), utilfx, ent2:GetImpact_UtilEffectInfo(), cpointtab, name)
 			end
 
 			if ent2:GetLeaveBulletHoles() then
@@ -487,8 +492,8 @@ local function UpdateOldEffect(ent2)
 				undo.Create("SENT")
 					undo.SetPlayer(ply)
 					undo.AddEntity(s)
-					undo.SetCustomUndoText( "Undone " .. s.PrintName)
-				undo.Finish( "#undo.generic.entity (" .. s.PrintName .. ")" )
+					undo.SetCustomUndoText("Undone " .. s.PrintName)
+				undo.Finish("#undo.generic.entity (" .. s.PrintName .. ")")
 				ply:AddCleanup("sents", s)
 				s:SetVar("Player", ply)
 			end
@@ -496,7 +501,131 @@ local function UpdateOldEffect(ent2)
 		ent2:Remove()
 		return IsValid(s)
 	elseif class == "particlecontroller_proj" then
-		
+		local ply = ent2:GetPlayer()
+		if !gamemode.Call("PlayerSpawnSENT", ply, "ent_partctrl_sfx_proj") then return false end
+		local s = ents.Create("ent_partctrl_sfx_proj")
+		if IsValid(s) then
+			s:SetPos(ent2:GetPos())
+			s.IsBlank = true
+			s.SetCreator(ply)
+			s:Spawn()
+			s:AttachToEntity(ent2:GetParent(), k, ent2:GetAttachNum(), ply, false) //use GetParent instead of GetTargetEnt, because the old ent sets its targetent to itself for... reasons?
+
+			//Projectile effect
+			local name, pcf, path, utilfx
+			name = ent2:GetProjFX_EffectName()
+			if name != "" then
+				name, pcf, path, utilfx = FindPCFFromEffect(name)
+				//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
+				local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), name, pcf, path)
+				if IsValid(p) then
+					p:AttachToSpecialEffect(s, ply, false)
+					local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
+					local done_first = false
+					for k, v in pairs (cpointtab) do
+						if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+							p.ParticleInfo[k].attach = ent2:GetProjModel_AttachNum()
+							p.ParticleInfo[k].sfx_role = 1 //projectile model
+						end
+					end
+					UpdateColorAndUtilFx(p, ent2:GetProjFX_ColorInfo(), utilfx, ent2:GetProjFX_UtilEffectInfo(), cpointtab, name)
+				end
+			end
+
+			//Impact effect
+			local name, pcf, path, utilfx
+			name = ent2:GetImpactFX_EffectName()
+			if name != "" then
+				name, pcf, path, utilfx = FindPCFFromEffect(name)
+				//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
+				local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), name, pcf, path)
+				if IsValid(p) then
+					p:AttachToSpecialEffect(s, ply, false)
+					local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
+					local done_first = false
+					for k, v in pairs (cpointtab) do
+						if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+							p.ParticleInfo[k].sfx_role = 2 //hit point
+						end
+					end
+					UpdateColorAndUtilFx(p, ent2:GetImpactFX_ColorInfo(), utilfx, ent2:GetImpactFX_UtilEffectInfo(), cpointtab, name)
+				end
+			end
+
+			local rate = ent2:GetRepeatRate()
+			if rate == 0 then
+				s:SetLoop(false)
+			else
+				s:SetLoopDelay(rate)
+			end
+			s:SetProjSpread(ent2:GetProjEnt_Spread()*90)
+			//old ent's "ImpactFX_EffectLifetime" value has no analog on new ent; this was a crude standin for repeat safety to prevent an infinite number of fx from piling up, but the new ent has different safeguards against that
+			s:SetProjVelocity(ent2:GetProjEnt_Velocity())
+			s:SetProjGravity(ent2:GetProjEnt_Gravity())
+			local angs = {
+				[0] = 0, //forward
+				[5] = 1, //back
+				[1] = 2, //left
+				[2] = 3, //right
+				[3] = 4, //up
+				[4] = 5, //down
+			}
+			s:SetProjAngle(angs[ent2:GetProjEnt_Angle()])
+			local spin = ent2:GetProjEnt_Spin()
+			if spin == 1 then //pitch
+				s:SetProjSpin(2)
+				s:SetProjSpinVelocity(350)
+			elseif spin == 2 then //labeled "yaw" in old tool, actually roll
+				s:SetProjSpin(4)
+				s:SetProjSpinVelocity(350)
+			elseif spin == 3 then //labeled "roll" in old tool, actually yaw
+				s:SetProjSpin(3)
+				s:SetProjSpinVelocity(-350)
+			elseif spin == 4 then //random
+				s:SetProjSpin(1)
+				s:SetProjSpinVelocity(350)
+			end
+			if ent2:GetProjEnt_DemomanFix() then s:SetProjDir(3) end //right
+			s:SetProjLifetimePre(ent2:GetProjEnt_Lifetime_PreHit())
+			s:SetProjLifetimePost(ent2:GetProjEnt_Lifetime_PostHit())
+			s:SetProjServerside(ent2:GetProjEnt_Serverside())
+			s:SetProjDrag(true) //matches old ent behavior
+
+			s:SetModel(ent2:GetProjModel())
+			s:SetSkin(ent2:GetSkin())
+			if ent2:GetMaterial() != "" and !(!game.SinglePlayer() && !list.Contains("OverrideMaterials", ent2:GetMaterial()) && ent2:GetMaterial() != "") then
+				s:SetMaterial(ent2:GetMaterial())
+				duplicator.StoreEntityModifier(s, "material", {MaterialOverride = ent2:GetMaterial()})
+			end
+			if ent2:GetProjModel_Invis() then
+				s:SetColor(Color(255,255,255,0))
+				duplicator.StoreEntityModifier(s, "colour", {Color = Color(255,255,255,0)})
+			end
+
+			local key = ent2:GetNumpadKey()
+			s:SetNumpad(key)
+			s:SetNumpadStartOn(ent2:GetActive())
+			s:SetNumpadToggle(ent2:GetToggle())
+			//Update numpad funcs
+			numpad.Remove(s.NumDown)
+			numpad.Remove(s.NumUp)
+			s.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", s, true)
+			s.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", s, false)
+
+			//Other generic stuff from SENT spawn func; do this last so this undo is on top of the stack (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/commands.lua#L896C1-L909C32)
+			if IsValid(ply) then
+				gamemode.Call("PlayerSpawnedSENT", ply, s)
+				undo.Create("SENT")
+					undo.SetPlayer(ply)
+					undo.AddEntity(s)
+					undo.SetCustomUndoText("Undone " .. s.PrintName)
+				undo.Finish("#undo.generic.entity (" .. s.PrintName .. ")")
+				ply:AddCleanup("sents", s)
+				s:SetVar("Player", ply)
+			end
+		end
+		ent2:Remove()
+		return IsValid(s)
 	end
 end
 
