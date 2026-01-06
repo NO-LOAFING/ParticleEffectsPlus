@@ -1743,6 +1743,7 @@ else
 	function PartCtrl_RefreshAllChildFx(ent)
 
 		//MsgN("refreshing all child fx: ", ent)
+		if !IsValid(ent) then return end
 		if ent.PartCtrl_Ent then
 			//Tell clients to retrieve the updated info table
 			net.Start("PartCtrl_InfoTableUpdate_SendToCl")
