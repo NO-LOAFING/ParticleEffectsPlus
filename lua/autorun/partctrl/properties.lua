@@ -344,20 +344,20 @@ local function UpdateColorAndUtilFx(p, c, utilfx, info, cpointtab, name)
 	end
 end
 
-local function UpdateOldEffect(ent2)
+local function UpdateOldEffect(ent)
 	if CLIENT then return end
-	if !IsValid(ent2) then return nil end
-	local class = ent2:GetClass()
+	if !IsValid(ent) then return nil end
+	local class = ent:GetClass()
 	if class == "particlecontroller_normal" then
-		local ply = ent2:GetPlayer()
+		local ply = ent:GetPlayer()
 		local name, pcf, path, utilfx
-		name = ent2:GetEffectName()
+		name = ent:GetEffectName()
 		name, pcf, path, utilfx = FindPCFFromEffect(name)
 		//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
-		local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), name, pcf, path)
+		local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 		if IsValid(p) then
-			local t1 = ent2:GetTargetEnt()
-			local t2 = ent2:GetTargetEnt2()
+			local t1 = ent:GetTargetEnt()
+			local t2 = ent:GetTargetEnt2()
 			if !IsValid(t2) then t2 = nil end
 
 			local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
@@ -365,17 +365,17 @@ local function UpdateOldEffect(ent2)
 			for k, v in pairs (cpointtab) do
 				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
 					if !done_first or !t2 then
-						p:AttachToEntity(t1, k, ent2:GetAttachNum(), ply, false)
+						p:AttachToEntity(t1, k, ent:GetAttachNum(), ply, false)
 						done_first = true
 					else
-						p:AttachToEntity(t2, k, ent2:GetAttachNum2(), ply, false)
+						p:AttachToEntity(t2, k, ent:GetAttachNum2(), ply, false)
 					end
 				end
 			end
-			UpdateColorAndUtilFx(p, ent2:GetColor(), utilfx, ent2:GetUtilEffectInfo(), cpointtab, name)
+			UpdateColorAndUtilFx(p, ent:GetColor(), utilfx, ent:GetUtilEffectInfo(), cpointtab, name)
 
-			local safety = ent2:GetRepeatSafety()
-			local rate = ent2:GetRepeatRate()
+			local safety = ent:GetRepeatSafety()
+			local rate = ent:GetRepeatRate()
 			if rate == 0 then
 				//Effects set to not loop should be fine to carry over either way
 				p:SetLoopMode(0)
@@ -393,35 +393,35 @@ local function UpdateOldEffect(ent2)
 				p:SetLoopSafety(safety)
 			end
 
-			local key = ent2:GetNumpadKey()
+			local key = ent:GetNumpadKey()
 			p:SetNumpad(key)
-			p:SetNumpadStartOn(ent2:GetActive())
-			p:SetNumpadToggle(ent2:GetToggle())
+			p:SetNumpadStartOn(ent:GetActive())
+			p:SetNumpadToggle(ent:GetToggle())
 			//Update numpad funcs
 			numpad.Remove(p.NumDown)
 			numpad.Remove(p.NumUp)
 			p.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", p, true)
 			p.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", p, false)
 		end
-		ent2:Remove()
+		ent:Remove()
 		return IsValid(p)
 	elseif class == "particlecontroller_tracer" then
-		local ply = ent2:GetPlayer()
+		local ply = ent:GetPlayer()
 		if !gamemode.Call("PlayerSpawnSENT", ply, "ent_partctrl_sfx_tracer") then return false end
 		local s = ents.Create("ent_partctrl_sfx_tracer")
 		if IsValid(s) then
-			s:SetPos(ent2:GetPos())
+			s:SetPos(ent:GetPos())
 			s.IsBlank = true
 			s.SetCreator(ply)
 			s:Spawn()
-			s:AttachToEntity(ent2:GetTargetEnt(), k, ent2:GetAttachNum(), ply, false)
+			s:AttachToEntity(ent:GetTargetEnt(), k, ent:GetAttachNum(), ply, false)
 
 			//Tracer effect
 			local name, pcf, path, utilfx
-			name = ent2:GetEffectName()
+			name = ent:GetEffectName()
 			name, pcf, path, utilfx = FindPCFFromEffect(name)
 			//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
-			local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), name, pcf, path)
+			local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 			if IsValid(p) then
 				p:AttachToSpecialEffect(s, ply, false)
 				local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
@@ -436,16 +436,16 @@ local function UpdateOldEffect(ent2)
 						end
 					end
 				end
-				UpdateColorAndUtilFx(p, ent2:GetColor(), utilfx, nil, cpointtab, name) //old ent doesn't actually support any utilfx controls for this effect other than tracers getting the hard-coded 5000 scale, but that's because no compatible fx in the spawnlist used them
+				UpdateColorAndUtilFx(p, ent:GetColor(), utilfx, nil, cpointtab, name) //old ent doesn't actually support any utilfx controls for this effect other than tracers getting the hard-coded 5000 scale, but that's because no compatible fx in the spawnlist used them
 			end
 
 			//Impact effect
 			local name, pcf, path, utilfx
-			name = ent2:GetImpact_EffectName()
+			name = ent:GetImpact_EffectName()
 			if name != "" then
 				name, pcf, path, utilfx = FindPCFFromEffect(name)
 				//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
-				local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), name, pcf, path)
+				local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 				if IsValid(p) then
 					p:AttachToSpecialEffect(s, ply, false)
 					local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
@@ -455,31 +455,31 @@ local function UpdateOldEffect(ent2)
 							p.ParticleInfo[k].sfx_role = 1 //end
 						end
 					end
-					UpdateColorAndUtilFx(p, ent2:GetImpact_ColorInfo(), utilfx, ent2:GetImpact_UtilEffectInfo(), cpointtab, name)
+					UpdateColorAndUtilFx(p, ent:GetImpact_ColorInfo(), utilfx, ent:GetImpact_UtilEffectInfo(), cpointtab, name)
 				end
 			end
 
-			if ent2:GetLeaveBulletHoles() then
-				local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), "Impact_GMOD", "UtilFx")
+			if ent:GetLeaveBulletHoles() then
+				local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), "Impact_GMOD", "UtilFx")
 				if IsValid(p) then
 					p:AttachToSpecialEffect(s, ply, false)
 				end
 			end
 
-			local rate = ent2:GetRepeatRate()
+			local rate = ent:GetRepeatRate()
 			if rate == 0 then
 				s:SetLoop(false)
 			else
 				s:SetLoopDelay(rate)
 			end
-			s:SetTracerSpread(ent2:GetTracerSpread()*90)
-			s:SetTracerCount(ent2:GetTracerCount())
+			s:SetTracerSpread(ent:GetTracerSpread()*90)
+			s:SetTracerCount(ent:GetTracerCount())
 			//old ent's "EffectLifetime" value has no analog on new ent; this was a crude standin for repeat safety to prevent an infinite number of fx from piling up, but the new ent has different safeguards against that
 
-			local key = ent2:GetNumpadKey()
+			local key = ent:GetNumpadKey()
 			s:SetNumpad(key)
-			s:SetNumpadStartOn(ent2:GetActive())
-			s:SetNumpadToggle(ent2:GetToggle())
+			s:SetNumpadStartOn(ent:GetActive())
+			s:SetNumpadToggle(ent:GetToggle())
 			//Update numpad funcs
 			numpad.Remove(s.NumDown)
 			numpad.Remove(s.NumUp)
@@ -498,47 +498,47 @@ local function UpdateOldEffect(ent2)
 				s:SetVar("Player", ply)
 			end
 		end
-		ent2:Remove()
+		ent:Remove()
 		return IsValid(s)
 	elseif class == "particlecontroller_proj" then
-		local ply = ent2:GetPlayer()
+		local ply = ent:GetPlayer()
 		if !gamemode.Call("PlayerSpawnSENT", ply, "ent_partctrl_sfx_proj") then return false end
 		local s = ents.Create("ent_partctrl_sfx_proj")
 		if IsValid(s) then
-			s:SetPos(ent2:GetPos())
+			s:SetPos(ent:GetPos())
 			s.IsBlank = true
 			s.SetCreator(ply)
 			s:Spawn()
-			s:AttachToEntity(ent2:GetParent(), k, ent2:GetAttachNum(), ply, false) //use GetParent instead of GetTargetEnt, because the old ent sets its targetent to itself for... reasons?
+			s:AttachToEntity(ent:GetParent(), k, ent:GetAttachNum(), ply, false) //use GetParent instead of GetTargetEnt, because the old ent sets its targetent to itself for... reasons?
 
 			//Projectile effect
 			local name, pcf, path, utilfx
-			name = ent2:GetProjFX_EffectName()
+			name = ent:GetProjFX_EffectName()
 			if name != "" then
 				name, pcf, path, utilfx = FindPCFFromEffect(name)
 				//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
-				local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), name, pcf, path)
+				local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 				if IsValid(p) then
 					p:AttachToSpecialEffect(s, ply, false)
 					local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
 					local done_first = false
 					for k, v in pairs (cpointtab) do
 						if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
-							p.ParticleInfo[k].attach = ent2:GetProjModel_AttachNum()
+							p.ParticleInfo[k].attach = ent:GetProjModel_AttachNum()
 							p.ParticleInfo[k].sfx_role = 1 //projectile model
 						end
 					end
-					UpdateColorAndUtilFx(p, ent2:GetProjFX_ColorInfo(), utilfx, ent2:GetProjFX_UtilEffectInfo(), cpointtab, name)
+					UpdateColorAndUtilFx(p, ent:GetProjFX_ColorInfo(), utilfx, ent:GetProjFX_UtilEffectInfo(), cpointtab, name)
 				end
 			end
 
 			//Impact effect
 			local name, pcf, path, utilfx
-			name = ent2:GetImpactFX_EffectName()
+			name = ent:GetImpactFX_EffectName()
 			if name != "" then
 				name, pcf, path, utilfx = FindPCFFromEffect(name)
 				//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
-				local p = PartCtrl_SpawnParticle(ply, ent2:GetPos(), name, pcf, path)
+				local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 				if IsValid(p) then
 					p:AttachToSpecialEffect(s, ply, false)
 					local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
@@ -548,20 +548,20 @@ local function UpdateOldEffect(ent2)
 							p.ParticleInfo[k].sfx_role = 2 //hit point
 						end
 					end
-					UpdateColorAndUtilFx(p, ent2:GetImpactFX_ColorInfo(), utilfx, ent2:GetImpactFX_UtilEffectInfo(), cpointtab, name)
+					UpdateColorAndUtilFx(p, ent:GetImpactFX_ColorInfo(), utilfx, ent:GetImpactFX_UtilEffectInfo(), cpointtab, name)
 				end
 			end
 
-			local rate = ent2:GetRepeatRate()
+			local rate = ent:GetRepeatRate()
 			if rate == 0 then
 				s:SetLoop(false)
 			else
 				s:SetLoopDelay(rate)
 			end
-			s:SetProjSpread(ent2:GetProjEnt_Spread()*90)
+			s:SetProjSpread(ent:GetProjEnt_Spread()*90)
 			//old ent's "ImpactFX_EffectLifetime" value has no analog on new ent; this was a crude standin for repeat safety to prevent an infinite number of fx from piling up, but the new ent has different safeguards against that
-			s:SetProjVelocity(ent2:GetProjEnt_Velocity())
-			s:SetProjGravity(ent2:GetProjEnt_Gravity())
+			s:SetProjVelocity(ent:GetProjEnt_Velocity())
+			s:SetProjGravity(ent:GetProjEnt_Gravity())
 			local angs = {
 				[0] = 0, //forward
 				[5] = 1, //back
@@ -570,8 +570,8 @@ local function UpdateOldEffect(ent2)
 				[3] = 4, //up
 				[4] = 5, //down
 			}
-			s:SetProjAngle(angs[ent2:GetProjEnt_Angle()])
-			local spin = ent2:GetProjEnt_Spin()
+			s:SetProjAngle(angs[ent:GetProjEnt_Angle()])
+			local spin = ent:GetProjEnt_Spin()
 			if spin == 1 then //pitch
 				s:SetProjSpin(2)
 				s:SetProjSpinVelocity(350)
@@ -585,27 +585,27 @@ local function UpdateOldEffect(ent2)
 				s:SetProjSpin(1)
 				s:SetProjSpinVelocity(350)
 			end
-			if ent2:GetProjEnt_DemomanFix() then s:SetProjDir(3) end //right
-			s:SetProjLifetimePre(ent2:GetProjEnt_Lifetime_PreHit())
-			s:SetProjLifetimePost(ent2:GetProjEnt_Lifetime_PostHit())
-			s:SetProjServerside(ent2:GetProjEnt_Serverside())
+			if ent:GetProjEnt_DemomanFix() then s:SetProjDir(3) end //right
+			s:SetProjLifetimePre(ent:GetProjEnt_Lifetime_PreHit())
+			s:SetProjLifetimePost(ent:GetProjEnt_Lifetime_PostHit())
+			s:SetProjServerside(ent:GetProjEnt_Serverside())
 			s:SetProjDrag(true) //matches old ent behavior
 
-			s:SetModel(ent2:GetProjModel())
-			s:SetSkin(ent2:GetSkin())
-			if ent2:GetMaterial() != "" and !(!game.SinglePlayer() && !list.Contains("OverrideMaterials", ent2:GetMaterial()) && ent2:GetMaterial() != "") then
-				s:SetMaterial(ent2:GetMaterial())
-				duplicator.StoreEntityModifier(s, "material", {MaterialOverride = ent2:GetMaterial()})
+			s:SetModel(ent:GetProjModel())
+			s:SetSkin(ent:GetSkin())
+			if ent:GetMaterial() != "" and !(!game.SinglePlayer() && !list.Contains("OverrideMaterials", ent:GetMaterial()) && ent:GetMaterial() != "") then
+				s:SetMaterial(ent:GetMaterial())
+				duplicator.StoreEntityModifier(s, "material", {MaterialOverride = ent:GetMaterial()})
 			end
-			if ent2:GetProjModel_Invis() then
+			if ent:GetProjModel_Invis() then
 				s:SetColor(Color(255,255,255,0))
 				duplicator.StoreEntityModifier(s, "colour", {Color = Color(255,255,255,0)})
 			end
 
-			local key = ent2:GetNumpadKey()
+			local key = ent:GetNumpadKey()
 			s:SetNumpad(key)
-			s:SetNumpadStartOn(ent2:GetActive())
-			s:SetNumpadToggle(ent2:GetToggle())
+			s:SetNumpadStartOn(ent:GetActive())
+			s:SetNumpadToggle(ent:GetToggle())
 			//Update numpad funcs
 			numpad.Remove(s.NumDown)
 			numpad.Remove(s.NumUp)
@@ -624,7 +624,7 @@ local function UpdateOldEffect(ent2)
 				s:SetVar("Player", ply)
 			end
 		end
-		ent2:Remove()
+		ent:Remove()
 		return IsValid(s)
 	end
 end
@@ -663,7 +663,7 @@ properties.Add("partctrl_backcomp", {
 	Action = function(self, ent)
 
 		self:MsgStart()
-			net.WriteEntity( ent )
+			net.WriteEntity(ent)
 		self:MsgEnd()
 
 	end,
@@ -675,7 +675,7 @@ properties.Add("partctrl_backcomp", {
 
 		local results = {}
 		local function CheckForChildFx(ent2)
-			if ent2.ParticleControl_FxForBackcomp then //TODO: this is serverside, change this
+			if ent2.ParticleControl_FxForBackcomp then
 				for k, _ in pairs (ent2.ParticleControl_FxForBackcomp) do
 					if k.GetTargetEnt2 and k:GetTargetEnt2() == ent2 then 
 						local result = UpdateOldEffect(k)
@@ -686,7 +686,6 @@ properties.Add("partctrl_backcomp", {
 				end
 			end
 			for _, v in pairs (ent2:GetChildren()) do
-				local class = v:GetClass()
 				local result = UpdateOldEffect(v)
 				if isbool(result) then
 					results[result] = (results[result] or 0) + 1
@@ -699,10 +698,12 @@ properties.Add("partctrl_backcomp", {
 		//Show on-screen notifications for all fx we converted or failed to convert
 		ply:SendLua("surface.PlaySound('common/wpn_select.wav')")
 		if results[true] then
+			MsgN("Successfully converted " .. results[true] .. " effect(s)!")
 			ply:SendLua("GAMEMODE:AddNotify('Successfully converted " .. results[true] .. " effect(s)!', NOTIFY_GENERIC, 4)")
 			ply:SendLua("surface.PlaySound('ambient/water/drip" .. math.random(1, 4) .. ".wav')")
 		end
 		if results[false] then
+			MsgN("Failed to convert " .. results[false] .. " effect(s)!")
 			ply:SendLua("GAMEMODE:AddNotify('Failed to convert " .. results[false] .. " effect(s)!', NOTIFY_ERROR, 4)")
 			ply:SendLua("surface.PlaySound('buttons/button11.wav')")
 		end
@@ -726,10 +727,12 @@ if SERVER then
 		//Show on-screen notifications for all fx we converted or failed to convert
 		ply:SendLua("surface.PlaySound('common/wpn_select.wav')")
 		if results[true] then
+			MsgN("Successfully converted " .. results[true] .. " effect(s)!")
 			ply:SendLua("GAMEMODE:AddNotify('Successfully converted " .. results[true] .. " effect(s)!', NOTIFY_GENERIC, 4)")
 			ply:SendLua("surface.PlaySound('ambient/water/drip" .. math.random(1, 4) .. ".wav')")
 		end
 		if results[false] then
+			MsgN("Failed to convert " .. results[false] .. " effect(s)!")
 			ply:SendLua("GAMEMODE:AddNotify('Failed to convert " .. results[false] .. " effect(s)!', NOTIFY_ERROR, 4)")
 			ply:SendLua("surface.PlaySound('buttons/button11.wav')")
 		end

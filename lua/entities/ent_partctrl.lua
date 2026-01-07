@@ -2285,7 +2285,7 @@ if SERVER then
 
 	end
 
-	function PartCtrl_SpawnParticle(ply, pos, name, pcf_original, path)
+	function PartCtrl_SpawnParticle(ply, pos, name, pcf_original, path, disableundo)
 
 		//MsgN("PartCtrl_SpawnParticle ", name, " ", pcf_original, " ", path)
 		local name = string.lower(name)
@@ -2425,16 +2425,17 @@ if SERVER then
 
 		if IsValid(ply) then
 			gamemode.Call("PlayerSpawnedParticle", ply, name, pcf_original, path, p)
-
-			undo.Create("PartCtrl")
-				undo.SetPlayer(ply)
-				undo.AddEntity(p)
-				local str = tostring(pcf_original)
-				if pcf != pcf_original then
-					str = str .. " (" .. tostring(path) .. ")"
-				end
-			undo.Finish("Particle Effect (" .. tostring(name) .. " (" .. str .. "))")
-			ply:AddCleanup("partctrl", p)
+			if !disableundo then
+				undo.Create("PartCtrl")
+					undo.SetPlayer(ply)
+					undo.AddEntity(p)
+					local str = tostring(pcf_original)
+					if pcf != pcf_original then
+						str = str .. " (" .. tostring(path) .. ")"
+					end
+				undo.Finish("Particle Effect (" .. tostring(name) .. " (" .. str .. "))")
+				ply:AddCleanup("partctrl", p)
+			end
 		end
 
 		return p
@@ -2448,19 +2449,15 @@ if SERVER then
 
 	//Add hooks for these, in case someone wants to selectively prevent players from spawning particles
 	function GAMEMODE:PlayerSpawnParticle(ply, name, pcf, path)
-
 		local function LimitReachedProcess()
 			if !IsValid(ply) then return true end
 			return ply:CheckLimit("partctrl")
 		end
 		return LimitReachedProcess()
-
 	end
 
 	function GAMEMODE:PlayerSpawnedParticle(ply, name, pcf, path, ent)
-
 		ply:AddCount("partctrl", ent)
-
 	end
 
 end
