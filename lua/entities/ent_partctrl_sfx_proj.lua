@@ -172,7 +172,7 @@ if CLIENT then
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
 		cat:SetLabel("Projectile Effect Settings")
-		cat:DockMargin(3,1,-2,3) //-2 right for divider
+		cat:DockMargin(3,1,3,3)
 		cat:Dock(FILL)
 		container:AddItem(cat)
 
@@ -504,7 +504,7 @@ if CLIENT then
 		//separate category for projectile visuals
 		local cat = vgui.Create("DCollapsibleCategory", container)
 		cat:SetLabel("Projectile Appearance")
-		cat:DockMargin(3,1,-2,3) //-2 right for divider
+		cat:DockMargin(3,1,3,3)
 		cat:Dock(FILL)
 		container:AddItem(cat)
 

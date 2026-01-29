@@ -11,7 +11,7 @@ if CLIENT then
 		local width = 367 //width of 367 nicely fits color picker
 		local height = 400
 		if ent.PartCtrl_SpecialEffect then
-			width = 718 //special fx controls have two columns; this width is precisely calibrated so that both columns have the exact same width as on normal fx
+			width = width + 16 //special fx controls have some extra width because of the tab layout
 			height = 500 //special fx also just have more controls in general, so make it higher by default
 		end
 

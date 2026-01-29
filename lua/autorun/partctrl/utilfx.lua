@@ -641,17 +641,17 @@ local impact = {
 local impact_noflags = table.Copy(impact)
 impact_noflags.DoProcessExtras.toggleable_decals = false
 list.Set("PartCtrl_UtilFx", "Impact", impact_noflags)
-impact.info = impact.info .. "\nIdentical to Impact, except decals can be disabled."
-impact.info_sfx = impact.info_sfx .. "\nIdentical to Impact, except decals can be disabled."
+impact.info = impact.info .. "\nIdentical to \"Impact\", except decals can be disabled."
+impact.info_sfx = impact.info_sfx .. "\nIdentical to \"Impact\", except decals can be disabled."
 list.Set("PartCtrl_UtilFx", "Impact_GMOD", impact)
 local impact_noflags2 = table.Copy(impact_noflags)
-impact_noflags2.info = impact_noflags2.info .. "\nIdentical to Impact, except particles have 2x scale."
-impact_noflags2.info_sfx = impact_noflags2.info_sfx .. "\nIdentical to Impact, except particles have 2x scale."
+impact_noflags2.info = impact_noflags2.info .. "\nIdentical to \"Impact\", except particles have 2x scale."
+impact_noflags2.info_sfx = impact_noflags2.info_sfx .. "\nIdentical to \"Impact\", except particles have 2x scale."
 list.Set("PartCtrl_UtilFx", "ImpactGauss", impact_noflags2)
 list.Set("PartCtrl_UtilFx", "ImpactJeep", impact_noflags2)
 local impact_noflags3 = table.Copy(impact_noflags)
-impact_noflags3.info = impact_noflags3.info .. "\nIdentical to Impact, except particles have 3x scale."
-impact_noflags3.info_sfx = impact_noflags3.info_sfx .. "\nIdentical to Impact, except particles have 3x scale."
+impact_noflags3.info = impact_noflags3.info .. "\nIdentical to \"Impact\", except particles have 3x scale."
+impact_noflags3.info_sfx = impact_noflags3.info_sfx .. "\nIdentical to \"Impact\", except particles have 3x scale."
 list.Set("PartCtrl_UtilFx", "ImpactGunship", impact_noflags3)
 local impact_nodecals = table.Copy(impact_noflags)
 impact_nodecals.DoProcessExtras.has_decals = false

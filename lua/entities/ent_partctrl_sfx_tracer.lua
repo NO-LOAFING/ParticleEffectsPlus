@@ -118,7 +118,7 @@ if CLIENT then
 
 		local cat = vgui.Create("DCollapsibleCategory", container)
 		cat:SetLabel("Tracer Effect Settings")
-		cat:DockMargin(3,1,-2,3) //-2 right for divider
+		cat:DockMargin(3,1,3,3)
 		cat:Dock(FILL)
 		container:AddItem(cat)
 

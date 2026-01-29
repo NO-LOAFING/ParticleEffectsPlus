@@ -922,91 +922,18 @@ function PANEL:RebuildControls()
 	end
 
 
-	//Container for all panels
-	local back = vgui.Create("DPanel", self)
-	back.Paint = function(self, w, h)
-		derma.SkinHook("Paint", "CategoryList", self, w, h)
-		draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
-		return false
-	end
-	back:Dock(FILL)
-
-
-	//Add lower bar for pause and reset controls; both particles and special fx have this
-	local trackpnl = vgui.Create("Panel", back)
-	trackpnl:Dock(BOTTOM)
-	trackpnl:DockMargin(5,5,5,5)
-
-	local pause = vgui.Create("DImageButton", trackpnl)
-	pause:SetImage("icon16/control_pause_blue.png")
-	pause:SetStretchToFit(false)
-	pause:SetDrawBackground(true)
-	pause:SetIsToggle(true)
-	pause:SetToggle(false)
-	pause:Dock(LEFT)
-	pause:SetWide(32)
-	pause:SetTooltip("Pause particle effect\n\nIf the effect is modified, restarted, disabled-then-reenabled, or duplicated,\nthen it will play up to and then re-pause at the same point in time.")
-
-	function pause.Think()
-		//NOTE: This can be changed without clicking on the button by using the numpad key to pause/unpause
-		if ent and ent.GetPauseTime then //don't cause an error when the ent is removed
-			pause:SetToggle(ent:GetPauseTime() >= 0)
-		end
-	end
-	function pause.OnToggled(val)
-		ent:DoInput("effect_pause")
-	end
-	if ent.utilfx then
-		pause:SetDisabled(true)
-		pause:SetImage("icon16/control_pause.png") //gray icon
-		pause:SetTooltip("Pausing not available for scripted effects")
-	end
-
-	local text = vgui.Create("DLabel", trackpnl)
-	text:SetDark(true)
-	text:DockMargin(5,0,0,0)
-	text:Dock(FILL)
-
-	function text.Think()
-		if ent and ent.GetPauseTime then //don't cause an error when the ent is removed
-			local pausetime = ent:GetPauseTime()
-			local starttime = ent.ParticleStartTime
-			if ent.GetParticleStartTime and ent.GetProjServerside and (ent:GetProjServerside() and svproj_enabled:GetBool()) then 
-				starttime = ent:GetParticleStartTime() //for proj sfx's goofy serverside particlestarttime
-			end
-			local newtext = ""
-			if pausetime >= 0 and starttime != nil and starttime > 0 then
-				if pausetime <= (CurTime() - starttime) then
-					newtext = "Paused at " .. tostring(math.Round(pausetime, 2)) .. " secs"
-				else
-					newtext = "Pausing at " .. tostring(math.Round(pausetime, 2)) .. " secs (in " .. tostring(-math.Round(CurTime() - starttime - pausetime, 2)) .. " secs)"
-				end
-			end
-			if newtext != text:GetText() then
-				text:SetText(newtext)
-			end
-		end
-	end
-
-	local restart = vgui.Create("DImageButton", trackpnl)
-	restart:SetImage("icon16/control_repeat_blue.png")
-	restart:SetStretchToFit(false)
-	restart:SetDrawBackground(true)
-	restart:Dock(RIGHT)
-	restart:SetWide(32)
-	if !ent.utilfx then
-		restart:SetTooltip("Restart particle effect, and clean up all particles")
-	else
-		restart:SetTooltip("Restart particle effect")
-	end
-
-	function restart.DoClick()
-		ent:DoInput("effect_restart")
-	end
-
+	local trackpnl_parent
 
 	if ent.PartCtrl_Ent then
-		
+
+		local back = vgui.Create("DPanel", self)
+		back.Paint = function(self, w, h)
+			derma.SkinHook("Paint", "CategoryList", self, w, h)
+			draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
+			return false
+		end
+		back:Dock(FILL)
+			
 		local container = vgui.Create("DCategoryList", back)
 		container.Paint = function(self, w, h)
 			return false
@@ -1015,47 +942,38 @@ function PANEL:RebuildControls()
 		
 		BuildParticleEntControls(ent, container)
 
+		trackpnl_parent = back
+
 	elseif ent.PartCtrl_SpecialEffect then
 
-		//Special effect controls have two columns - left column is for options on the special effect itself, right column is for child fx
+		//Special effect controls have two separate tabs - first is for options on the special effect itself, second is for child fx
+		local tabs = vgui.Create("DPropertySheet", self)
+		self.TabPanel = tabs
+		tabs:Dock(FILL)
 
-		local lcontainer = vgui.Create("DCategoryList", back)
-		lcontainer.Paint = function(self, w, h)
+		
+		local back = vgui.Create("DPanel", tabs) //this is a contrivance to add some extra space under the DCategoryList, to "contain" the trackpnl
+		back.Paint = function(self, w, h)
+			derma.SkinHook("Paint", "CategoryList", self, w, h)
+			draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
 			return false
 		end
-		lcontainer:DockMargin(0,0,0,0)
 
-		local rcontainer = vgui.Create("DCategoryList", back)
-		rcontainer.Paint = function(self, w, h)
+		local container = vgui.Create("DCategoryList", back)
+		container.Paint = function(self, w, h)
 			return false
 		end
-		rcontainer:DockMargin(0,0,0,0)
-
-		local divider = vgui.Create("DHorizontalDivider", back)
-		divider:Dock(FILL)
-		divider:SetLeft(lcontainer)
-		divider:SetRight(rcontainer)
-		divider:SetDividerWidth(4)//(8)
-		//divider:SetLeftMin()
-		//divider:SetRightMin()
-		//stupid hack: bullet sfx controls are exactly the right size to make the divider confused as to whether it should add a slider or not,
-		//so resolve this by making it wider at first to settle it down and resolve it.
-		divider:SetLeftWidth(360)
-		timer.Simple(math.max(0.06, FrameTime()*2), function()
-			if IsValid(divider) then
-				divider:SetLeftWidth(352)
-			end
-		end)
-
+		container:Dock(FILL)
+		back.container = container
 
 		//category for info; no header for this one
 		local info = ent.Information
 		if info then
 	
-			local pnl = vgui.Create("DSizeToContents", lcontainer)
+			local pnl = vgui.Create("DSizeToContents", container)
 			pnl:SetSizeX(false)
 			pnl:Dock(FILL)
-			lcontainer:AddItem(pnl)
+			container:AddItem(pnl)
 			pnl.Paint = function(self, w, h) 
 				draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
 				//draw info icon
@@ -1065,7 +983,7 @@ function PANEL:RebuildControls()
 				surface.DrawTexturedRect(padding,(h/2)-8,16,16)
 			end
 			pnl:DockPadding(16+padding,0,0,padding) //extra left to make room for the info icon; DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-			pnl:DockMargin(3,3,-2,3-2) //-2 bottom because there's too much space between this and the next category otherwise; -2 right for divider
+			pnl:DockMargin(3,3,3,3-2) //-2 bottom because there's too much space between this and the next category otherwise
 	
 			local text = vgui.Create("DLabel", pnl)
 			text:SetDark(true)
@@ -1081,11 +999,11 @@ function PANEL:RebuildControls()
 
 
 		//Category for attaching this effect
-		local cat = vgui.Create("DCollapsibleCategory", lcontainer)
+		local cat = vgui.Create("DCollapsibleCategory", container)
 		cat:SetLabel("Attachment Settings")
-		cat:DockMargin(3,3,-2,3) //-2 right for divider
+		cat:DockMargin(3,3,3,3)
 		cat:Dock(FILL)
-		lcontainer:AddItem(cat)
+		container:AddItem(cat)
 		cat:SetExpanded(true)
 
 		local pnl = vgui.Create("DSizeToContents", cat)
@@ -1182,11 +1100,11 @@ function PANEL:RebuildControls()
 		if ent.GetNumpad and ent.GetNumpadToggle and ent.GetNumpadStartOn and ent.GetLoop and ent.GetLoopDelay and ent.GetLoopSafety then
 			
 			//category for key
-			local cat = vgui.Create("DCollapsibleCategory", lcontainer)
+			local cat = vgui.Create("DCollapsibleCategory", container)
 			cat:SetLabel("Key Settings")
-			cat:DockMargin(3,1,-2,3) //-2 right for divider
+			cat:DockMargin(3,1,3,3)
 			cat:Dock(FILL)
-			lcontainer:AddItem(cat)
+			container:AddItem(cat)
 		
 			//expand if any contained options are non-default 
 			cat:SetExpanded(
@@ -1235,11 +1153,11 @@ function PANEL:RebuildControls()
 					//"toggle" option is grayed out for numpad mode 2 (restart effect); make sure it's always true to prevent unintended behavior 
 					//("restart effect" with toggle off makes the effect restart on both key in and key out, instead of just key in)
 					if data > 1 then
-						back.NumpadToggleCheckbox:SetValue(true)
+						container.NumpadToggleCheckbox:SetValue(true)
 					end
 					//"start on" option is grayed out for numpad mode 1 (pause/unpause) and numpad mode 2 (restart effect); make sure it's true to prevent unintended behavior
 					if data > 0 then
-						back.NumpadStartOnCheckbox:SetValue(true)
+						container.NumpadStartOnCheckbox:SetValue(true)
 					end
 				end
 			
@@ -1256,7 +1174,7 @@ function PANEL:RebuildControls()
 				numpadpnl:SetPaintBackground(false)
 		
 				numpadpnl.numpad = vgui.Create("DBinder", numpadpnl)
-				//back.Numpad = numpadpnl.numpad
+				//container.Numpad = numpadpnl.numpad
 				numpadpnl.label = vgui.Create("DLabel", numpadpnl)
 				numpadpnl.label:SetText("Effect Key")
 				numpadpnl.label:SetDark(true)
@@ -1300,7 +1218,7 @@ function PANEL:RebuildControls()
 				anotherpnl:SetWidth(90)
 		
 				local check = vgui.Create("DCheckBoxLabel", anotherpnl)
-				back.NumpadToggleCheckbox = check
+				container.NumpadToggleCheckbox = check
 				check:SetText("Toggle")
 				check:SetDark(true)
 				check:SetHeight(15)
@@ -1324,7 +1242,7 @@ function PANEL:RebuildControls()
 				end
 		
 				local check = vgui.Create("DCheckBoxLabel", anotherpnl)
-				back.NumpadStartOnCheckbox = check
+				container.NumpadStartOnCheckbox = check
 				check:SetText("Start on")
 				check:SetDark(true)
 				check:SetHeight(15)
@@ -1418,11 +1336,11 @@ function PANEL:RebuildControls()
 				end
 
 			//category for repeats
-			local cat = vgui.Create("DCollapsibleCategory", lcontainer)
+			local cat = vgui.Create("DCollapsibleCategory", container)
 			cat:SetLabel("Repeat Settings")
-			cat:DockMargin(3,1,-2,3) //-2 right for divider
+			cat:DockMargin(3,1,3,3)
 			cat:Dock(FILL)
-			lcontainer:AddItem(cat)
+			container:AddItem(cat)
 		
 			local default_looptime = ent.DefaultLoopTime
 			local default_loopmode = true
@@ -1476,7 +1394,7 @@ function PANEL:RebuildControls()
 				end
 		
 				local slider = vgui.Create("DNumSlider", rpnl)
-				//back.LoopDelaySlider = slider
+				//container.LoopDelaySlider = slider
 				slider:SetText("Seconds between repeats")
 				slider:SetMinMax(0, 5)
 				slider:SetDefaultValue(default_looptime)
@@ -1534,20 +1452,36 @@ function PANEL:RebuildControls()
 
 		
 		//Add special effect-specific controls
-		ent:SpecialEffectAddControls(self, lcontainer)
+		ent:SpecialEffectAddControls(self, container)
+
+		tabs:AddSheet(ent.PrintName, back, "icon16/pencil.png")
 
 
 		//Add child effect controls
 
+		local back = vgui.Create("DPanel", tabs)
+		back.Paint = function(self, w, h)
+			derma.SkinHook("Paint", "CategoryList", self, w, h)
+			draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70))
+			return false
+		end
+
+		local container = vgui.Create("DCategoryList", back)
+		container.Paint = function(self, w, h)
+			return false
+		end
+		container:Dock(FILL)
+		back.container = container
+
 		//category for "add new effect" button; no header for this one
-		local pnl2 = vgui.Create("DSizeToContents", rcontainer)
+		local pnl2 = vgui.Create("DSizeToContents", container)
 		pnl2:SetSizeX(false)
 		pnl2:Dock(TOP)
-		rcontainer:AddItem(pnl2)
+		container:AddItem(pnl2)
 		//cat:SetContents(pnl2)
 		pnl2.Paint = function(self, w, h) draw.RoundedBox(4, 0, 0, w, h, Color(0,0,0,70)) end
 		pnl2:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
-		pnl2:DockMargin(-2,3,3,3) //fix the 1px of blank white space between the header and the contents; 0 left for divider
+		pnl2:DockMargin(3,3,3,3) //fix the 1px of blank white space between the header and the contents
 		
 		local button = vgui.Create("DButton", pnl2)
 		button:DockMargin(padding,padding,padding,0)
@@ -1562,25 +1496,25 @@ function PANEL:RebuildControls()
 		end
 
 
-		rcontainer.ChildControls = {}
-		self.SpecialEffect_ChildList = rcontainer //make this externally accessible so other funcs can rebuild it
+		container.ChildControls = {}
+		self.SpecialEffect_ChildList = container //make this externally accessible so other funcs can rebuild it
 
 		//This is called below for each child we have when creating this panel, and also called externally when child fx are updated, to add/remove fx from this panel after the fact.
-		function rcontainer.AddOrRemoveChild(child)
+		function container.AddOrRemoveChild(child)
 
 			if !IsValid(ent) or !ent.SpecialEffectChildren then return end
 
 			if ent.SpecialEffectChildren[child] and child.PartCtrl_Ent then
 
-				if !IsValid(rcontainer.ChildControls[child]) then
+				if !IsValid(container.ChildControls[child]) then
 
 					//This effect is a new child, add controls for it
-					local cat = vgui.Create("DCollapsibleCategory", rcontainer)
+					local cat = vgui.Create("DCollapsibleCategory", container)
 					cat:SetLabel(GetParticleName(child))
 					cat.Header:SetToolTip(GetParticleName(child)) //these names can get really long, show the whole name on hover
-					cat:DockMargin(-2,1,3,3) //need extra +1 on left and right to match the margins of first-level category; 0 left for divider
+					cat:DockMargin(3,1,3,3) //need extra +1 on left and right to match the margins of first-level category
 					cat:Dock(TOP)
-					rcontainer:AddItem(cat)
+					container:AddItem(cat)
 					cat:SetExpanded(true)
 	
 					local container2 = vgui.Create("DCategoryList", cat)
@@ -1592,14 +1526,14 @@ function PANEL:RebuildControls()
 					cat:SetContents(container2)
 					cat.container = container2
 
-					rcontainer.ChildControls[child] = cat
+					container.ChildControls[child] = cat
 
 					//Set the child's edit window to this one, so that info table updates and such will update these controls
 					child.PartCtrlWindow = self
 
-					BuildParticleEntControls(child, rcontainer.ChildControls[child].container)
+					BuildParticleEntControls(child, container.ChildControls[child].container)
 
-					local button = vgui.Create("DButton", rcontainer.ChildControls[child].container)
+					local button = vgui.Create("DButton", container.ChildControls[child].container)
 					button:DockMargin(padding,1,padding,0) //1 on top makes it match the margins of all the collapsibles for cpoints
 					//button:DockMargin(3,1,3,0) //alternate style, make it take up the same form factor as the collapsibles; looks a bit odd when compared to other buttons
 					button:SetHeight(30)
@@ -1614,21 +1548,110 @@ function PANEL:RebuildControls()
 
 				end
 
-			elseif IsValid(rcontainer.ChildControls[child]) then
+			elseif IsValid(container.ChildControls[child]) then
 
 				//This effect is no longer a child, remove its controls
-				rcontainer.ChildControls[child]:Remove()
-				rcontainer.ChildControls[child] = nil
+				container.ChildControls[child]:Remove()
+				container.ChildControls[child] = nil
 
 			end
 
+			container.ChildControlsTab:SetText("Attached Particle Effects (" .. table.Count(container.ChildControls) .. ")")
+
 		end
+
+		container.ChildControlsTab = tabs:AddSheet("Attached Particle Effects (0)", back, "icon16/fire.png").Tab
 
 		//Add categories for each child effect
 		for child, _ in pairs (ent.SpecialEffectChildren) do
-			rcontainer.AddOrRemoveChild(child)
+			container.AddOrRemoveChild(child)
 		end
 
+		
+		trackpnl_parent = tabs
+
+	end
+
+
+	//Add lower bar for pause and reset controls; both particles and special fx have this
+	local trackpnl = vgui.Create("Panel", trackpnl_parent)
+	trackpnl:Dock(BOTTOM)
+	trackpnl:DockMargin(5,5,5,5)
+
+	local pause = vgui.Create("DImageButton", trackpnl)
+	pause:SetImage("icon16/control_pause_blue.png")
+	pause:SetStretchToFit(false)
+	pause:SetDrawBackground(true)
+	pause:SetIsToggle(true)
+	pause:SetToggle(false)
+	pause:Dock(LEFT)
+	pause:SetWide(32)
+	pause:SetTooltip("Pause particle effect\n\nIf the effect is modified, restarted, disabled then re-enabled,\nor loaded from a save or dupe, then it will play up to and\nre-pause at the same point in time.")
+
+	function pause.Think()
+		//NOTE: This can be changed without clicking on the button by using the numpad key to pause/unpause
+		if ent and ent.GetPauseTime then //don't cause an error when the ent is removed
+			pause:SetToggle(ent:GetPauseTime() >= 0)
+		end
+	end
+	function pause.OnToggled(val)
+		ent:DoInput("effect_pause")
+	end
+	if ent.utilfx then
+		pause:SetDisabled(true)
+		pause:SetImage("icon16/control_pause.png") //gray icon
+		pause:SetTooltip("Pausing not available for scripted effects")
+	end
+
+	local text = vgui.Create("DLabel", trackpnl)
+	text:SetDark(true)
+	text:DockMargin(5,0,0,0)
+	text:Dock(FILL)
+
+	function text.Think()
+		if ent and ent.GetPauseTime then //don't cause an error when the ent is removed
+			local pausetime = ent:GetPauseTime()
+			local starttime = ent.ParticleStartTime
+			if ent.GetParticleStartTime and ent.GetProjServerside and (ent:GetProjServerside() and svproj_enabled:GetBool()) then 
+				starttime = ent:GetParticleStartTime() //for proj sfx's goofy serverside particlestarttime
+			end
+			local newtext = ""
+			if pausetime >= 0 and starttime != nil and starttime > 0 then
+				if pausetime <= (CurTime() - starttime) then
+					newtext = "Paused at " .. tostring(math.Round(pausetime, 2)) .. " secs"
+				else
+					newtext = "Pausing at " .. tostring(math.Round(pausetime, 2)) .. " secs (in " .. tostring(-math.Round(CurTime() - starttime - pausetime, 2)) .. " secs)"
+				end
+			end
+			if newtext != text:GetText() then
+				text:SetText(newtext)
+			end
+		end
+	end
+
+	local restart = vgui.Create("DImageButton", trackpnl)
+	restart:SetImage("icon16/control_repeat_blue.png")
+	restart:SetStretchToFit(false)
+	restart:SetDrawBackground(true)
+	restart:Dock(RIGHT)
+	restart:SetWide(32)
+	if !ent.utilfx then
+		restart:SetTooltip("Restart particle effect, and clean up all particles")
+	else
+		restart:SetTooltip("Restart particle effect")
+	end
+
+	function restart.DoClick()
+		ent:DoInput("effect_restart")
+	end
+
+	if self.TabPanel then
+		//shift around the contents of both tabs, so that the trackpnl appears to be contained at the bottom of each one
+		for _, v in pairs (self.TabPanel:GetItems()) do
+			v.Panel.container:DockMargin(0,0,0,trackpnl:GetTall()+10)
+		end
+		trackpnl:DockMargin(13,13,13,13)
+		trackpnl:SetZPos(200)
 	end
 
 end
