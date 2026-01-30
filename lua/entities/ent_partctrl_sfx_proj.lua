@@ -15,6 +15,7 @@ ENT.SpecialEffectRoles		= {
 }
 ENT.DisableChildAutoplay	= true
 ENT.CustomPauseInput		= true
+ENT.ScriptedFxDontDisablePause	= true
 
 ENT.DefaultLoopTime = 0.8
 

@@ -1557,6 +1557,7 @@ function PANEL:RebuildControls()
 			end
 
 			container.ChildControlsTab:SetText("Attached Particle Effects (" .. table.Count(container.ChildControls) .. ")")
+			if self.UpdatePauseTooltip then self.UpdatePauseTooltip() end
 
 		end
 
@@ -1638,7 +1639,7 @@ function PANEL:RebuildControls()
 	if !ent.utilfx then
 		restart:SetTooltip("Restart particle effect, and clean up all particles")
 	else
-		restart:SetTooltip("Restart particle effect")
+		restart:SetTooltip("Restart particle effect\n(cleanup not available for scripted effects)")
 	end
 
 	function restart.DoClick()
@@ -1652,6 +1653,51 @@ function PANEL:RebuildControls()
 		end
 		trackpnl:DockMargin(13,13,13,13)
 		trackpnl:SetZPos(200)
+	end
+
+	//If some child fx aren't pausable, then add warning to tooltip
+	if ent.SpecialEffectChildren then
+		self.UpdatePauseTooltip = function()
+			local unpausable_fx
+			local some_fx_pausable
+			for child, _ in pairs (ent.SpecialEffectChildren) do
+				if child.utilfx then
+					unpausable_fx = (unpausable_fx or "") .. "\n" .. GetParticleName(child)
+				else
+					some_fx_pausable = true
+				end
+			end
+			pause.tooltiptext = pause.tooltiptext or pause:GetTooltip()
+			restart.tooltiptext = restart.tooltiptext or restart:GetTooltip()
+			local disable
+			if unpausable_fx then
+				if some_fx_pausable or ent.ScriptedFxDontDisablePause then
+					pause:SetTooltip(pause.tooltiptext .. "\n\nPausing not available for scripted effects:" .. unpausable_fx)
+					restart:SetTooltip(restart.tooltiptext .. "\n\nCleanup not available for scripted effects:" .. unpausable_fx)
+				else
+					//If none of the effects are pausable, then just disable the option until that changes
+					//(this is selectively disabled by projectile fx, because pausing still works for their projectile ents)
+					disable = true
+				end
+			else
+				pause:SetTooltip(pause.tooltiptext)
+				restart:SetTooltip(restart.tooltiptext)
+			end
+			if disable then
+				pause:SetDisabled(true)
+				pause:SetImage("icon16/control_pause.png") //gray icon
+				pause:SetTooltip("Pausing not available for scripted effects:" .. unpausable_fx)
+				restart:SetTooltip("Restart particle effect\n\nCleanup not available for scripted effects:" .. unpausable_fx)
+				//unpause the effect if it's paused, so it doesn't get stuck that way
+				if ent:GetPauseTime() >= 0 then
+					ent:DoInput("effect_pause")
+				end
+			else
+				pause:SetDisabled(false)
+				pause:SetImage("icon16/control_pause_blue.png")
+			end
+		end
+		self.UpdatePauseTooltip()
 	end
 
 end
