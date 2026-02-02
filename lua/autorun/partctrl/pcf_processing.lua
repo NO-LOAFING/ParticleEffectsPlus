@@ -440,7 +440,53 @@ function PartCtrl_ReadPCF(filename, path)
 	Elements = Elements2
 
 	if docache:GetBool() then
-		local str = util.TableToJSON(Elements)
+		//Remove all default values from the cached table, to significantly reduce both the size and load times of cached files
+		local str = {}
+		for effect, effecttab in pairs (Elements) do
+			//PrintTable(effecttab)
+			str[effect] = {}
+			for k, v in pairs (effecttab) do
+				if PartCtrl_DefaultOps._main[k] == v then //check each value in the main table, and don't add it to the tab if it's default
+					continue
+				elseif PartCtrl_DefaultOps[k] then //operator categories
+					local tab = {}
+					for k2, v2 in pairs (v) do //operators
+						local def = PartCtrl_DefaultOps[k][string.lower(v2.functionName)]
+						if def then
+							local tab2 = {}
+							for k3, v3 in pairs (v2) do //check each value in the operator, and only add it to the tab if it's non-default
+								local def2 = def[k3]
+								if def2 == nil then def2 = PartCtrl_DefaultOps[k]._generic[k3] end
+								if def2 != v3 then
+									//this returns false negatives when comparing some decimal values, so double-check them as strings
+									if isnumber(def2) then 
+										if tostring(v3) != tostring(def2) then
+											tab2[k3] = v3
+										end
+									else
+										tab2[k3] = v3
+									end
+								end
+							end
+							tab[k2] = tab2
+						else
+							tab[k2] = v2
+						end
+					end
+					str[effect][k] = tab
+				else
+					//this returns false negatives when comparing some decimal values, so double-check them as strings
+					if isnumber(v) then
+						if tostring(v) == tostring(PartCtrl_DefaultOps._main[k]) then
+							continue
+						end
+					end
+					str[effect][k] = v
+				end
+			end
+		end
+		//PrintTable(str)
+		str = util.TableToJSON(str)
 		if str then
 			local dirs = string.Explode("/", "partctrl_cache_" .. cache_version ..  "/" .. filename)
 			local d = ""
@@ -526,221 +572,6 @@ for k, v in pairs (fixes) do
 end
 fixes = fixes2
 fixes2 = nil
-
-
-//manually copied from gmod's own particle editor 5/13/24
-local default_ops = {
-	//Renderer
-	"Render models", 
-	"render_animated_sprites", 
-	"render_rope", 
-	"render_screen_velocity_rotate", 
-	"render_sprite_trail", 
-	//Operator
-	"Alpha Fade and Decay", 
-	"Alpha Fade and Decay for Tracers", //NEW 3/26/25
-	"Alpha Fade In Random", 
-	"Alpha Fade In Simple", //NEW 3/26/25
-	"Alpha Fade Out Random", 
-	"Alpha Fade Out Simple", //NEW 3/26/25
-	"Clamp Scalar", //NEW 3/26/25
-	"Clamp Vector", //NEW 3/26/25
-	"Color Fade", 
-	"Color Light from Control Point", 
-	"Cull Random", 
-	"Cull relative to model", 
-	"Cull when crossing plane", 
-	"Cull when crossing sphere", //NEW 3/26/25
-	"Inherit Attribute From Parent Particle", //NEW 3/26/25
-	"Lerp EndCap Scalar", //NEW 3/26/25
-	"Lerp EndCap Vector", //NEW 3/26/25
-	"Lerp Initial Scalar", //NEW 3/26/25
-	"Lerp Initial Vector", //NEW 3/26/25
-	"Lifespan Decay", 
-	"Lifespan Maintain Count Decay", //NEW 3/26/25
-	"Lifespan Minimum Alpha Decay", //NEW 3/26/25
-	"Lifespan Minimum Radius Decay", //NEW 3/26/25
-	"Lifespan Minimum Velocity Decay", 
-	"Movement Basic", 
-	"Movement Dampen Relative to Control Point", 
-	"Movement Lag Compensation", //NEW 3/26/25
-	"Movement Lock to Bone", 
-	"Movement Lock to Control Point", 
-	"Movement Lock to Saved Position Along Path", //NEW 3/26/25
-	"Movement Maintain Offset", //NEW 3/26/25
-	"Movement Maintain Position Along Path", 
-	"Movement Match Particle Velocities", 
-	"Movement Max Velocity", 
-	"Movement Place On Ground", //NEW 3/26/25
-	"Movement Rotate Particle Around Axis", 
-	"Noise Scalar", 
-	"Noise Vector", 
-	"Normal Lock to Control Point", //NEW 3/26/25
-	"Normalize Vector", //NEW 3/26/25
-	"Oscillate Scalar", 
-	"Oscillate Scalar Simple", //NEW 3/26/25
-	"Oscillate Vector", 
-	"Oscillate Vector Simple", //NEW 3/26/25
-	"Radius Scale", 
-	"Ramp Scalar Linear Random", //NEW 3/26/25
-	"Ramp Scalar Linear Simple", //NEW 3/26/25
-	"Ramp Scalar Spline Random", //NEW 3/26/25
-	"Ramp Scalar Spline Simple", //NEW 3/26/25
-	"Remap Average Scalar Value to CP", //NEW 3/26/25
-	"Remap Control Point Direction to Vector", //NEW 3/26/25
-	"Remap Control Point to Scalar", 
-	"Remap Control Point to Vector", //NEW 3/26/25
-	"Remap CP Speed to CP", 
-	"Remap CP Velocity to Vector", //NEW 3/26/25
-	"Remap Difference of Sequential Particle Vector to Scalar", //NEW 3/26/25
-	"Remap Direction to CP to Vector", 
-	"Remap Distance Between Two Control Points to CP", //NEW 3/26/25
-	"Remap Distance Between Two Control Points to Scalar", 
-	"Remap Distance to Control Point to Scalar", 
-	"Remap Dot Product to Scalar", 
-	"Remap Particle BBox Volume to CP", //NEW 3/26/25
-	"Remap Percentage Between Two Control Points to Scalar", //NEW 3/26/25
-	"Remap Percentage Between Two Control Points to Vector", //NEW 3/26/25
-	"Remap Scalar", 
-	"Remap Speed to Scalar", //NEW 3/26/25
-	"Remap Velocity to Vector", //NEW 3/26/25
-	"Restart Effect after Duration", //NEW 3/26/25
-	"Rotate Vector Random", //NEW 3/26/25
-	"Rotation Basic", 
-	"Rotation Orient Relative to CP", 
-	"Rotation Orient to 2D Direction", 
-	"Rotation Spin Roll", 
-	"Rotation Spin Yaw", 
-	"Set child control points from particle positions", 
-	"Set Control Point Positions", 
-	"Set Control Point Rotation", //NEW 3/26/25
-	"Set Control Point to Impact Point", //NEW 3/26/25
-	"Set Control Point To Particles' Center", 
-	"Set Control Point To Player", 
-	"Set control points from particle positions", //NEW 3/26/25
-	"Set CP Offset to CP Percentage Between Two Control Points", //NEW 3/26/25
-	"Set CP Orientation to CP Direction", //NEW 3/26/25
-	"Set per child control point from particle positions", //NEW 3/26/25
-	"Stop Effect after Duration", //NEW 3/26/25
-	//Initializer
-	"Alpha Random", 
-	"Color Lit Per Particle", 
-	"Color Random", 
-	"Cull relative to model", //NEW 3/26/25
-	"Cull relative to Ray Trace Environment", //NEW 3/26/25
-	"Inherit Initial Value From Parent Particle", //NEW 3/26/25
-	"Lifetime From Sequence", 
-	"Lifetime from Time to Impact", 
-	"Lifetime Pre-Age Noise", 
-	"Lifetime Random", 
-	"Move Particles Between 2 Control Points", 
-	"Normal Align to CP", //NEW 3/26/25
-	"Normal Modify Offset Random", //NEW 3/26/25
-	"Offset Vector to Vector", //NEW 3/26/25
-	"Position Along Epitrochoid", 
-	"Position Along Path Random", 
-	"Position Along Path Sequential", 
-	"Position Along Ring", 
-	"Position From Chaotic Attractor", 
-	"Position from Parent Cache", 
-	"Position From Parent Particles", 
-	"Position In CP Hierarchy", 
-	"Position Modify Offset Random", 
-	"Position Modify Place On Ground", 
-	"Position Modify Warp Random", 
-	"Position on Model Random", 
-	"Position Within Box Random", 
-	"Position Within Sphere Random", 
-	"Radius Random", 
-	"Remap Control Point to Scalar", 
-	"Remap Control Point to Vector", 
-	"Remap CP Orientation to Rotation", //NEW 3/26/25
-	"Remap Initial Direction to CP to Vector", //NEW 3/26/25
-	"Remap Initial Distance to Control Point to Scalar", 
-	"Remap Initial Scalar",
-	"Remap Noise to Scalar", 
-	"Remap Particle Count to Scalar", 
-	"Remap Scalar to Vector", 
-	"Remap Speed to Scalar", //NEW 3/26/25
-	"Rotation Random", 
-	"Rotation Speed Random", 
-	"Rotation Yaw Flip Random", 
-	"Rotation Yaw Random", 
-	"Scalar Random", 
-	"Sequence From Control Point", //NEW 3/26/25
-	"Sequence Random", 
-	"Sequence Two Random", 
-	"Set Hitbox Position on Model", 
-	"Set Hitbox to Closest Hitbox", 
-	"Trail Length Random", 
-	"Vector Component Random", 
-	"Vector Random", 
-	"Velocity Inherit from Control Point", 
-	"Velocity Noise", 
-	"Velocity Random", 
-	"Velocity Repulse from World", 
-	"Velocity Set from Control Point", 
-	//Emitter
-	"emit noise", 
-	"emit to maintain count", //NEW 3/26/25
-	"emit_continuously", 
-	"emit_instantaneously", 
-	//ForceGenerator
-	"Create vortices from parent particles", //NEW 3/26/25
-	"Force based on distance from plane", //NEW 3/26/25
-	"Pull towards control point", 
-	"random force", 
-	"time varying force", //NEW 3/26/25
-	"turbulent force", //NEW 3/26/25
-	"twist around axis", 
-	//Constraint
-	"Collision via traces", 
-	"Constrain distance to control point", 
-	"Constrain distance to path between two control points", 
-	"Constrain particles to a box", //NEW 3/26/25
-	"Prevent passing through a plane", 
-	"Prevent passing through static part of world", 
-}
-local default_ops2 = {}
-for _, k in pairs (default_ops) do
-	default_ops2[string.lower(k)] = true
-end
-default_ops = default_ops2
-default_ops2 = nil
-
-function PartCtrl_GetUnhandledOperators()
-	local allcategories = {
-		renderers = {},
-		operators = {},
-		initializers = {},
-		emitters = {},
-		forces = {}, //forcegenerator
-		constraints = {},
-	}
-	for _, filename in pairs (PartCtrl_AllPCFPaths) do
-		local tab = PartCtrl_ReadPCF(filename)
-		if tab then
-			for particle, ptab in pairs (tab) do
-				for category, _ in pairs (allcategories) do
-					if ptab[category] then
-						for _, op in pairs (ptab[category]) do
-							local name = string.lower(op.functionName)
-							if fixes[name] then name = fixes[name] end
-							
-							if !default_ops[name] then
-								allcategories[category][name] = allcategories[category][name] or {count = 0, paths = {}}
-								allcategories[category][name].count = allcategories[category][name].count + 1
-								table.insert(allcategories[category][name].paths, filename .. " " .. particle)
-							end
-						end
-					end
-				end
-			end
-		end
-	end
-
-	PrintTable(allcategories)
-end
 
 
 //For testing purposes, lists all fx using a certain operator, and optionally prints the operator's values
@@ -1006,6 +837,1586 @@ function PartCtrl_GetMapFx()
 	end
 
 end
+
+
+//copied 1/1/25; if an update changes a default value on the main effect table or on any operator, update this table and increment cache_version above
+PartCtrl_DefaultOps = {
+	_main = {
+		["Sort particles"] = true,
+		["batch particle systems"] = false,
+		bounding_box_max = Vector(10,10,10),
+		bounding_box_min = Vector(-10,-10,-10),
+		color = Color(255,255,255,255),
+		["control point to disable rendering if it is the camera"] = -1,
+		cull_control_point = 0,
+		cull_cost = 1,
+		cull_radius = 0,
+		cull_replacement_definition = "",
+		["group id"] = 0,
+		initial_particles = 0,
+		material = "vgui/white",
+		max_particles = 1000,
+		["maximum draw distance"] = 100000,
+		["maximum sim tick rate"] = 0,
+		["maximum time step"] = 0.10000000149012,
+		["minimum rendered frames"] = 0,
+		["minimum sim tick rate"] = 0,
+		normal = Vector(0,0,1),
+		preventNameBasedLookup = false,
+		radius = 5,
+		rotation = 0,
+		rotation_speed = 0,
+		["screen space effect"] = false,
+		sequence_number = 0,
+		["sequence_number 1"] = 0,
+		["time to sleep when not drawn"] = 8,
+		["view model effect"] = false,
+	},
+	renderers = {
+		_generic = {
+			["Visibility Alpha Scale maximum"] = 1, //render_rope doesn't actually have the Visibility ones; whatever
+			["Visibility Alpha Scale minimum"] = 0,
+			["Visibility Camera Depth Bias"] = 0,
+			["Visibility Proxy Input Control Point Number"] = -1,
+			["Visibility Proxy Radius"] = 1,
+			["Visibility Radius Scale maximum"] = 1,
+			["Visibility Radius Scale minimum"] = 1,
+			["Visibility input distance maximum"] = 0,
+			["Visibility input distance minimum"] = 0,
+			["Visibility input dot maximum"] = 0,
+			["Visibility input dot minimum"] = 0,
+			["Visibility input maximum"] = 1,
+			["Visibility input minimum"] = 0,
+			["operator end cap state"] = -1,
+			["operator end fadein"] = 0,
+			["operator end fadeout"] = 0,
+			["operator fade oscillate"] = 0,
+			["operator start fadein"] = 0,
+			["operator start fadeout"] = 0,
+			["operator strength random scale max"] = 1,
+			["operator strength random scale min"] = 1,
+			["operator strength scale seed"] = 0,
+			["operator time offset max"] = 0,
+			["operator time offset min"] = 0,
+			["operator time offset seed"] = 0,
+			["operator time scale max"] = 1,
+			["operator time scale min"] = 1,
+			["operator time scale seed"] = 0,
+			["operator time strength random scale max"] = 1,
+		},
+		["Render models"] = {
+			["activity override"] = "",
+			["animation rate"] = 30,
+			["animation rate scale field"] = 10,
+			["orient model z to normal"] = false,
+			["scale animation rate"] = false,
+			["sequence 0 model"] = "NONE",
+			["skin number"] = 0,
+		},
+		render_animated_sprites = {
+			["animation rate"] = 0.10000000149012,
+			animation_fit_lifetime = false,
+			["orientation control point"] = -1,
+			orientation_type = 0,
+			["second sequence animation rate"] = 0,
+			["use animation rate as FPS"] = false,
+		},
+		render_rope = {
+			["scale CP end"] = -1,
+			["scale CP start"] = -1,
+			["scale offset by CP distance"] = false,
+			["scale scroll by CP distance"] = false,
+			["scale texture by CP distance"] = false,
+			subdivision_count = 3,
+			texel_size = 4,
+			texture_offset = 0,
+			texture_scroll_rate = 0,
+		},
+		render_screen_velocity_rotate = {
+			forward_angle = -90,
+			["rotate_rate(dps)"] = 0,
+		},
+		render_sprite_trail = {
+			["animation rate"] = 0.10000000149012,
+			["constrain radius to length"] = true,
+			["ignore delta time"] = false,
+			["length fade in time"] = 0,
+			["max length"] = 2000,
+			["min length"] = 0,
+			["tail color and alpha scale factor"] = {
+				[1] = 1,
+				[2] = 1,
+				[3] = 1,
+				[4] = 1,
+			},
+		},
+	},
+	operators = {
+		_generic = {
+			["operator end cap state"] = -1,
+			["operator end fadein"] = 0,
+			["operator end fadeout"] = 0,
+			["operator fade oscillate"] = 0,
+			["operator start fadein"] = 0,
+			["operator start fadeout"] = 0,
+			["operator strength random scale max"] = 1,
+			["operator strength random scale min"] = 1,
+			["operator strength scale seed"] = 0,
+			["operator time offset max"] = 0,
+			["operator time offset min"] = 0,
+			["operator time offset seed"] = 0,
+			["operator time scale max"] = 1,
+			["operator time scale min"] = 1,
+			["operator time scale seed"] = 0,
+			["operator time strength random scale max"] = 1,
+		},
+		["Alpha Fade and Decay"] = {
+			end_alpha = 0,
+			end_fade_in_time = 0.5,
+			end_fade_out_time = 1,
+			start_alpha = 1,
+			start_fade_in_time = 0,
+			start_fade_out_time = 0.5,
+		},
+		["Alpha Fade and Decay for Tracers"] = {
+			end_alpha = 0,
+			end_fade_in_time = 0.5,
+			end_fade_out_time = 1,
+			start_alpha = 1,
+			start_fade_in_time = 0,
+			start_fade_out_time = 0.5,
+		},
+		["Alpha Fade In Random"] = {
+			["fade in time exponent"] = 1,
+			["fade in time max"] = 0.25,
+			["fade in time min"] = 0.25,
+			["proportional 0/1"] = true,
+		},
+		["Alpha Fade In Simple"] = {
+			["proportional fade in time"] = 0.25,
+		},
+		["Alpha Fade Out Random"] = {
+			["ease in and out"] = true,
+			["fade bias"] = 0.5,
+			["fade out time exponent"] = 1,
+			["fade out time max"] = 0.25,
+			["fade out time min"] = 0.25,
+			["proportional 0/1"] = true,
+		},
+		["Alpha Fade Out Simple"] = {
+			["proportional fade out time"] = 0.25,
+		},
+		["Clamp Scalar"] = {
+			["output field"] = 3,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Clamp Vector"] = {
+			["output field"] = 0,
+			["output maximum"] = Vector(1,1,1),
+			["output minimum"] = Vector(0,0,0),
+		},
+		["Color Fade"] = {
+			color_fade = Color(255,255,255,255),
+			ease_in_and_out = true,
+			fade_end_time = 1,
+			fade_start_time = 0,
+			["output field"] = 6,
+		},
+		["Color Light from Control Point"] = {
+			["Clamp Maximum Light Value to Initial Color"] = false,
+			["Clamp Minimum Light Value to Initial Color"] = false,
+			["Compute Normals From Control Points"] = false,
+			["Half-Lambert Normals"] = true,
+			["Initial Color Bias"] = 0,
+			["Light 1 0% Distance"] = 200,
+			["Light 1 50% Distance"] = 100,
+			["Light 1 Color"] = Color(0,0,0,255),
+			["Light 1 Control Point"] = 0,
+			["Light 1 Control Point Offset"] = Vector(0,0,0),
+			["Light 1 Direction"] = Vector(0,0,0),
+			["Light 1 Dynamic Light"] = false,
+			["Light 1 Spot Inner Cone"] = 30,
+			["Light 1 Spot Outer Cone"] = 45,
+			["Light 1 Type 0=Point 1=Spot"] = false,
+			["Light 2 0% Distance"] = 200,
+			["Light 2 50% Distance"] = 100,
+			["Light 2 Color"] = Color(0,0,0,255),
+			["Light 2 Control Point"] = 0,
+			["Light 2 Control Point Offset"] = Vector(0,0,0),
+			["Light 2 Direction"] = Vector(0,0,0),
+			["Light 2 Dynamic Light"] = false,
+			["Light 2 Spot Inner Cone"] = 30,
+			["Light 2 Spot Outer Cone"] = 45,
+			["Light 2 Type 0=Point 1=Spot"] = false,
+			["Light 3 0% Distance"] = 200,
+			["Light 3 50% Distance"] = 100,
+			["Light 3 Color"] = Color(0,0,0,255),
+			["Light 3 Control Point"] = 0,
+			["Light 3 Control Point Offset"] = Vector(0,0,0),
+			["Light 3 Direction"] = Vector(0,0,0),
+			["Light 3 Dynamic Light"] = false,
+			["Light 3 Spot Inner Cone"] = 30,
+			["Light 3 Spot Outer Cone"] = 45,
+			["Light 3 Type 0=Point 1=Spot"] = false,
+			["Light 4 0% Distance"] = 200,
+			["Light 4 50% Distance"] = 100,
+			["Light 4 Color"] = Color(0,0,0,255),
+			["Light 4 Control Point"] = 0,
+			["Light 4 Control Point Offset"] = Vector(0,0,0),
+			["Light 4 Direction"] = Vector(0,0,0),
+			["Light 4 Dynamic Light"] = false,
+			["Light 4 Spot Inner Cone"] = 30,
+			["Light 4 Spot Outer Cone"] = 45,
+			["Light 4 Type 0=Point 1=Spot"] = false,
+
+		},
+		["Cull Random"] = {
+			["Cull End Time"] = 1,
+			["Cull Percentage"] = 0.5,
+			["Cull Start Time"] = 0,
+			["Cull Time Exponent"] = 1,
+
+		},
+		["Cull relative to model"] = {
+			control_point_number = 0,
+			["cull outside instead of inside"] = false,
+			["hitbox set"] = "effects",
+			["use only bounding box"] = false,
+		},
+		["Cull when crossing plane"] = {
+			["Control Point for point on plane"] = 0,
+			["Cull plane offset"] = 0,
+			["Plane Normal"] = Vector(0,0,1),
+		},
+		["Cull when crossing sphere"] = {
+			["Control Point"] = 0,
+			["Control Point offset"] = Vector(0,0,0),
+			["Cull Distance"] = 0,
+			["Cull inside instead of outside"] = false,
+		},
+		["Inherit Attribute From Parent Particle"] = {
+			["Inherited Field"] = 3,
+			["Particle Increment Amount"] = 1,
+			["Random Parent Particle Distribution"] = false,
+			Scale = 1,
+		},
+		["Lerp EndCap Scalar"] = {
+			["lerp time"] = 1,
+			["output field"] = 3,
+			["value to lerp to"] = 1,
+		},
+		["Lerp EndCap Vector"] = {
+			["lerp time"] = 1,
+			["output field"] = 0,
+			["value to lerp to"] = Vector(0,0,0),
+		},
+		["Lerp Initial Scalar"] = {
+			["end time"] = 1,
+			["output field"] = 3,
+			["start time"] = 0,
+			["value to lerp to"] = 1,
+		},
+		["Lerp Initial Vector"] = {
+			["end time"] = 1,
+			["output field"] = 0,
+			["start time"] = 0,
+			["value to lerp to"] = Vector(0,0,0),
+		},
+		["Lifespan Decay"] = {},
+		["Lifespan Maintain Count Decay"] = {
+			["count to maintain"] = 100,
+			["decay delay"] = 0,
+			["maintain count scale control point"] = -1,
+			["maintain count scale control point field"] = 0,
+		},
+		["Lifespan Minimum Alpha Decay"] = {
+			["minimum alpha"] = 0,
+		},
+		["Lifespan Minimum Radius Decay"] = {
+			["minimum radius"] = 1,
+		},
+		["Lifespan Minimum Velocity Decay"] = {
+			["minimum velocity"] = 1,
+		},
+		["Movement Basic"] = {
+			drag = 0,
+			gravity = Vector(0,0,0),
+			["max constraint passes"] = 3,
+		},
+		["Movement Dampen Relative to Control Point"] = {
+			control_point_number = 0,
+			["dampen scale"] = 1,
+			["falloff range"] = 100,
+		},
+		["Movement Lag Compensation"] = {
+			["Desired Velocity CP"] = -1,
+			["Desired Velocity CP Field Override(for speed only)"] = -1,
+			["Latency CP"] = -1,
+			["Latency CP field"] = 0,
+		},
+		["Movement Lock to Bone"] = {
+			control_point_number = 0,
+			["hitbox set"] = "effects",
+			["lifetime fade end"] = 0,
+			["lifetime fade start"] = 0,
+		},
+		["Movement Lock to Control Point"] = {
+			control_point_number = 0,
+			["distance fade range"] = 0,
+			end_fadeout_exponent = 1,
+			end_fadeout_max = 1,
+			end_fadeout_min = 1,
+			["lock rotation"] = false,
+			start_fadeout_exponent = 1,
+			start_fadeout_max = 1,
+			start_fadeout_min = 1,
+		},
+		["Movement Lock to Saved Position Along Path"] = {
+			["Use sequential CP pairs between start and end point"] = false,
+			bulge = 0,
+			["bulge control 0=random 1=orientation of start pnt 2=orientation of end point"] = 0,
+			["end control point number"] = 1,
+			["mid point position"] = 0.5,
+			["start control point number"] = 0,
+		},
+		["Movement Maintain Offset"] = {
+			["Desired Offset"] = Vector(0,0,0),
+			["Local Space CP"] = -1,
+			["Scale by Radius"] = false,
+		},
+		["Movement Maintain Position Along Path"] = {
+			bulge = 0,
+			["bulge control 0=random 1=orientation of start pnt 2=orientation of end point"] = 0,
+			["cohesion strength"] = 1,
+			["control point movement tolerance"] = 0,
+			["end control point number"] = 0,
+			["maximum distance"] = 0,
+			["mid point position"] = 0.5,
+			["particles to map from start to end"] = 100,
+			["restart behavior (0 = bounce, 1 = loop )"] = true,
+			["start control point number"] = 0,
+			["use existing particle count"] = false,
+		},
+		["Movement Match Particle Velocities"] = {
+			["Control Point to Broadcast Speed and Direction To"] = -1,
+			["Direction Matching Strength"] = 0.25,
+			["Speed Matching Strength"] = 0.25,
+		},
+		["Movement Max Velocity"] = {
+			["Maximum Velocity"] = 0,
+			["Override CP field"] = 0,
+			["Override Max Velocity from this CP"] = -1,
+		},
+		["Movement Place On Ground"] = {
+			["CP movement tolerance"] = 32,
+			["collision group"] = "NONE",
+			["include water"] = false,
+			["interploation distance tolerance cp"] = -1,
+			["interpolation rate"] = 0,
+			["kill on no collision"] = false,
+			["max trace length"] = 128,
+			offset = 0,
+			["reference CP 1"] = -1,
+			["reference CP 2"] = -1,
+			["trace offset"] = 64,
+		},
+		["Movement Rotate Particle Around Axis"] = {
+			["Control Point"] = 0,
+			["Rotation Axis"] = Vector(0,0,1),
+			["Rotation Rate"] = 180,
+			["Use Local Space"] = false,
+		},
+		["Noise Scalar"] = {
+			additive = false,
+			["noise coordinate scale"] = 0.10000000149012,
+			["output field"] = 3,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Noise Vector"] = {
+			additive = false,
+			["noise coordinate scale"] = 0.10000000149012,
+			["output field"] = 6,
+			["output maximum"] = Vector(1,1,1),
+			["output minimum"] = Vector(0,0,0),
+		},
+		["Normal Lock to Control Point"] = {
+			control_point_number = 0,
+		},
+		["Normalize Vector"] = {
+			["output field"] = 0,
+			["scale factor"] = 1,
+		},
+		["Oscillate Scalar"] = {
+			["end time max"] = 1,
+			["end time min"] = 1,
+			["oscillation field"] = 7,
+			["oscillation frequency max"] = 1,
+			["oscillation frequency min"] = 1,
+			["oscillation multiplier"] = 2,
+			["oscillation rate max"] = 0,
+			["oscillation rate min"] = 0,
+			["oscillation start phase"] = 0.5,
+			["proportional 0/1"] = true,
+			["start time max"] = 0,
+			["start time min"] = 0,
+			["start/end proportional"] = true,
+		},
+		["Oscillate Scalar Simple"] = {
+			["oscillation field"] = 7,
+			["oscillation frequency"] = 1,
+			["oscillation multiplier"] = 2,
+			["oscillation rate"] = 0,
+			["oscillation start phase"] = 0.5,
+		},
+		["Oscillate Vector"] = {
+			["end time max"] = 1,
+			["end time min"] = 1,
+			["oscillation field"] = 0,
+			["oscillation frequency max"] = Vector(1,1,1),
+			["oscillation frequency min"] = Vector(1,1,1),
+			["oscillation multiplier"] = 2,
+			["oscillation rate max"] = Vector(0,0,0),
+			["oscillation rate min"] = Vector(0,0,0),
+			["oscillation start phase"] = 0.5,
+			["proportional 0/1"] = true,
+			["start time max"] = 0,
+			["start time min"] = 0,
+			["start/end proportional"] = true,
+		},
+		["Oscillate Vector Simple"] = {
+			["oscillation field"] = 0,
+			["oscillation frequency"] = Vector(1,1,1),
+			["oscillation multiplier"] = 2,
+			["oscillation rate"] = Vector(0,0,0),
+			["oscillation start phase"] = 0.5,
+		},
+		["Radius Scale"] = {
+			ease_in_and_out = false,
+			end_time = 1,
+			radius_end_scale = 1,
+			radius_start_scale = 1,
+			scale_bias = 0.5,
+			start_time = 0,
+		},
+		["Ramp Scalar Linear Random"] = {
+			["end time max"] = 1,
+			["end time min"] = 1,
+			["ramp field"] = 3,
+			["ramp rate max"] = 0,
+			["ramp rate min"] = 0,
+			["start time max"] = 0,
+			["start time min"] = 0,
+			["start/end proportional"] = true,
+		},
+		["Ramp Scalar Linear Simple"] = {
+			["end time"] = 1,
+			["ramp field"] = 3,
+			["ramp rate"] = 0,
+			["start time"] = 0,
+		},
+		["Ramp Scalar Spline Random"] = {
+			bias = 0.5,
+			["ease out"] = false,
+			["end time max"] = 1,
+			["end time min"] = 1,
+			["ramp field"] = 3,
+			["ramp rate max"] = 0,
+			["ramp rate min"] = 0,
+			["start time max"] = 0,
+			["start time min"] = 0,
+			["start/end proportional"] = true,
+		},
+		["Ramp Scalar Spline Simple"] = {
+			["ease out"] = false,
+			["end time"] = 1,
+			["ramp field"] = 3,
+			["ramp rate"] = 0,
+			["start time"] = 0,
+		},
+		["Remap Average Scalar Value to CP"] = {
+			["Scalar field"] = 3,
+			["input volume maximum"] = 1,
+			["input volume minimum"] = 0,
+			["output control point"] = 1,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Remap Control Point Direction to Vector"] = {
+			["control point number"] = 0,
+			["output field"] = 0,
+			["scale factor"] = 1,
+		},
+		["Remap Control Point to Scalar"] = {
+			["emitter lifetime end time (seconds)"] = -1,
+			["emitter lifetime start time (seconds)"] = -1,
+			["input control point number"] = 0,
+			["input field 0-2 X/Y/Z"] = 0,
+			["input maximum"] = 1,
+			["input minimum"] = 0,
+			["output field"] = 3,
+			["output is scalar of current value"] = false,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Remap Control Point to Vector"] = {
+			["accelerate position"] = false,
+			["emitter lifetime end time (seconds)"] = -1,
+			["emitter lifetime start time (seconds)"] = -1,
+			["input control point number"] = 0,
+			["input maximum"] = Vector(0,0,0),
+			["input minimum"] = Vector(0,0,0),
+			["local space CP"] = -1,
+			["offset position"] = false,
+			["output field"] = 0,
+			["output is scalar of current value"] = false,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = Vector(0,0,0),
+			["output minimum"] = Vector(0,0,0),
+		},
+		["Remap CP Speed to CP"] = {
+			["Output field 0-2 X/Y/Z"] = 0,
+			["input control point"] = 0,
+			["input maximum"] = 1,
+			["input minimum"] = 0,
+			["output control point"] = -1,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Remap CP Velocity to Vector"] = {
+			["control point"] = 0,
+			normalize = false,
+			["output field"] = 0,
+			["scale factor"] = 1,
+		},
+		["Remap Difference of Sequential Particle Vector to Scalar"] = {
+			["also set ouput to previous particle"] = false,
+			["difference maximum"] = 128,
+			["difference minimum"] = 0,
+			["input field"] = 0,
+			["only active within specified difference"] = false,
+			["output field"] = 3,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Remap Direction to CP to Vector"] = {
+			["control point"] = 0,
+			normalize = false,
+			["offset axis"] = Vector(0,0,0),
+			["offset rotation"] = 0,
+			["output field"] = 0,
+			["scale factor"] = 1,
+		},
+		["Remap Distance Between Two Control Points to CP"] = {
+			["LOS Failure Scale"] = 0,
+			["LOS collision group"] = "NONE",
+			["Maximum Trace Length"] = -1,
+			["distance maximum"] = 128,
+			["distance minimum"] = 0,
+			["ending control point"] = 1,
+			["ensure line of sight"] = false,
+			["output control point"] = 2,
+			["output control point field"] = 0,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+			["starting control point"] = 0,
+		},
+		["Remap Distance Between Two Control Points to Scalar"] = {
+			["LOS Failure Scalar"] = 0,
+			["LOS collision group"] = "NONE",
+			["Maximum Trace Length"] = -1,
+			["distance maximum"] = 128,
+			["distance minimum"] = 0,
+			["ending control point"] = 1,
+			["ensure line of sight"] = false,
+			["output field"] = 3,
+			["output is scalar of current value"] = false,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+			["starting control point"] = 0,
+		},
+		["Remap Distance to Control Point to Scalar"] = {
+			["LOS Failure Scalar"] = 0,
+			["LOS collision group"] = "NONE",
+			["Maximum Trace Length"] = -1,
+			["control point"] = 0,
+			["distance maximum"] = 128,
+			["distance minimum"] = 0,
+			["ensure line of sight"] = false,
+			["only active within specified distance"] = false,
+			["output field"] = 3,
+			["output is scalar of current value"] = false,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Remap Dot Product to Scalar"] = {
+			["first input control point"] = 0,
+			["input maximum (-1 to 1)"] = 1,
+			["input minimum (-1 to 1)"] = 0,
+			["only active within specified input range"] = false,
+			["output field"] = 3,
+			["output is scalar of current value"] = false,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+			["second input control point"] = 0,
+			["use particle velocity for first input"] = false,
+		},
+		["Remap Particle BBox Volume to CP"] = {
+			["input volume maximum in cubic units"] = 128,
+			["input volume minimum in cubic units"] = 0,
+			["output control point"] = -1,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Remap Percentage Between Two Control Points to Scalar"] = {
+			["ending control point"] = 1,
+			["only active within input range"] = false,
+			["output field"] = 3,
+			["output is scalar of current value"] = false,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+			["percentage maximum"] = 1,
+			["percentage minimum"] = 0,
+			["starting control point"] = 0,
+			["treat distance between points as radius"] = true,
+		},
+		["Remap Percentage Between Two Control Points to Vector"] = {
+			["ending control point"] = 1,
+			["only active within input range"] = false,
+			["output field"] = 6,
+			["output is scalar of current value"] = false,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = Vector(1,1,1),
+			["output minimum"] = Vector(0,0,0),
+			["percentage maximum"] = 1,
+			["percentage minimum"] = 0,
+			["starting control point"] = 0,
+			["treat distance between points as radius"] = true,
+		},
+		["Remap Scalar"] = {
+			["input field"] = 7,
+			["input maximum"] = 1,
+			["input minimum"] = 0,
+			["output field"] = 3,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Remap Speed to Scalar"] = {
+			["input maximum"] = 1,
+			["input minimum"] = 0,
+			["output field"] = 3,
+			["output is scalar of current value"] = false,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Remap Velocity to Vector"] = {
+			normalize = false,
+			["output field"] = 0,
+			["scale factor"] = 1,
+		},
+		["Restart Effect after Duration"] = {
+			["Child Group ID"] = 0,
+			["Control Point Field X/Y/Z"] = 0,
+			["Control Point to Scale Duration"] = -1,
+			["Maximum Restart Time"] = 1,
+			["Minimum Restart Time"] = 0,
+			["Only Restart Children"] = false,
+		},
+		["Rotate Vector Random"] = {
+			["Normalize Ouput"] = 0,
+			["Rotation Axis Max"] = Vector(0,0,1),
+			["Rotation Axis Min"] = Vector(0,0,1),
+			["Rotation Rate Max"] = 180,
+			["Rotation Rate Min"] = 180,
+			["output field"] = 21,
+		},
+		["Rotation Basic"] = {},
+		["Rotation Orient Relative to CP"] = {
+			["Control Point"] = 0,
+			["Rotation Offset"] = 0,
+			["Spin Strength"] = 1,
+			["rotation field"] = 4,
+		},
+		["Rotation Orient to 2D Direction"] = {
+			["Rotation Offset"] = 0,
+			["Spin Strength"] = 1,
+			["rotation field"] = 4,
+		},
+		["Rotation Spin Roll"] = {
+			spin_rate_degrees = 0,
+			spin_rate_min = 0,
+			spin_stop_time = 0,
+		},
+		["Rotation Spin Yaw"] = {
+			yaw_rate_degrees = 0,
+			yaw_rate_min = 0,
+			yaw_stop_time = 0,
+		},
+		["Set child control points from particle positions"] = {
+			["# of control points to set"] = 1,
+			["First control point to set"] = 0,
+			["Group ID to affect"] = 0,
+			["first particle to copy"] = 0,
+			["set orientation"] = false,
+		},
+		["Set Control Point Positions"] = {
+			["Control Point to offset positions from"] = 0,
+			["First Control Point Location"] = Vector(128,0,0),
+			["First Control Point Number"] = 1,
+			["First Control Point Parent"] = 0,
+			["Fourth Control Point Location"] = Vector(0,-128,0),
+			["Fourth Control Point Number"] = 4,
+			["Fourth Control Point Parent"] = 0,
+			["Second Control Point Location"] = Vector(0,128,0),
+			["Second Control Point Number"] = 2,
+			["Second Control Point Parent"] = 0,
+			["Set positions in world space"] = false,
+			["Third Control Point Location"] = Vector(-128,0,0),
+			["Third Control Point Number"] = 3,
+			["Third Control Point Parent"] = 0,
+		},
+		["Set Control Point Rotation"] = {
+			["Control Point"] = 0,
+			["Local Space Control Point"] = -1,
+			["Rotation Axis"] = Vector(0,0,1),
+			["Rotation Rate"] = 180,
+		},
+		["Set Control Point to Impact Point"] = {
+			["Control Point to Set"] = 1,
+			["Control Point to Trace From"] = 1,
+			["Max Trace Length"] = 1024,
+			["Offset End Point Amount"] = 0,
+			["Trace Direction Override"] = Vector(0,0,0),
+			["Trace Update Rate"] = 0.5,
+			["trace collision group"] = "NONE",
+		},
+		["Set Control Point To Particles' Center"] = {
+			["Center Offset"] = Vector(0,0,0),
+			["Control Point Number to Set"] = 1,
+		},
+		["Set Control Point To Player"] = {
+			["Control Point Number"] = 1,
+			["Control Point Offset"] = Vector(0,0,0),
+			["Use Eye Orientation"] = false,
+		},
+		["Set control points from particle positions"] = {
+			["# of control points to set"] = 1,
+			["First control point to set"] = 0,
+			["first particle to copy"] = 0,
+			["set orientation"] = false,
+		},
+		["Set CP Offset to CP Percentage Between Two Control Points"] = {
+			["ending control point"] = 1,
+			["input control point"] = 3,
+			["offset amount"] = Vector(0,0,0),
+			["offset control point"] = 2,
+			["output control point"] = 4,
+			["percentage bias"] = 0.5,
+			["percentage maximum"] = 1,
+			["percentage minimum"] = 0,
+			["starting control point"] = 0,
+			["treat distance between points as radius"] = true,
+			["treat offset as scale of total distance"] = false,
+		},
+		["Set CP Orientation to CP Direction"] = {
+			["input control point"] = 0,
+			["output control point"] = 0,
+		},
+		["Set per child control point from particle positions"] = {
+			["# of children to set"] = 1,
+			["Group ID to affect"] = 0,
+			["control point to set"] = 0,
+			["first particle to copy"] = 0,
+			["set orientation"] = false,
+		},
+		["Stop Effect after Duration"] = {
+			["Control Point Field X/Y/Z"] = 0,
+			["Control Point to Scale Duration"] = -1,
+			["Destroy All Particles Immediately"] = false,
+			["Duration at which to Stop"] = 1,
+		},
+	},
+	initializers = {
+		_generic = {
+			["operator end cap state"] = -1,
+			["operator end fadein"] = 0,
+			["operator end fadeout"] = 0,
+			["operator fade oscillate"] = 0,
+			["operator start fadein"] = 0,
+			["operator start fadeout"] = 0,
+			["operator strength random scale max"] = 1,
+			["operator strength random scale min"] = 1,
+			["operator strength scale seed"] = 0,
+			["operator time offset max"] = 0,
+			["operator time offset min"] = 0,
+			["operator time offset seed"] = 0,
+			["operator time scale max"] = 1,
+			["operator time scale min"] = 1,
+			["operator time scale seed"] = 0,
+			["operator time strength random scale max"] = 1,
+		},
+		["Alpha Random"] = {
+			alpha_max = 255,
+			alpha_min = 255,
+			alpha_random_exponent = 1,
+		},
+		["Color Lit Per Particle"] = {
+			color1 = Color(255,255,255,255),
+			color2 = Color(255,255,255,255),
+			["light amplification amount"] = 1,
+			["light bias"] = 0,
+			["tint blend mode"] = 0,
+			["tint clamp max"] = Color(255,255,255,255),
+			["tint clamp min"] = Color(0,0,0,0),
+		},
+		["Color Random"] = {
+			color1 = Color(255,255,255,255),
+			color2 = Color(255,255,255,255),
+			["light amplification amount"] = 1,
+			["output field"] = 6,
+			["tint blend mode"] = 0,
+			["tint clamp max"] = Color(255,255,255,255),
+			["tint clamp min"] = Color(0,0,0,0),
+			["tint control point"] = 0,
+			["tint update movement threshold"] = 32,
+			tint_perc = 0,
+		},
+		["Cull relative to model"] = {
+			control_point_number = 0,
+			["cull outside instead of inside"] = false,
+			["hitbox set"] = "effects",
+			["use only bounding box"] = false,
+		},
+		["Cull relative to Ray Trace Environment"] = {
+			["cull normal"] = Vector(0,0,0),
+			["cull on miss"] = false,
+			["ray trace environment name"] = "PRECIPITATION",
+			["test direction"] = Vector(0,0,1),
+			["use velocity for test direction"] = false,
+			["velocity test adjust lifespan"] = false,
+		},
+		["Inherit Initial Value From Parent Particle"] = {
+			["Inherited Field"] = 3,
+			["Particle Increment Amount"] = 1,
+			["Random Parent Particle Distribution"] = false,
+			Scale = 1,
+		},
+		["Lifetime From Sequence"] = {
+			["Frames Per Second"] = 30,
+		},
+		["Lifetime from Time to Impact"] = {
+			["bias distance"] = Vector(1,1,1),
+			["collide with water"] = true,
+			["maximum points to cache"] = 16,
+			["maximum trace length"] = 1024,
+			["trace collision group"] = "NONE",
+			["trace offset"] = 0,
+			["trace recycle tolerance"] = 64,
+		},
+		["Lifetime Pre-Age Noise"] = {
+			["absolute value"] = false,
+			["invert absolute value"] = false,
+			["spatial coordinate offset"] = Vector(0,0,0),
+			["spatial noise coordinate scale"] = 1,
+			["start age maximum"] = 1,
+			["start age minimum"] = 0,
+			["time coordinate offset"] = 0,
+			["time noise coordinate scale"] = 1,
+		},
+		["Lifetime Random"] = {
+			lifetime_max = 0,
+			lifetime_min = 0,
+			lifetime_random_exponent = 1,
+		},
+		["Move Particles Between 2 Control Points"] = {
+			["bias lifetime by trail length"] = false,
+			["end control point"] = 1,
+			["end offset"] = 0,
+			["end spread"] = 0,
+			["maximum speed"] = 1,
+			["minimum speed"] = 1,
+			["start offset"] = 0,
+		},
+		["Normal Align to CP"] = {
+			control_point_number = 0,
+		},
+		["Normal Modify Offset Random"] = {
+			control_point_number = 0,
+			["normalize output 0/1"] = false,
+			["offset in local space 0/1"] = false,
+			["offset max"] = Vector(0,0,0),
+			["offset min"] = Vector(0,0,0),
+		},
+		["Offset Vector to Vector"] = {
+			["input field"] = 0,
+			["output field"] = 0,
+			["output offset maximum"] = Vector(1,1,1),
+			["output offset minimum"] = Vector(0,0,0),
+		},
+		["Position Along Epitrochoid"] = {
+			["control point number"] = 0,
+			["first dimension 0-2 (-1 disables)"] = 0,
+			["local space"] = false,
+			["offset from existing position"] = false,
+			["particle density"] = 10,
+			["point offset"] = 4,
+			["radius 1"] = 40,
+			["radius 2"] = 24,
+			["scale from conrol point (radius 1/radius 2/offset)"] = -1,
+			["second dimension 0-2 (-1 disables)"] = 1,
+			["use particle count instead of creation time"] = false,
+		},
+		["Position Along Path Random"] = {
+			bulge = 0,
+			["bulge control 0=random 1=orientation of start pnt 2=orientation of end point"] = 0,
+			["end control point number"] = 0,
+			["maximum distance"] = 0,
+			["mid point position"] = 0.5,
+			["randomly select sequential CP pairs between start and end points"] = false,
+			["start control point number"] = 0,
+		},
+		["Position Along Path Sequential"] = {
+			["Save Offset"] = false,
+			["Use sequential CP pairs between start and end point"] = false,
+			bulge = 0,
+			["bulge control 0=random 1=orientation of start pnt 2=orientation of end point"] = 0,
+			["end control point number"] = 0,
+			["maximum distance"] = 0,
+			["mid point position"] = 0.5,
+			["particles to map from start to end"] = 100,
+			["restart behavior (0 = bounce, 1 = loop )"] = true,
+			["start control point number"] = 0,
+		},
+		["Position Along Ring"] = {
+			["Override CP (X/Y/Z *= Radius/Thickness/Speed)"] = -1,
+			["Override CP 2 (X/Y/Z *= Pitch/Yaw/Roll)"] = -1,
+			["XY velocity only"] = true,
+			["control point number"] = 0,
+			["even distribution"] = false,
+			["even distribution count"] = -1,
+			["initial radius"] = 0,
+			["max initial speed"] = 0,
+			["min initial speed"] = 0,
+			pitch = 0,
+			roll = 0,
+			thickness = 0,
+			yaw = 0,
+		},
+		["Position From Chaotic Attractor"] = {
+			["Pickover A Parameter"] = -0.96296292543411,
+			["Pickover B Parameter"] = 2.7911388874054,
+			["Pickover C Parameter"] = 1.8518518209457,
+			["Pickover D Parameter"] = 1.5,
+			["Relative Control point number"] = 0,
+			Scale = 1,
+			["Speed Max"] = 0,
+			["Speed Min"] = 0,
+			["Uniform speed"] = false,
+		},
+		["Position from Parent Cache"] = {
+			["Local Offset Max"] = Vector(0,0,0),
+			["Local Offset Min"] = Vector(0,0,0),
+			["Set Normal"] = false,
+		},
+		["Position From Parent Particles"] = {
+			["Inherited Velocity Scale"] = 0,
+			["Particle Increment Amount"] = 1,
+			["Random Parent Particle Distribution"] = false,
+		},
+		["Position In CP Hierarchy"] = {
+			bulge = 0,
+			["bulge control 0=random 1=orientation of start pnt 2=orientation of end point"] = 0,
+			distance_bias = Vector(1,1,1),
+			distance_bias_absolute_value = Vector(0,0,0),
+			["end control point number"] = 1,
+			["growth time"] = 0,
+			["maximum distance"] = 0,
+			["mid point position"] = 0.5,
+			["start control point number"] = 0,
+			["use highest supplied end point"] = false,
+		},
+		["Position Modify Offset Random"] = {
+			control_point_number = 0,
+			["offset in local space 0/1"] = false,
+			["offset max"] = Vector(0,0,0),
+			["offset min"] = Vector(0,0,0),
+			["offset proportional to radius 0/1"] = false,
+		},
+		["Position Modify Place On Ground"] = {
+			["collision group"] = "NONE",
+			["include water"] = false,
+			["kill on no collision"] = false,
+			["max trace length"] = 128,
+			offset = 0,
+			["set normal"] = false,
+		},
+		["Position Modify Warp Random"] = {
+			["control point number"] = 0,
+			["reverse warp (0/1)"] = false,
+			["use particle count instead of time"] = false,
+			["warp max"] = Vector(1,1,1),
+			["warp min"] = Vector(1,1,1),
+			["warp transition start time"] = 0,
+			["warp transition time (treats min/max as start/end sizes)"] = 0,
+		},
+		["Position on Model Random"] = {
+			control_point_number = 0,
+			["desired hitbox"] = -1,
+			["direction bias"] = Vector(0,0,0),
+			["force to be inside model"] = 0,
+			["hitbox set"] = "effects",
+			["model hitbox scale"] = 1,
+		},
+		["Position Within Box Random"] = {
+			["control point number"] = 0,
+			max = Vector(0,0,0),
+			min = Vector(0,0,0),
+			["use local space"] = false,
+		},
+		["Position Within Sphere Random"] = {
+			["bias in local system"] = false,
+			control_point_number = 0,
+			["create in model"] = 0,
+			distance_bias = Vector(1,1,1),
+			distance_bias_absolute_value = Vector(0,0,0),
+			distance_max = 0,
+			distance_min = 0,
+			["randomly distribute to highest supplied Control Point"] = false,
+			["randomly distribution growth time"] = 0,
+			["scale cp (distance/speed/local speed)"] = -1,
+			speed_in_local_coordinate_system_max = Vector(0,0,0),
+			speed_in_local_coordinate_system_min = Vector(0,0,0),
+			speed_max = 0,
+			speed_min = 0,
+			speed_random_exponent = 1,
+		},
+		["Radius Random"] = {
+			radius_max = 1,
+			radius_min = 1,
+			radius_random_exponent = 1,
+		},
+		["Remap Control Point to Scalar"] = {
+			["emitter lifetime end time (seconds)"] = -1,
+			["emitter lifetime start time (seconds)"] = -1,
+			["input control point number"] = 0,
+			["input field 0-2 X/Y/Z"] = 0,
+			["input maximum"] = 1,
+			["input minimum"] = 0,
+			["output field"] = 3,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Remap Control Point to Vector"] = {
+			["accelerate position"] = false,
+			["emitter lifetime end time (seconds)"] = -1,
+			["emitter lifetime start time (seconds)"] = -1,
+			["input control point number"] = 0,
+			["input maximum"] = Vector(0,0,0),
+			["input minimum"] = Vector(0,0,0),
+			["local space CP"] = -1,
+			["offset position"] = false,
+			["output field"] = 0,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = Vector(0,0,0),
+			["output minimum"] = Vector(0,0,0),
+		},
+		["Remap CP Orientation to Rotation"] = {
+			axis = 0,
+			["control point"] = 0,
+			["offset rotation"] = 0,
+			["rotation field"] = 0,
+		},
+		["Remap Initial Direction to CP to Vector"] = {
+			["control point"] = 0,
+			normalize = false,
+			["offset axis"] = Vector(0,0,0),
+			["offset rotation"] = 0,
+			["output field"] = 0,
+			["scale factor"] = 1,
+		},
+		["Remap Initial Distance to Control Point to Scalar"] = {
+			["LOS Failure Scalar"] = 0,
+			["LOS collision group"] = "NONE",
+			["Maximum Trace Length"] = -1,
+			["control point"] = 0,
+			["distance maximum"] = 128,
+			["distance minimum"] = 0,
+			["ensure line of sight"] = false,
+			["only active within specified distance"] = false,
+			["output field"] = 3,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Remap Initial Scalar"] = {
+			["emitter lifetime end time (seconds)"] = -1,
+			["emitter lifetime start time (seconds)"] = -1,
+			["input field"] = 8,
+			["input maximum"] = 1,
+			["input minimum"] = 0,
+			["only active within specified input range"] = false,
+			["output field"] = 3,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Remap Noise to Scalar"] = {
+			["absolute value"] = false,
+			["invert absolute value"] = false,
+			["output field"] = 3,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+			["spatial coordinate offset"] = Vector(0,0,0),
+			["spatial noise coordinate scale"] = 0.0010000000474975,
+			["time coordinate offset"] = 0,
+			["time noise coordinate scale"] = 0.10000000149012,
+			["world time noise coordinate scale"] = 0,
+		},
+		["Remap Particle Count to Scalar"] = {
+			["input maximum"] = 10,
+			["input minimum"] = 0,
+			["only active within specified input range"] = false,
+			["output field"] = 3,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+		},
+		["Remap Scalar to Vector"] = {
+			control_point_number = 0,
+			["emitter lifetime end time (seconds)"] = -1,
+			["emitter lifetime start time (seconds)"] = -1,
+			["input field"] = 8,
+			["input maximum"] = 1,
+			["input minimum"] = 0,
+			["output field"] = 0,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = Vector(1,1,1),
+			["output minimum"] = Vector(0,0,0),
+			["use local system"] = true,
+		},
+		["Remap Speed to Scalar"] = {
+			["control point number (ignored if per particle)"] = 0,
+			["emitter lifetime end time (seconds)"] = -1,
+			["emitter lifetime start time (seconds)"] = -1,
+			["input maximum"] = 1,
+			["input minimum"] = 0,
+			["output field"] = 3,
+			["output is scalar of initial random range"] = false,
+			["output maximum"] = 1,
+			["output minimum"] = 0,
+			["per particle"] = false,
+		},
+		["Rotation Random"] = {
+			randomly_flip_direction = false,
+			rotation_initial = 0,
+			rotation_offset_max = 360,
+			rotation_offset_min = 0,
+			rotation_random_exponent = 1,
+		},
+		["Rotation Speed Random"] = {
+			randomly_flip_direction = false,
+			rotation_speed_constant = 0,
+			rotation_speed_random_exponent = 1,
+			rotation_speed_random_max = 360,
+			rotation_speed_random_min = 0,
+		},
+		["Rotation Yaw Flip Random"] = {
+			["Flip Percentage"] = 0.5,
+		},
+		["Rotation Yaw Random"] = {
+			yaw_initial = 0,
+			yaw_offset_max = 360,
+			yaw_offset_min = 0,
+			yaw_random_exponent = 1,
+		},
+		["Scalar Random"] = {
+			exponent = 1,
+			max = 0,
+			min = 0,
+			["output field"] = 3,
+		},
+		["Sequence From Control Point"] = {
+			["control point"] = 1,
+			["offset propotional to radius"] = false,
+			["per particle spatial offset"] = Vector(0,0,0),
+		},
+		["Sequence Random"] = {
+			linear = false,
+			sequence_max = 0,
+			sequence_min = 0,
+			shuffle = false,
+		},
+		["Sequence Two Random"] = {
+			sequence_max = 0,
+			sequence_min = 0,
+		},
+		["Set Hitbox Position on Model"] = {
+			control_point_number = 0,
+			["desired hitbox"] = -1,
+			["direction bias"] = Vector(0,0,0),
+			["force to be inside model"] = 0,
+			["hitbox set"] = "effects",
+			["maintain existing hitbox"] = false,
+			["model hitbox scale"] = 1,
+		},
+		["Set Hitbox to Closest Hitbox"] = {
+			control_point_number = 0,
+			["desired hitbox"] = -1,
+			["hitbox set"] = "effects",
+			["model hitbox scale"] = 1,
+		},
+		["Trail Length Random"] = {
+			length_max = 0.10000000149012,
+			length_min = 0.10000000149012,
+			length_random_exponent = 1,
+		},
+		["Vector Component Random"] = {
+			["component 0/1/2 X/Y/Z"] = 0,
+			max = 0,
+			min = 0,
+			["output field"] = 0,
+		},
+		["Vector Random"] = {
+			max = Vector(0,0,0),
+			min = Vector(0,0,0),
+			["output field"] = 0,
+		},
+		["Velocity Inherit from Control Point"] = {
+			["control point number"] = 0,
+			["velocity scale"] = 1,
+		},
+		["Velocity Noise"] = {
+			["Absolute Value"] = Vector(0,0,0),
+			["Apply Velocity in Local Space (0/1)"] = false,
+			["Control Point Number"] = 0,
+			["Invert Abs Value"] = Vector(0,0,0),
+			["Spatial Coordinate Offset"] = Vector(0,0,0),
+			["Spatial Noise Coordinate Scale"] = 0.0099999997764826,
+			["Time Coordinate Offset"] = 0,
+			["Time Noise Coordinate Scale"] = 1,
+			["output maximum"] = Vector(1,1,1),
+			["output minimum"] = Vector(0,0,0),
+		},
+		["Velocity Random"] = {
+			control_point_number = 0,
+			random_speed_max = 0,
+			random_speed_min = 0,
+			speed_in_local_coordinate_system_max = Vector(0,0,0),
+			speed_in_local_coordinate_system_min = Vector(0,0,0),
+		},
+		["Velocity Repulse from World"] = {
+			["Child Group ID to affect"] = 0,
+			["Inherit from Parent"] = false,
+			["Offset instead of accelerate"] = false,
+			["Offset proportional to radius 0/1"] = false,
+			["Per Particle World Collision Tests"] = false,
+			["Trace Length"] = 64,
+			["Use radius for Per Particle Trace Length"] = false,
+			["collision group"] = "NONE",
+			["control points to broadcast to children (n + 1)"] = -1,
+			control_point_number = 0,
+			["maximum velocity"] = Vector(1,1,1),
+			["minimum velocity"] = Vector(0,0,0),
+		},
+		["Velocity Set from Control Point"] = {
+			["comparison control point number"] = -1,
+			["control point number"] = 0,
+			["direction only"] = false,
+			["local space control point number"] = -1,
+			["velocity scale"] = 1,
+		},
+	},
+	emitters = {
+		_generic = {
+			["operator end cap state"] = -1,
+			["operator end fadein"] = 0,
+			["operator end fadeout"] = 0,
+			["operator fade oscillate"] = 0,
+			["operator start fadein"] = 0,
+			["operator start fadeout"] = 0,
+			["operator strength random scale max"] = 1,
+			["operator strength random scale min"] = 1,
+			["operator strength scale seed"] = 0,
+			["operator time offset max"] = 0,
+			["operator time offset min"] = 0,
+			["operator time offset seed"] = 0,
+			["operator time scale max"] = 1,
+			["operator time scale min"] = 1,
+			["operator time scale seed"] = 0,
+			["operator time strength random scale max"] = 1,
+		},
+		["emit noise"] = {
+			["absolute value"] = false,
+			["emission maximum"] = 100,
+			["emission minimum"] = 0,
+			emission_duration = 0,
+			emission_start_time = 0,
+			["invert absolute value"] = false,
+			["scale emission to used control points"] = 0,
+			["time coordinate offset"] = 0,
+			["time noise coordinate scale"] = 0.10000000149012,
+			["world time noise coordinate scale"] = 0,
+		},
+		["emit to maintain count"] = {
+			["count to maintain"] = 100,
+			["emission start time"] = 0,
+			["maintain count scale control point"] = -1,
+			["maintain count scale control point field"] = 0,
+		},
+		emit_continuously = {
+			["emission count scale control point"] = -1,
+			["emission count scale control point field"] = 0,
+			emission_duration = 0,
+			emission_rate = 100,
+			emission_start_time = 0,
+			["scale emission to used control points"] = 0,
+			["use parent particles for emission scaling"] = false,
+		},
+		emit_instantaneously = {
+			["emission count scale control point"] = -1,
+			["emission count scale control point field"] = 0,
+			emission_start_time = 0,
+			["emission_start_time max"] = -1,
+			["maximum emission per frame"] = -1,
+			num_to_emit = 100,
+			num_to_emit_minimum = -1,
+		},
+	},
+	forces = {
+		_generic = {
+			["operator end cap state"] = -1,
+			["operator end fadein"] = 0,
+			["operator end fadeout"] = 0,
+			["operator fade oscillate"] = 0,
+			["operator start fadein"] = 0,
+			["operator start fadeout"] = 0,
+			["operator strength random scale max"] = 1,
+			["operator strength random scale min"] = 1,
+			["operator strength scale seed"] = 0,
+			["operator time offset max"] = 0,
+			["operator time offset min"] = 0,
+			["operator time offset seed"] = 0,
+			["operator time scale max"] = 1,
+			["operator time scale min"] = 1,
+			["operator time scale seed"] = 0,
+			["operator time strength random scale max"] = 1,
+		},
+		["Create vortices from parent particles"] = {
+			["amount of force"] = 0,
+			["flip twist axis with yaw"] = false,
+			["twist axis"] = Vector(0,0,1),
+		},
+		["Force based on distance from plane"] = {
+			["Control point number"] = 0,
+			Exponent = 1,
+			["Force at Max distance"] = Vector(0,0,0),
+			["Force at Min distance"] = Vector(0,0,0),
+			["Max Distance from plane"] = 1,
+			["Min distance from plane"] = 0,
+			["Plane Normal"] = Vector(0,0,1),
+		},
+		["Pull towards control point"] = {
+			["amount of force"] = 0,
+			["control point number"] = 0,
+			["falloff power"] = 2,
+		},
+		["random force"] = {
+			["max force"] = Vector(0,0,0),
+			["min force"] = Vector(0,0,0),
+		},
+		["time varying force"] = {
+			["ending force"] = Vector(0,0,0),
+			["starting force"] = Vector(0,0,0),
+			["time to end transition"] = 10,
+			["time to start transition"] = 0,
+		},
+		["turbulent force"] = {
+			["Noise amount 0"] = Vector(1,1,1),
+			["Noise amount 1"] = Vector(0.5,0.5,0.5),
+			["Noise amount 2"] = Vector(0.25,0.25,0.25),
+			["Noise amount 3"] = Vector(0.125,0.125,0.125),
+			["Noise scale 0"] = 1,
+			["Noise scale 1"] = 0,
+			["Noise scale 2"] = 0,
+			["Noise scale 3"] = 0,
+		},
+		["twist around axis"] = {
+			["amount of force"] = 0,
+			["object local space axis 0/1"] = false,
+			["twist axis"] = Vector(0,0,1),
+		},
+	},
+	constraints = {
+		_generic = {
+			["operator end cap state"] = -1,
+			["operator end fadein"] = 0,
+			["operator end fadeout"] = 0,
+			["operator fade oscillate"] = 0,
+			["operator start fadein"] = 0,
+			["operator start fadeout"] = 0,
+			["operator strength random scale max"] = 1,
+			["operator strength random scale min"] = 1,
+			["operator strength scale seed"] = 0,
+			["operator time offset max"] = 0,
+			["operator time offset min"] = 0,
+			["operator time offset seed"] = 0,
+			["operator time scale max"] = 1,
+			["operator time scale min"] = 1,
+			["operator time scale seed"] = 0,
+			["operator time strength random scale max"] = 1,
+		},
+		["Collision via traces"] = {
+			["Confirm Collision"] = false,
+			["amount of bounce"] = 0,
+			["amount of slide"] = 0,
+			["brush only"] = false,
+			["collision group"] = "NONE",
+			["collision mode"] = 0,
+			["control point movement distance tolerance"] = 5,
+			["control point offset for fast collisions"] = Vector(0,0,0),
+			["kill particle on collision"] = false,
+			["minimum speed to kill on collision"] = -1,
+			["radius scale"] = 1,
+			["trace accuracy tolerance"] = 24,
+		},
+		["Constrain distance to control point"] = {
+			["control point number"] = 0,
+			["global center point"] = false,
+			["maximum distance"] = 100,
+			["minimum distance"] = 0,
+			["offset of center"] = Vector(0,0,0),
+		},
+		["Constrain distance to path between two control points"] = {
+			["bulge control 0=random 1=orientation of start pnt 2=orientation of end point"] = 0,
+			["end control point number"] = 0,
+			["maximum distance"] = 100,
+			["maximum distance end"] = -1,
+			["maximum distance middle"] = -1,
+			["mid point position"] = 0.5,
+			["minimum distance"] = 0,
+			["random bulge"] = 0,
+			["start control point number"] = 0,
+			["travel time"] = 10,
+		},
+		["Constrain particles to a box"] = {
+			["max coords"] = Vector(0,0,0),
+			["min coords"] = Vector(0,0,0),
+		},
+		["Prevent passing through a plane"] = {
+			["control point number"] = 0,
+			["global normal"] = false,
+			["global origin"] = false,
+			["plane normal"] = Vector(0,0,1),
+			["plane point"] = Vector(0,0,0),
+		},
+		["Prevent passing through static part of world"] = {},
+	},
+}
+local tab = {}
+for k, v in pairs (PartCtrl_DefaultOps) do
+	tab[k] = {}
+	if k != "_main" then
+		for k2, v2 in pairs (v) do
+			tab[k][string.lower(k2)] = v2
+		end
+	else
+		tab[k] = v
+	end
+end
+PartCtrl_DefaultOps = tab
+tab = nil
+
+//the above table is generated by creating a test effect with default values, and then using this function below to output a lua-readable version of its contents,
+//i.e. PrintTable(PartCtrl_ReadPCF("particles/text.pcf")["test"} - make sure to set sv_partctrl_cachereadpcf 0 so that caching doesn't turn color objects into normal tables
+--[[local function PrintTable( t, indent, done ) //edited PrintTable that outputs a correctly formatted lua table we can paste into code
+	local Msg = Msg
+
+	done = done or {}
+	indent = indent or 0
+	local keys = table.GetKeys( t )
+
+	table.sort( keys, function( a, b )
+		if ( isnumber( a ) and isnumber( b ) ) then return a < b end
+		return tostring( a ) < tostring( b )
+	end )
+
+	done[ t ] = true
+
+	for i = 1, #keys do
+		local key = keys[ i ]
+		if key == "functionName" then continue end
+		local value = t[ key ]
+		if istable(value) and value.functionName then
+			key = value.functionName
+		end
+		if !(type(key) == "string" and !string.find(key, " ", nil, true)) then
+			key = ( type( key ) == "string" ) and "[\"" .. key .. "\"]" || "[" .. tostring( key ) .. "]"
+		end
+		Msg( string.rep( "\t", indent ) )
+
+		if IsColor(value) then
+			Msg( key, " = Color(", value.r, ",", value.g, ",", value.b, ",", value.a, "),\n")
+		elseif (istable(value) and !done[value]) then
+			done[ value ] = true
+			Msg( key, " = {\n" )
+			PrintTable ( value, indent + 1, done )
+			done[ value ] = nil
+
+			Msg( string.rep( "\t", indent ) )
+			Msg("},\n")
+		elseif isvector(value) then
+			Msg( key, " = Vector(", value.x, ",", value.y, ",", value.z, "),\n")
+		elseif isstring(value) then
+			Msg(key, " = \"", value, "\",\n")
+		else
+			Msg( key, " = ", value, ",\n" )
+		end
+	end
+end]]
+
+function PartCtrl_GetUnhandledOperators()
+	local allcategories = {
+		renderers = {},
+		operators = {},
+		initializers = {},
+		emitters = {},
+		forces = {}, //forcegenerator
+		constraints = {},
+	}
+	for _, filename in pairs (PartCtrl_AllPCFPaths) do
+		local tab = PartCtrl_ReadPCF(filename)
+		if tab then
+			for particle, ptab in pairs (tab) do
+				for category, _ in pairs (allcategories) do
+					if ptab[category] then
+						for _, op in pairs (ptab[category]) do
+							local name = string.lower(op.functionName)
+							if fixes[name] then name = fixes[name] end
+							
+							if !PartCtrl_DefaultOps[category][name] then
+								allcategories[category][name] = allcategories[category][name] or {count = 0, paths = {}}
+								allcategories[category][name].count = allcategories[category][name].count + 1
+								table.insert(allcategories[category][name].paths, filename .. " " .. particle)
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+
+	PrintTable(allcategories)
+end
+
 
 
 //For reference:
