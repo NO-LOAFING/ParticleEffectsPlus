@@ -810,153 +810,200 @@ end
 
 function PANEL:OpenMenu()
 
-	local menu = DermaMenu()
-	local pcf = PartCtrl_GetGamePCF(self.pcf, self.path) //use this unless we're doing something that handles the path arg on its own, like spawning an effect
-
-	menu:AddOption("Copy effect name to clipboard", function() SetClipboardText(self.nicename) end):SetIcon("icon16/page_copy.png")
-	if pcf != "UtilFx" then 
-		menu:AddOption("Copy .pcf file path to clipboard", function() 
-			SetClipboardText(self.pcf)
-		end):SetIcon("icon16/page_copy.png")
-
-		if self.pcf != pcf then
-			menu:AddOption("Copy internal .pcf file path to clipboard", function() 
-				SetClipboardText(pcf)
-			end):SetIcon("icon16/page_copy.png")
-		end
-	end 
-
-	menu:AddOption("#spawnmenu.menu.spawn_with_toolgun", function()
-		RunConsoleCommand("gmod_tool", "partctrl_creator")
-		RunConsoleCommand("partctrl_creator_pcf", self.pcf)
-		RunConsoleCommand("partctrl_creator_name", self.name)
-		RunConsoleCommand("partctrl_creator_path", self.path or "")
-	end):SetIcon("icon16/brick_add.png")
-
-	//List all parents and children of this effect recursively; this means we don't have to clutter up the spawnlists with children
-	if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][self.name]) then
-		local function ListChildFx(submenu, submenuoption, name2, tabname)
-			local listed_fx = {} //don't list the same effect more than once - sometimes a parent can have multiple of the same child
-			for _, child in pairs (PartCtrl_ProcessedPCFs[pcf][name2][tabname]) do
-				//ptab.children is a table of tables containing both child names and other info about them;
-				//ptab.parents is just a table of strings
-				if istable(child) then
-					child = child.child
+	local function OpenMenu(name, nicename)
+		local function AddChildHover(pnl, child, _nicename)
+			if child == self.name then return end
+			_nicename = _nicename or nicename //by default, this is the nicename of the effect we're making the menu for
+			//When the player hovers over a child effect (or a child's right-click menu), 
+			//override the spawnicon to display that effect instead
+			local old_OnCursorEntered = pnl.OnCursorEntered
+			function pnl.OnCursorEntered()
+				if old_OnCursorEntered then old_OnCursorEntered(pnl) end
+				if IsValid(self) then
+					self.childname = child
+					self.m_NiceName = _nicename //this is the internal variable for the display label on the icon; change it temporarily to show the child's name
 				end
-				if PartCtrl_ProcessedPCFs[pcf][child] and !listed_fx[child] then
-					listed_fx[child] = true
-					local nicename = PartCtrl_ProcessedPCFs[pcf][child].nicename
-					local OnClick = function()
-						RunConsoleCommand("partctrl_spawnparticle", child, self.pcf, self.path)
-						surface.PlaySound("ui/buttonclickrelease.wav")
-					end
-					local submenu2
-					local option2
-					if PartCtrl_ProcessedPCFs[pcf][child][tabname] and table.Count(PartCtrl_ProcessedPCFs[pcf][child][tabname]) > 0 then
-						submenu2, option2 = submenu:AddSubMenu(nicename, OnClick)
-						ListChildFx(submenu2, option2, child, tabname)
-					else
-						option2 = submenu:AddOption(nicename, OnClick)
-					end
-					if PartCtrl_CulledFx[pcf] and PartCtrl_CulledFx[pcf][child] then //in developer mode, add warnings to culled fx
-						option2:SetMaterial(icon_invalid)
-						//duplicate of text string from this panel's setup func, whatever
-						local tooltip = "ERROR: This effect is invalid, and won't be loaded outside of developer mode."
-						for _, v in pairs (PartCtrl_CulledFx[pcf][child]) do
-							tooltip = tooltip .. "\n\n" .. language.GetPhrase(v)
-						end
-						option2:SetTooltip(tooltip)
-					end
-					//When the player hovers over a child effect, override the spawnicon to display that effect instead
-					local old_OnCursorEntered = option2.OnCursorEntered
-					function option2.OnCursorEntered()
-						old_OnCursorEntered(option2)
-						if IsValid(self) then
-							self.childname = child
-						end
-					end
-					local old_OnCursorExited = option2.OnCursorExited
-					function option2.OnCursorExited()
-						old_OnCursorExited(option2)
-						if IsValid(self) then
-							self.childname = nil
-							if PartCtrl_IconFx[pcf] and PartCtrl_IconFx[pcf][child] and PartCtrl_IconFx[pcf][child].panels then
-								PartCtrl_IconFx[pcf][child].panels[self] = nil
-							end
-						end
-					end
-					//local old_OnRemove = option2.OnRemove
-					function option2.OnRemove()
-						//old_OnRemove(option2)
-						if IsValid(self) then
-							self.childname = nil
-							if PartCtrl_IconFx[pcf] and PartCtrl_IconFx[pcf][child] and PartCtrl_IconFx[pcf][child].panels then
-								PartCtrl_IconFx[pcf][child].panels[self] = nil
-							end
-						end
+			end
+			local old_OnCursorExited = pnl.OnCursorExited
+			function pnl.OnCursorExited()
+				if old_OnCursorExited then old_OnCursorExited(pnl) end
+				if IsValid(self) then
+					self.childname = nil
+					self.m_NiceName = self.nicename
+					if PartCtrl_IconFx[pcf] and PartCtrl_IconFx[pcf][child] and PartCtrl_IconFx[pcf][child].panels then
+						PartCtrl_IconFx[pcf][child].panels[self] = nil
 					end
 				end
 			end
-			submenuoption:SetText(submenuoption:GetText() .. " (" .. table.Count(listed_fx) .. ")") //count the number of fx not including dupes
+			local old_OnRemove = pnl.OnRemove
+			function pnl.OnRemove()
+				if old_OnRemove then old_OnRemove(pnl) end
+				if IsValid(self) then
+					self.childname = nil
+					self.m_NiceName = self.nicename
+					if PartCtrl_IconFx[pcf] and PartCtrl_IconFx[pcf][child] and PartCtrl_IconFx[pcf][child].panels then
+						PartCtrl_IconFx[pcf][child].panels[self] = nil
+					end
+				end
+			end
 		end
-		local ptab = PartCtrl_ProcessedPCFs[pcf][self.name]
-		if ptab.parents and table.Count(ptab.parents) > 0 then
-			local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn parent effect")
-			base_submenuoption:SetImage("icon16/shape_group.png")
-			ListChildFx(base_submenu, base_submenuoption, self.name, "parents")
+
+		local ischild = name != self.name
+		local menu = DermaMenu(ischild)
+		if ischild then
+			//child menus shouldn't close the base menu, but should close the previously opened child menu so we don't have more than one
+			if IsValid(self.childmenu) then self.childmenu:Remove() end
+			self.childmenu = menu
 		end
-		if ptab.children and table.Count(ptab.children) > 0 then
-			local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn child effect")
-			base_submenuoption:SetImage("icon16/shape_ungroup.png")
-			ListChildFx(base_submenu, base_submenuoption, self.name, "children")
-		end
-	end
 
-	//not implemented on this icon type, but included to match the others (model icon also includes this despite not having OpenMenuExtra, i think)
-	if isfunction(self.OpenMenuExtra) then
-		self:OpenMenuExtra(menu)
-	end
+		local pcf = PartCtrl_GetGamePCF(self.pcf, self.path) //use this unless we're doing something that handles the path arg on its own, like spawning an effect
 
-	hook.Run("SpawnmenuIconMenuOpen", menu, self, "partctrl")
-	
-	//Do not allow removal from read only panels
-	if !IsValid(self:GetParent()) or !self:GetParent().GetReadOnly or !self:GetParent():GetReadOnly() then
-		menu:AddSpacer()
+		local opt = menu:AddOption("Copy effect name to clipboard", function() SetClipboardText(nicename) end)
+		opt:SetIcon("icon16/page_copy.png")
+		AddChildHover(opt, name)
+		if !ischild and pcf != "UtilFx" then
+			menu:AddOption("Copy .pcf file path to clipboard", function() 
+				SetClipboardText(self.pcf)
+			end):SetIcon("icon16/page_copy.png")
 
-		menu:AddOption("#spawnmenu.menu.delete", function()
-			self:Remove()
-			hook.Run("SpawnlistContentChanged")
-		end):SetIcon("icon16/bin_closed.png")
-	end
+			if self.pcf != pcf then
+				menu:AddOption("Copy internal .pcf file path to clipboard", function() 
+					SetClipboardText(pcf)
+				end):SetIcon("icon16/page_copy.png")
+				AddChildHover(opt, name)
+			end
+		end 
 
-	//developer controls to reload a .pcf file manually, or dump pcf data into console
-	if GetConVarNumber("developer") >= 1 then
-		menu:AddSpacer()
-
-		menu:AddOption("Reload " .. pcf, function()
-			RunConsoleCommand("sv_partctrl_reloadpcf", pcf)
+		local opt = menu:AddOption("#spawnmenu.menu.spawn_with_toolgun", function()
+			RunConsoleCommand("gmod_tool", "partctrl_creator")
+			RunConsoleCommand("partctrl_creator_pcf", self.pcf)
+			RunConsoleCommand("partctrl_creator_name", name)
+			RunConsoleCommand("partctrl_creator_path", self.path or "")
 		end)
+		opt:SetIcon("icon16/brick_add.png")
+		AddChildHover(opt, name)
 
-		if pcf != "UtilFx" then
-			menu:AddOption("Print raw PCF data for this effect", function()
-				MsgN("PartCtrl_ReadPCF(\"" .. pcf .. "\")[\"" .. self.name .. "\"]:")
-				PrintTable(PartCtrl_ReadPCF(pcf)[self.name])
-				MsgN()
-			end)
-			menu:AddOption("Print raw PCF data for this effect (no defaults)", function()
-				MsgN("PartCtrl_NoDefPCFs[\"" .. pcf .. "\"][\"" .. self.name .. "\"]:")
-				PrintTable(PartCtrl_NoDefPCFs[pcf][self.name])
-				MsgN()
-			end)
+		if !ischild then
+			//List all parents and children of this effect recursively; this means we don't have to clutter up the spawnlists with children
+			if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][self.name]) then
+				local function ListChildFx(submenu, submenuoption, name2, tabname)
+					local listed_fx = {} //don't list the same effect more than once - sometimes a parent can have multiple of the same child
+					for _, child in pairs (PartCtrl_ProcessedPCFs[pcf][name2][tabname]) do
+						//ptab.children is a table of tables containing both child names and other info about them;
+						//ptab.parents is just a table of strings
+						if istable(child) then
+							child = child.child
+						end
+						if PartCtrl_ProcessedPCFs[pcf][child] and !listed_fx[child] then
+							listed_fx[child] = true
+							local child_nicename = PartCtrl_ProcessedPCFs[pcf][child].nicename
+							local OnClick = function()
+								RunConsoleCommand("partctrl_spawnparticle", child, self.pcf, self.path)
+								surface.PlaySound("ui/buttonclickrelease.wav")
+							end
+							local submenu2
+							local option2
+							if PartCtrl_ProcessedPCFs[pcf][child][tabname] and table.Count(PartCtrl_ProcessedPCFs[pcf][child][tabname]) > 0 then
+								submenu2, option2 = submenu:AddSubMenu(child_nicename, OnClick)
+								ListChildFx(submenu2, option2, child, tabname)
+							else
+								option2 = submenu:AddOption(child_nicename, OnClick)
+							end
+							if PartCtrl_CulledFx[pcf] and PartCtrl_CulledFx[pcf][child] then //in developer mode, add warnings to culled fx
+								option2:SetMaterial(icon_invalid)
+								//duplicate of text string from this panel's setup func, whatever
+								local tooltip = "ERROR: This effect is invalid, and won't be loaded outside of developer mode."
+								for _, v in pairs (PartCtrl_CulledFx[pcf][child]) do
+									tooltip = tooltip .. "\n\n" .. language.GetPhrase(v)
+								end
+								option2:SetTooltip(tooltip)
+							end
+							AddChildHover(option2, child, child_nicename)
+							//Right-click to open this same dropdown menu for the child, so we can copy its name, print its pcf data, etc.
+							function option2.DoRightClick()
+								local menu2 = OpenMenu(child, child_nicename)
+								//Remove the dropdown if we mouse over a different part of the tree and hide the child 
+								//we right-clicked on; this is kind of a messy way of doing this, but it'll have to do
+								local old_Hide = submenu.Hide
+								function submenu.Hide()
+									if old_Hide then old_Hide(submenu) end
+									if IsValid(menu2) then menu2:Remove() end
+								end
+
+							end
+						end
+					end
+					submenuoption:SetText(submenuoption:GetText() .. " (" .. table.Count(listed_fx) .. ")") //count the number of fx not including dupes
+				end
+				local ptab = PartCtrl_ProcessedPCFs[pcf][self.name]
+				if ptab.parents and table.Count(ptab.parents) > 0 then
+					local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn parent effect")
+					base_submenuoption:SetImage("icon16/shape_group.png")
+					ListChildFx(base_submenu, base_submenuoption, self.name, "parents")
+				end
+				if ptab.children and table.Count(ptab.children) > 0 then
+					local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn child effect")
+					base_submenuoption:SetImage("icon16/shape_ungroup.png")
+					ListChildFx(base_submenu, base_submenuoption, self.name, "children")
+				end
+			end
+
+			//not implemented on this icon type, but included to match the others (model icon also includes this despite not having OpenMenuExtra, i think)
+			if isfunction(self.OpenMenuExtra) then
+				self:OpenMenuExtra(menu)
+			end
+
+			hook.Run("SpawnmenuIconMenuOpen", menu, self, "partctrl")
+			
+			//Do not allow removal from read only panels
+			if !IsValid(self:GetParent()) or !self:GetParent().GetReadOnly or !self:GetParent():GetReadOnly() then
+				menu:AddSpacer()
+
+				menu:AddOption("#spawnmenu.menu.delete", function()
+					self:Remove()
+					hook.Run("SpawnlistContentChanged")
+				end):SetIcon("icon16/bin_closed.png")
+			end
 		end
 
-		menu:AddOption("Print processed PCF data for this effect", function()
-			MsgN("PartCtrl_ProcessedPCFs[\"" .. pcf .. "\"][\"" .. self.name .. "\"]:")
-			PrintTable(PartCtrl_ProcessedPCFs[pcf][self.name])
-		end)
+		//developer controls to reload a .pcf file manually, or dump pcf data into console
+		if GetConVarNumber("developer") >= 1 then
+			local opt = menu:AddSpacer()
+			AddChildHover(opt, name)
+
+			if !ischild then
+				menu:AddOption("Reload " .. pcf, function()
+					RunConsoleCommand("sv_partctrl_reloadpcf", pcf)
+				end)
+			end
+
+			if pcf != "UtilFx" then
+				local opt = menu:AddOption("Print raw PCF data for this effect", function()
+					MsgN("PartCtrl_ReadPCF(\"" .. pcf .. "\")[\"" .. name .. "\"]:")
+					PrintTable(PartCtrl_ReadPCF(pcf)[name])
+					MsgN()
+				end)
+				AddChildHover(opt, name)
+				local opt = menu:AddOption("Print raw PCF data for this effect (no defaults)", function()
+					MsgN("PartCtrl_NoDefPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
+					PrintTable(PartCtrl_NoDefPCFs[pcf][name])
+					MsgN()
+				end)
+				AddChildHover(opt, name)
+			end
+
+			local opt = menu:AddOption("Print processed PCF data for this effect", function()
+				MsgN("PartCtrl_ProcessedPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
+				PrintTable(PartCtrl_ProcessedPCFs[pcf][name])
+			end)
+			AddChildHover(opt, name)
+		end
+
+		menu:Open()
+		return menu
 	end
 
-	menu:Open()
+	OpenMenu(self.name, self.nicename)
 
 end
 
