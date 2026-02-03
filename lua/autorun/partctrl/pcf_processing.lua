@@ -1749,12 +1749,9 @@ function PartCtrl_ReadPCF(filename, path)
 			for k, v in pairs (ptab) do
 				if defs[k] then
 					for k2, op in pairs (v) do
-						local name = string.lower(op.functionName) or ""
-						if fixes[name] then name = fixes[name] end
-
 						//fill in any default values that are missing from the operator
-						if defs[k][name] then
-							for k3, v3 in pairs (defs[k][name]) do
+						if defs[k][op.functionName] then
+							for k3, v3 in pairs (defs[k][op.functionName]) do
 								if op[k3] == nil then tab[p][k][k2][k3] = v3 end
 							end
 						end
@@ -2082,14 +2079,26 @@ function PartCtrl_ReadPCF(filename, path)
 	//down the line (effects with the same name but capitalized differently will conflict with each other, so make sure we detect those properly)
 	local Elements2 = {}
 	for k, v in pairs (Elements) do
+		for k2, v2 in pairs (v) do
+			//This is also a good place to fix up operator names - make all of these lowercase too, and check for any alternate names
+			if defs[k2] then
+				for k3, v3 in pairs (v2) do
+					local name = v3.functionName or ""
+					name = string.lower(name)
+					if fixes[name] then name = fixes[name] end
+					v[k2][k3].functionName = name
+				end
+			end
+		end
 		v._nicename = k //store the capitalized name so we can use it for display purposes
 		Elements2[string.lower(k)] = v
 	end
 	Elements = Elements2
 
+	local str
 	if nodefs_copy or docache:GetBool() then
 		//Remove all default values from the cached table, to significantly reduce both the size and load times of cached files
-		local str = {}
+		str = {}
 		for effect, effecttab in pairs (Elements) do
 			//PrintTable(effecttab)
 			str[effect] = {}
@@ -2099,7 +2108,7 @@ function PartCtrl_ReadPCF(filename, path)
 				elseif defs[k] then //operator categories
 					local tab = {}
 					for k2, v2 in pairs (v) do //operators
-						local def = defs[k][string.lower(v2.functionName)]
+						local def = defs[k][v2.functionName]
 						if def then
 							local tab2 = {}
 							for k3, v3 in pairs (v2) do //check each value in the operator, and only add it to the tab if it's non-default
@@ -2167,6 +2176,7 @@ end
 //or PartCtrl_GetParticlesWithOperator("Remap Control Point to Vector", "particles/critglowtool_colorablefx.pcf") for just the fx in that file;
 //add an extra "true" arg to the end of either of those to print the operator's values
 function PartCtrl_GetParticlesWithOperator(desiredfunc, filename, extended)
+	desiredfunc = string.lower(desiredfunc)
 	local function GetOperatorsFromFile(desiredfunc, filename, extended)
 		local tab = PartCtrl_ReadPCF(filename)
 		if tab then
@@ -2174,7 +2184,7 @@ function PartCtrl_GetParticlesWithOperator(desiredfunc, filename, extended)
 				for category, ops in pairs (ptab) do
 					if istable(ops) then
 						for k, v in pairs (ops) do
-							if istable(v) and v.functionName and string.lower(v.functionName) == string.lower(desiredfunc) then
+							if istable(v) and v.functionName == desiredfunc then
 								//MsgN("(", filename, ") ", particle)
 								MsgN(particle, " ", filename) //actually do it like this so it's easier to spawn them in console
 								if extended then
@@ -2443,9 +2453,7 @@ function PartCtrl_GetUnhandledOperators()
 				for category, _ in pairs (allcategories) do
 					if ptab[category] then
 						for _, op in pairs (ptab[category]) do
-							local name = string.lower(op.functionName)
-							if fixes[name] then name = fixes[name] end
-							
+							local name = op.functionName
 							if !defs[category][name] then
 								allcategories[category][name] = allcategories[category][name] or {count = 0, paths = {}}
 								allcategories[category][name].count = allcategories[category][name].count + 1
@@ -3814,19 +3822,12 @@ function PartCtrl_ProcessPCF(filename)
 			for k, v in pairs (processfuncs) do
 				if ptab[k] then
 					for _, op in pairs (ptab[k]) do
-						if !op.functionName then
-							if dodebug then MsgN("PartCtrl: ", filename, " particle ", particle, " has operator with no function name") end
-						else
-							op._categoryName = k //string.TrimRight(k, "s") //for name
-							local name = string.lower(op.functionName) or ""
-							if fixes[name] then name = fixes[name] end
-
-							local sf = op["operator start fadein"]
-							local ef = op["operator end fadein"]
-							if !sf or !ef or (!(sf >= 99) and !(ef >= 99)) then //some fx use a superlong fadein to effectively comment out operators, ridiculous (particles/advisor_fx.pcf Advisor_Psychic_Attach_01b operator Remap Distance to Control Point to Scalar)
-								if v[name] then v[name](processed, op) end
-								if v._generic then v._generic(processed, op) end
-							end
+						local sf = op["operator start fadein"]
+						local ef = op["operator end fadein"]
+						if !sf or !ef or (!(sf >= 99) and !(ef >= 99)) then //some fx use a superlong fadein to effectively comment out operators, ridiculous (particles/advisor_fx.pcf Advisor_Psychic_Attach_01b operator Remap Distance to Control Point to Scalar)
+							op._categoryName = k
+							if v[op.functionName] then v[op.functionName](processed, op) end
+							if v._generic then v._generic(processed, op) end
 						end
 					end
 				end
