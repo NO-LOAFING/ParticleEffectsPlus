@@ -165,6 +165,39 @@ properties.Add("partctrl_dev_printpcfdata", {
 	end
 })
 
+properties.Add("partctrl_dev_printpcfdata_nodefs", {
+	MenuLabel = "Print raw PCF data for this effect (no defaults)",
+	Order = 90000.515,
+	PrependSpacer = false,
+	MenuIcon = nil,
+	
+	Filter = function(self, ent, ply)
+
+		if GetConVarNumber("developer") < 1 then return false end
+		if !IsValid(ent) then return false end
+		if !istable(ent.PartCtrl_ParticleEnts) or table.Count(ent.PartCtrl_ParticleEnts) != 1 then return false end
+
+		return true
+
+	end,
+
+	Action = function(self, ent)
+	
+		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
+			if IsValid(k) then
+				if k.PartCtrl_SpecialEffect then MsgN("Can't get raw pcf data for special effect " .. k.PrintName) return end
+				if k:GetPCF() == "UtilFx" then MsgN("UtilFx isn't a real pcf, doofus!") return end
+				local pcf = PartCtrl_GetGamePCF(k:GetPCF(), k:GetPath())
+				local name = k:GetParticleName()
+				MsgN("PartCtrl_NoDefPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
+				PrintTable(PartCtrl_NoDefPCFs[pcf][name])
+				MsgN()
+			end
+		end
+
+	end
+})
+
 properties.Add("partctrl_dev_printprocessed", {
 	MenuLabel = "Print processed PCF data for this effect",
 	Order = 90000.52,

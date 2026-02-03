@@ -127,389 +127,6 @@ table.insert(a, "ATTRIBUTE_QANGLE_ARRAY")
 table.insert(a, "ATTRIBUTE_QUATERNION_ARRAY")
 table.insert(a, "ATTRIBUTE_MATRIX_ARRAY")
 
-//reference:
-//https://developer.valvesoftware.com/wiki/PCF, https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3, https://developer.valvesoftware.com/wiki/DMX/Binary
-
-local cache_version = "1" //update this in case ReadPCF is updated post-release to return a different table
-local docache = GetConVar("sv_partctrl_cachereadpcf")
-
-function PartCtrl_ReadPCF(filename, path) 
-
-	//don't print non-critical messages unless we're in developer mode; 
-	//always print messages for bugs that player should report
-	local dodebug = (GetConVarNumber("developer") >= 1)
-
-	local checksum
-	if docache:GetBool() then
-		//If possible, load the results of this function from cache instead. This makes PartCtrl_ReadAndProcessPCFs 2-3x faster on all subsequent
-		//startups (compared to without caching), but makes the very first load quite a bit slower as we save the files to the cache, and also adds
-		//approx. 50MB to the data folder (because of how BIG tf2's pcfs are!).
-		checksum = file.Read(filename, path or "GAME")
-		if !checksum then MsgN("PartCtrl: ", filename, " (", path or "GAME", ") can't be read, report this bug!") return end
-		checksum = util.SHA256(checksum) //if the pcf file is updated, then the checksum will be different; this stops us from loading outdated data
-		local cached_file = file.Read("partctrl_cache_" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", "DATA")
-		if cached_file then
-			//"true" arg below stops it from converting all table keys from strings to numbers where possible.
-			//this prevents edge cases where an effect just named a number can get converted into a bad name, and doesn't 
-			//*seem* to cause any issues with sequential subtables like operator lists, but keep an eye on this just in case.
-			cached_file = util.JSONToTable(cached_file, false, true)
-			//PrintTable(cached_file)
-			if cached_file then
-				if dodebug then MsgN("PartCtrl: ", filename, " loading from cache") end
-				return cached_file
-			end
-		end
-	end
-
-	local f = file.Open(filename, "rb", path or "GAME")
-	if !f then MsgN("PartCtrl: ", filename, " (", path or "GAME", ") can't be opened, report this bug!") return end
-	//path arg is only used by PartCtrl_GetPCFConflicts, don't worry about it past this point
-
-	//If the pcf is packed into the current map, then write a copy of it into the data folder and read that instead.
-	//This is necessary because performing read operations on packed files takes a very long time (only if the map file is compressed, but we don't have 
-	//a way to check for that); pd_watergate's *7* packed pcfs add *10 whole minutes* to the load time if we don't cache them like this!
-	if file.Exists(filename, "BSP") then
-		if dodebug then MsgN("PartCtrl: ", filename, " is packed into the current BSP file, caching") end
-		if file.Write("temp_partctrl_readpcfcache.txt", f:Read()) then
-			f = file.Open("temp_partctrl_readpcfcache.txt", "rb", "DATA")
-			if !f then MsgN("PartCtrl: ", filename, " cache was written, but can't be read; report this bug!") return end
-		else
-			MsgN("PartCtrl: ", filename, " was unable to be cached; report this bug!")
-			return
-		end
-	end
-	//we *could* run file.Delete("temp_partctrl_readpcfcache.txt", "DATA") after we're done with it, but that doesn't seem necessary; 
-	//there's only ever one of these files at a time and they're not that big, it'd just be another write operation on the user's HD for no benefit
-
-	local version
-	local header = ReadUntilNull(f)
-	//MsgN(header)
-	if header == "<!-- dmx encoding binary 2 format pcf 1 -->\n" //used by all orange box pcfs
-	or header == "<!-- dmx encoding binary 2 format dmx 1 -->\n" //only used by css's fire_medium_01.pcf, appears to be identical to orangebox's binary 2 format pcf 1
-	or header == "<!-- dmx encoding binary 3 format pcf 1 -->\n" //only used by portal 2's clouds.pcf
-	or header == "<!-- dmx encoding binary 3 format pcf 2 -->\n" //used by a few portal 2 pcfs; this and the above don't seem to have any formatting differences from binary 2
-	then 
-		version = 2
-	elseif header == "<!-- dmx encoding binary 4 format pcf 2 -->\n" then //only used by by l4d2 pcfs?
-		version = 4
-	elseif header == "<!-- dmx encoding binary 5 format pcf 2 -->\n" then //used by most portal 2 pcfs and all(?) alien swarm pcfs
-		version = 5
-	else
-		if dodebug then MsgN("PartCtrl: ", filename, " has unsupported pcf format ", string.TrimRight(header, "\n"), ", ignoring") end
-		return
-	end
-
-
-	local nStrings
-	if version <= 3 then
-		nStrings = f:ReadUShort() //this is a short in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
-	else
-		nStrings = f:ReadULong() //this is an int in both version 4 and 5 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions / https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3
-	end
-	local StringDict = {}
-	//MsgN(filename, " nStrings = ", nStrings)
-	for k = 0, nStrings - 1 do
-		local v = ReadUntilNull(f)
-		StringDict[k] = v
-	end
-	//PrintTable(StringDict)
-
-
-	local nElements = f:ReadULong() //int
-	//MsgN(filename, " nElements = ", nElements)
-
-	local function DmeHeader()
-		local tab = {}
-		if version <= 3 then
-			tab.Type = StringDict[f:ReadUShort()] //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
-			tab.Name = ReadUntilNull(f) //element names are in-line strings in DMX version 2 https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3
-		elseif version == 4 then
-			//in version 4, element names are also stored in the string dictionary, but string dictionary indices are still shorts https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary / https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
-			tab.Type = StringDict[f:ReadUShort()]
-			tab.Name = StringDict[f:ReadUShort()]
-		elseif version == 5 then
-			//in version 5, string dictionary indices are now ints https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary / https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
-			tab.Type = StringDict[f:ReadULong()]
-			tab.Name = StringDict[f:ReadULong()]
-		end
-		//tab.GUID = f:Read(16) //GUID[16]
-		f:Skip(16) //GUID[16], just skip this one
-		return tab
-	end
-	local ElementIndex = {}
-	for i = 1, nElements do
-		ElementIndex[i-1] = DmeHeader()
-	end
-	//PrintTable(ElementIndex)
-
-
-	local function DmAttribute()
-		local tab = {}
-		if version <= 4 then
-			tab.Name = StringDict[f:ReadUShort()] //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
-		elseif version == 5 then
-			tab.Name = StringDict[f:ReadULong()]
-		end
-		//MsgN("name = ", tab.Name)
-		if !tab.Name then return tab end //if we returned a bad attribute, bail out immediately; NOTE 3/22/25: this and all the file-reading checks with error messages below were to address a bug with PCFs packed into compressed map files, which would start returning garbage with a "Warning! LZMA compression header is invalid! Extraction failed! particles\_.pcf ( ERR: 1 )" error in console after an arbitrary point; this bug was fixed by the most recent gmod update, so this may no longer be necessary
-		//local at = math.BinToInt(f:Read(1)) or 0 //returns nil
-		//local at = math.BinToInt(ReadUntilNull(f)) or 0
-		local at = f:ReadByte()
-		//MsgN("at ", at, " = ", a[at])
-		at = a[at] or ""
-		tab.AttributeType = at
-		local function DoAttribute(is_array)
-			//MsgN("at = ", at)
-			if at == "ATTRIBUTE_ELEMENT" then
-				return f:ReadLong()
-			elseif at == "ATTRIBUTE_INTEGER" then
-				return f:ReadLong()
-			elseif at == "ATTRIBUTE_FLOAT" then
-				return f:ReadFloat()
-			elseif at == "ATTRIBUTE_BOOLEAN" then
-				return f:ReadBool()
-			elseif at == "ATTRIBUTE_STRING" then
-				if version <= 3 or is_array then //in higher versions, arrays of strings still use null-terminated strings instead of being stored in the string dictionary
-					return ReadUntilNull(f)
-				elseif version == 4 then
-					return StringDict[f:ReadUShort()] //this is a short in version 4 (https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary), which matches the headers
-				elseif version == 5 then
-					return StringDict[f:ReadULong()]
-				end
-			elseif at == "ATTRIBUTE_BINARY" then
-				local count = f:ReadULong()
-				return f:Read(count)
-			elseif at == "ATTRIBUTE_TIME" then
-				return f:ReadLong() / 10000 //according to https://developer.valvesoftware.com/wiki/PCF; TODO: should this be unsigned? can't find anything that uses this to check
-			elseif at == "ATTRIBUTE_COLOR" then
-				return Color(string.byte(f:Read(1)), string.byte(f:Read(1)), string.byte(f:Read(1)), string.byte(f:Read(1)))
-			elseif at == "ATTRIBUTE_VECTOR2" then
-				return {f:ReadFloat(), f:ReadFloat()}
-			elseif at == "ATTRIBUTE_VECTOR3" then
-				return Vector(f:ReadFloat(), f:ReadFloat(), f:ReadFloat())
-			elseif at == "ATTRIBUTE_VECTOR4" then
-				return {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}
-			elseif at == "ATTRIBUTE_QANGLE" then
-				return Vector(f:ReadFloat(), f:ReadFloat(), f:ReadFloat()) //"Same as ATTRIBUTE_VECTOR3" according to https://developer.valvesoftware.com/wiki/PCF
-			elseif at == "ATTRIBUTE_QUATERNION" then
-				return {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()} //"Same as ATTRIBUTE_VECTOR4" according to https://developer.valvesoftware.com/wiki/PCF
-			elseif at == "ATTRIBUTE_MATRIX" then
-				return Matrix({ {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}, {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()},
-						{f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}, {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()} })
-			elseif string.EndsWith(at, "_ARRAY") then
-				at = string.Replace(at, "_ARRAY", "")
-				local tab2 = {}
-				local arraysize = f:ReadULong() //int, is ReadULong the right way to interpret this?
-				if arraysize > 1000 then MsgN("PartCtrl: ", filename, " got crazy array size ", arraysize, " - we screwed up file reading somewhere, report this bug!") return end
-				for i = 1, arraysize do
-					table.insert(tab2, DoAttribute(true))
-				end
-				return tab2
-			end
-			return 0
-		end
-		tab.Value = DoAttribute()
-		return tab
-	end
-	local ElementBodies = {}
-	for i = 1, nElements do
-		//MsgN("Element ", i, " = ")
-		local body = {}
-		local attributecount = f:ReadULong() //int, is ReadULong the right way to interpret this?
-		//MsgN("attributecount = ", attributecount)
-		if !attributecount then MsgN("PartCtrl: ", filename, " got no attribute count - we screwed up file reading somewhere, report this bug!") return end
-		if attributecount > 100 then MsgN("PartCtrl: ", filename, " got crazy attribute count ", attributecount, " - we screwed up file reading somewhere, report this bug!") return end
-		for i = 1, attributecount do
-			local attrib = DmAttribute()
-			if !attrib.Name then MsgN("PartCtrl: ", filename, " attribute ", i, " has no name value - we screwed up file reading somewhere, report this bug!") return end
-			table.insert(body, attrib)
-		end
-		ElementBodies[i-1] = body
-		//MsgN("nElement ", i, " body:")
-		//PrintTable(body)
-	end
-	f:Close()
-
-
-	//smoosh the index and bodies into a single table
-	//PrintTable(ElementIndex)
-	//PrintTable(ElementBodies)
-	local ElementsUnsorted = {}
-	for i, index in pairs (ElementIndex) do
-		local tab = {}
-		//tab.k = index.Type .. " " .. index.Name
-		tab.k = index
-
-		local v = {}
-		if !ElementBodies[i] then
-			MsgN("PartCtrl: ", filename, " element index ", i, " has no body - we screwed up file reading somewhere, report this bug!")
-			break //note: in all the cases where this bug has happened (reading pcfs packed into compressed tf2 maps before 3/26/25 update) every element after the first one with this bug will also be empty, so stop here
-		else
-			for i, attrib in pairs (ElementBodies[i]) do
-				if attrib.AttributeType == "ATTRIBUTE_ELEMENT_ARRAY" then
-					v[attrib.Name] = {
-						ElementTable = attrib.Value
-					}
-				elseif attrib.AttributeType == "ATTRIBUTE_ELEMENT" then
-					v[attrib.Name] = {
-						ElementTable = {attrib.Value}
-					}
-				else
-					v[attrib.Name] = attrib.Value
-				end
-			end
-			tab.v = v
-			ElementsUnsorted[i] = tab
-		end
-	end
-	//PrintTable(ElementsUnsorted)
-
-
-	//Now sort that table into a conventional keyvalue structure
-	--[[local nonParentedElements = {}
-	for i = 0, nElements - 1 do
-		nonParentedElements[i] = true
-	end
-	for i, kv in pairs (ElementsUnsorted) do
-		for k2, v2 in pairs(kv.v) do
-			if istable(v2) and v2.ElementTable then
-				for _, element in pairs (v2.ElementTable) do
-					nonParentedElements[element] = nil
-				end
-			end
-		end
-	end
-	PrintTable(nonParentedElements)]]
-	//Looks like in every pcf, 0 is the only unparented element, so start there to save time instead of iterating over the whole table again
-	local Elements = {}
-	if !ElementsUnsorted[0].v.particleSystemDefinitions or !ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable then 
-		if dodebug then MsgN("PartCtrl: ", filename, " element 0 doesn't contain a particleSystemDefinitions table, ignoring") end
-		return
-	end
-	for _, i in pairs (ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable) do
-		if !ElementsUnsorted[i] then
-			if dodebug then MsgN("PartCtrl: ", filename, " tried to get DmeParticleSystemDefinition from nil element ", i) end
-		elseif ElementsUnsorted[i].k.Type != "DmeParticleSystemDefinition" then
-			if dodebug then MsgN("PartCtrl: ", filename, " tried to get DmeParticleSystemDefinition element ", ElementsUnsorted[i].k.Name, ", but it was a ", ElementsUnsorted[i].k.Type, " element") end
-		else
-			for k, v in pairs (ElementsUnsorted[i].v) do
-				if istable(v) and v.ElementTable then
-					local tab = {}
-					for et_k, et_i in pairs (v.ElementTable) do
-						if !ElementsUnsorted[et_i] then
-							if dodebug then MsgN("PartCtrl: ", filename, " attribute ", k, " tried to get nil element ", et_i) end
-						else
-							if ElementsUnsorted[et_i].k.Type == "DmeParticleChild" then
-								if !ElementsUnsorted[et_i].v.child then
-									if dodebug then MsgN("PartCtrl: ", filename, " DmeParticleChild has no child value") end
-								else
-									//store particle children as strings (names of the corresponding fx) to keep the table simple and avoid recursive nonsense
-									local childName = nil
-									for et2_k, et2_i in pairs (ElementsUnsorted[et_i].v.child.ElementTable) do
-										if !ElementsUnsorted[et2_i] then
-											if dodebug then MsgN("PartCtrl: ", filename, " DmeParticleChild tried to get nil element ", et2_i) end
-										else
-											//table.insert(tab, ElementsUnsorted[et2_i].k.Name)
-											childName = string.lower(ElementsUnsorted[et2_i].k.Name) //for this addon's purposes, we make effect names all lowercase, see below
-										end
-									end
-									ElementsUnsorted[et_i].v.child = childName
-								end
-							end
-							//table.insert(tab, ElementsUnsorted[et_i])
-							//discard key for DmeParticleOperators; the name is redundant and is also stored in the functionName value, and also there can be multiple with the same name
-							table.insert(tab, ElementsUnsorted[et_i].v)
-							//this doesn't handle recursive element tables but i don't think any particle operators have those
-						end
-					end
-					ElementsUnsorted[i].v[k] = tab
-					//v = tab
-				end
-			end
-			Elements[ElementsUnsorted[i].k.Name] = ElementsUnsorted[i].v
-		end
-	end
-
-	//Particle effect names are caps-agnostic internally, so for this addon's purposes, we'll make them all lowercase to avoid issues further 
-	//down the line (effects with the same name but capitalized differently will conflict with each other, so make sure we detect those properly)
-	local Elements2 = {}
-	for k, v in pairs (Elements) do
-		v._nicename = k //store the capitalized name so we can use it for display purposes
-		Elements2[string.lower(k)] = v
-	end
-	Elements = Elements2
-
-	if docache:GetBool() then
-		//Remove all default values from the cached table, to significantly reduce both the size and load times of cached files
-		local str = {}
-		for effect, effecttab in pairs (Elements) do
-			//PrintTable(effecttab)
-			str[effect] = {}
-			for k, v in pairs (effecttab) do
-				if PartCtrl_DefaultOps._main[k] == v then //check each value in the main table, and don't add it to the tab if it's default
-					continue
-				elseif PartCtrl_DefaultOps[k] then //operator categories
-					local tab = {}
-					for k2, v2 in pairs (v) do //operators
-						local def = PartCtrl_DefaultOps[k][string.lower(v2.functionName)]
-						if def then
-							local tab2 = {}
-							for k3, v3 in pairs (v2) do //check each value in the operator, and only add it to the tab if it's non-default
-								local def2 = def[k3]
-								if def2 == nil then def2 = PartCtrl_DefaultOps[k]._generic[k3] end
-								if def2 != v3 then
-									//this returns false negatives when comparing some decimal values, so double-check them as strings
-									if isnumber(def2) then 
-										if tostring(v3) != tostring(def2) then
-											tab2[k3] = v3
-										end
-									else
-										tab2[k3] = v3
-									end
-								end
-							end
-							tab[k2] = tab2
-						else
-							tab[k2] = v2
-						end
-					end
-					str[effect][k] = tab
-				else
-					//this returns false negatives when comparing some decimal values, so double-check them as strings
-					if isnumber(v) then
-						if tostring(v) == tostring(PartCtrl_DefaultOps._main[k]) then
-							continue
-						end
-					end
-					str[effect][k] = v
-				end
-			end
-		end
-		//PrintTable(str)
-		str = util.TableToJSON(str)
-		if str then
-			local dirs = string.Explode("/", "partctrl_cache_" .. cache_version ..  "/" .. filename)
-			local d = ""
-			for k,v in ipairs(dirs) do
-				d = (d..v.."/")
-				if !file.IsDir(d, "DATA") then file.CreateDir(d) end
-			end
-			if file.Write("partctrl_cache_" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", str) then
-				if dodebug then MsgN("PartCtrl: ", filename, " saved to cache") end
-			else
-				if dodebug then MsgN("PartCtrl: ", filename, " couldn't be cached because file.Write failed?") end
-			end
-		else
-			if dodebug then MsgN("PartCtrl: ", filename, " couldn't be cached because util.TableToJSON failed?") end
-		end
-	end
-	
-	//PrintTable(Elements)
-	return Elements
-
-end
-
-
 //from https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/devtools/bin/fix_particle_operator_names.pl#L54
 local fixes = {
 	alpha_fade = "Alpha Fade and Decay",
@@ -574,273 +191,8 @@ fixes = fixes2
 fixes2 = nil
 
 
-//For testing purposes, lists all fx using a certain operator, and optionally prints the operator's values
-//Example: PartCtrl_GetParticlesWithOperator("Remap Control Point to Vector") to get all fx in all pcfs with that operator, 
-//or PartCtrl_GetParticlesWithOperator("Remap Control Point to Vector", "particles/critglowtool_colorablefx.pcf") for just the fx in that file;
-//add an extra "true" arg to the end of either of those to print the operator's values
-function PartCtrl_GetParticlesWithOperator(desiredfunc, filename, extended)
-	local function GetOperatorsFromFile(desiredfunc, filename, extended)
-		local tab = PartCtrl_ReadPCF(filename)
-		if tab then
-			for particle, ptab in SortedPairs (tab) do
-				for category, ops in pairs (ptab) do
-					if istable(ops) then
-						for k, v in pairs (ops) do
-							if istable(v) and v.functionName and string.lower(v.functionName) == string.lower(desiredfunc) then
-								//MsgN("(", filename, ") ", particle)
-								MsgN(particle, " ", filename) //actually do it like this so it's easier to spawn them in console
-								if extended then
-									MsgN(category, " ", desiredfunc)
-									PrintTable(v)
-									MsgN("")
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-	end
-	//filename arg is optional; if so, then check every file
-	if !isstring(filename) then
-		extended = filename
-		for _, filename2 in pairs (PartCtrl_AllPCFPaths) do
-			GetOperatorsFromFile(desiredfunc, filename2, extended)
-		end
-	else
-		GetOperatorsFromFile(desiredfunc, filename, extended)
-	end
-end
-
-
-//Test: Get a list of all pcfs that are defined by multiple games, and for each one, print the checksums of each copy of the file, along with the checksum
-//of the one actually being loaded by the game. This lets us determine which games have unique instances of a pcf as opposed to identical copies, and also 
-//tells us which ones are getting loaded vs. getting clobbered by mount order.
-//TODO: almost certainly not necessary any more with the new data pcfs system
-function PartCtrl_GetPCFConflicts(alternate)
-	
-	local particles = {}
-	for k, v in pairs (PartCtrl_AllPCFPaths) do
-		particles[v] = {}
-	end
-	local games = engine.GetGames()
-	games[0] = {depot = 1, folder = "garrysmod", mounted = true}
-	for k, v in pairs (games) do
-		if !v.mounted then continue end
-
-		//make folder and depot names all the same length so it reads better
-		local folder2 = v.folder
-		for i = 1, (17-#(v.folder)) do //longest folder name in engine.GetGames is thestanleyparable
-			folder2 = folder2 .. " "
-		end
-		v.depot = tostring(v.depot)
-		for i = 1, (7-#(v.depot)) do //longest depot number in engine.GetGames is treason's 1786950
-			v.depot = " " .. v.depot
-		end
-
-		for name, _ in pairs (particles) do
-			if !alternate then
-				local f = file.Read(name, v.folder)
-				if f then
-					particles[name][v.depot .. ": " .. folder2] = util.SHA256(f)
-				end
-			else
-				//alternative: get checksum of the table we return from reading the file, just in case there's some false positive making
-				//file.Read return a non-identical string even if nothing relevant is different (i.e. file save timestamp or something?)
-				//the results of this turned out to be no different from the above, and it's much slower, so don't do this by default.
-				local f = PartCtrl_ReadPCF(name, v.folder)
-				if f then
-					particles[name][v.depot .. ": " .. folder2] = util.SHA256(util.TableToKeyValues(f))
-				end
-			end
-		end
-	end
-	for name, v in pairs (particles) do
-		if table.Count(v) <= 1 then
-			particles[name] = nil
-		else
-			if !alternate then
-				local f = file.Read(name, "GAME")
-				if f then
-					particles[name]["      0: mounted          "] = util.SHA256(f) //top of list
-				end
-			else
-				//see above
-				local f = PartCtrl_ReadPCF(name)
-				if f then
-					particles[name]["      0: mounted          "] = util.SHA256(util.TableToKeyValues(f)) //top of list
-				end
-			end
-		end
-	end
-	PrintTable(particles)
-
-end
-
-
-//Test: Prints all differences between 2 raw pcf data tables.
-function PartCtrl_ComparePCFs(file1, file2, shownil)
-
-	local checksum1 = util.SHA256(file.Read(file1, "GAME"))
-	local checksum2 = util.SHA256(file.Read(file2, "GAME"))
-	if checksum1 == checksum2 then
-		//files are identical, stop here
-		MsgN("matching checksum ", checksum1)
-		return
-	end
-	
-	local allresults = {}
-
-	//returns if a table is a default color table
-	local function bad(tab)
-		if (tab.r == 255 and tab.g == 255 and tab.b == 255 and (tab.a == nil or tab.a == 255))
-		or (tab.r == 0 and tab.g == 0 and tab.b == 0 and (tab.a == nil or tab.a == 0)) then
-			return true
-		end
-	end
-
-	local function Compare(t1, t2, isfirst, spew)
-		local allkeys = {}
-		for k, _ in pairs (t1) do
-			allkeys[k] = true
-		end
-		for k, _ in pairs (t2) do
-			allkeys[k] = true
-		end
-		local results = {}
-		for k, _ in SortedPairs (allkeys) do
-			if spew or t1[k] != t2[k] then
-				if istable(t1[k]) and istable(t2[k]) then
-					//They're both tables, compare their contents
-					local results2 = Compare(t1[k], t2[k], false, spew)
-					if #results2 > 0 or isfirst then
-						local name = k
-						if t1[k].functionName and t2[k].functionName then
-							if t1[k].functionName == t2[k].functionName then
-								name = tostring(k) .. " (" .. t1[k].functionName .. ")"
-							else
-								name = tostring(k) .. " (" .. t1[k].functionName .. "/" .. t2[k].functionName .. ")"
-							end
-						end
-						if isfirst then 
-							name = "\n\n\n\n@@@@@@@@@@@@@@@@@@@@@ " .. name //make effect names extra visible
-						end
-						table.insert(results, name)
-						if #results2 > 0 then
-							table.Add(results, results2)
-						else
-							table.insert(results, "no differences")
-						end
-						table.insert(results, "")
-					end
-				elseif shownil or (
-					(
-						t1[k] != nil or (istable(t2[k]) and !bad(t2[k]))
-					) and 
-					(
-						t2[k] != nil or (istable(t1[k]) and !bad(t1[k]))
-					)
-				) then
-					local name = k
-					if istable(t1[k]) and t1[k].functionName then
-						name = tostring(k) .. " (" .. t1[k].functionName .. ")"
-					elseif istable(t2[k]) and t2[k].functionName then
-						name = tostring(k) .. " (" .. t2[k].functionName .. ")"
-					end
-					local result1 = t1[k]
-					local result2 = t2[k]
-					if isfirst then
-						name = "@@@@@@@@@@@@@@@@@@@@@ " .. name //make effect names extra visible
-						//don't dump entire effect tables if they're only in 1 file
-						if istable(result1) then result1 = "EFFECT ONLY IN " .. file1 end
-						if istable(result2) then result2 = "EFFECT ONLY IN " .. file2 end
-					end 
-					if result1 == nil then result1 = "nil" end
-					if result2 == nil then result2 = "nil" end
-					table.Add(results, {name, result1, result2, ""})
-				end
-			end
-		end
-		return results
-	end
-
-	for _, v in pairs (Compare(PartCtrl_ReadPCF(file1), PartCtrl_ReadPCF(file2), true)) do
-		if istable(v) then
-			PrintTable(v)
-		else
-			MsgN(v)
-		end
-	end
-
-end
-
-
-//Test: Get all missing materials in a pcf
-function PartCtrl_GetMissingPCFMats(filename)
-
-	local function Check(filename2)
-		local tab = {}
-	
-		for particle, ptab in pairs (PartCtrl_ReadPCF(filename2)) do
-			local mat = "materials\\" .. string.StripExtension(ptab.material) .. ".vmt"
-			if !file.Exists(mat, "GAME") then
-				table.insert(tab, particle .. ": " .. mat)
-			end
-		end
-		
-		if table.Count(tab) > 0 then
-			MsgN("Missing materials in ", filename2, ":")
-			for k, v in pairs (tab) do
-				local repstr = string.Replace(v, "\\", "/")
-				local pos, _, _ = string.find(repstr, "materials/")
-				repstr = string.Replace(repstr, "materials/effects/", "materials/effects/workshop/")
-				repstr = string.sub(repstr, pos)
-				//MsgN(repstr, file.Exists(repstr, "GAME"))
-				if file.Exists(repstr, "GAME") then
-					MsgN(v, ", should be ", repstr)
-				else
-					MsgN(v)
-				end
-			end
-			MsgN("")
-		end
-	end
-
-	//if filename is provided, check that file, otherwise check all files
-	if filename then
-		Check(filename)
-	else
-		for k, v in pairs (PartCtrl_AllPCFPaths) do
-			Check(v)
-		end
-	end
-
-end
-
-
-//Test: Get all particle effects used by info_particle_system ents on the map
-//TODO: should rework this from scratch, can we get a list of ents from the server but then do PartCtrl_PCFsByParticleName for each of them on client?
-//DOUBLE TODO: update 1/3/26 makes PartCtrl_PCFsByParticleName accessible serverside again, see if we can fix this
-function PartCtrl_GetMapFx()
-
-	for k, v in pairs (ents.FindByClass("info_particle_system")) do
-		local name = v:GetInternalVariable("effect_name")
-		MsgN(name)
-		//this no longer works now that we only build PartCtrl_PCFsByParticleName clientside to save time
-		--[[for _, v2 in pairs (PartCtrl_PCFsByParticleName[name]) do 
-			//wanted to use this to figure out which instance of this effect is currently mounted,
-			//but info_particle_system ents are only serverside and this table is only clientside, argh
-			//MsgN(v2, " ", table.KeyFromValue(PartCtrl_AddParticles_AddedParticles, v2))
-			MsgN(v2)
-		end
-		MsgN("")]]
-	end
-
-end
-
-
 //copied 1/1/25; if an update changes a default value on the main effect table or on any operator, update this table and increment cache_version above
-PartCtrl_DefaultOps = {
+local defs = {
 	_main = {
 		["Sort particles"] = true,
 		["batch particle systems"] = false,
@@ -2322,7 +1674,7 @@ PartCtrl_DefaultOps = {
 	},
 }
 local tab = {}
-for k, v in pairs (PartCtrl_DefaultOps) do
+for k, v in pairs (defs) do
 	tab[k] = {}
 	if k != "_main" then
 		for k2, v2 in pairs (v) do
@@ -2332,11 +1684,11 @@ for k, v in pairs (PartCtrl_DefaultOps) do
 		tab[k] = v
 	end
 end
-PartCtrl_DefaultOps = tab
+defs = tab
 tab = nil
 
-//the above table is generated by creating a test effect with default values, and then using this function below to output a lua-readable version of its contents,
-//i.e. PrintTable(PartCtrl_ReadPCF("particles/text.pcf")["test"} - make sure to set sv_partctrl_cachereadpcf 0 so that caching doesn't turn color objects into normal tables
+//the above table is generated by creating a test effect with default values, and then using the function below to output a lua-readable version of its contents,
+//i.e. PrintTable(PartCtrl_ReadPCF("particles/text.pcf")["test"} - make sure to set sv_partctrl_cachereadpcf 0 so that the json bug doesn't turn color objects into normal tables
 --[[local function PrintTable( t, indent, done ) //edited PrintTable that outputs a correctly formatted lua table we can paste into code
 	local Msg = Msg
 
@@ -2383,6 +1735,698 @@ tab = nil
 	end
 end]]
 
+
+//reference:
+//https://developer.valvesoftware.com/wiki/PCF, https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3, https://developer.valvesoftware.com/wiki/DMX/Binary
+
+local cache_version = "1" //update this in case ReadPCF is updated post-release to return a different table
+local docache = GetConVar("sv_partctrl_cachereadpcf")
+
+function PartCtrl_ReadPCF(filename, path)
+
+	local function RestoreDefaultValues(tab)
+		for p, ptab in pairs (tab) do
+			for k, v in pairs (ptab) do
+				if defs[k] then
+					for k2, op in pairs (v) do
+						local name = string.lower(op.functionName) or ""
+						if fixes[name] then name = fixes[name] end
+
+						//fill in any default values that are missing from the operator
+						if defs[k][name] then
+							for k3, v3 in pairs (defs[k][name]) do
+								if op[k3] == nil then tab[p][k][k2][k3] = v3 end
+							end
+						end
+						for k3, v3 in pairs (defs[k]._generic) do
+							if op[k3] == nil then tab[p][k][k2][k3] = v3 end
+						end
+					end
+				end
+			end
+			//Fill in any default values that are missing from the main table
+			for k, v in pairs (defs._main) do
+				if ptab[k] == nil then
+					tab[p][k] = v
+				end
+			end
+		end
+		//PrintTable(tab)
+	end
+	local function do_nodefs(tab)
+		//Store a leaner table without default values - this gets used by PartCtrl_GetDuplicateFx()
+		//This is a good place to do this because it means we don't have to read the file a second time to populate this
+		if CLIENT and !path then
+			PartCtrl_NoDefPCFs[filename] = table.Copy(tab)
+		end
+	end
+
+	//don't print non-critical messages unless we're in developer mode; 
+	//always print messages for bugs that player should report
+	local dodebug = (GetConVarNumber("developer") >= 1)
+
+	local checksum
+	if docache:GetBool() then
+		//If possible, load the results of this function from cache instead. This makes PartCtrl_ReadAndProcessPCFs 2-3x faster on all subsequent
+		//startups (compared to without caching), but makes the very first load quite a bit slower as we save the files to the cache, and also adds
+		//approx. 50MB to the data folder (because of how BIG tf2's pcfs are!).
+		checksum = file.Read(filename, path or "GAME")
+		if !checksum then MsgN("PartCtrl: ", filename, " (", path or "GAME", ") can't be read, report this bug!") return end
+		checksum = util.SHA256(checksum) //if the pcf file is updated, then the checksum will be different; this stops us from loading outdated data
+		local cached_file = file.Read("partctrl_cache_" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", "DATA")
+		if cached_file then
+			//"true" arg below stops it from converting all table keys from strings to numbers where possible.
+			//this prevents edge cases where an effect just named a number can get converted into a bad name, and doesn't 
+			//*seem* to cause any issues with sequential subtables like operator lists, but keep an eye on this just in case.
+			cached_file = util.JSONToTable(cached_file, false, true)
+			//PrintTable(cached_file)
+			if cached_file then
+				do_nodefs(cached_file)
+				RestoreDefaultValues(cached_file) //saved cache files omit all default values to save space and read time, so repopulate those
+				if dodebug then MsgN("PartCtrl: ", filename, " loading from cache") end
+				return cached_file
+			end
+		end
+	end
+
+	local f = file.Open(filename, "rb", path or "GAME")
+	if !f then MsgN("PartCtrl: ", filename, " (", path or "GAME", ") can't be opened, report this bug!") return end
+	//path arg is only used by PartCtrl_GetPCFConflicts, don't worry about it past this point
+
+	//If the pcf is packed into the current map, then write a copy of it into the data folder and read that instead.
+	//This is necessary because performing read operations on packed files takes a very long time (only if the map file is compressed, but we don't have 
+	//a way to check for that); pd_watergate's *7* packed pcfs add *10 whole minutes* to the load time if we don't cache them like this!
+	if file.Exists(filename, "BSP") then
+		if dodebug then MsgN("PartCtrl: ", filename, " is packed into the current BSP file, caching") end
+		if file.Write("temp_partctrl_readpcfcache.txt", f:Read()) then
+			f = file.Open("temp_partctrl_readpcfcache.txt", "rb", "DATA")
+			if !f then MsgN("PartCtrl: ", filename, " cache was written, but can't be read; report this bug!") return end
+		else
+			MsgN("PartCtrl: ", filename, " was unable to be cached; report this bug!")
+			return
+		end
+	end
+	//we *could* run file.Delete("temp_partctrl_readpcfcache.txt", "DATA") after we're done with it, but that doesn't seem necessary; 
+	//there's only ever one of these files at a time and they're not that big, it'd just be another write operation on the user's HD for no benefit
+
+	local version
+	local header = ReadUntilNull(f)
+	//MsgN(header)
+	if header == "<!-- dmx encoding binary 2 format pcf 1 -->\n" //used by all orange box pcfs
+	or header == "<!-- dmx encoding binary 2 format dmx 1 -->\n" //only used by css's fire_medium_01.pcf, appears to be identical to orangebox's binary 2 format pcf 1
+	or header == "<!-- dmx encoding binary 3 format pcf 1 -->\n" //only used by portal 2's clouds.pcf
+	or header == "<!-- dmx encoding binary 3 format pcf 2 -->\n" //used by a few portal 2 pcfs; this and the above don't seem to have any formatting differences from binary 2
+	then 
+		version = 2
+	elseif header == "<!-- dmx encoding binary 4 format pcf 2 -->\n" then //only used by by l4d2 pcfs?
+		version = 4
+	elseif header == "<!-- dmx encoding binary 5 format pcf 2 -->\n" then //used by most portal 2 pcfs and all(?) alien swarm pcfs
+		version = 5
+	else
+		if dodebug then MsgN("PartCtrl: ", filename, " has unsupported pcf format ", string.TrimRight(header, "\n"), ", ignoring") end
+		return
+	end
+
+
+	local nStrings
+	if version <= 3 then
+		nStrings = f:ReadUShort() //this is a short in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+	else
+		nStrings = f:ReadULong() //this is an int in both version 4 and 5 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions / https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3
+	end
+	local StringDict = {}
+	//MsgN(filename, " nStrings = ", nStrings)
+	for k = 0, nStrings - 1 do
+		local v = ReadUntilNull(f)
+		StringDict[k] = v
+	end
+	//PrintTable(StringDict)
+
+
+	local nElements = f:ReadULong() //int
+	//MsgN(filename, " nElements = ", nElements)
+
+	local function DmeHeader()
+		local tab = {}
+		if version <= 3 then
+			tab.Type = StringDict[f:ReadUShort()] //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+			tab.Name = ReadUntilNull(f) //element names are in-line strings in DMX version 2 https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3
+		elseif version == 4 then
+			//in version 4, element names are also stored in the string dictionary, but string dictionary indices are still shorts https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary / https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+			tab.Type = StringDict[f:ReadUShort()]
+			tab.Name = StringDict[f:ReadUShort()]
+		elseif version == 5 then
+			//in version 5, string dictionary indices are now ints https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary / https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+			tab.Type = StringDict[f:ReadULong()]
+			tab.Name = StringDict[f:ReadULong()]
+		end
+		//tab.GUID = f:Read(16) //GUID[16]
+		f:Skip(16) //GUID[16], just skip this one
+		return tab
+	end
+	local ElementIndex = {}
+	for i = 1, nElements do
+		ElementIndex[i-1] = DmeHeader()
+	end
+	//PrintTable(ElementIndex)
+
+
+	local function DmAttribute()
+		local tab = {}
+		if version <= 4 then
+			tab.Name = StringDict[f:ReadUShort()] //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+		elseif version == 5 then
+			tab.Name = StringDict[f:ReadULong()]
+		end
+		//MsgN("name = ", tab.Name)
+		if !tab.Name then return tab end //if we returned a bad attribute, bail out immediately; NOTE 3/22/25: this and all the file-reading checks with error messages below were to address a bug with PCFs packed into compressed map files, which would start returning garbage with a "Warning! LZMA compression header is invalid! Extraction failed! particles\_.pcf ( ERR: 1 )" error in console after an arbitrary point; this bug was fixed by the most recent gmod update, so this may no longer be necessary
+		//local at = math.BinToInt(f:Read(1)) or 0 //returns nil
+		//local at = math.BinToInt(ReadUntilNull(f)) or 0
+		local at = f:ReadByte()
+		//MsgN("at ", at, " = ", a[at])
+		at = a[at] or ""
+		tab.AttributeType = at
+		local function DoAttribute(is_array)
+			//MsgN("at = ", at)
+			if at == "ATTRIBUTE_ELEMENT" then
+				return f:ReadLong()
+			elseif at == "ATTRIBUTE_INTEGER" then
+				return f:ReadLong()
+			elseif at == "ATTRIBUTE_FLOAT" then
+				return f:ReadFloat()
+			elseif at == "ATTRIBUTE_BOOLEAN" then
+				return f:ReadBool()
+			elseif at == "ATTRIBUTE_STRING" then
+				if version <= 3 or is_array then //in higher versions, arrays of strings still use null-terminated strings instead of being stored in the string dictionary
+					return ReadUntilNull(f)
+				elseif version == 4 then
+					return StringDict[f:ReadUShort()] //this is a short in version 4 (https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary), which matches the headers
+				elseif version == 5 then
+					return StringDict[f:ReadULong()]
+				end
+			elseif at == "ATTRIBUTE_BINARY" then
+				local count = f:ReadULong()
+				return f:Read(count)
+			elseif at == "ATTRIBUTE_TIME" then
+				return f:ReadLong() / 10000 //according to https://developer.valvesoftware.com/wiki/PCF; TODO: should this be unsigned? can't find anything that uses this to check
+			elseif at == "ATTRIBUTE_COLOR" then
+				return Color(string.byte(f:Read(1)), string.byte(f:Read(1)), string.byte(f:Read(1)), string.byte(f:Read(1)))
+			elseif at == "ATTRIBUTE_VECTOR2" then
+				return {f:ReadFloat(), f:ReadFloat()}
+			elseif at == "ATTRIBUTE_VECTOR3" then
+				return Vector(f:ReadFloat(), f:ReadFloat(), f:ReadFloat())
+			elseif at == "ATTRIBUTE_VECTOR4" then
+				return {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}
+			elseif at == "ATTRIBUTE_QANGLE" then
+				return Vector(f:ReadFloat(), f:ReadFloat(), f:ReadFloat()) //"Same as ATTRIBUTE_VECTOR3" according to https://developer.valvesoftware.com/wiki/PCF
+			elseif at == "ATTRIBUTE_QUATERNION" then
+				return {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()} //"Same as ATTRIBUTE_VECTOR4" according to https://developer.valvesoftware.com/wiki/PCF
+			elseif at == "ATTRIBUTE_MATRIX" then
+				return Matrix({ {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}, {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()},
+						{f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}, {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()} })
+			elseif string.EndsWith(at, "_ARRAY") then
+				at = string.Replace(at, "_ARRAY", "")
+				local tab2 = {}
+				local arraysize = f:ReadULong() //int, is ReadULong the right way to interpret this?
+				if arraysize > 1000 then MsgN("PartCtrl: ", filename, " got crazy array size ", arraysize, " - we screwed up file reading somewhere, report this bug!") return end
+				for i = 1, arraysize do
+					table.insert(tab2, DoAttribute(true))
+				end
+				return tab2
+			end
+			return 0
+		end
+		tab.Value = DoAttribute()
+		return tab
+	end
+	local ElementBodies = {}
+	for i = 1, nElements do
+		//MsgN("Element ", i, " = ")
+		local body = {}
+		local attributecount = f:ReadULong() //int, is ReadULong the right way to interpret this?
+		//MsgN("attributecount = ", attributecount)
+		if !attributecount then MsgN("PartCtrl: ", filename, " got no attribute count - we screwed up file reading somewhere, report this bug!") return end
+		if attributecount > 100 then MsgN("PartCtrl: ", filename, " got crazy attribute count ", attributecount, " - we screwed up file reading somewhere, report this bug!") return end
+		for i = 1, attributecount do
+			local attrib = DmAttribute()
+			if !attrib.Name then MsgN("PartCtrl: ", filename, " attribute ", i, " has no name value - we screwed up file reading somewhere, report this bug!") return end
+			table.insert(body, attrib)
+		end
+		ElementBodies[i-1] = body
+		//MsgN("nElement ", i, " body:")
+		//PrintTable(body)
+	end
+	f:Close()
+
+
+	//smoosh the index and bodies into a single table
+	//PrintTable(ElementIndex)
+	//PrintTable(ElementBodies)
+	local ElementsUnsorted = {}
+	for i, index in pairs (ElementIndex) do
+		local tab = {}
+		//tab.k = index.Type .. " " .. index.Name
+		tab.k = index
+
+		local v = {}
+		if !ElementBodies[i] then
+			MsgN("PartCtrl: ", filename, " element index ", i, " has no body - we screwed up file reading somewhere, report this bug!")
+			break //note: in all the cases where this bug has happened (reading pcfs packed into compressed tf2 maps before 3/26/25 update) every element after the first one with this bug will also be empty, so stop here
+		else
+			for i, attrib in pairs (ElementBodies[i]) do
+				if attrib.AttributeType == "ATTRIBUTE_ELEMENT_ARRAY" then
+					v[attrib.Name] = {
+						ElementTable = attrib.Value
+					}
+				elseif attrib.AttributeType == "ATTRIBUTE_ELEMENT" then
+					v[attrib.Name] = {
+						ElementTable = {attrib.Value}
+					}
+				else
+					v[attrib.Name] = attrib.Value
+				end
+			end
+			tab.v = v
+			ElementsUnsorted[i] = tab
+		end
+	end
+	//PrintTable(ElementsUnsorted)
+
+
+	//Now sort that table into a conventional keyvalue structure
+	--[[local nonParentedElements = {}
+	for i = 0, nElements - 1 do
+		nonParentedElements[i] = true
+	end
+	for i, kv in pairs (ElementsUnsorted) do
+		for k2, v2 in pairs(kv.v) do
+			if istable(v2) and v2.ElementTable then
+				for _, element in pairs (v2.ElementTable) do
+					nonParentedElements[element] = nil
+				end
+			end
+		end
+	end
+	PrintTable(nonParentedElements)]]
+	//Looks like in every pcf, 0 is the only unparented element, so start there to save time instead of iterating over the whole table again
+	local Elements = {}
+	if !ElementsUnsorted[0].v.particleSystemDefinitions or !ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable then 
+		if dodebug then MsgN("PartCtrl: ", filename, " element 0 doesn't contain a particleSystemDefinitions table, ignoring") end
+		return
+	end
+	for _, i in pairs (ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable) do
+		if !ElementsUnsorted[i] then
+			if dodebug then MsgN("PartCtrl: ", filename, " tried to get DmeParticleSystemDefinition from nil element ", i) end
+		elseif ElementsUnsorted[i].k.Type != "DmeParticleSystemDefinition" then
+			if dodebug then MsgN("PartCtrl: ", filename, " tried to get DmeParticleSystemDefinition element ", ElementsUnsorted[i].k.Name, ", but it was a ", ElementsUnsorted[i].k.Type, " element") end
+		else
+			for k, v in pairs (ElementsUnsorted[i].v) do
+				if istable(v) and v.ElementTable then
+					local tab = {}
+					for et_k, et_i in pairs (v.ElementTable) do
+						if !ElementsUnsorted[et_i] then
+							if dodebug then MsgN("PartCtrl: ", filename, " attribute ", k, " tried to get nil element ", et_i) end
+						else
+							if ElementsUnsorted[et_i].k.Type == "DmeParticleChild" then
+								if !ElementsUnsorted[et_i].v.child then
+									if dodebug then MsgN("PartCtrl: ", filename, " DmeParticleChild has no child value") end
+								else
+									//store particle children as strings (names of the corresponding fx) to keep the table simple and avoid recursive nonsense
+									local childName = nil
+									for et2_k, et2_i in pairs (ElementsUnsorted[et_i].v.child.ElementTable) do
+										if !ElementsUnsorted[et2_i] then
+											if dodebug then MsgN("PartCtrl: ", filename, " DmeParticleChild tried to get nil element ", et2_i) end
+										else
+											//table.insert(tab, ElementsUnsorted[et2_i].k.Name)
+											childName = string.lower(ElementsUnsorted[et2_i].k.Name) //for this addon's purposes, we make effect names all lowercase, see below
+										end
+									end
+									ElementsUnsorted[et_i].v.child = childName
+								end
+							end
+							//table.insert(tab, ElementsUnsorted[et_i])
+							//discard key for DmeParticleOperators; the name is redundant and is also stored in the functionName value, and also there can be multiple with the same name
+							table.insert(tab, ElementsUnsorted[et_i].v)
+							//this doesn't handle recursive element tables but i don't think any particle operators have those
+						end
+					end
+					ElementsUnsorted[i].v[k] = tab
+					//v = tab
+				end
+			end
+			Elements[ElementsUnsorted[i].k.Name] = ElementsUnsorted[i].v
+		end
+	end
+
+	//Particle effect names are caps-agnostic internally, so for this addon's purposes, we'll make them all lowercase to avoid issues further 
+	//down the line (effects with the same name but capitalized differently will conflict with each other, so make sure we detect those properly)
+	local Elements2 = {}
+	for k, v in pairs (Elements) do
+		v._nicename = k //store the capitalized name so we can use it for display purposes
+		Elements2[string.lower(k)] = v
+	end
+	Elements = Elements2
+
+	if nodefs_copy or docache:GetBool() then
+		//Remove all default values from the cached table, to significantly reduce both the size and load times of cached files
+		local str = {}
+		for effect, effecttab in pairs (Elements) do
+			//PrintTable(effecttab)
+			str[effect] = {}
+			for k, v in pairs (effecttab) do
+				if defs._main[k] == v then //check each value in the main table, and don't add it to the tab if it's default
+					continue
+				elseif defs[k] then //operator categories
+					local tab = {}
+					for k2, v2 in pairs (v) do //operators
+						local def = defs[k][string.lower(v2.functionName)]
+						if def then
+							local tab2 = {}
+							for k3, v3 in pairs (v2) do //check each value in the operator, and only add it to the tab if it's non-default
+								local def2 = def[k3]
+								if def2 == nil then def2 = defs[k]._generic[k3] end
+								if def2 != v3 then
+									//this returns false negatives when comparing some decimal values, so double-check them as strings
+									if isnumber(def2) then 
+										if tostring(v3) != tostring(def2) then
+											tab2[k3] = v3
+										end
+									else
+										tab2[k3] = v3
+									end
+								end
+							end
+							tab[k2] = tab2
+						else
+							tab[k2] = v2
+						end
+					end
+					str[effect][k] = tab
+				else
+					//this returns false negatives when comparing some decimal values, so double-check them as strings
+					if isnumber(v) then
+						if tostring(v) == tostring(defs._main[k]) then
+							continue
+						end
+					end
+					str[effect][k] = v
+				end
+			end
+		end
+		do_nodefs(str)
+	end
+	//PrintTable(str)
+	if docache:GetBool() then
+		str = util.TableToJSON(str)
+		if str then
+			local dirs = string.Explode("/", "partctrl_cache_" .. cache_version ..  "/" .. filename)
+			local d = ""
+			for k,v in ipairs(dirs) do
+				d = (d..v.."/")
+				if !file.IsDir(d, "DATA") then file.CreateDir(d) end
+			end
+			if file.Write("partctrl_cache_" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", str) then
+				if dodebug then MsgN("PartCtrl: ", filename, " saved to cache") end
+			else
+				if dodebug then MsgN("PartCtrl: ", filename, " couldn't be cached because file.Write failed?") end
+			end
+		else
+			if dodebug then MsgN("PartCtrl: ", filename, " couldn't be cached because util.TableToJSON failed?") end
+		end
+	end
+	
+	//PrintTable(Elements)
+	RestoreDefaultValues(Elements) //newer PCF versions omit all default values from the PCF file itself, so make sure to repopulate those
+	return Elements
+
+end
+
+
+//For testing purposes, lists all fx using a certain operator, and optionally prints the operator's values
+//Example: PartCtrl_GetParticlesWithOperator("Remap Control Point to Vector") to get all fx in all pcfs with that operator, 
+//or PartCtrl_GetParticlesWithOperator("Remap Control Point to Vector", "particles/critglowtool_colorablefx.pcf") for just the fx in that file;
+//add an extra "true" arg to the end of either of those to print the operator's values
+function PartCtrl_GetParticlesWithOperator(desiredfunc, filename, extended)
+	local function GetOperatorsFromFile(desiredfunc, filename, extended)
+		local tab = PartCtrl_ReadPCF(filename)
+		if tab then
+			for particle, ptab in SortedPairs (tab) do
+				for category, ops in pairs (ptab) do
+					if istable(ops) then
+						for k, v in pairs (ops) do
+							if istable(v) and v.functionName and string.lower(v.functionName) == string.lower(desiredfunc) then
+								//MsgN("(", filename, ") ", particle)
+								MsgN(particle, " ", filename) //actually do it like this so it's easier to spawn them in console
+								if extended then
+									MsgN(category, " ", desiredfunc)
+									PrintTable(v)
+									MsgN("")
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	//filename arg is optional; if so, then check every file
+	if !isstring(filename) then
+		extended = filename
+		for _, filename2 in pairs (PartCtrl_AllPCFPaths) do
+			GetOperatorsFromFile(desiredfunc, filename2, extended)
+		end
+	else
+		GetOperatorsFromFile(desiredfunc, filename, extended)
+	end
+end
+
+
+//Test: Get a list of all pcfs that are defined by multiple games, and for each one, print the checksums of each copy of the file, along with the checksum
+//of the one actually being loaded by the game. This lets us determine which games have unique instances of a pcf as opposed to identical copies, and also 
+//tells us which ones are getting loaded vs. getting clobbered by mount order.
+//TODO: almost certainly not necessary any more with the new data pcfs system
+function PartCtrl_GetPCFConflicts(alternate)
+	
+	local particles = {}
+	for k, v in pairs (PartCtrl_AllPCFPaths) do
+		particles[v] = {}
+	end
+	local games = engine.GetGames()
+	games[0] = {depot = 1, folder = "garrysmod", mounted = true}
+	for k, v in pairs (games) do
+		if !v.mounted then continue end
+
+		//make folder and depot names all the same length so it reads better
+		local folder2 = v.folder
+		for i = 1, (17-#(v.folder)) do //longest folder name in engine.GetGames is thestanleyparable
+			folder2 = folder2 .. " "
+		end
+		v.depot = tostring(v.depot)
+		for i = 1, (7-#(v.depot)) do //longest depot number in engine.GetGames is treason's 1786950
+			v.depot = " " .. v.depot
+		end
+
+		for name, _ in pairs (particles) do
+			if !alternate then
+				local f = file.Read(name, v.folder)
+				if f then
+					particles[name][v.depot .. ": " .. folder2] = util.SHA256(f)
+				end
+			else
+				//alternative: get checksum of the table we return from reading the file, just in case there's some false positive making
+				//file.Read return a non-identical string even if nothing relevant is different (i.e. file save timestamp or something?)
+				//the results of this turned out to be no different from the above, and it's much slower, so don't do this by default.
+				local f = PartCtrl_ReadPCF(name, v.folder)
+				if f then
+					particles[name][v.depot .. ": " .. folder2] = util.SHA256(util.TableToKeyValues(f))
+				end
+			end
+		end
+	end
+	for name, v in pairs (particles) do
+		if table.Count(v) <= 1 then
+			particles[name] = nil
+		else
+			if !alternate then
+				local f = file.Read(name, "GAME")
+				if f then
+					particles[name]["      0: mounted          "] = util.SHA256(f) //top of list
+				end
+			else
+				//see above
+				local f = PartCtrl_ReadPCF(name)
+				if f then
+					particles[name]["      0: mounted          "] = util.SHA256(util.TableToKeyValues(f)) //top of list
+				end
+			end
+		end
+	end
+	PrintTable(particles)
+
+end
+
+
+//Test: Prints all differences between 2 raw pcf data tables.
+function PartCtrl_ComparePCFs(file1, file2, shownil)
+
+	local checksum1 = util.SHA256(file.Read(file1, "GAME"))
+	local checksum2 = util.SHA256(file.Read(file2, "GAME"))
+	if checksum1 == checksum2 then
+		//files are identical, stop here
+		MsgN("matching checksum ", checksum1)
+		return
+	end
+	
+	local allresults = {}
+
+	//returns if a table is a default color table
+	local function bad(tab)
+		if (tab.r == 255 and tab.g == 255 and tab.b == 255 and (tab.a == nil or tab.a == 255))
+		or (tab.r == 0 and tab.g == 0 and tab.b == 0 and (tab.a == nil or tab.a == 0)) then
+			return true
+		end
+	end
+
+	local function Compare(t1, t2, isfirst, spew)
+		local allkeys = {}
+		for k, _ in pairs (t1) do
+			allkeys[k] = true
+		end
+		for k, _ in pairs (t2) do
+			allkeys[k] = true
+		end
+		local results = {}
+		for k, _ in SortedPairs (allkeys) do
+			if spew or t1[k] != t2[k] then
+				if istable(t1[k]) and istable(t2[k]) then
+					//They're both tables, compare their contents
+					local results2 = Compare(t1[k], t2[k], false, spew)
+					if #results2 > 0 or isfirst then
+						local name = k
+						if t1[k].functionName and t2[k].functionName then
+							if t1[k].functionName == t2[k].functionName then
+								name = tostring(k) .. " (" .. t1[k].functionName .. ")"
+							else
+								name = tostring(k) .. " (" .. t1[k].functionName .. "/" .. t2[k].functionName .. ")"
+							end
+						end
+						if isfirst then 
+							name = "\n\n\n\n@@@@@@@@@@@@@@@@@@@@@ " .. name //make effect names extra visible
+						end
+						table.insert(results, name)
+						if #results2 > 0 then
+							table.Add(results, results2)
+						else
+							table.insert(results, "no differences")
+						end
+						table.insert(results, "")
+					end
+				elseif shownil or (
+					(
+						t1[k] != nil or (istable(t2[k]) and !bad(t2[k]))
+					) and 
+					(
+						t2[k] != nil or (istable(t1[k]) and !bad(t1[k]))
+					)
+				) then
+					local name = k
+					if istable(t1[k]) and t1[k].functionName then
+						name = tostring(k) .. " (" .. t1[k].functionName .. ")"
+					elseif istable(t2[k]) and t2[k].functionName then
+						name = tostring(k) .. " (" .. t2[k].functionName .. ")"
+					end
+					local result1 = t1[k]
+					local result2 = t2[k]
+					if isfirst then
+						name = "@@@@@@@@@@@@@@@@@@@@@ " .. name //make effect names extra visible
+						//don't dump entire effect tables if they're only in 1 file
+						if istable(result1) then result1 = "EFFECT ONLY IN " .. file1 end
+						if istable(result2) then result2 = "EFFECT ONLY IN " .. file2 end
+					end 
+					if result1 == nil then result1 = "nil" end
+					if result2 == nil then result2 = "nil" end
+					table.Add(results, {name, result1, result2, ""})
+				end
+			end
+		end
+		return results
+	end
+
+	for _, v in pairs (Compare(PartCtrl_ReadPCF(file1), PartCtrl_ReadPCF(file2), true)) do
+		if istable(v) then
+			PrintTable(v)
+		else
+			MsgN(v)
+		end
+	end
+
+end
+
+
+//Test: Get all missing materials in a pcf
+function PartCtrl_GetMissingPCFMats(filename)
+
+	local function Check(filename2)
+		local tab = {}
+	
+		for particle, ptab in pairs (PartCtrl_ReadPCF(filename2)) do
+			local mat = "materials\\" .. string.StripExtension(ptab.material) .. ".vmt"
+			if !file.Exists(mat, "GAME") then
+				table.insert(tab, particle .. ": " .. mat)
+			end
+		end
+		
+		if table.Count(tab) > 0 then
+			MsgN("Missing materials in ", filename2, ":")
+			for k, v in pairs (tab) do
+				local repstr = string.Replace(v, "\\", "/")
+				local pos, _, _ = string.find(repstr, "materials/")
+				repstr = string.Replace(repstr, "materials/effects/", "materials/effects/workshop/")
+				repstr = string.sub(repstr, pos)
+				//MsgN(repstr, file.Exists(repstr, "GAME"))
+				if file.Exists(repstr, "GAME") then
+					MsgN(v, ", should be ", repstr)
+				else
+					MsgN(v)
+				end
+			end
+			MsgN("")
+		end
+	end
+
+	//if filename is provided, check that file, otherwise check all files
+	if filename then
+		Check(filename)
+	else
+		for k, v in pairs (PartCtrl_AllPCFPaths) do
+			Check(v)
+		end
+	end
+
+end
+
+
+//Test: Get all particle effects used by info_particle_system ents on the map
+//TODO: should rework this from scratch, can we get a list of ents from the server but then do PartCtrl_PCFsByParticleName for each of them on client?
+//DOUBLE TODO: update 1/3/26 makes PartCtrl_PCFsByParticleName accessible serverside again, see if we can fix this
+function PartCtrl_GetMapFx()
+
+	for k, v in pairs (ents.FindByClass("info_particle_system")) do
+		local name = v:GetInternalVariable("effect_name")
+		MsgN(name)
+		//this no longer works now that we only build PartCtrl_PCFsByParticleName clientside to save time
+		--[[for _, v2 in pairs (PartCtrl_PCFsByParticleName[name]) do 
+			//wanted to use this to figure out which instance of this effect is currently mounted,
+			//but info_particle_system ents are only serverside and this table is only clientside, argh
+			//MsgN(v2, " ", table.KeyFromValue(PartCtrl_AddParticles_AddedParticles, v2))
+			MsgN(v2)
+		end
+		MsgN("")]]
+	end
+
+end
+
+
 function PartCtrl_GetUnhandledOperators()
 	local allcategories = {
 		renderers = {},
@@ -2402,7 +2446,7 @@ function PartCtrl_GetUnhandledOperators()
 							local name = string.lower(op.functionName)
 							if fixes[name] then name = fixes[name] end
 							
-							if !PartCtrl_DefaultOps[category][name] then
+							if !defs[category][name] then
 								allcategories[category][name] = allcategories[category][name] or {count = 0, paths = {}}
 								allcategories[category][name].count = allcategories[category][name].count + 1
 								table.insert(allcategories[category][name].paths, filename .. " " .. particle)
@@ -3754,18 +3798,9 @@ function PartCtrl_ProcessPCF(filename)
 	if !t then
 		if dodebug then MsgN("PartCtrl: ", filename, " couldn't be read") end
 	else
-		PartCtrl_CachedReadPCFs[filename] = t
 		PartCtrl_CulledFx[filename] = {}
 		local t2 = {}
 		for particle, ptab in pairs (t) do
-			//Fill in any default values that are missing from the main table
-			for k, v in pairs (PartCtrl_DefaultOps._main) do
-				if ptab[k] == nil then
-					ptab[k] = v
-					t[particle][k] = v
-				end
-			end
-
 			local processed = {
 				cpoints = {},
 				children = t[particle].children,
@@ -3785,17 +3820,6 @@ function PartCtrl_ProcessPCF(filename)
 							op._categoryName = k //string.TrimRight(k, "s") //for name
 							local name = string.lower(op.functionName) or ""
 							if fixes[name] then name = fixes[name] end
-
-							//fill in any default values that are missing from the operator
-							local def = PartCtrl_DefaultOps[k][name]
-							if def then
-								for k, v in pairs (def) do
-									if op[k] == nil then op[k] = v end
-								end
-							end
-							for k, v in pairs (PartCtrl_DefaultOps[k]._generic) do
-								if op[k] == nil then op[k] = v end
-							end
 
 							local sf = op["operator start fadein"]
 							local ef = op["operator end fadein"]
@@ -5021,7 +5045,7 @@ function PartCtrl_ReadAndProcessPCFs()
 	PartCtrl_FindAllPCFPaths("particles/")
 	
 	PartCtrl_PCFsByParticleName_CurrentlyLoaded = {}
-	PartCtrl_CachedReadPCFs = {} //cache these so that dupe detection doesn't have to waste several seconds reading all of them again
+	if CLIENT then PartCtrl_NoDefPCFs = {} end //cache these so that dupe detection doesn't have to waste several seconds reading all of them again
 	PartCtrl_CulledFx = {} //also build a list of fx that are culled from ProcessedPCFs, because we still need them for pcf conflict/dupe detection (i.e. load a pcf, it has culled fx with the same name as non-culled fx, so we want to detect that the latter got overwritten by the former, and tell the player about it in spawnicons)
 
 	PartCtrl_ProcessedPCFs = {}
@@ -5372,7 +5396,7 @@ function PartCtrl_GetDuplicateFx()
 					//note: this needs to use copies of the cached tables, not the originals, otherwise table.SortByMember above will modify the 
 					//cached table and cause inconsistent results (i.e. operators with the same functionName no longer being in the same order) 
 					//if this function is run multiple times in a session
-					CompareTables(table.Copy(PartCtrl_CachedReadPCFs[filename][effect]), table.Copy(PartCtrl_CachedReadPCFs[filename2][effect]), 1, filename .. "/" .. filename2 .. ": " .. effect)
+					CompareTables(table.Copy(PartCtrl_NoDefPCFs[filename][effect]), table.Copy(PartCtrl_NoDefPCFs[filename2][effect]), 1, filename .. "/" .. filename2 .. ": " .. effect)
 					if is_dupe then
 						dupe_candidates[effect] = dupe_candidates[effect] or {}
 						table.insert(dupe_candidates[effect], filename2)
@@ -5408,7 +5432,7 @@ function PartCtrl_GetDuplicateFx()
 				//   smoke_large_01 is different. This requires us to keep a whole list of potential dupe candidates instead of just the first 
 				//   we find, and then also associate the child embers_large_01 with the left4dead2 pcf, despite that pcf not being in the 
 				//   child's list of dupe candidates.
-				for _, tab in pairs (PartCtrl_CachedReadPCFs[filename][effect2].children) do
+				for _, tab in pairs (PartCtrl_NoDefPCFs[filename][effect2].children) do
 					if !dupe_candidates[tab.child] then
 						//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " has no dupe candidates, discarding") end
 						children_all_dupes = false

@@ -943,6 +943,11 @@ function PANEL:OpenMenu()
 				PrintTable(PartCtrl_ReadPCF(pcf)[self.name])
 				MsgN()
 			end)
+			menu:AddOption("Print raw PCF data for this effect (no defaults)", function()
+				MsgN("PartCtrl_NoDefPCFs[\"" .. pcf .. "\"][\"" .. self.name .. "\"]:")
+				PrintTable(PartCtrl_NoDefPCFs[pcf][self.name])
+				MsgN()
+			end)
 		end
 
 		menu:AddOption("Print processed PCF data for this effect", function()
