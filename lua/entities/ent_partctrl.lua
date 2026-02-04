@@ -846,6 +846,10 @@ if CLIENT then
 
 	end
 
+	hook.Add("EntityEmitSound", "PartCtrl_UtilFxInterceptSound", function(data)
+		if PartCtrl_InterceptSound then return false end
+	end)
+
 	function ENT:StartParticle()
 
 		if !self.ParticleInfo then return end
@@ -872,8 +876,9 @@ if CLIENT then
 				if math.Round(norm.x, 6) == 0 and math.Round(norm.y, 6) == 0 then
 					norm.x = 0.00001
 					ed:SetNormal(norm)
-				end 
+				end
 				util.Effect(name, ed, true)
+				PartCtrl_InterceptSound = nil //this is set to true by some DoEffect funcs, to suppress sounds played during the effect
 			end
 			return
 		end

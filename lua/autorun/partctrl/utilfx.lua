@@ -305,7 +305,7 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 	end
 })
 
-//griefable, creates clientside models that last forever in singleplayer and 30 secs in multiplayer, which have no way to clean up - clientside ents.GetAll() can't even find them 
+//griefable, creates clientside models that last forever in singleplayer and 30 secs in multiplayer, which we have no way to clean up - clientside ents.GetAll() can't even find them 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_stickybolt.cpp#L137-L145
 --[[list.Set("PartCtrl_UtilFx", "BoltImpact", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
@@ -320,20 +320,20 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 	end
 })]]
 
-//actually, this one seems both exploitable and very useless otherwise, so don't include it
---[[//makes a barely noticeable yellow flash sprite and makes a loud metal sound; not a very useful effect and the sound might be griefable, but we've got other sound-playing ones too so whatever
+//makes a barely noticeable yellow flash sprite and a loud metal sound
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_smoke_trail.cpp#L1127
 list.Set("PartCtrl_UtilFx", "RPGShotDown", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
-	default_time = 1,
+	default_time = 0.2,
 	DoProcess = function(tab)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:CPointPosAng(0).pos)
+		PartCtrl_InterceptSound = true //sound is very griefable and not very useful. don't add a toggle for it, just get rid of it.
 		return true
 	end
-})]]
+})
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_impact_effects.cpp#L614
 list.Set("PartCtrl_UtilFx", "GlassImpact", {
@@ -511,7 +511,7 @@ local tracer = {
 				axis = 1, //y
 				default = 0,
 				checkboxes = {
-					[1] = "Whiz",
+					[1] = "Whiz sound",
 					//[2] = "Use Attachment" //doesn't make any difference to this addon, because we already pass the attachment's location as the start
 				},
 			})
@@ -593,14 +593,20 @@ local impact = {
 				dropdown = options,
 			})
 		end
-		if extras.toggleable_decals then
+		local options = {
+			//[2] = "Report ragdoll impacts" //doesn't seem to do anything, at least in the context we're using it; refers to clientside ragdolls, but the impact still hits them whether the flag is set or not
+		}
+		local def = 0
+		if extras.toggleable_decals then options[1] = "No decals" end
+		if extras.has_sounds then 
+			options[128] = "No sound" //not a real flag; use this to store the setting for PartCtrl_InterceptSound without adding another control point
+			def = 128
+		end
+		if table.Count(options) > 0 then
 			PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
 				axis = 1, //y
-				default = 0,
-				checkboxes = {
-					[1] = "No decals",
-					//[2] = "Report ragdoll impacts" //doesn't seem to do anything, at least in the context we're using it; refers to clientside ragdolls, but the impact still hits them whether the flag is set or not
-				},
+				default = def,
+				checkboxes = options,
 			})
 		end
 		local options = {
@@ -613,7 +619,7 @@ local impact = {
 			checkboxes = options,
 		})
 	end,
-	DoProcessExtras = {toggleable_decals = true, has_decals = true, surfaceprop = true},
+	DoProcessExtras = {toggleable_decals = true, has_decals = true, surfaceprop = true, has_sounds = true},
 	DoEffect = function(self, ed)
 		ed:SetStart(self:CPointPosAng(0).pos)
 		ed:SetOrigin(self:CPointPosAng(1).pos)
@@ -632,11 +638,16 @@ local impact = {
 			sp = ent.PartCtrl_SurfaceProp
 		end
 		ed:SetSurfaceProp(sp)
-		ed:SetFlags(self.ParticleInfo[2].val.y)
+		local flags = self.ParticleInfo[2].val.y
+		if bit.band(flags, 128) == 128 then
+			flags = flags - 128
+			PartCtrl_InterceptSound = true
+		end
+		ed:SetFlags(flags)
 		ed:SetDamageType(self.ParticleInfo[2].val.z)
 		ed:SetHitBox(0) //not necessary for us to add a selector for, but reset it to prevent bugs (this is the func that uses it: https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_impact.cpp#L101)
 		return true
-	end
+	end,
 }
 local impact_noflags = table.Copy(impact)
 impact_noflags.DoProcessExtras.toggleable_decals = false
@@ -660,6 +671,7 @@ impact_nodecals.info_sfx = impact_noflags3.info_sfx .. "\nNo decals; doesn't do 
 list.Set("PartCtrl_UtilFx", "HelicopterImpact", impact_nodecals)
 local impact_nodecals_nosurfaceprop = table.Copy(impact_nodecals)
 impact_nodecals_nosurfaceprop.DoProcessExtras.surfaceprop = false
+impact_nodecals_nosurfaceprop.DoProcessExtras.has_sounds = false
 impact_nodecals_nosurfaceprop.info = impact_noflags.info .. "\nNo decals, no material-specific particle effects, no sounds."
 impact_nodecals_nosurfaceprop.info_sfx = impact_noflags.info_sfx .. "\nNo decals, no material-specific particle effects, no sounds."
 list.Set("PartCtrl_UtilFx", "AirboatGunImpact", impact_nodecals_nosurfaceprop)
@@ -1365,11 +1377,19 @@ local splash = {
 				[1] = "Slime", //FX_WATER_IN_SLIME (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shareddefs.h#L566)
 			},
 		})
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "PartCtrl_InterceptSound", "axis", {
+			axis = 2, //z
+			default = 1,
+			checkboxes = {
+				[1] = "No sound"
+			},
+		})
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:CPointPosAng(0).pos)
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		ed:SetFlags(self.ParticleInfo[1].val.y)
+		if self.ParticleInfo[1].val.z == 1 then PartCtrl_InterceptSound = true end
 		return true
 	end
 }
@@ -1459,15 +1479,15 @@ list.Set("PartCtrl_UtilFx", "WaterSurfaceExplosion", {
 			max = 1280,
 			default = 128, //default value used by all code that creates this effect
 		})]]
-		--[[PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			axis = 2, //z
-			default = 0,
+			default = tonumber("0x4"),
 			checkboxes = { //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/tempentity.h
-				[tonumber("0x4")] = "No sound", //TE_EXPLFLAG_NOSOUND //works, but we always want this to be enabled
+				[tonumber("0x4")] = "No sound", //TE_EXPLFLAG_NOSOUND
 				//[tonumber("0x40")] = "No fireball", //TE_EXPLFLAG_NOFIREBALL //water explosion code looks for these, but in practice, they don't work?
 				//[tonumber("0x8")] = "No particles", //TE_EXPLFLAG_NOPARTICLES //^
 			}
-		})]]
+		})
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 1, //y
 			default = 128, //default value used by all code that creates this effect
@@ -1480,8 +1500,7 @@ list.Set("PartCtrl_UtilFx", "WaterSurfaceExplosion", {
 		ed:SetOrigin(self:CPointPosAng(0).pos)
 		//ed:SetMagnitude(self.ParticleInfo[1].val.x) //magnitude and scale are hooked up, but in practice, don't seem to change the effect at all
 		ed:SetScale(self.ParticleInfo[1].val.y) //only exception is that scale makes the ripple effect not show up if set to 0, so turn it into a checkbox
-		//ed:SetFlags(self.ParticleInfo[1].val.z)
-		ed:SetFlags(tonumber("0x4")) //TE_EXPLFLAG_NOSOUND
+		ed:SetFlags(self.ParticleInfo[1].val.z)
 		return true
 	end
 })
@@ -1508,11 +1527,11 @@ list.Set("PartCtrl_UtilFx", "Explosion", {
 		})]]
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			axis = 2, //z
-			default = 0,
+			default = tonumber("0x4"),
 			checkboxes = { //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/tempentity.h
 				//[tonumber("0x1")] = "No additive", //TE_EXPLFLAG_NOADDITIVE //no visible difference
 				//[tonumber("0x2")] = "No dynamic lights", //TE_EXPLFLAG_NODLIGHTS //already has no dynamic light, no effect
-				//[tonumber("0x4")] = "No sound", //TE_EXPLFLAG_NOSOUND //works, but we want this to always be enabled
+				[tonumber("0x4")] = "No sound", //TE_EXPLFLAG_NOSOUND
 				[tonumber("0x8")] = "No sparks and debris", //TE_EXPLFLAG_NOPARTICLES
 				//[tonumber("0x10")] = "Draw alpha", //TE_EXPLFLAG_DRAWALPHA //no visible difference
 				//[tonumber("0x20")] = "Rotate", //TE_EXPLFLAG_ROTATE //no visible difference
@@ -1533,7 +1552,7 @@ list.Set("PartCtrl_UtilFx", "Explosion", {
 		ed:SetScale(self.ParticleInfo[1].val.y)]]
 		ed:SetScale(1) //except the fireball stops showing up at scale 0. we already have a flag for that, so just ensure the scale is non-zero.
 		ed:SetMagnitude(1) //can't consistently reproduce this, but sometimes, the explosion effect gets skewed forward (relative to the world, not rotatable) if the magnitude is high enough, so prevent that from happening
-		ed:SetFlags(self.ParticleInfo[1].val.z + tonumber("0x4")) //TE_EXPLFLAG_NOSOUND
+		ed:SetFlags(self.ParticleInfo[1].val.z)
 		return true
 	end
 })
@@ -1747,10 +1766,18 @@ list.Set("PartCtrl_UtilFx", "balloon_pop", {
 			default = Vector(255,255,255), 
 			colorpicker = true,
 		})
+		PartCtrl_CPoint_AddToProcessed(tab, 2, "PartCtrl_InterceptSound", "axis", {
+			axis = 0, //x
+			default = 1,
+			checkboxes = {
+				[1] = "No sound"
+			},
+		})
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:CPointPosAng(0).pos)
 		ed:SetStart(self.ParticleInfo[1].val)
+		if self.ParticleInfo[2].val.x == 1 then PartCtrl_InterceptSound = true end
 		return true
 	end
 })
