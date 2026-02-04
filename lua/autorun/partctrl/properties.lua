@@ -278,15 +278,15 @@ local function FindPCFFromEffect(name)
 	if string.StartsWith(name, "!UTILEFFECT!") then
 		name = string.TrimLeft(name, "!UTILEFFECT!")
 		pcf = "UtilFx"
-		utilfx = {}
+		utilfx = {Flags = 0, Color = 0}
 		for i = 1, 9 do
 			if string.find(name, "!FLAG" .. i .. "!") then
 				name = string.Replace(name, "!FLAG" .. i .. "!", "")
-				utilfx.Flags = (utilfx.Flags or 0) + i
+				utilfx.Flags = utilfx.Flags + i
 			end
 			if string.find(name, "!COLOR" .. i .. "!") then
 				name = string.Replace(name, "!COLOR" .. i .. "!", "")
-				utilfx.Color = (utilfx.Color or 0) + i
+				utilfx.Color = utilfx.Color + i
 			end
 		end
 	else
@@ -348,7 +348,6 @@ local function UpdateColorAndUtilFx(p, c, utilfx, info, cpointtab, name)
 		if string.find(name, "shakeropes") then utilfx.Magnitude = utilfx.Magnitude * 20 end
 		if string.find(name, "thumperdust") then utilfx.Scale = utilfx.Scale * 50 end
 		if string.find(name, "bloodspray") then utilfx.Scale = utilfx.Scale * 4  end
-		if string.find(name, "explosion") then utilfx.Flags = nil end //in the old addon, explosion's 'silent' flag was optional; this doesn't translate well
 		if string.find(name, "muzzleflash") and utilfx.Flags == 3 then utilfx.Flags = 4 end //3 is identical to 4, and is commented out in the new addon
 	end
 
@@ -495,6 +494,7 @@ local function UpdateOldEffect(ent)
 			if ent:GetLeaveBulletHoles() then
 				local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), "Impact_GMOD", "UtilFx")
 				if IsValid(p) then
+					p.ParticleInfo[2].val = Vector() //by default, this value is set to disable sounds; clear it to match impacts on old addon's tracer fx, which have sounds enabled
 					p:AttachToSpecialEffect(s, ply, false)
 				end
 			end

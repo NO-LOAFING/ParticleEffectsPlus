@@ -759,11 +759,12 @@ function PANEL:RebuildControls()
 									drop.Combo = vgui.Create("DComboBox", drop)
 									drop.Combo:SetHeight(25)
 									drop.Combo:Dock(FILL)
+									drop.Combo:SetSortItems(false) //disable alphabetical sorting, this doesn't work with numbers
 		
 									if tab.dropdown[v2.val[i]] then
 										drop.Combo:SetValue(v2.val[i] .. ": " .. tab.dropdown[v2.val[i]])
 									end
-									for k, v in pairs (tab.dropdown) do
+									for k, v in SortedPairs (tab.dropdown) do
 										drop.Combo:AddChoice(k .. ": " .. v, k)
 									end
 									function drop.Combo.OnSelect(_, index, value, data)
