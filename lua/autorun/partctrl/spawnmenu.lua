@@ -493,19 +493,19 @@ if CLIENT then
 
 	hook.Add("PopulatePropMenu", "PartCtrl_GameSpawnlists", function()
 
-		local function ReadSpawnlist(path, parent, gameid)
+		local function ReadSpawnlist(path, parent, gameid, listid)
 			local str = file.Read("lua/autorun/partctrl/spawnlists/" .. path .. ".lua", "GAME")
 			if str then
 				local tab = util.KeyValuesToTable(str)
 				if tab then
 					local name = "PartCtrl_GameSpawnlists_" .. string.StripExtension(string.GetFileFromFilename(path))
-					spawnmenu.AddPropCategory(name, tab.name, tab.contents, tab.icon, nil, parent, gameid)
+					spawnmenu.AddPropCategory(name, tab.name, tab.contents, tab.icon, listid, parent, gameid)
 					return spawnmenu.GetCustomPropTable()[name].id
 				end
 			end
 		end
 
-		local par = ReadSpawnlist("root")
+		local par = ReadSpawnlist("root", nil, nil, 72782875) //root spawnlist has a predetermined id, so that other addons can add their own spawnlists to it regardless of load order
 
 		ReadSpawnlist("gmod", par)
 
