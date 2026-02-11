@@ -53,6 +53,6 @@
 			"spawnname"		"ent_partctrl_sfx_tracer_blank"
 		}
 	}
-	"name"		"Particle Spawnlists"
+	"name"		"Particle Effects+"
 	"version"		"3"
 }

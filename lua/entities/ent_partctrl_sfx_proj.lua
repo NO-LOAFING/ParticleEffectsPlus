@@ -2,7 +2,7 @@ AddCSLuaFile()
 
 ENT.Base 			= "ent_partctrl_sfx"
 ENT.PrintName			= "Projectile Effect"
-ENT.Category			= "Particle Effects"
+ENT.Category			= "Particle Effects+: Special Effects"
 ENT.Information			= "Launches props that can have particle effects attached to them, and can play more particle effects when they expire, either on hit or on a timer."
 
 ENT.Spawnable			= true

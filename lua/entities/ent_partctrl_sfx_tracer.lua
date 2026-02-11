@@ -2,7 +2,7 @@ AddCSLuaFile()
 
 ENT.Base 			= "ent_partctrl_sfx"
 ENT.PrintName			= "Tracer Effect"
-ENT.Category			= "Particle Effects"
+ENT.Category			= "Particle Effects+: Special Effects"
 ENT.Information			= "Fires out particle effects like bullet tracers, with one end where each \"bullet\" starts, and the other where it hits something."
 
 ENT.Spawnable			= true

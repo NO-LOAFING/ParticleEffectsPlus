@@ -663,7 +663,7 @@ local function UpdateOldEffect(ent)
 end
 
 properties.Add("partctrl_backcomp", {
-	MenuLabel = "Convert Adv. Particle Control effects to COOL NEW ADDON NAME HERE", //TODO
+	MenuLabel = "Convert Adv. Particle Control effects to Particle Effects+",
 	Order = 89999,
 	PrependSpacer = false,
 	MenuIcon = "icon16/fire.png",
@@ -769,5 +769,5 @@ if SERVER then
 			ply:SendLua("GAMEMODE:AddNotify('Failed to convert " .. results[false] .. " effect(s)!', NOTIFY_ERROR, 4)")
 			ply:SendLua("surface.PlaySound('buttons/button11.wav')")
 		end
-	end, nil, "Update all Advanced Particle Controller effects on the map to COOL NEW ADDON NAME HERE effects") //TODO
+	end, nil, "Update all Advanced Particle Controller effects on the map to Particle Effects+ entities")
 end
