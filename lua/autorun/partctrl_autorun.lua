@@ -36,29 +36,32 @@ end
 
 
 
-//Blacklist bad effects from being loaded, and add info text for unintutive ones; this was a lot more extensive in development, but 
+//Blacklist bad effects from being loaded, and add info text for unintuitive ones; this was a lot more extensive in development, but 
 //shrunk down considerably as we figured out how to handle conflicting fx better and auto-detect more things that need info text.
 
 //The actual .pcf loading is done inside of ent_partctrl.lua, because entity code always runs after autorun code -
 //we want to be sure every addon that wants to add its own blacklist has the chance to do so before the .pcf files actually get read.
 
+
+//Currently, the PartCtrl_Pre/PostProcessPCF hooks are game path agnostic - when we use data pcfs to load multiple versions of the 
+//same pcf file from different games, the hooks only receive the same original pcf file path for each one, not the internal data pcf 
+//file paths, because the latter is inconsistent depending on which games were mounted this session. 
+
+//This does have the downside of not being able to distinguish between different games' versions of the same .pcf - for example, if 
+//we were to run into a situation where one particular game's fire_01.pcf has a bad effect we want to blacklist, but other games' 
+//fire_01.pcf have fx with the same name that we *don't* want to blacklist, then the hook wouldn't be able to tell them apart easily.
+
+//However, it also has the upside of not caring where the pcf came from in all other cases too - for example, if a player loads a 
+//game's pcf from an addon instead of mounting the game itself, then the hook won't care and will run all the same.
+
+	
 local tf2_unusual_wep_pcfs = {
 	["particles/weapon_unusual_cool.pcf"] = true,
 	["particles/weapon_unusual_energyorb.pcf"] = true,
 	["particles/weapon_unusual_hot.pcf"] = true,
 	["particles/weapon_unusual_isotope.pcf"] = true
 }
-local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all conflicting duplicates of other unusual weapon fx"
-hook.Add("PartCtrl_PostProcessPCF", "default_blacklist", function(filename, tab)
-	//These are useless and clog up searches for any TF2 weapon, get rid of them
-	if tf2_unusual_wep_pcfs[filename] then
-		for k, v in pairs (tab) do
-			if string.StartsWith(k, "_unusual_parent_") then
-				PartCtrl_AddCullReason(filename, k, tf2_unusual_wep_blacklist_text)
-			end
-		end
-	end
-end)
+local tf2_unusual_wep_blacklist_text = "Blacklisted: _unusual_parent_ fx are all useless conflicting copies of other fx\nfrom the same file, and clog up searches for any TF2 weapon, get rid of them"
 
 local default_comments = {
 	//Team Fortress 2
@@ -69,7 +72,15 @@ local default_comments = {
 		stamp_spin = "Only creates particles while moving" //^
 	},
 }
-hook.Add("PartCtrl_PostProcessPCF", "default_comments", function(filename, tab)
+
+hook.Add("PartCtrl_PostProcessPCF", "default_blacklist_&_comments", function(filename, tab)
+	if tf2_unusual_wep_pcfs[filename] then
+		for k, v in pairs (tab) do
+			if string.StartsWith(k, "_unusual_parent_") then
+				PartCtrl_AddCullReason(tab[k], tf2_unusual_wep_blacklist_text)
+			end
+		end
+	end
 	if default_comments[filename] then
 		for k, v in pairs (tab) do
 			if default_comments[filename][k] then

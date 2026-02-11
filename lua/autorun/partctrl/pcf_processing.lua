@@ -3796,7 +3796,10 @@ local processfuncs = {
 local PartCtrl_BadMaterials = PartCtrl_BadMaterials or {}
 local blacklist_screenfx = GetConVar("sv_partctrl_blacklist_screenspace")
 function PartCtrl_ProcessPCF(filename)
-	if hook.Call("PartCtrl_PreProcessPCF", nil, filename) == false then return end //Let hook funcs prevent PCFs from being read by returning false
+	local original_filename = filename
+	if PartCtrl_AllDataPCFs[filename] then original_filename = PartCtrl_AllDataPCFs[filename].original_filename end //make sure hook funcs receive the original pcf file path, not a data pcf file path, becaues the latter isn't consistent between sessions
+
+	if hook.Call("PartCtrl_PreProcessPCF", nil, original_filename) == false then return end //Let hook funcs prevent PCFs from being read by returning false
 
 	//don't print non-critical messages unless we're in developer mode; 
 	//always print messages for bugs that player should report
@@ -4863,18 +4866,18 @@ function PartCtrl_ProcessPCF(filename)
 			//Cull empty effects
 			if t2[particle].renderer_emitter_shouldcull then
 				if t2[particle].has_zero_alpha then
-					PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_ZeroAlpha")
+					PartCtrl_AddCullReason(t2[particle], "#PartCtrl_Cull_ZeroAlpha")
 				else
-					PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_NoRendererOrEmitter")
+					PartCtrl_AddCullReason(t2[particle], "#PartCtrl_Cull_NoRendererOrEmitter")
 				end
 			end
 			//Cull effects that are stuck at the world origin because they don't have any cpoints setting their particle pos
 			if !t2[particle].sets_particle_pos then
-				PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_NoParticlePos")
+				PartCtrl_AddCullReason(t2[particle], "#PartCtrl_Cull_NoParticlePos")
 			end
 			//Also, now that their parents have inherited cpoint data from them, cull effects with preventNameBasedLookup, since we can't spawn them on their own.
 			if t2[particle].prevent_name_based_lookup then
-				PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_PreventNameBasedLookup")
+				PartCtrl_AddCullReason(t2[particle], "#PartCtrl_Cull_PreventNameBasedLookup")
 			end
 			
 			//Handle screenspace fx
@@ -4890,12 +4893,12 @@ function PartCtrl_ProcessPCF(filename)
 				if vm then
 					screenspace = true
 				else
-					PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_ScreenSpace_NotViewModel")
+					PartCtrl_AddCullReason(t2[particle], "#PartCtrl_Cull_ScreenSpace_NotViewModel")
 				end
 			end
 			if screenspace then
 				if blacklist_screenfx:GetBool() then
-					PartCtrl_AddCullReason(filename, particle, "#PartCtrl_Cull_ScreenSpace_Blacklisted")
+					PartCtrl_AddCullReason(t2[particle], "#PartCtrl_Cull_ScreenSpace_Blacklisted")
 				elseif CLIENT then
 					PartCtrl_AddInfoText(t2[particle], "Screenspace effect: draws an overlay directly onto the screen")
 				end
@@ -4905,11 +4908,13 @@ function PartCtrl_ProcessPCF(filename)
 			end
 		end
 		//Now that the processed table is finished, let hook funcs modify it arbitrarily (including deciding which fx to cull)
-		hook.Call("PartCtrl_PostProcessPCF", nil, filename, t2)
+		hook.Call("PartCtrl_PostProcessPCF", nil, original_filename, t2)
 		for particle, _ in pairs (t2) do
-			//Cull bad effects from the table.
+			//Cull bad effects from the table
+			local cull = t2[particle].shouldcull //this will be a table if we ran PartCtrl_AddCullReason(), or nil otherwise
+			PartCtrl_CulledFx[filename][particle] = cull
 			//If the player starts up the game in developer mode, effects aren't culled, but instead have a warning in the spawnicon telling the dev why they won't show up to players.
-			if PartCtrl_CulledFx[filename][particle] and !dodebug then
+			if cull and !dodebug then
 				t2[particle] = nil
 			end
 		end
@@ -4937,9 +4942,9 @@ function PartCtrl_ProcessPCF(filename)
 	end
 end
 
-function PartCtrl_AddCullReason(pcf, effect, str)
-	PartCtrl_CulledFx[pcf][effect] = PartCtrl_CulledFx[pcf][effect] or {}
-	table.insert(PartCtrl_CulledFx[pcf][effect], str)
+function PartCtrl_AddCullReason(tab, str)
+	tab.shouldcull = tab.shouldcull or {}
+	table.insert(tab.shouldcull, str)
 end
 
 function PartCtrl_AddInfoText(tab, str)
@@ -5050,6 +5055,7 @@ function PartCtrl_ReadAndProcessPCFs()
 	PartCtrl_CulledFx = {} //also build a list of fx that are culled from ProcessedPCFs, because we still need them for pcf conflict/dupe detection (i.e. load a pcf, it has culled fx with the same name as non-culled fx, so we want to detect that the latter got overwritten by the former, and tell the player about it in spawnicons)
 
 	PartCtrl_ProcessedPCFs = {}
+	PartCtrl_AllDataPCFs = {} //spawnlists, spawnicons, and PartCtrl_ProcessPCF use this table to quickly get a data pcf's original filename and path
 	for _, filename in pairs (PartCtrl_AllPCFPaths) do
 		PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
 	end
@@ -5063,7 +5069,6 @@ function PartCtrl_ReadAndProcessPCFs()
 	allpcfs.UtilFx = nil
 
 	PartCtrl_GamePCFs = {}
-	PartCtrl_AllDataPCFs = {} //spawnlists and spawnicons use this table to quickly get a data pcf's original filename and path
 	PartCtrl_GamePCFs_DefaultPaths = {} //which game is each pcf currently loaded from? nil if not currently loaded from a game.
 	local function AddPCFsToSet(tab, dir, path, do_game_pcfs)
 		local files, dirs = file.Find(dir .. "*", path)
@@ -5124,13 +5129,15 @@ function PartCtrl_ReadAndProcessPCFs()
 						end
 						//Add the data pcf to all the tables
 						if !PartCtrl_ProcessedPCFs[filename] then
-							PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
-							table.insert(PartCtrl_AllPCFPaths, filename)
-							allpcfs[filename] = true
 							PartCtrl_AllDataPCFs[filename] = {
 								original_filename = original_filename,
 								path = path
 							}
+							PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
+							table.insert(PartCtrl_AllPCFPaths, filename)
+							if PartCtrl_ProcessedPCFs[filename] then //don't do this ProcessPCF returns nothing
+								allpcfs[filename] = true
+							end
 						end
 					end
 					//Always associate pcfs from games with a game path, whether they're currently using a data pcf or not. This is 
