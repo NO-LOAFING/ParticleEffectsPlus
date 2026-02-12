@@ -228,7 +228,7 @@
 		"36"
 		{
 			"type"		"header"
-			"text"		"use with bullet special effects)"
+			"text"		"use with Tracer special effect)"
 		}
 		"37"
 		{
@@ -276,14 +276,14 @@
 		{
 			"material"		"entities/ent_partctrl_sfx_tracer.png"
 			"type"		"entity"
-			"nicename"		"Bullet Effect"
+			"nicename"		"Tracer Effect"
 			"spawnname"		"ent_partctrl_sfx_tracer"
 		}
 		"45"
 		{
 			"material"		"entities/ent_partctrl_sfx_tracer.png"
 			"type"		"entity"
-			"nicename"		"Bullet Effect (blank)"
+			"nicename"		"Tracer Effect (blank)"
 			"spawnname"		"ent_partctrl_sfx_tracer_blank"
 		}
 		"46"

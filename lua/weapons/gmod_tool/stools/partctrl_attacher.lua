@@ -23,7 +23,7 @@ TOOL.Information = {
 if CLIENT then
 	language.Add("tool.partctrl_attacher.name", "Particle Attacher")
 	language.Add("tool.partctrl_attacher.desc", "Attach particle effects to models")
-	language.Add("tool.partctrl_attacher.help", "Particles are used for all sorts of different special effects. You can spawn them from the spawn menu, and then attach them to models with this tool.")
+	language.Add("tool.partctrl_attacher.help", "Particles are used for all sorts of different visual effects. You can spawn them from the spawn menu, and then attach them to models with this tool.")
 
 	language.Add("tool.partctrl_attacher.middle", "Scroll through a model's attachments")
 
