@@ -58,11 +58,15 @@ function ENT:Initialize()
 end
 
 if CLIENT then
+
 	function ENT:OnRemove()
+
 		AllPartCtrlGripEnts[self] = nil
+
 	end
 
 	function ENT:Think()
+
 		//Stupid hack: prevent the grip from colliding with ANY particle effects using traces, even traces with COLLISION_GROUP_NONE
 		//(test with particles/partctrl_test.pcf test_SetCPointtoImpactPoint) by setting the collision group to one that only
 		//collides with very specific things. Then, when we hover over it with the context menu, set it back to the default collision
@@ -76,94 +80,73 @@ if CLIENT then
 		else
 			self:SetCollisionGroup(COLLISION_GROUP_VEHICLE_CLIP)
 		end
-	end
-end
 
-
-
-
-local GripMaterial = Material("sprites/grip")
-local GripMaterialHover = Material("sprites/grip_hover")
-local GripMaterialSelected = Material("sprites/grip_partctrl_selected")
-
-function ENT:Draw()
-
-	if halo.RenderedEntity() == self then
-		return
 	end
 
-	//Instead of drawing the grip sprite ourselves, we tell a PostDrawTranslucentRenderables hook in ent_partctrl to do it, so that it always renders above particle effects
-	self.LastDrawn = CurTime()
-
-end
-
-function ENT:DrawGripSprite(selected)
-
-	if selected then
-		render.SetMaterial(GripMaterialSelected)
-	elseif self:BeingLookedAtByLocalPlayer() then
-		render.SetMaterial(GripMaterialHover)
-	else
-		render.SetMaterial(GripMaterial)
-	end
-
-	render.DrawSprite(self:GetPos(), 16, 16, color_white)
-
-end
 
 
 
+	local GripMaterial = Material("sprites/grip")
+	local GripMaterialHover = Material("sprites/grip_hover")
+	local GripMaterialSelected = Material("sprites/grip_partctrl_selected")
 
--- Copied from base_gmodentity.lua
-ENT.MaxWorldTipDistance = 256
-function ENT:BeingLookedAtByLocalPlayer()
-	local ply = LocalPlayer()
-	if ( !IsValid( ply ) ) then return false end
+	function ENT:Draw()
 
-	local view = ply:GetViewEntity()
-	local dist = self.MaxWorldTipDistance
-	dist = dist * dist
-
-	local tab = {
-		filter = view,
-	}
-	//Make sure our view trace collides with the grip, no matter which collsion group it's using
-	if self:GetCollisionGroup() == COLLISION_GROUP_VEHICLE_CLIP then
-		tab.collisiongroup = COLLISION_GROUP_VEHICLE
-	else
-		tab.mask = MASK_ALL //needed to hit COLLISION_GROUP_DEBRIS
-	end
-
-	-- If we're spectating a player, perform an eye trace
-	if ( view:IsPlayer() ) then
-		//return view:EyePos():DistToSqr( self:GetPos() ) <= dist && view:GetEyeTrace().Entity == self
-		//This doesn't work because we need to set MASK_ALL to hit an entity using COLLISION_GROUP_DEBRIS.
-		//Instead, emulate player:GetEyeTrace/util.GetPlayerTrace. (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/base/gamemode/obj_player_extend.lua#L172-L192), (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/extensions/util.lua#L32-L49)
-		local pos = view:EyePos()
-		if ( pos:DistToSqr( self:GetPos() ) <= dist ) then
-			local framenum = FrameNumber()
-			if ( view.PartCtrl_LastPlayerTraceAll == framenum ) then
-				return view.PartCtrl_PlayerTraceAll.Entity == self
-			end
-			view.PartCtrl_LastPlayerTraceAll = framenum
-
-			tab.start = pos
-			tab.endpos = pos + ( view:GetAimVector() * dist )
-			view.PartCtrl_PlayerTraceAll = util.TraceLine(tab)
-			return view.PartCtrl_PlayerTraceAll.Entity == self
+		if halo.RenderedEntity() == self then
+			return
 		end
+
+		//Instead of drawing the grip sprite ourselves, we tell a PostDrawTranslucentRenderables hook in ent_partctrl to do it, so that it always renders above particle effects
+		self.LastDrawn = CurTime()
+
 	end
 
-	-- If we're not spectating a player, perform a manual trace from the entity's position
-	local pos = view:GetPos()
+	function ENT:DrawGripSprite(selected)
 
-	if ( pos:DistToSqr( self:GetPos() ) <= dist ) then
-		tab.start = pos
-		tab.endpos = pos + ( view:GetAngles():Forward() * dist )
-		return util.TraceLine(tab).Entity == self
+		if selected then
+			render.SetMaterial(GripMaterialSelected)
+		elseif self:BeingLookedAtByLocalPlayer() then
+			render.SetMaterial(GripMaterialHover)
+		else
+			render.SetMaterial(GripMaterial)
+		end
+
+		render.DrawSprite(self:GetPos(), 16, 16, color_white)
+
 	end
 
-	return false
+
+
+
+	function ENT:BeingLookedAtByLocalPlayer()
+
+		//This is different from base_gmodentity's ENT:BeingLookedAtByLocalPlayer() because...
+		//A: we need to change the collision group being used by the trace, due to the collision group wackiness in our Think func
+		//B: the base BeingLookedAtByLocalPlayer doesn't get the cursor pos when viewing from an entity other than the player 
+		//(i.e. sandbox cameras), which is bad because our Think func relies on this func returning true to make properties work
+
+		local ply = LocalPlayer()
+		if !IsValid(ply) then return false end
+
+		local f = FrameNumber()
+		if ply.PartCtrl_LastPlayerTraceAll == f then
+			return ply.PartCtrl_PlayerTraceAll.Entity == self
+		end
+		ply.PartCtrl_LastPlayerTraceAll = f
+
+		//Emulate how properties check the point on the screen being aimed at (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/modules/properties.lua#L212-L220, called by https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/spawnmenu/contextmenu.lua#L137-L230)
+		//This ensures that we always get the correct result, whether we're viewing from the player or a camera, and whether we're in the context menu or not
+		local pos = MainEyePos and MainEyePos() or EyePos()
+		ply.PartCtrl_PlayerTraceAll = util.TraceLine({
+			start = pos,
+			endpos = pos + gui.ScreenToVector(input.GetCursorPos()) * 1024,
+			filter = ply:GetViewEntity(),
+			collisiongroup = COLLISION_GROUP_VEHICLE //Make sure trace collides with the grip, no matter which collision group Think sets it to
+		})
+		return ply.PartCtrl_PlayerTraceAll.Entity == self
+
+	end
+
 end
 
 
