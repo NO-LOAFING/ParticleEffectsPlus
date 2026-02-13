@@ -116,6 +116,7 @@ function ENT:Think()
 		if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then return end
 		local ptab = PartCtrl_ProcessedPCFs[pcf][name]
 		local time = CurTime()
+		self.cpoint_posang = {} //Reset this table every think
 
 		//TODO: see if we need to copy the demo fix that ragdoll resizer/animpropoverhaul/advbone have for their info tables
 
@@ -538,7 +539,7 @@ if CLIENT then
 
 	local icon_loading = Material("vgui/loading-rotate.vmt")
 	local mat_plane = Material("sprites/partctrl_plane_solid.vmt") //Material("sprites/partctrl_plane.vmt") //this looks nicer but it could be mistaken for a legitimate part of an effect
-	function ENT:DrawCPointHelpers()
+	function ENT:DrawCPointHelpers(k)
 
 		if self.ParticleInfo and !IsValid(self:GetSpecialEffectParent()) then
 			local window = IsValid(self.PartCtrlWindow) and g_ContextMenu:IsVisible()
@@ -552,101 +553,83 @@ if CLIENT then
 			else
 				camang = view:GetAngles()
 			end
-			camang:RotateAroundAxis( camang:Up(), -90 )
-			camang:RotateAroundAxis( camang:Forward(), 90 )
+			camang:RotateAroundAxis(camang:Up(), -90)
+			camang:RotateAroundAxis(camang:Forward(), 90)
 
-			for k, v in pairs (self.ParticleInfo) do
-				if ptab.cpoints[k] and ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
-					if IsValid(v.ent) then
-						local pos = nil
-						local ang = nil
-						if IsValid(v.ent.AttachedEntity) then
-							pos = v.ent.AttachedEntity:GetAttachment(self.ParticleInfo[k].attach)
-						else
-							pos = v.ent:GetAttachment(self.ParticleInfo[k].attach)
-						end
-						if istable(pos) then
-							ang = pos.Ang
-							pos = pos.Pos
-						else
-							ang = v.ent:GetAngles()
-							pos = v.ent:GetPos()
-						end
-
-						if window or v.ent.PartCtrl_Grip then //hide helpers when they're attached to other ents unless the window is open
-							//Draw plane helpers
-							if ptab.cpoint_planes and ptab.cpoint_planes[k] then
-								render.SetMaterial(mat_plane)
-								for _, tab in pairs (ptab.cpoint_planes[k]) do
-									local pos2 = tab.pos
-									local norm = tab.normal
-									if !tab.pos_global then
-										if !tab.pos_fixed_offset then
-											pos2, _ = LocalToWorld(tab.pos, Angle(), pos, ang)
-										else
-											pos2 = tab.pos + pos
-										end
-									end
-									if !tab.normal_global then
-										norm, _ = LocalToWorld(tab.normal, Angle(), Vector(), ang)
-									end
-
-									//draw at partial opacity through walls, so you can see where it intersects with the world
-									render.DrawQuadEasy(pos2, norm, 50, 50, Color(0,255,0,(128/3)*2))
-									render.DrawQuadEasy(pos2, -norm, 50, 50, Color(255,0,0,(128/3)*2))
-									cam.IgnoreZ(true)
-									render.DrawQuadEasy(pos2, norm, 50, 50, Color(0,255,0,128/3))
-									render.DrawQuadEasy(pos2, -norm, 50, 50, Color(255,0,0,128/3))
-									cam.IgnoreZ(false)
-
+			local p = self:CPointPosAng(k)
+			if istable(p) then
+				if window or self.ParticleInfo[k].ent.PartCtrl_Grip then //hide helpers when they're attached to other ents unless the window is open
+					//Draw plane helpers
+					if ptab.cpoint_planes and ptab.cpoint_planes[k] then
+						render.SetMaterial(mat_plane)
+						for _, tab in pairs (ptab.cpoint_planes[k]) do
+							local pos2 = tab.pos
+							local norm = tab.normal
+							if !tab.pos_global then
+								if !tab.pos_fixed_offset then
+									pos2, _ = LocalToWorld(tab.pos, Angle(), p.pos, p.ang)
+								else
+									pos2 = tab.pos + p.pos
 								end
 							end
-
-							//Draw distance scalar helpers (spheres showing min/max distance)
-							//These are useful for debugging, but impossible to make look good, so gate them behind a convar
-							if ptab.distance_scalars and ptab.distance_scalars[k] and cv_distancescalar_helpers:GetInt() > 0 then
-								for _, tab in pairs (ptab.distance_scalars[k]) do
-									//if tab.do_helpers then
-										if tab.outMax > tab.outMin then
-											//decreases with proximity
-											render.DrawWireframeSphere(pos, tab.inMax, 8, 8, Color(255,0,0), true)
-											if tab.inMax != tab.inMin then
-												render.DrawWireframeSphere(pos, tab.inMin, 8, 8, Color(0,255,0), true)
-											end
-										else
-											//increases with proximity
-											render.DrawWireframeSphere(pos, tab.inMin, 8, 8, Color(0,255,0), true)
-											if tab.inMax != tab.inMin then
-												render.DrawWireframeSphere(pos, tab.inMax, 8, 8, Color(255,0,0), true)
-											end
-										end
-									//end
-								end
+							if !tab.normal_global then
+								norm, _ = LocalToWorld(tab.normal, Angle(), Vector(), p.ang)
 							end
-						
-							//Draw cpoint helpers (arrow showing cpoint orientation, number showing cpoint id)
-							render.SetMaterial(partctrl_arrowmat)
-							render.DrawBeam(pos + (ang:Forward() * -3.01), pos + (ang:Forward() * (20-3.01)), 20, 1, 0, color_white)
 
+							//draw at partial opacity through walls, so you can see where it intersects with the world
+							render.DrawQuadEasy(pos2, norm, 50, 50, Color(0,255,0,(128/3)*2))
+							render.DrawQuadEasy(pos2, -norm, 50, 50, Color(255,0,0,(128/3)*2))
 							cam.IgnoreZ(true)
-							cam.Start3D2D(pos, camang, 0.125)
-								draw.SimpleTextOutlined(k,"PartCtrl_3D2DFont",0,-50,partctrl_colortext,TEXT_ALIGN_CENTER,TEXT_ALIGN_BOTTOM,3,partctrl_colorborder)
-							cam.End3D2D()
+							render.DrawQuadEasy(pos2, norm, 50, 50, Color(0,255,0,128/3))
+							render.DrawQuadEasy(pos2, -norm, 50, 50, Color(255,0,0,128/3))
 							cam.IgnoreZ(false)
-						end
-						//If particle is being throttled by crash prevention, draw loading icon
-						if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] and (!self.particle or !(self.particle.IsValid and self.particle:IsValid())) then
-							//This has to use 3D2D again instead of a simple render.DrawSprite, 
-							//just because DrawSprite doesn't seem to have a way to rotate the image
-							cam.IgnoreZ(true)
-							cam.Start3D2D(pos, camang, 1)
-								surface.SetDrawColor(255,255,255,255)
-								surface.SetMaterial(icon_loading)
-								surface.DrawTexturedRectRotated(0, 0, 16, 16, CurTime() * 300 % 360)
-							cam.End3D2D()
-							cam.IgnoreZ(false)
+
 						end
 					end
+
+					//Draw distance scalar helpers (spheres showing min/max distance)
+					//These are useful for debugging, but impossible to make look good, so gate them behind a convar
+					if ptab.distance_scalars and ptab.distance_scalars[k] and cv_distancescalar_helpers:GetInt() > 0 then
+						for _, tab in pairs (ptab.distance_scalars[k]) do
+							//if tab.do_helpers then
+								if tab.outMax > tab.outMin then
+									//decreases with proximity
+									render.DrawWireframeSphere(p.pos, tab.inMax, 8, 8, Color(255,0,0), true)
+									if tab.inMax != tab.inMin then
+										render.DrawWireframeSphere(p.pos, tab.inMin, 8, 8, Color(0,255,0), true)
+									end
+								else
+									//increases with proximity
+									render.DrawWireframeSphere(p.pos, tab.inMin, 8, 8, Color(0,255,0), true)
+									if tab.inMax != tab.inMin then
+										render.DrawWireframeSphere(p.pos, tab.inMax, 8, 8, Color(255,0,0), true)
+									end
+								end
+							//end
+						end
+					end
+				
+					//Draw cpoint helpers (arrow showing cpoint orientation, number showing cpoint id)
+					render.SetMaterial(partctrl_arrowmat)
+					render.DrawBeam(p.pos + (p.ang:Forward() * -3.01), p.pos + (p.ang:Forward() * (20-3.01)), 20, 1, 0, color_white)
+
+					cam.IgnoreZ(true)
+					cam.Start3D2D(p.pos, camang, 0.125)
+						draw.SimpleTextOutlined(k,"PartCtrl_3D2DFont",0,-50,partctrl_colortext,TEXT_ALIGN_CENTER,TEXT_ALIGN_BOTTOM,3,partctrl_colorborder)
+					cam.End3D2D()
+					cam.IgnoreZ(false)
+				end
+				//If particle is being throttled by crash prevention, draw loading icon
+				if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] and (!self.particle or !(self.particle.IsValid and self.particle:IsValid())) then
+					//This has to use 3D2D again instead of a simple render.DrawSprite, 
+					//just because DrawSprite doesn't seem to have a way to rotate the image
+					cam.IgnoreZ(true)
+					cam.Start3D2D(p.pos, camang, 1)
+						surface.SetDrawColor(255,255,255,255)
+						surface.SetMaterial(icon_loading)
+						surface.DrawTexturedRectRotated(0, 0, 16, 16, CurTime() * 300 % 360)
+					cam.End3D2D()
+					cam.IgnoreZ(false)
 				end
 			end
 
@@ -666,6 +649,7 @@ if CLIENT then
 
 			//Don't draw the grip if there's no chance of us picking it up
 			local ply = LocalPlayer()
+			local vpos = MainEyePos and MainEyePos() or EyePos()
 			local wep = ply:GetActiveWeapon()
 			if !IsValid(wep) then return end
 		
@@ -676,30 +660,66 @@ if CLIENT then
 			end
 
 			local time = CurTime()
+			local todraw = {}
 
 			if istable(AllPartCtrlGripEnts) then
-				//Check the particle attacher tool, and draw a different sprite if it's selecting us
-				local function get_active_tool(ply, tool)
-					-- find toolgun
-					local activeWep = ply:GetActiveWeapon()
-					if not IsValid(activeWep) or activeWep:GetClass() ~= "gmod_tool" or activeWep.Mode ~= tool then return end
-
-					return activeWep:GetToolObject(tool)
-				end
-				local tool = get_active_tool(ply, "partctrl_attacher")
-
+				//Queue grip point rings			
 				for self, _ in pairs (AllPartCtrlGripEnts) do
 					if self.LastDrawn == time then
-						self:DrawGripSprite(tool and tool.SelectedGripPoint == self)
+						local pos = self:GetPos()
+						table.insert(todraw, {
+							dist = pos:DistToSqr(vpos),
+							grip = {pos = pos, ent = self}
+						})
 					end
 				end
 			end
 
 			if istable(AllPartCtrlEnts) then
+				//Queue cpoint helpers
 				for self, _ in pairs (AllPartCtrlEnts) do
 					if self.LastDrawn == time then
-						self:DrawCPointHelpers()
+						if !self.PartCtrl_SpecialEffect then
+							if self.ParticleInfo then
+								local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
+								local ptab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()]
+								for k, v in pairs (self.ParticleInfo) do
+									if ptab.cpoints[k] and ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+										local p = self:CPointPosAng(k)
+										if istable(p) then
+											table.insert(todraw, {
+												dist = p.pos:DistToSqr(vpos) - 0.0001, //draw on top of the grip for the same cpoint
+												cpoint = {k = k, ent = self}
+											})
+										end
+									end
+								end
+							end
+						else
+							local p = self:CPointPosAng()
+							if istable(p) then
+								table.insert(todraw, {
+									dist = p.pos:DistToSqr(vpos) - 0.0001, //draw on top of the grip for the same cpoint
+									cpoint = {ent = self}
+								})
+							end
+						end
 					end
+				end
+			end
+
+			//Check the particle attacher tool, and draw a different sprite for the currently selected grip
+			local sel
+			if wep:GetClass() == "gmod_tool" and wep.Mode == "partctrl_attacher" then sel = wep:GetToolObject(sel) end
+			if sel then sel = sel.SelectedGripPoint end
+
+			//Draw them in order of distance from the camera, so closer ones render on top of farther ones
+			table.SortByMember(todraw, "dist")
+			for _, v in ipairs (todraw) do
+				if v.grip then
+					v.grip.ent:DrawGripSprite(v.grip.pos, sel == v.grip.ent)
+				elseif v.cpoint then
+					v.cpoint.ent:DrawCPointHelpers(v.cpoint.k)
 				end
 			end
 		end
@@ -753,7 +773,7 @@ if CLIENT then
 
 	end
 
-	//Convenience func for utilfx
+	//Convenience func for cpoint locations
 	function ENT:CPointPosAng(k)
 
 		if self.cpoint_posang[k] then return self.cpoint_posang[k] end
@@ -868,7 +888,6 @@ if CLIENT then
 				end
 			end
 			if bad then return end
-			self.cpoint_posang = {} //Reset this table every time
 			local ed = EffectData()
 			if ptab.utilfx_doeffect(self, ed) then
 				//If the normal is pointed exactly up or down, it results in bad effects (see AR2Explosion), so tilt it just a bit in those cases

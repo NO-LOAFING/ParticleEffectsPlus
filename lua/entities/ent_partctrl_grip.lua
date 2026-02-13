@@ -101,7 +101,7 @@ if CLIENT then
 
 	end
 
-	function ENT:DrawGripSprite(selected)
+	function ENT:DrawGripSprite(pos, selected)
 
 		if selected then
 			render.SetMaterial(GripMaterialSelected)
@@ -111,7 +111,7 @@ if CLIENT then
 			render.SetMaterial(GripMaterial)
 		end
 
-		render.DrawSprite(self:GetPos(), 16, 16, color_white)
+		render.DrawSprite(pos, 16, 16, color_white)
 
 	end
 

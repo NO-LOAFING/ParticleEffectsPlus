@@ -62,6 +62,8 @@ end
 
 function ENT:Think()
 
+	if CLIENT then self.cpoint_posang = nil end //Reset this value every think
+
 	//Do effect-specific think
 	if self.SpecialEffectThink then return self:SpecialEffectThink() end
 
@@ -131,39 +133,54 @@ if CLIENT then
 		if IsValid(ent) then
 			if window or ent.PartCtrl_Grip then //hide helpers when they're attached to other ents unless the window is open
 				//Draw particle effect helpers (numbers showing cpoint id, arrows showing cpoint orientation)
-				local pos = nil
-				local ang = nil
-				if IsValid(ent.AttachedEntity) then
-					pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
-				else
-					pos = ent:GetAttachment(self:GetAttachmentID())
-				end
-				if istable(pos) then
-					ang = pos.Ang
-					pos = pos.Pos
-				else
-					ang = ent:GetAngles()
-					pos = ent:GetPos()
-				end
+				local p = self:CPointPosAng()
+				if istable(p) then
+					render.SetMaterial(partctrl_arrowmat)
+					render.DrawBeam(p.pos + (p.ang:Forward() * -3.01), p.pos + (p.ang:Forward() * (20-3.01)), 20, 1, 0, color_white)
 
-				render.SetMaterial(partctrl_arrowmat)
-				render.DrawBeam(pos + (ang:Forward() * -3.01), pos + (ang:Forward() * (20-3.01)), 20, 1, 0, color_white)
-
-				local view = LocalPlayer():GetViewEntity()
-				local camang = nil
-				if view:IsPlayer() then
-					camang = view:EyeAngles()
-				else
-					camang = view:GetAngles()
+					local view = LocalPlayer():GetViewEntity()
+					local camang = nil
+					if view:IsPlayer() then
+						camang = view:EyeAngles()
+					else
+						camang = view:GetAngles()
+					end
+					camang:RotateAroundAxis( camang:Up(), -90 )
+					camang:RotateAroundAxis( camang:Forward(), 90 )
+					cam.IgnoreZ(true)
+					cam.Start3D2D(p.pos, camang, 0.125)
+						draw.SimpleTextOutlined(self.PartCtrl_ShortName or self.PrintName,"PartCtrl_3D2DFont",0,-50,partctrl_colortext,TEXT_ALIGN_CENTER,TEXT_ALIGN_BOTTOM,3,partctrl_colorborder)
+					cam.End3D2D()
+					cam.IgnoreZ(false)
 				end
-				camang:RotateAroundAxis( camang:Up(), -90 )
-				camang:RotateAroundAxis( camang:Forward(), 90 )
-				cam.IgnoreZ(true)
-				cam.Start3D2D(pos, camang, 0.125)
-					draw.SimpleTextOutlined(self.PartCtrl_ShortName or self.PrintName,"PartCtrl_3D2DFont",0,-50,partctrl_colortext,TEXT_ALIGN_CENTER,TEXT_ALIGN_BOTTOM,3,partctrl_colorborder)
-				cam.End3D2D()
-				cam.IgnoreZ(false)
 			end
+		end
+
+	end
+
+	//Convenience func for cpoint location
+	function ENT:CPointPosAng()
+
+		if self.cpoint_posang then return self.cpoint_posang end
+
+		local ent = self:GetSpecialEffectParent()
+		if IsValid(ent) then
+			local pos = nil
+			local ang = nil
+			if IsValid(ent.AttachedEntity) then
+				pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
+			else
+				pos = ent:GetAttachment(self:GetAttachmentID())
+			end
+			if istable(pos) then
+				ang = pos.Ang
+				pos = pos.Pos
+			else
+				ang = ent:GetAngles()
+				pos = ent:GetPos()
+			end
+			self.cpoint_posang = {ang = ang, pos = pos}
+			return self.cpoint_posang
 		end
 
 	end
