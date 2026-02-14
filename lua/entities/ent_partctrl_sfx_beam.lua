@@ -232,44 +232,32 @@ if CLIENT then
 			if !IsValid(ent) then return end
 			local time = CurTime()
 
-			local pos = nil
-			local ang = nil
-			if IsValid(ent.AttachedEntity) then
-				pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
-			else
-				pos = ent:GetAttachment(self:GetAttachmentID())
-			end
-			if istable(pos) then
-				ang = pos.Ang
-				pos = pos.Pos
-			else
-				ang = ent:GetAngles()
-				pos = ent:GetPos()
-			end
+			local p = self:CPointPosAng()
+			local ang
 			local dir = self:GetBeamDir()
 			if dir == 0 then
 				//forward
-				ang = ang:Forward()
+				ang = p.ang:Forward()
 			elseif dir == 1 then
 				//back
-				ang = -ang:Forward()
+				ang = -p.ang:Forward()
 			elseif dir == 2 then
 				//left
-				ang = -ang:Right()
+				ang = -p.ang:Right()
 			elseif dir == 3 then
 				//right
-				ang = ang:Right()
+				ang = p.ang:Right()
 			elseif dir == 4 then
 				//up
-				ang = ang:Up()
+				ang = p.ang:Up()
 			else
 				//down
-				ang = -ang:Up()
+				ang = -p.ang:Up()
 			end
 
 			local tr = {}
-			tr.start = pos
-			tr.endpos = pos+(ang*30000)
+			tr.start = p.pos
+			tr.endpos = p.pos+(ang*30000)
 			tr.filter = ent
 			tr = util.TraceLine(tr)
 

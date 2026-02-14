@@ -211,23 +211,6 @@ function ENT:Think()
 
 
 		//Do renderbounds
-		local function GetCPointPos(k)
-			local pos
-			local v = self.ParticleInfo[k]
-			if IsValid(v.ent) then
-				if IsValid(v.ent.AttachedEntity) then
-					pos = v.ent.AttachedEntity:GetAttachment(v.attach)
-				else
-					pos = v.ent:GetAttachment(v.attach)
-				end
-				if istable(pos) then
-					pos = pos.Pos
-				else
-					pos = v.ent:GetPos()
-				end
-			end
-			return pos
-		end
 		local extra = Vector(20,20,20) //add arrow length to bounds so it doesn't get cut off at weird angles
 		if !self.utilfx then
 			//Cache which cpoint the renderbounds are relative to, so we don't have to keep retrieving this
@@ -253,7 +236,8 @@ function ENT:Think()
 					k = self.ParticleInfo_FirstPos
 				end
 				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
-					pos = GetCPointPos(k)
+					local p = self:CPointPosAng(k)
+					if p then pos = p.pos end
 				end
 			end
 			local mins, maxs
@@ -283,30 +267,30 @@ function ENT:Think()
 					//helpers can stop rendering if we move them so that the effect is off-screen. Fix this by adding cpoint 
 					//positions to the renderbounds if paused.
 					for k2, v2 in pairs (self.ParticleInfo) do
-						local pos2 = GetCPointPos(k2)
-						if pos2 then
-							mins = Vector(math.min(mins.x,pos2.x), math.min(mins.y,pos2.y), math.min(mins.z,pos2.z))
-							maxs = Vector(math.max(maxs.x,pos2.x), math.max(maxs.y,pos2.y), math.max(maxs.z,pos2.z))
+						local p = self:CPointPosAng(k2)
+						if p then
+							mins = Vector(math.min(mins.x,p.pos.x), math.min(mins.y,p.pos.y), math.min(mins.z,p.pos.z))
+							maxs = Vector(math.max(maxs.x,p.pos.x), math.max(maxs.y,p.pos.y), math.max(maxs.z,p.pos.z))
 						end
 					end
 				end
 				//debugoverlay.Box(Vector(0,0,0), mins - extra, maxs + extra, 0.1, Color(255,255,0,0))
 				self:SetRenderBoundsWS(mins, maxs, extra)
-				//self._wsmins = mins
-				//self._wsmaxs = maxs
+				self._wsmins = mins
+				self._wsmaxs = maxs
 			end
 		else
 			//For utilfx, just make our renderbounds a box around all the cpoints, so that helpers render when any cpoint is on-screen
 			local mins, maxs
 			for k, v in pairs (self.ParticleInfo) do
-				local pos = GetCPointPos(k)
-				if pos then
+				local p = self:CPointPosAng(k)
+				if p then
 					if !mins then
-						mins = pos
-						maxs = pos
+						mins = p.pos
+						maxs = p.pos
 					else
-						mins = Vector(math.min(mins.x,pos.x), math.min(mins.y,pos.y), math.min(mins.z,pos.z))
-						maxs = Vector(math.max(maxs.x,pos.x), math.max(maxs.y,pos.y), math.max(maxs.z,pos.z))
+						mins = Vector(math.min(mins.x,p.pos.x), math.min(mins.y,p.pos.y), math.min(mins.z,p.pos.z))
+						maxs = Vector(math.max(maxs.x,p.pos.x), math.max(maxs.y,p.pos.y), math.max(maxs.z,p.pos.z))
 					end
 				end
 			end
@@ -474,6 +458,38 @@ function ENT:OnSpecialEffectParentChanged(_,old,new)
 			//Restart the effect
 			if new.SpecialEffectRefresh then new:SpecialEffectRefresh() end
 		end
+	end
+
+end
+
+
+
+
+//Convenience func for cpoint locations
+function ENT:CPointPosAng(k)
+
+	if CLIENT and self.cpoint_posang[k] then return self.cpoint_posang[k] end //server doesn't call this often enough to be worth caching and uncaching
+
+	if !self.ParticleInfo[k] then return end
+	local ent = self.ParticleInfo[k].ent
+	if IsValid(ent) then
+		local pos = nil
+		local ang = nil
+		if IsValid(ent.AttachedEntity) then
+			pos = ent.AttachedEntity:GetAttachment(self.ParticleInfo[k].attach)
+		else
+			pos = ent:GetAttachment(self.ParticleInfo[k].attach)
+		end
+		if istable(pos) then
+			ang = pos.Ang
+			pos = pos.Pos
+		else
+			ang = ent:GetAngles()
+			pos = ent:GetPos()
+		end
+		local res = {ang = ang, pos = pos}
+		if CLIENT then self.cpoint_posang[k] = res end
+		return res
 	end
 
 end
@@ -773,34 +789,6 @@ if CLIENT then
 
 	end
 
-	//Convenience func for cpoint locations
-	function ENT:CPointPosAng(k)
-
-		if self.cpoint_posang[k] then return self.cpoint_posang[k] end
-
-		if !self.ParticleInfo[k] then return end
-		local ent = self.ParticleInfo[k].ent
-		if IsValid(ent) then
-			local pos = nil
-			local ang = nil
-			if IsValid(ent.AttachedEntity) then
-				pos = ent.AttachedEntity:GetAttachment(self.ParticleInfo[k].attach)
-			else
-				pos = ent:GetAttachment(self.ParticleInfo[k].attach)
-			end
-			if istable(pos) then
-				ang = pos.Ang
-				pos = pos.Pos
-			else
-				ang = ent:GetAngles()
-				pos = ent:GetPos()
-			end
-			self.cpoint_posang[k] = {ang = ang, pos = pos}
-			return self.cpoint_posang[k]
-		end
-
-	end
-
 	function ENT:UpdateCPoints()
 
 		//Update the positions of control points that aren't handled automatically by PATTACH_ enums
@@ -809,30 +797,17 @@ if CLIENT then
 		//which we want to go forward/left/etc. relative to the direction the main position cpoint is facing)
 		if self.RelativeCPointsToUpdate then
 			for k, v in pairs (self.RelativeCPointsToUpdate) do
-				local tab = self.ParticleInfo[v]
-				if tab and IsValid(tab.ent) then
-					local ang = nil
-					if IsValid(tab.ent.AttachedEntity) then
-						ang = tab.ent.AttachedEntity:GetAttachment(tab.attach)
-					else
-						ang = tab.ent:GetAttachment(tab.attach)
+				local p = self:CPointPosAng(v)
+				if p then
+					//update the cpoint on both old particles and new particles
+					if IsValid(self.particle) and self.particle.SetControlPoint then
+						self.particle:SetControlPoint(k, LocalToWorld(self.ParticleInfo[k].val, angle_zero, vector_origin, p.ang))
 					end
-					if istable(ang) then
-						ang = ang.Ang
-					else
-						ang = tab.ent:GetAngles()
-					end
-					if ang then
-						//update the cpoint on both old particles and new particles
-						if IsValid(self.particle) and self.particle.SetControlPoint then
-							self.particle:SetControlPoint(k, LocalToWorld(self.ParticleInfo[k].val, angle_zero, vector_origin, ang))
-						end
-						if self.OldParticles then
-							for _, part in pairs (self.OldParticles) do
-								if IsValid(part) and part.SetControlPoint then
-									part:SetControlPoint(k, LocalToWorld(self.ParticleInfo[k].val, angle_zero, vector_origin, ang))
-								end	
-							end
+					if self.OldParticles then
+						for _, part in pairs (self.OldParticles) do
+							if IsValid(part) and part.SetControlPoint then
+								part:SetControlPoint(k, LocalToWorld(self.ParticleInfo[k].val, angle_zero, vector_origin, p.ang))
+							end	
 						end
 					end
 				end
@@ -1341,25 +1316,12 @@ else
 		if !IsValid(g) then return false end
 		g:Spawn()
 
-		local ang = nil
-		local pos = nil
-		if IsValid(ent.AttachedEntity) then
-			pos = ent.AttachedEntity:GetAttachment(self.ParticleInfo[k].attach)
-		else
-			pos = ent:GetAttachment(self.ParticleInfo[k].attach)
-		end
-		if istable(pos) then
-			ang = pos.Ang
-			pos = pos.Pos
-		else
-			ang = ent:GetAngles()
-			pos = ent:GetPos()
-		end
+		local p = self:CPointPosAng(k)
 		local _, bboxtop1 = ent:GetRotatedAABB(ent:GetCollisionBounds())
 		local bboxtop2, _ = g:GetCollisionBounds()
 		local height = bboxtop1.z + -bboxtop2.z + ent:GetPos().z
-		g:SetPos(Vector(pos.x, pos.y, height))
-		g:SetAngles(ang)
+		g:SetPos(Vector(p.pos.x, p.pos.y, height))
+		g:SetAngles(p.ang)
 
 		oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
 		oldconst:Remove()

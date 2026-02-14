@@ -443,20 +443,8 @@ if CLIENT then
 		local ent = self:GetSpecialEffectParent()
 		if !IsValid(ent) then return end
 
-		local pos = nil
-		local ang = nil
-		if IsValid(ent.AttachedEntity) then
-			pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
-		else
-			pos = ent:GetAttachment(self:GetAttachmentID())
-		end
-		if istable(pos) then
-			ang = pos.Ang
-			pos = pos.Pos
-		else
-			ang = ent:GetAngles()
-			pos = ent:GetPos()
-		end
+		local p = self:CPointPosAng()
+		local ang = Angle(p.ang)
 		local dir = self:GetTracerDir()
 			//forward is default
 		if dir == 1 then
@@ -495,8 +483,8 @@ if CLIENT then
 			fwd = fwd:Forward()
 
 			local tr = {}
-			tr.start = pos
-			tr.endpos = pos+(fwd*30000)
+			tr.start = p.pos
+			tr.endpos = p.pos+(fwd*30000)
 			tr.filter = ent
 			tr = util.TraceLine(tr)
 

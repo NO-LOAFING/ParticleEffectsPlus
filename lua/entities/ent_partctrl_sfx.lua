@@ -117,6 +117,37 @@ end
 
 
 
+//Convenience func for cpoint location
+function ENT:CPointPosAng()
+
+	if CLIENT and self.cpoint_posang then return self.cpoint_posang end //server doesn't call this often enough to be worth caching and uncaching
+
+	local ent = self:GetSpecialEffectParent()
+	if IsValid(ent) then
+		local pos = nil
+		local ang = nil
+		if IsValid(ent.AttachedEntity) then
+			pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
+		else
+			pos = ent:GetAttachment(self:GetAttachmentID())
+		end
+		if istable(pos) then
+			ang = pos.Ang
+			pos = pos.Pos
+		else
+			ang = ent:GetAngles()
+			pos = ent:GetPos()
+		end
+		local res = {ang = ang, pos = pos}
+		if CLIENT then self.cpoint_posang = res end
+		return res
+	end
+
+end
+
+
+
+
 if CLIENT then
 
 	function ENT:Draw()
@@ -154,33 +185,6 @@ if CLIENT then
 					cam.IgnoreZ(false)
 				end
 			end
-		end
-
-	end
-
-	//Convenience func for cpoint location
-	function ENT:CPointPosAng()
-
-		if self.cpoint_posang then return self.cpoint_posang end
-
-		local ent = self:GetSpecialEffectParent()
-		if IsValid(ent) then
-			local pos = nil
-			local ang = nil
-			if IsValid(ent.AttachedEntity) then
-				pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
-			else
-				pos = ent:GetAttachment(self:GetAttachmentID())
-			end
-			if istable(pos) then
-				ang = pos.Ang
-				pos = pos.Pos
-			else
-				ang = ent:GetAngles()
-				pos = ent:GetPos()
-			end
-			self.cpoint_posang = {ang = ang, pos = pos}
-			return self.cpoint_posang
 		end
 
 	end
@@ -305,25 +309,12 @@ if SERVER then
 		if !IsValid(g) then return false end
 		g:Spawn()
 
-		local ang = nil
-		local pos = nil
-		if IsValid(ent.AttachedEntity) then
-			pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
-		else
-			pos = ent:GetAttachment(self:GetAttachmentID())
-		end
-		if istable(pos) then
-			ang = pos.Ang
-			pos = pos.Pos
-		else
-			ang = ent:GetAngles()
-			pos = ent:GetPos()
-		end
+		local p = self:CPointPosAng()
 		local _, bboxtop1 = ent:GetRotatedAABB(ent:GetCollisionBounds())
 		local bboxtop2, _ = g:GetCollisionBounds()
 		local height = bboxtop1.z + -bboxtop2.z + ent:GetPos().z
-		g:SetPos(Vector(pos.x, pos.y, height))
-		g:SetAngles(ang)
+		g:SetPos(Vector(p.pos.x, p.pos.y, height))
+		g:SetAngles(p.ang)
 
 		self:SetAttachmentID(0)
 

@@ -1155,23 +1155,10 @@ function ENT:CreateProjectile()
 	if !IsValid(ent) then return end
 	local time = CurTime()
 
-	local pos = nil
-	local ang = nil
-	if IsValid(ent.AttachedEntity) then
-		pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
-	else
-		pos = ent:GetAttachment(self:GetAttachmentID())
-	end
-	if istable(pos) then
-		ang = pos.Ang
-		pos = pos.Pos
-		//a lot of attachment points are oriented at an angle on the roll axis (i.e. hl2 gun muzzles) - correct this, we want the default projectile angle to be upright
-		local _, ang2 = WorldToLocal(pos, ang, ent:GetPos(), ent:GetAngles())
-		ang = Angle(ang.p,ang.y,ang.r - ang2.r)
-	else
-		ang = ent:GetAngles()
-		pos = ent:GetPos()
-	end
+	local p = self:CPointPosAng()
+	//a lot of attachment points are oriented at an angle on the roll axis (i.e. hl2 gun muzzles) - correct this, we want the default projectile angle to be upright
+	local _, ang = WorldToLocal(p.pos, p.ang, ent:GetPos(), ent:GetAngles())
+	ang = Angle(p.ang.p,p.ang.y,p.ang.r - ang.r)
 	local dir = self:GetProjDir()
 		//forward is default
 	if dir == 1 then
@@ -1232,7 +1219,7 @@ function ENT:CreateProjectile()
 			proj:SetOwnerEntity(self) //reference to the effect ent on the projectile; it uses this to run StartParticles on clients
 		end
 		proj:SetOwner(ent) //don't collide with the prop that the effect ent is parented to
-		proj:SetPos(pos)
+		proj:SetPos(p.pos)
 		local spinang
 		local projang = Angle(fwd) //create a copy of the firing direction to use for the prop angle, so we can rotate the prop without rotating the firing direction
 		local projang_ = self:GetProjAngle()
@@ -1381,18 +1368,7 @@ if CLIENT then
 				ang = hitnorm:Angle()
 			elseif hitdir < 4 then
 				//toward start point
-				local pos = nil
-				if IsValid(ent.AttachedEntity) then
-					pos = ent.AttachedEntity:GetAttachment(self:GetAttachmentID())
-				else
-					pos = ent:GetAttachment(self:GetAttachmentID())
-				end
-				if istable(pos) then
-					pos = pos.Pos
-				else
-					pos = ent:GetPos()
-				end
-				local hitnorm = (hitpos-pos):GetNormalized()
+				local hitnorm = (hitpos-self:CPointPosAng().pos):GetNormalized()
 				//away from start point
 				if hitdir == 3 then
 					hitnorm = -hitnorm
