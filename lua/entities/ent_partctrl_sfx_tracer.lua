@@ -443,7 +443,7 @@ if CLIENT then
 		local ent = self:GetSpecialEffectParent()
 		if !IsValid(ent) then return end
 
-		local p = self:CPointPosAng()
+		local p = self:GetCPoint()
 		local ang = Angle(p.ang)
 		local dir = self:GetTracerDir()
 			//forward is default

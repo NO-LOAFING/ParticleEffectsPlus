@@ -1155,7 +1155,7 @@ function ENT:CreateProjectile()
 	if !IsValid(ent) then return end
 	local time = CurTime()
 
-	local p = self:CPointPosAng()
+	local p = self:GetCPoint()
 	//a lot of attachment points are oriented at an angle on the roll axis (i.e. hl2 gun muzzles) - correct this, we want the default projectile angle to be upright
 	local _, ang = WorldToLocal(p.pos, p.ang, ent:GetPos(), ent:GetAngles())
 	ang = Angle(p.ang.p,p.ang.y,p.ang.r - ang.r)
@@ -1368,7 +1368,7 @@ if CLIENT then
 				ang = hitnorm:Angle()
 			elseif hitdir < 4 then
 				//toward start point
-				local hitnorm = (hitpos-self:CPointPosAng().pos):GetNormalized()
+				local hitnorm = (hitpos-self:GetCPoint().pos):GetNormalized()
 				//away from start point
 				if hitdir == 3 then
 					hitnorm = -hitnorm

@@ -75,10 +75,11 @@ AddCSLuaFile()
 		//Function, used when we're playing the effect to set its EffectData values, usually by grabbing information from the control points we set up earlier.
 		//"self" arg is the particle controller entity which has all the cpoint info, "ed" is the CEffectData object. https://wiki.facepunch.com/gmod/CEffectData
 
-		//Sets the Origin, Angles and Normal from cpoint 0 - the particle entity has a self:CPointPosAng() func that returns the position and angle of a cpoint
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetAngles(self:CPointPosAng(0).ang)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		//Sets the Origin, Angles and Normal from cpoint 0 - the particle entity has a self:GetCPoint() func that returns the position and angle of a cpoint 
+		//(this returns a cached table, don't worry about calling the func multiple times like this)
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetAngles(self:GetCPoint(0).ang)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 
 		//Sets the Entity from cpoint 0's entity - this will be the grip point entity if it's unattached, or the entity it's attached to if it is attached
 		local ent = self.ParticleInfo[0].ent
@@ -116,7 +117,7 @@ local needs_model = "Must be attached to a model"
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		return true
 	end
 })]]
@@ -129,9 +130,9 @@ list.Set("PartCtrl_UtilFx", "ManhackSparks", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetAngles(self:CPointPosAng(0).ang) //func retrieves this value but doesn't actually use it for anything
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetAngles(self:GetCPoint(0).ang) //func retrieves this value but doesn't actually use it for anything
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		return true
 	end
 })
@@ -159,7 +160,7 @@ list.Set("PartCtrl_UtilFx", "ManhackSparks", {
 		ed:SetEntity(ent)
 
 		ed:SetAttachment(self.ParticleInfo[0].attach)
-		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetOrigin(self:GetCPoint(1).pos)
 		ed:SetScale(self.ParticleInfo[2].val.x)
 		return true
 	end
@@ -212,7 +213,7 @@ list.Set("PartCtrl_UtilFx", "CommandPointer", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		//hl2 code that calls this effect sets angles and normal to zero, but these values aren't actually used in the effect code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/proto_sniper.cpp#L1875)
 		ed:SetColor(self.ParticleInfo[1].val.x)
 		return true
@@ -227,7 +228,7 @@ list.Set("PartCtrl_UtilFx", "GunshipImpact", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		//like above, hl2 code that calls this effect sets angles and normal to zero, but these values aren't actually used in the effect code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/npc_combinegunship.cpp#L2790)
 		return true
 	end
@@ -242,8 +243,8 @@ list.Set("PartCtrl_UtilFx", "GunshipImpact", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Entity, Attachment")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetAngles(self:CPointPosAng(0).ang)
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetAngles(self:GetCPoint(0).ang)
 
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
@@ -295,8 +296,8 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 		if !ent:GetAttachment(1) then return end //if the ent doesn't have a valid attachment 1, but we play this effect anyway, it can appear on the model being used by another utileffect, and we don't want that
 
 		//origin and angles are stored by the effect func, but not actually used; still requires an attachment instead (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/c_te_legacytempents.cpp#L1804)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetAngles(self:CPointPosAng(0).ang)
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetAngles(self:GetCPoint(0).ang)
 
 		ed:SetAttachment(self.ParticleInfo[0].attach) //not actually used, always uses attachment 1; leave this and origin/angles anyway just in case custom muzzleflash mods use them or something
 		ed:SetFlags(self.ParticleInfo[1].val.x) //+ self.ParticleInfo[1].val.y)
@@ -314,8 +315,8 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		return true
 	end
 })]]
@@ -329,7 +330,7 @@ list.Set("PartCtrl_UtilFx", "RPGShotDown", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		PartCtrl_InterceptSound = true //sound is very griefable and not very useful. don't add a toggle for it, just get rid of it.
 		return true
 	end
@@ -343,8 +344,8 @@ list.Set("PartCtrl_UtilFx", "GlassImpact", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		return true
 	end
 })
@@ -357,8 +358,8 @@ list.Set("PartCtrl_UtilFx", "StunstickImpact", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		return true
 	end
 })
@@ -378,7 +379,7 @@ list.Set("PartCtrl_UtilFx", "StunstickImpact", {
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
 		ed:SetEntity(ent)
-		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetOrigin(self:GetCPoint(1).pos)
 		return true
 	end
 })]]
@@ -464,8 +465,8 @@ list.Set("PartCtrl_UtilFx", "AR2Impact", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		return true
 	end
 })
@@ -485,8 +486,8 @@ list.Set("PartCtrl_UtilFx", "AR2Explosion", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		ed:SetRadius(self.ParticleInfo[1].val.x)
 		return true
 	end
@@ -519,9 +520,9 @@ local tracer = {
 	end,
 	DoProcessExtras = {scale_default = 8000, checkboxes = true}, //8000 is default from code
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetOrigin(self:GetCPoint(1).pos)
 		//GetTracerOrigin https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_tracer.cpp#L63
-		ed:SetStart(self:CPointPosAng(0).pos)
+		ed:SetStart(self:GetCPoint(0).pos)
 		ed:SetAttachment(self.ParticleInfo[0].attach)
 
 		local ent = self.ParticleInfo[0].ent
@@ -621,8 +622,8 @@ local impact = {
 	end,
 	DoProcessExtras = {toggleable_decals = true, has_decals = true, surfaceprop = true, has_sounds = true},
 	DoEffect = function(self, ed)
-		ed:SetStart(self:CPointPosAng(0).pos)
-		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetStart(self:GetCPoint(0).pos)
+		ed:SetOrigin(self:GetCPoint(1).pos)
 
 		local ent = self.ParticleInfo[1].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
@@ -682,8 +683,8 @@ list.Set("PartCtrl_UtilFx", "AirboatGunImpact", impact_nodecals_nosurfaceprop)
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Origin, Entity")
 	end,
 	DoEffect = function (self, ed)
-		ed:SetStart(self:CPointPosAng(0).pos + (self:CPointPosAng(0).ang:Forward() * 10))
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetStart(self:GetCPoint(0).pos + (self:GetCPoint(0).ang:Forward() * 10))
+		ed:SetOrigin(self:GetCPoint(0).pos)
 
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
@@ -708,8 +709,8 @@ list.Set("PartCtrl_UtilFx", "AntlionGib", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		return true
 	end
@@ -754,7 +755,7 @@ list.Set("PartCtrl_UtilFx", "VortDispel", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		return true
 	end
 })
@@ -774,7 +775,7 @@ list.Set("PartCtrl_UtilFx", "ThumperDust", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		//effect also allows us to set an entity, but what that does is limit the effect's renderbounds to the entity's renderbounds; we don't want this
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		return true
@@ -796,8 +797,8 @@ list.Set("PartCtrl_UtilFx", "StriderBlood", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		return true
 	end
@@ -828,7 +829,7 @@ list.Set("PartCtrl_UtilFx", "cball_explode", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		return true
 	end
 })
@@ -848,8 +849,8 @@ list.Set("PartCtrl_UtilFx", "cball_bounce", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		ed:SetRadius(self.ParticleInfo[1].val.x)
 		return true
 	end
@@ -880,8 +881,8 @@ if IsMounted("hl1") then //these two fx have error models or textures if hl1 is 
 			})
 		end,
 		DoEffect = function(self, ed)
-			ed:SetOrigin(self:CPointPosAng(0).pos)
-			local ang = self:CPointPosAng(0).ang
+			ed:SetOrigin(self:GetCPoint(0).pos)
+			local ang = self:GetCPoint(0).ang
 			ed:SetAngles(ang)
 			//the velocity value this takes is relative to the world, not an attachment, so translate it
 			local val = LocalToWorld(self.ParticleInfo[1].val, angle_zero, vector_origin, ang)
@@ -928,8 +929,8 @@ if IsMounted("hl1") then //these two fx have error models or textures if hl1 is 
 			})
 		end,
 		DoEffect = function(self, ed)
-			ed:SetOrigin(self:CPointPosAng(0).pos)
-			ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+			ed:SetOrigin(self:GetCPoint(0).pos)
+			ed:SetNormal(self:GetCPoint(0).ang:Forward())
 			//callback function supplies a Scale value, and the effect function itself has an arg for it, but the value isn't actually used anywhere
 			ed:SetMaterialIndex(self.ParticleInfo[1].val.x)
 			ed:SetHitBox(self.ParticleInfo[1].val.y)
@@ -957,7 +958,7 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact1", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		ed:SetMagnitude(self.ParticleInfo[1].val.x)
 		return true
 	end
@@ -971,8 +972,8 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact2", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		return true
 	end
 })
@@ -985,8 +986,8 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchEnter", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		return true
 	end
 })
@@ -1007,8 +1008,8 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		ed:SetMagnitude(self.ParticleInfo[1].val.x)
 		return true
 	end
@@ -1030,8 +1031,8 @@ list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		ed:SetMagnitude(self.ParticleInfo[1].val.x)
 		return true
 	end
@@ -1055,8 +1056,8 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetStart(self:CPointPosAng(0).pos)
-		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetStart(self:GetCPoint(0).pos)
+		ed:SetOrigin(self:GetCPoint(1).pos)
 		ed:SetFlags(self.ParticleInfo[2].val.x)
 		return true
 	end
@@ -1086,8 +1087,8 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
 		ed:SetEntity(ent)
 		//ed:SetAttachment(self.ParticleInfo[0].attach)
-		ed:SetStart(self:CPointPosAng(0).pos)
-		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetStart(self:GetCPoint(0).pos)
+		ed:SetOrigin(self:GetCPoint(1).pos)
 		ed:SetFlags(self.ParticleInfo[2].val.x)
 		return true
 	end
@@ -1117,8 +1118,8 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeam_GMOD", {
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
 		ed:SetEntity(ent)
 		ed:SetAttachment(self.ParticleInfo[0].attach)]]
-		ed:SetStart(self:CPointPosAng(0).pos)
-		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetStart(self:GetCPoint(0).pos)
+		ed:SetOrigin(self:GetCPoint(1).pos)
 		ed:SetFlags(self.ParticleInfo[2].val.x)
 		return true
 	end
@@ -1140,8 +1141,8 @@ local cstrikeshells = {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetAngles(self:CPointPosAng(0).ang)
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetAngles(self:GetCPoint(0).ang)
 		ed:SetFlags(self.ParticleInfo[1].val.x)
 		return true
 	end
@@ -1232,8 +1233,8 @@ list.Set("PartCtrl_UtilFx", "MuzzleEffect", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetAngles(self:CPointPosAng(0).ang)
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetAngles(self:GetCPoint(0).ang)
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		//without documentation of the callback func, had to try setting other values manually (flags, color, start, normal) to see if they're hooked up to something like FX_MuzzleEffect's color arg or CEffectsClient::MuzzleFlash's type arg, but none of these do anything useful
 		return true
@@ -1248,8 +1249,8 @@ list.Set("PartCtrl_UtilFx", "MetalSpark", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		//tested SetScale, SetMagnitude, SetRadius, they don't do anything; if that's the correct func then it seems the scale arg isn't hooked up
 		return true
 	end
@@ -1277,8 +1278,8 @@ list.Set("PartCtrl_UtilFx", "ElectricSpark", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		ed:SetMagnitude(self.ParticleInfo[1].val.y)
 		return true
@@ -1314,8 +1315,8 @@ list.Set("PartCtrl_UtilFx", "Sparks", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		ed:SetMagnitude(self.ParticleInfo[1].val.y)
 		ed:SetRadius(self.ParticleInfo[1].val.z)
@@ -1348,7 +1349,7 @@ list.Set("PartCtrl_UtilFx", "waterripple", {
 		})]]
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		//ed:SetFlags(self.ParticleInfo[1].val.y) //some things like jeep and player code set a flag for slime instead of water, but waterripple doesn't have handling for this (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/vehicle_jeep.cpp#L670, https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/hl2_player.cpp#L3732)
 		return true
@@ -1386,7 +1387,7 @@ local splash = {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		ed:SetFlags(self.ParticleInfo[1].val.y)
 		if self.ParticleInfo[1].val.z == 1 then PartCtrl_InterceptSound = true end
@@ -1407,8 +1408,8 @@ local shelleject = {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Entity")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetAngles(self:CPointPosAng(0).ang)
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetAngles(self:GetCPoint(0).ang)
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
 		ed:SetEntity(ent)
@@ -1439,8 +1440,8 @@ list.Set("PartCtrl_UtilFx", "ShellEject", shelleject)
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(1).pos)
-		ed:SetStart(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(1).pos)
+		ed:SetStart(self:GetCPoint(0).pos)
 		ed:SetDamageType(self.ParticleInfo[2].val.x)
 		return true
 	end
@@ -1454,7 +1455,7 @@ list.Set("PartCtrl_UtilFx", "HelicopterMegaBomb", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		return true
 	end
 })
@@ -1497,7 +1498,7 @@ list.Set("PartCtrl_UtilFx", "WaterSurfaceExplosion", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		//ed:SetMagnitude(self.ParticleInfo[1].val.x) //magnitude and scale are hooked up, but in practice, don't seem to change the effect at all
 		ed:SetScale(self.ParticleInfo[1].val.y) //only exception is that scale makes the ripple effect not show up if set to 0, so turn it into a checkbox
 		ed:SetFlags(self.ParticleInfo[1].val.z)
@@ -1541,9 +1542,9 @@ list.Set("PartCtrl_UtilFx", "Explosion", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		//ed:SetAngles(self:CPointPosAng(0).ang) //neither of these work, the utileffect implementation of explosions has no way to access the angle, even though internally it does have one (try firing the hl2 rpg at walls or ceilings)
-		//ed:SetNormal(self:CPointPosAng(0).ang:Forward()) //^
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		//ed:SetAngles(self:GetCPoint(0).ang) //neither of these work, the utileffect implementation of explosions has no way to access the angle, even though internally it does have one (try firing the hl2 rpg at walls or ceilings)
+		//ed:SetNormal(self:GetCPoint(0).ang:Forward()) //^
 		//test, see if we can access the explosion's angle through an associated entity; doesn't work
 		--[[local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
@@ -1565,8 +1566,8 @@ list.Set("PartCtrl_UtilFx", "HunterDamage", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		return true
 	end
 })
@@ -1601,8 +1602,8 @@ list.Set("PartCtrl_UtilFx", "BloodImpact", {
 		})]]
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		ed:SetColor(self.ParticleInfo[1].val.x)
 		//ed:SetScale(self.ParticleInfo[1].val.y) //this value is hooked up to the callback and effect funcs, but is unused
 		return true
@@ -1649,8 +1650,8 @@ list.Set("PartCtrl_UtilFx", "bloodspray", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		ed:SetColor(self.ParticleInfo[1].val.x)
 		ed:SetScale(self.ParticleInfo[1].val.y)
 		ed:SetFlags(self.ParticleInfo[1].val.z)
@@ -1673,8 +1674,8 @@ list.Set("PartCtrl_UtilFx", "WheelDust", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		return true
 	end
@@ -1703,7 +1704,7 @@ list.Set("PartCtrl_UtilFx", "ShakeRopes", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		ed:SetRadius(self.ParticleInfo[1].val.x)
 		ed:SetMagnitude(self.ParticleInfo[1].val.y)
 		return true
@@ -1741,8 +1742,8 @@ list.Set("PartCtrl_UtilFx", "ToolTracer", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetStart(self:CPointPosAng(0).pos)
-		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetStart(self:GetCPoint(0).pos)
+		ed:SetOrigin(self:GetCPoint(1).pos)
 
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
@@ -1775,7 +1776,7 @@ list.Set("PartCtrl_UtilFx", "balloon_pop", {
 		})
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		ed:SetStart(self.ParticleInfo[1].val)
 		if self.ParticleInfo[2].val.x == 1 then PartCtrl_InterceptSound = true end
 		return true
@@ -1806,7 +1807,7 @@ list.Set("PartCtrl_UtilFx", "inflator_magic", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 		return true
 	end
 })
@@ -1821,8 +1822,8 @@ list.Set("PartCtrl_UtilFx", "LaserTracer", {
 		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetStart(self:CPointPosAng(0).pos)
-		ed:SetOrigin(self:CPointPosAng(1).pos)
+		ed:SetStart(self:GetCPoint(0).pos)
+		ed:SetOrigin(self:GetCPoint(1).pos)
 
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
@@ -1843,7 +1844,7 @@ list.Set("PartCtrl_UtilFx", "phys_freeze", {
 	DoEffect = function(self, ed)
 		//PlayerFrozeObject code sets origin, but the effect code doesn't use this, https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/init.lua#L150
 		//however, we need to set it anyway, or else the effect can fail to render sometimes
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
@@ -1861,7 +1862,7 @@ list.Set("PartCtrl_UtilFx", "phys_unfreeze", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Entity")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
+		ed:SetOrigin(self:GetCPoint(0).pos)
 
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
@@ -1894,8 +1895,8 @@ list.Set("PartCtrl_UtilFx", "selection_indicator", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal, Entity")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
@@ -1915,8 +1916,8 @@ list.Set("PartCtrl_UtilFx", "selection_ring", {
 		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal, Entity")
 	end,
 	DoEffect = function(self, ed)
-		ed:SetOrigin(self:CPointPosAng(0).pos)
-		ed:SetNormal(self:CPointPosAng(0).ang:Forward())
+		ed:SetOrigin(self:GetCPoint(0).pos)
+		ed:SetNormal(self:GetCPoint(0).ang:Forward())
 
 		local ent = self.ParticleInfo[0].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
