@@ -1578,7 +1578,23 @@ function PANEL:RebuildControls()
 	//Add lower bar for pause and reset controls; both particles and special fx have this
 	local trackpnl = vgui.Create("Panel", trackpnl_parent)
 	trackpnl:Dock(BOTTOM)
-	trackpnl:DockMargin(5,5,5,5)
+	trackpnl:DockMargin(5,4,5,5) //-1 for top because the other sides include a 1px black border
+
+	local restart = vgui.Create("DImageButton", trackpnl)
+	restart:SetImage("icon16/control_repeat_blue.png")
+	restart:SetStretchToFit(false)
+	restart:SetDrawBackground(true)
+	restart:Dock(LEFT)
+	restart:SetWide(32)
+	if !ent.utilfx then
+		restart:SetTooltip("Restart particle effect, and clean up all particles")
+	else
+		restart:SetTooltip("Restart particle effect\n(cleanup not available for scripted effects)")
+	end
+
+	function restart.DoClick()
+		ent:DoInput("effect_restart")
+	end
 
 	local pause = vgui.Create("DImageButton", trackpnl)
 	pause:SetImage("icon16/control_pause_blue.png")
@@ -1587,6 +1603,7 @@ function PANEL:RebuildControls()
 	pause:SetIsToggle(true)
 	pause:SetToggle(false)
 	pause:Dock(LEFT)
+	pause:DockMargin(4,0,0,0)
 	pause:SetWide(32)
 	pause:SetTooltip("Pause particle effect\n\nIf the effect is modified, restarted, disabled then re-enabled,\nor loaded from a save or dupe, then it will play up to and\nre-pause at the same point in time.")
 
@@ -1607,7 +1624,7 @@ function PANEL:RebuildControls()
 
 	local text = vgui.Create("DLabel", trackpnl)
 	text:SetDark(true)
-	text:DockMargin(5,0,0,0)
+	text:DockMargin(8,0,0,0)
 	text:Dock(FILL)
 
 	function text.Think()
@@ -1631,28 +1648,12 @@ function PANEL:RebuildControls()
 		end
 	end
 
-	local restart = vgui.Create("DImageButton", trackpnl)
-	restart:SetImage("icon16/control_repeat_blue.png")
-	restart:SetStretchToFit(false)
-	restart:SetDrawBackground(true)
-	restart:Dock(RIGHT)
-	restart:SetWide(32)
-	if !ent.utilfx then
-		restart:SetTooltip("Restart particle effect, and clean up all particles")
-	else
-		restart:SetTooltip("Restart particle effect\n(cleanup not available for scripted effects)")
-	end
-
-	function restart.DoClick()
-		ent:DoInput("effect_restart")
-	end
-
 	if self.TabPanel then
 		//shift around the contents of both tabs, so that the trackpnl appears to be contained at the bottom of each one
 		for _, v in pairs (self.TabPanel:GetItems()) do
-			v.Panel.container:DockMargin(0,0,0,trackpnl:GetTall()+10)
+			v.Panel.container:DockMargin(0,0,0,trackpnl:GetTall()+9)
 		end
-		trackpnl:DockMargin(13,13,13,13)
+		trackpnl:DockMargin(13,12,13,13) //-1 for top because the other sides include a 1px black border
 		trackpnl:SetZPos(200)
 	end
 
