@@ -746,7 +746,7 @@ if CLIENT then
 
 	function ENT:RemoveParticle()
 
-		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
+		//local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
 		if self.particle and self.particle.IsValid and self.particle:IsValid() then
 			self.particle:StopEmissionAndDestroyImmediately()
 			--[[if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle] then
@@ -2109,15 +2109,15 @@ end
 
 duplicator.RegisterEntityClass("ent_partctrl", function(ply, data)
 
-	if IsValid(ply) and !ply:CheckLimit("partctrl") then return false end
-
-	local ent = ents.Create("ent_partctrl")
-	if !ent:IsValid() then return false end
-
 	//default dtvars for old dupes that don't have them
 	if data.DT.PauseTime == nil then data.DT.PauseTime = -1 end
 	//fix old dupes from before all the effect names were converted to lowercase
 	if isstring(data.DT.ParticleName) then data.DT.ParticleName = string.lower(data.DT.ParticleName) end
+
+	if IsValid(ply) and !gamemode.Call("PlayerSpawnParticle", ply, data.DT.ParticleName, data.DT.PCF, data.DT.Path) then return false end
+
+	local ent = ents.Create("ent_partctrl")
+	if !ent:IsValid() then return false end
 
 	//duplicator.GenericDuplicatorFunction(ply, data)
 	duplicator.DoGeneric(ent, data)
@@ -2128,7 +2128,7 @@ duplicator.RegisterEntityClass("ent_partctrl", function(ply, data)
 
 	ent:Spawn()
 
-	if IsValid(ply) then ply:AddCount("partctrl", ent) end
+	if IsValid(ply) then gamemode.Call("PlayerSpawnedParticle", ply, data.DT.ParticleName, data.DT.PCF, data.DT.Path, ent) end
 
 	return ent
 
