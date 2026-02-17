@@ -5030,34 +5030,37 @@ local function HasBadEnding(filename, path)
 	end
 end
 
-function PartCtrl_ReadAndProcessPCFs()
+function PartCtrl_ReadAndProcessPCFs(new_file_only)
 
-	local dodebug = (GetConVarNumber("developer") >= 1)
 	local starttime = SysTime()
 
-	PartCtrl_AllPCFPaths = {}
-	local function PartCtrl_FindAllPCFPaths(dir)
-		local files, dirs = file.Find(dir .. "*", "GAME")
-		for _, filename in pairs (files) do
-			filename = dir .. filename
-			if !HasBadEnding(filename, "GAME") then
-				table.insert(PartCtrl_AllPCFPaths, filename)
+	if !new_file_only then 
+		PartCtrl_AllPCFPaths = {}
+		local function PartCtrl_FindAllPCFPaths(dir)
+			local files, dirs = file.Find(dir .. "*", "GAME")
+			for _, filename in pairs (files) do
+				filename = dir .. filename
+				if !HasBadEnding(filename, "GAME") then
+					table.insert(PartCtrl_AllPCFPaths, filename)
+				end
+			end
+			for _, dirname in pairs (dirs) do
+				PartCtrl_FindAllPCFPaths(dir .. dirname .. "/")
 			end
 		end
-		for _, dirname in pairs (dirs) do
-			PartCtrl_FindAllPCFPaths(dir .. dirname .. "/")
-		end
-	end
-	PartCtrl_FindAllPCFPaths("particles/")
+		PartCtrl_FindAllPCFPaths("particles/")
 	
-	PartCtrl_PCFsByParticleName_CurrentlyLoaded = {}
-	if CLIENT then PartCtrl_NoDefPCFs = {} end //cache these so that dupe detection doesn't have to waste several seconds reading all of them again
-	PartCtrl_CulledFx = {} //also build a list of fx that are culled from ProcessedPCFs, because we still need them for pcf conflict/dupe detection (i.e. load a pcf, it has culled fx with the same name as non-culled fx, so we want to detect that the latter got overwritten by the former, and tell the player about it in spawnicons)
+		PartCtrl_PCFsByParticleName_CurrentlyLoaded = {}
+		if CLIENT then PartCtrl_NoDefPCFs = {} end //cache these so that dupe detection doesn't have to waste several seconds reading all of them again
+		PartCtrl_CulledFx = {} //also build a list of fx that are culled from ProcessedPCFs, because we still need them for pcf conflict/dupe detection (i.e. load a pcf, it has culled fx with the same name as non-culled fx, so we want to detect that the latter got overwritten by the former, and tell the player about it in spawnicons)
 
-	PartCtrl_ProcessedPCFs = {}
-	PartCtrl_AllDataPCFs = {} //spawnlists, spawnicons, and PartCtrl_ProcessPCF use this table to quickly get a data pcf's original filename and path
-	for _, filename in pairs (PartCtrl_AllPCFPaths) do
-		PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
+		PartCtrl_ProcessedPCFs = {}
+		PartCtrl_AllDataPCFs = {} //spawnlists, spawnicons, and PartCtrl_ProcessPCF use this table to quickly get a data pcf's original filename and path
+		for _, filename in pairs (PartCtrl_AllPCFPaths) do
+			PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
+		end
+		PartCtrl_GamePCFs = {}
+		PartCtrl_GamePCFs_DefaultPaths = {} //which game is each pcf currently loaded from? nil if not currently loaded from a game.
 	end
 
 
@@ -5068,8 +5071,6 @@ function PartCtrl_ReadAndProcessPCFs()
 	end
 	allpcfs.UtilFx = nil
 
-	PartCtrl_GamePCFs = {}
-	PartCtrl_GamePCFs_DefaultPaths = {} //which game is each pcf currently loaded from? nil if not currently loaded from a game.
 	local function AddPCFsToSet(tab, dir, path, do_game_pcfs)
 		local files, dirs = file.Find(dir .. "*", path)
 		if files then
@@ -5087,66 +5088,74 @@ function PartCtrl_ReadAndProcessPCFs()
 
 				//Do extra stuff for game pcfs
 				if do_game_pcfs and !HasBadEnding(filename, path) then
-					local original_filename = filename
-					local f1 = file.Read(filename, "GAME")
-					local f2 = file.Read(filename, path)
-					//Resolve conflicts where multiple mounted games have different, unique pcf files sharing the same file path. 
-					//For example, TF2 has an "explosion.pcf" which shares a name with a pcf from HL2, and a "blood_impact.pcf" 
-					//which shares a name with a pcf included in gmod by default. The former will always be overridden if HL2 is 
-					//mounted, and the latter will always be overridden no matter what. All of the inaccessible pcfs contain
-					//unique effects that we don't want the player to be locked out of using, so write copies of these files to
-					//the data folder, and load those instead.
-					if f1 and f2 and util.SHA256(f1) != util.SHA256(f2) then
-						local writepath = "partctrl_datapcfs/" .. path .. "/" .. filename
-						writepath = string.Replace(writepath, ".pcf", ".txt")
-						local write_new_file = true
-						if file.Exists(writepath, "DATA") then
-							local f3 = file.Read(writepath, "DATA")
-							if f3 and util.SHA256(f2) == util.SHA256(f3) then
-							//	MsgN("loading existing ", writepath)
-								filename = "data/" .. writepath
-								write_new_file = false
-							//else
-							//	MsgN("overwriting outdated ", writepath)
-							end
+					if new_file_only and new_file_only != filename then
+						//If we're only running this func to add a new file, then we should already have
+						//PartCtrl_GamePCFs entries for every other file, so just reuse those instead
+						if PartCtrl_GamePCFs[filename] and PartCtrl_GamePCFs[filename][path] then
+							filename = PartCtrl_GamePCFs[filename][path]
 						end
-						if write_new_file then
-							local dirs = string.Explode("/", writepath)
-							local d = ""
-							for k,v in ipairs(dirs) do
-								d = (d..v.."/")
-								if !string.EndsWith(d, ".txt/") then
-									if !file.IsDir(d, "DATA") then file.CreateDir(d) end
+					else
+						local original_filename = filename
+						local f1 = file.Read(filename, "GAME") 
+						local f2 = file.Read(filename, path)
+						//Resolve conflicts where multiple mounted games have different, unique pcf files sharing the same file path. 
+						//For example, TF2 has an "explosion.pcf" which shares a name with a pcf from HL2, and a "blood_impact.pcf" 
+						//which shares a name with a pcf included in gmod by default. The former will always be overridden if HL2 is 
+						//mounted, and the latter will always be overridden no matter what. All of the inaccessible pcfs contain
+						//unique effects that we don't want the player to be locked out of using, so write copies of these files to
+						//the data folder, and load those instead.
+						if f1 and f2 and util.SHA256(f1) != util.SHA256(f2) then
+							local writepath = "partctrl_datapcfs/" .. path .. "/" .. filename
+							writepath = string.Replace(writepath, ".pcf", ".txt")
+							local write_new_file = true
+							if file.Exists(writepath, "DATA") then
+								local f3 = file.Read(writepath, "DATA")
+								if f3 and util.SHA256(f2) == util.SHA256(f3) then
+								//	MsgN("loading existing ", writepath)
+									filename = "data/" .. writepath
+									write_new_file = false
+								//else
+								//	MsgN("overwriting outdated ", writepath)
 								end
 							end
+							if write_new_file then
+								local dirs = string.Explode("/", writepath)
+								local d = ""
+								for k,v in ipairs(dirs) do
+									d = (d..v.."/")
+									if !string.EndsWith(d, ".txt/") then
+										if !file.IsDir(d, "DATA") then file.CreateDir(d) end
+									end
+								end
 
-							if file.Write(writepath, f2) then
-							//	MsgN("successfully wrote ", writepath)
-								filename = "data/" .. writepath
-							//else
-							//	MsgN("failed to write ", writepath)
+								if file.Write(writepath, f2) then
+								//	MsgN("successfully wrote ", writepath)
+									filename = "data/" .. writepath
+								//else
+								//	MsgN("failed to write ", writepath)
+								end
+							end
+							//Add the data pcf to all the tables
+							if !PartCtrl_ProcessedPCFs[filename] then
+								PartCtrl_AllDataPCFs[filename] = {
+									original_filename = original_filename,
+									path = path
+								}
+								PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
+								table.insert(PartCtrl_AllPCFPaths, filename)
+								if PartCtrl_ProcessedPCFs[filename] then //don't do this ProcessPCF returns nothing
+									allpcfs[filename] = true
+								end
 							end
 						end
-						//Add the data pcf to all the tables
-						if !PartCtrl_ProcessedPCFs[filename] then
-							PartCtrl_AllDataPCFs[filename] = {
-								original_filename = original_filename,
-								path = path
-							}
-							PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
-							table.insert(PartCtrl_AllPCFPaths, filename)
-							if PartCtrl_ProcessedPCFs[filename] then //don't do this ProcessPCF returns nothing
-								allpcfs[filename] = true
-							end
-						end
+						//Always associate pcfs from games with a game path, whether they're currently using a data pcf or not. This is 
+						//used by particle ents and spawnicons, which store the *original* filename and the game path, and then use this 
+						//table to retrieve the right pcf for the game. This ensures that that saves/spawnlists continue to work 
+						//seamlessly between sessions, even as different combinations of mounted games change which ones use data pcfs.
+						PartCtrl_GamePCFs[original_filename] = PartCtrl_GamePCFs[original_filename] or {}
+						PartCtrl_GamePCFs[original_filename][path] = filename
+						PartCtrl_GamePCFs_DefaultPaths[original_filename] = PartCtrl_GamePCFs_DefaultPaths[original_filename] or path
 					end
-					//Always associate pcfs from games with a game path, whether they're currently using a data pcf or not. This is 
-					//used by particle ents and spawnicons, which store the *original* filename and the game path, and then use this 
-					//table to retrieve the right pcf for the game. This ensures that that saves/spawnlists continue to work 
-					//seamlessly between sessions, even as different combinations of mounted games change which ones use data pcfs.
-					PartCtrl_GamePCFs[original_filename] = PartCtrl_GamePCFs[original_filename] or {}
-					PartCtrl_GamePCFs[original_filename][path] = filename
-					PartCtrl_GamePCFs_DefaultPaths[original_filename] = PartCtrl_GamePCFs_DefaultPaths[original_filename] or path
 				else
 					//If the currently loaded instance of this pcf isn't from a game at all, put a blank entry in here for now
 					//so that game paths can't overwrite it later
@@ -5227,7 +5236,7 @@ function PartCtrl_ReadAndProcessPCFs()
 	PartCtrl_PCFsInDupeOrder = pcfs_dupe_order //global so that PartCtrl_GetDuplicateFx can be run again later without rebuilding this table
 	PartCtrl_GetDuplicateFx() //run this on server too, to build PartCtrl_PCFsByParticleName for use by backcomp
 
-	if CLIENT then
+	if CLIENT and !new_file_only then
 		//Run AddParticles in another particular order, so things like gmod fx take priority by default;
 		//this prevents TF2's blood fx from becoming the default when you shoot an NPC, for instance
 		//NOTE: had to put gmod+games above addons to prevent an issue where tf2 map particles addon's 
@@ -5254,12 +5263,14 @@ function PartCtrl_ReadAndProcessPCFs()
 		end
 	end
 
-	//add util fx to processedpcfs as well, so that particle entities and spawnicons can use them natively
-	PartCtrl_ProcessUtilFx()
+	if !new_file_only then 
+		//add util fx to processedpcfs as well, so that particle entities and spawnicons can use them natively
+		PartCtrl_ProcessUtilFx()
 
-	PartCtrl_ReadAndProcessPCFs_StartupHasRun = true
+		PartCtrl_ReadAndProcessPCFs_StartupHasRun = true
 
-	--[[if dodebug then]] MsgN("PartCtrl: PartCtrl_ReadAndProcessPCFs took " , SysTime() - starttime, " secs") //end
+		MsgN("PartCtrl: PartCtrl_ReadAndProcessPCFs took " , SysTime() - starttime, " secs")
+	end
 
 end
 

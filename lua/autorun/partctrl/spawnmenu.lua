@@ -559,17 +559,25 @@ if CLIENT then
 		//load it), then vital tables like PartCtrl_PCFsInDupeOrder won't have it, which'll cause errors, so pivot to rebuilding everything
 		//with PartCtrl_ReadAndProcessPCFs.
 		str = string.Trim(string.Replace(str, "\\", "/"))
-		if str != "UtilFx" and str != "all" and !PartCtrl_ProcessedPCFs[str] then
-			MsgN("PartCtrl: Trying to reload ", str, " which hasn't been loaded before; reloading all PCFs instead")
-			str = "all"
-		end
-
-		if str == "all" then
-			MsgN("PartCtrl: Reloading all PCFs on client ", LocalPlayer())
+		if str != "UtilFx" and (!PartCtrl_ProcessedPCFs or !PartCtrl_ProcessedPCFs[str]) then
+			local new_file_only
+			if str == "all" then
+				MsgN("PartCtrl: Reloading all PCFs on client ", LocalPlayer())
+			else
+				MsgN("PartCtrl: Loading new PCF file ", str, " on client ", LocalPlayer())
+				//If we try to reload a pcf that hasn't been loaded before (i.e. create a new pcf with the particle editor or
+				//something, then try to load it) then vital tables like PartCtrl_PCFsInDupeOrder won't have it, which'll cause 
+				//errors, so run PartCtrl_ReadAndProcessPCFs again to rebuild those, but without also reloading all the PCFs.
+				new_file_only = true
+				table.insert(PartCtrl_AllPCFPaths, str)
+				PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
+			end
 
 			if PartCtrl_ReadAndProcessPCFs_StartupIsOver or !PartCtrl_ReadAndProcessPCFs_StartupHasRun then
-				PartCtrl_ReadAndProcessPCFs()
+				PartCtrl_ReadAndProcessPCFs(new_file_only)
 			end
+
+			if new_file_only then PartCtrl_AddParticles(filename) end
 
 			//Spawnlist stuff from enhanced spawnmenu
 			if IsValid(browseAddonParticles) then
@@ -646,16 +654,22 @@ else
 	function PartCtrl_ReloadPCF(str, dont_network) //local var scope also forces us to have two of these, instead of one func with "if CLIENT then" conditionals
 
 		str = string.Trim(string.Replace(str, "\\", "/"))
-		if str != "UtilFx" and str != "all" and !PartCtrl_ProcessedPCFs[str] then
-			MsgN("PartCtrl: Trying to reload ", str, " which hasn't been loaded before; reloading all PCFs instead")
-			str = "all"
-		end
-
-		if str == "all" then
-			MsgN("PartCtrl: Reloading all PCFs on server")
+		if str != "UtilFx" and (!PartCtrl_ProcessedPCFs or !PartCtrl_ProcessedPCFs[str]) then //TODO: this doesn't catch cases where a player adds a new pcf with the same name as one from a game (ideally we should catch these and seamlessly convert the old one to a data pcf)
+			local new_file_only
+			if str == "all" then
+				MsgN("PartCtrl: Reloading all PCFs on server")
+			else
+				MsgN("PartCtrl: Loading new PCF file ", str, " on server")
+				//If we try to reload a pcf that hasn't been loaded before (i.e. create a new pcf with the particle editor or
+				//something, then try to load it) then vital tables like PartCtrl_PCFsInDupeOrder won't have it, which'll cause 
+				//errors, so run PartCtrl_ReadAndProcessPCFs again to rebuild those, but without also reloading all the PCFs.
+				new_file_only = str
+				table.insert(PartCtrl_AllPCFPaths, str)
+				PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
+			end
 
 			if PartCtrl_ReadAndProcessPCFs_StartupIsOver or !PartCtrl_ReadAndProcessPCFs_StartupHasRun then
-				PartCtrl_ReadAndProcessPCFs()
+				PartCtrl_ReadAndProcessPCFs(new_file_only)
 			end
 		else
 			MsgN("PartCtrl: Reloading ", str, " on server")
