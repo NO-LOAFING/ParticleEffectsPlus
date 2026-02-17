@@ -5102,19 +5102,22 @@ function PartCtrl_ReadAndProcessPCFs(new_file_only)
 							if f1 then game_pcf_hashes[filename] = util.SHA256(f1) end
 						end
 						local f2 = file.Read(filename, path)
+						if f2 then
+							f2_hash = util.SHA256(f2)
+						end
 						//Resolve conflicts where multiple mounted games have different, unique pcf files sharing the same file path. 
 						//For example, TF2 has an "explosion.pcf" which shares a name with a pcf from HL2, and a "blood_impact.pcf" 
 						//which shares a name with a pcf included in gmod by default. The former will always be overridden if HL2 is 
 						//mounted, and the latter will always be overridden no matter what. All of the inaccessible pcfs contain
 						//unique effects that we don't want the player to be locked out of using, so write copies of these files to
 						//the data folder, and load those instead.
-						if game_pcf_hashes[filename] and f2 and game_pcf_hashes[filename] != util.SHA256(f2) then
+						if game_pcf_hashes[filename] and f2_hash and game_pcf_hashes[filename] != f2_hash then
 							local writepath = "partctrl_datapcfs/" .. path .. "/" .. filename
 							writepath = string.Replace(writepath, ".pcf", ".txt")
 							local write_new_file = true
 							if file.Exists(writepath, "DATA") then
 								local f3 = file.Read(writepath, "DATA")
-								if f3 and util.SHA256(f2) == util.SHA256(f3) then
+								if f3 and f2_hash == util.SHA256(f3) then
 								//	MsgN("loading existing ", writepath)
 									filename = "data/" .. writepath
 									write_new_file = false
