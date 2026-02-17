@@ -626,6 +626,7 @@ function PartCtrl_ReloadPCF(str, dont_network)
 			searchParticles = nil
 		end
 	else
+		//TODO: this probably doesn't work for data pcfs in multiplayer if a player has different content mounted than the server
 		MsgN("sv_partctrl_reloadpcf: Reloading PCF ", str, " on ", realm)
 
 		if str != "UtilFx" then

@@ -5108,7 +5108,7 @@ function PartCtrl_ReadAndProcessPCFs(new_file_only)
 						//mounted, and the latter will always be overridden no matter what. All of the inaccessible pcfs contain
 						//unique effects that we don't want the player to be locked out of using, so write copies of these files to
 						//the data folder, and load those instead.
-						if game_pcf_hashes[filepath] and f2 and game_pcf_hashes[filepath] != util.SHA256(f2) then
+						if game_pcf_hashes[filename] and f2 and game_pcf_hashes[filename] != util.SHA256(f2) then
 							local writepath = "partctrl_datapcfs/" .. path .. "/" .. filename
 							writepath = string.Replace(writepath, ".pcf", ".txt")
 							local write_new_file = true
