@@ -5071,6 +5071,7 @@ function PartCtrl_ReadAndProcessPCFs(new_file_only)
 	end
 	allpcfs.UtilFx = nil
 
+	local game_pcf_hashes = {}
 	local function AddPCFsToSet(tab, dir, path, do_game_pcfs)
 		local files, dirs = file.Find(dir .. "*", path)
 		if files then
@@ -5096,7 +5097,10 @@ function PartCtrl_ReadAndProcessPCFs(new_file_only)
 						end
 					else
 						local original_filename = filename
-						local f1 = file.Read(filename, "GAME") 
+						if !game_pcf_hashes[filename] then //cache these so we don't have to do this extra file.Read more than once per file
+							local f1 = file.Read(filename, "GAME")
+							if f1 then game_pcf_hashes[filename] = util.SHA256(f1) end
+						end
 						local f2 = file.Read(filename, path)
 						//Resolve conflicts where multiple mounted games have different, unique pcf files sharing the same file path. 
 						//For example, TF2 has an "explosion.pcf" which shares a name with a pcf from HL2, and a "blood_impact.pcf" 
@@ -5104,7 +5108,7 @@ function PartCtrl_ReadAndProcessPCFs(new_file_only)
 						//mounted, and the latter will always be overridden no matter what. All of the inaccessible pcfs contain
 						//unique effects that we don't want the player to be locked out of using, so write copies of these files to
 						//the data folder, and load those instead.
-						if f1 and f2 and util.SHA256(f1) != util.SHA256(f2) then
+						if game_pcf_hashes[filepath] and f2 and game_pcf_hashes[filepath] != util.SHA256(f2) then
 							local writepath = "partctrl_datapcfs/" .. path .. "/" .. filename
 							writepath = string.Replace(writepath, ".pcf", ".txt")
 							local write_new_file = true
