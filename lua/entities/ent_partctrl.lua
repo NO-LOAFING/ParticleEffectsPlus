@@ -2507,7 +2507,7 @@ end
 
 if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running entity code") end
 
-//See PartCtrl_ReadAndProcessPCFs comments in partctrl_autorun.lua
+//See PartCtrl_ReadAndProcessPCFs comments in pcf_processing.lua
 
 if !PartCtrl_ReadAndProcessPCFs_StartupHasRun then
 	PartCtrl_ReadAndProcessPCFs()

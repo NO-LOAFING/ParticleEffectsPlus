@@ -2,16 +2,21 @@ AddCSLuaFile()
 
 //Populate the spawn menu with a list of all the .pcf files, sorted by the game or addon they're from
 
-if CLIENT then
+local browseAddonParticles //TODO: these break if we refresh this file, can't find a good way to fix this without unlocalizing them
+local browseLegacyParticles
+local browseGameParticles
+local RefreshAddonParticles
+local RefreshLegacyParticles
+local RefreshGameParticles
+local OnParticleNodeSelected
+local searchParticles = nil
 
-	local browseAddonParticles //TODO: these break if we refresh this file, can't find a good way to fix this without unlocalizing them
-	local browseLegacyParticles
-	local browseGameParticles
-	local searchParticles = nil
+if CLIENT then
 
 	local cv_childfx_spawnlist = GetConVar("cl_partctrl_childfx_in_autospawnlists")
 
-	local function OnParticleNodeSelected(pcf, path, ViewPanel, pnlContent)
+	OnParticleNodeSelected = function(pcf, path, ViewPanel, pnlContent)
+
 		ViewPanel:Clear(true)
 		local pcf2 = PartCtrl_GetGamePCF(pcf, path)
 		//MsgN("running OnParticleNodeSelected for ", pcf, ", ", path)
@@ -57,7 +62,7 @@ if CLIENT then
 
 	end
 
-	local function OnUtilFxNodeSelected(name, ViewPanel, pnlContent)
+	OnUtilFxNodeSelected = function(name, ViewPanel, pnlContent)
 
 		ViewPanel:Clear(true)
 
@@ -343,7 +348,7 @@ if CLIENT then
 
 	language.Add("spawnmenu.category.browseparticles", "Browse Particle Effects")
 
-	local RefreshAddonParticles = function(node)
+	RefreshAddonParticles = function(node)
 		for _, addon in SortedPairsByMemberValue(engine.GetAddons(), "title") do
 			if !addon.downloaded then continue end
 			if !addon.mounted then continue end
@@ -351,7 +356,7 @@ if CLIENT then
 			AddBrowseContentParticle(node, addon.title, "icon16/bricks.png", "", addon.title, addon.wsid)
 		end
 	end
-	local RefreshLegacyParticles = function(node)
+	RefreshLegacyParticles = function(node)
 		local addon_particles = {}
 		local _, particle_folders = file.Find("addons/*", "MOD")
 		for _, addon in SortedPairs(particle_folders) do
@@ -363,7 +368,7 @@ if CLIENT then
 			AddBrowseContentParticle(node, addon, "icon16/bricks.png", "addons/" .. addon .. "/", "MOD")
 		end
 	end
-	local RefreshGameParticles = function(node)
+	RefreshGameParticles = function(node)
 		local games = engine.GetGames()
 		table.insert(games, {
 			title = "All",
@@ -548,37 +553,58 @@ if CLIENT then
 
 	end)
 
+end
 
 
 
-	//PCF reloading functions; these would be in pcf_processing, except they have to be able to access a bunch of spawnmenu-related local vars
 
-	function PartCtrl_ReloadPCF(str)
+//PCF reloading function; this would be in pcf_processing, except it has to be able to access a bunch of spawnmenu-related local vars
 
-		//If we try to reload a pcf that hasn't been loaded before (i.e. create a new pcf with the particle editor or something, then try to 
-		//load it), then vital tables like PartCtrl_PCFsInDupeOrder won't have it, which'll cause errors, so pivot to rebuilding everything
-		//with PartCtrl_ReadAndProcessPCFs.
-		str = string.Trim(string.Replace(str, "\\", "/"))
-		if str != "UtilFx" and (!PartCtrl_ProcessedPCFs or !PartCtrl_ProcessedPCFs[str]) then
-			local new_file_only
-			if str == "all" then
-				MsgN("PartCtrl: Reloading all PCFs on client ", LocalPlayer())
+function PartCtrl_ReloadPCF(str, dont_network)
+
+	local realm
+	if CLIENT then
+		realm = "client " .. tostring(LocalPlayer())
+	else
+		realm = "server"
+	end
+
+	if str then str = string.Trim(string.Replace(str, "\\", "/")) end
+	if str != "UtilFx" and str != "all" and (!str or !file.Exists(str, "GAME")) then
+		MsgN("sv_partctrl_reloadpcf: Failed to reload PCF ", str, " on ", realm, "; file not found")
+		if !str or !string.StartsWith(str, "particles/") or !string.EndsWith(str, ".pcf") then
+			MsgN("(this should either be \"all\" (without quotes) or a full file path starting with particles/ and ending with .pcf)") //technically wrong because data pcfs end with .txt internally, OH WELL
+		end
+		return
+	end
+
+	if str != "UtilFx" and (!PartCtrl_ProcessedPCFs or !PartCtrl_ProcessedPCFs[str]) then //TODO: this doesn't catch cases where a player adds a new pcf with the same name as one from a game (ideally we should catch these and seamlessly convert the old one to a data pcf)
+		local new_file_only
+		if str == "all" then
+			MsgN("sv_partctrl_reloadpcf: Reloading all PCFs on ", realm)
+		else
+			MsgN("sv_partctrl_reloadpcf: Loading new PCF ", str, " on ", realm)
+			//If we try to reload a pcf that hasn't been loaded before (i.e. create a new pcf with the particle editor or
+			//something, then try to load it) then vital tables like PartCtrl_PCFsInDupeOrder won't have it, which'll cause 
+			//errors, so run PartCtrl_ReadAndProcessPCFs again to rebuild those, but without also reloading all the PCFs.
+			new_file_only = str
+			table.insert(PartCtrl_AllPCFPaths, str)
+			PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
+		end
+
+		if PartCtrl_ReadAndProcessPCFs_StartupIsOver or !PartCtrl_ReadAndProcessPCFs_StartupHasRun then
+			PartCtrl_ReadAndProcessPCFs(new_file_only)
+		end
+
+		if new_file_only then 
+			if CLIENT then
+				PartCtrl_AddParticles(str)
 			else
-				MsgN("PartCtrl: Loading new PCF file ", str, " on client ", LocalPlayer())
-				//If we try to reload a pcf that hasn't been loaded before (i.e. create a new pcf with the particle editor or
-				//something, then try to load it) then vital tables like PartCtrl_PCFsInDupeOrder won't have it, which'll cause 
-				//errors, so run PartCtrl_ReadAndProcessPCFs again to rebuild those, but without also reloading all the PCFs.
-				new_file_only = true
-				table.insert(PartCtrl_AllPCFPaths, str)
-				PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
+				game.AddParticles(str)
 			end
+		end
 
-			if PartCtrl_ReadAndProcessPCFs_StartupIsOver or !PartCtrl_ReadAndProcessPCFs_StartupHasRun then
-				PartCtrl_ReadAndProcessPCFs(new_file_only)
-			end
-
-			if new_file_only then PartCtrl_AddParticles(filename) end
-
+		if CLIENT then
 			//Spawnlist stuff from enhanced spawnmenu
 			if IsValid(browseAddonParticles) then
 				browseAddonParticles:Clear()
@@ -598,25 +624,35 @@ if CLIENT then
 
 			//Search stuff
 			searchParticles = nil
+		end
+	else
+		MsgN("sv_partctrl_reloadpcf: Reloading PCF ", str, " on ", realm)
+
+		if str != "UtilFx" then
+			PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
 		else
-			MsgN("PartCtrl: Reloading ", str, " on client ", LocalPlayer())
+			PartCtrl_ProcessUtilFx()
+		end
 
-			if str != "UtilFx" then
-				PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
-			else
-				PartCtrl_ProcessUtilFx()
-			end
-			searchParticles = nil //force search to rebuild search cache so any new fx will be found
+		if str != "UtilFx" then
+			//Handle duplicate fx detection again; it's possible that an effect was updated to start/stop being a dupe, OR that an 
+			//effect being updated made an effect from a lower-priority PCF start/stop being considered a dupe of this pcf's effect
+			//Server also needs this to rebuild PartCtrl_PCFsByParticleName for use by backcomp
+			PartCtrl_GetDuplicateFx()
 
-			if str != "UtilFx" then
-				//Handle duplicate fx detection again; it's possible that an effect was updated to start/stop being a dupe, OR that an 
-				//effect being updated made an effect from a lower-priority PCF start/stop being considered a dupe of this pcf's effect
-				PartCtrl_GetDuplicateFx()
-
+			if CLIENT then
 				//Make sure the reloaded pcf is highest priority
 				//(try to prevent oddness with PartCtrl_PCFsByParticleName_CurrentlyLoaded on fx that change dupe status)
 				PartCtrl_AddParticles(str)
+			else
+				//(not sure if this matters serverside, but better safe than sorry)
+				game.AddParticles(str)
 			end
+		end
+
+		if CLIENT then
+			//force search to rebuild search cache so any new fx will be found
+			searchParticles = nil
 
 			//if this pcf's auto-generated spawnlist is currently open, then rebuild it (to handle fx being added to or removed from the list)
 			if IsValid(PartCtrl_ViewPanel) and IsValid(PartCtrl_ViewPanel.pnlContent) then
@@ -631,7 +667,9 @@ if CLIENT then
 				end
 			end
 		end
+	end
 
+	if CLIENT then
 		//Refresh spawnicons (this is handled by the think hook in contenticon_partctrl.lua)
 		//Do this for all spawnicons, not just the ones for the pcf we updated (i.e. in case 
 		//updating one of this pcf's fx made a lower priority pcf's effect no longer a dupe of it)
@@ -642,62 +680,22 @@ if CLIENT then
 				end
 			end
 		end
-
-	end
-
-	net.Receive("PartCtrl_ReloadPCF_SendToCl", function()
-		PartCtrl_ReloadPCF(net.ReadString())
-	end)
-
-else
-	
-	function PartCtrl_ReloadPCF(str, dont_network) //local var scope also forces us to have two of these, instead of one func with "if CLIENT then" conditionals
-
-		str = string.Trim(string.Replace(str, "\\", "/"))
-		if str != "UtilFx" and (!PartCtrl_ProcessedPCFs or !PartCtrl_ProcessedPCFs[str]) then //TODO: this doesn't catch cases where a player adds a new pcf with the same name as one from a game (ideally we should catch these and seamlessly convert the old one to a data pcf)
-			local new_file_only
-			if str == "all" then
-				MsgN("PartCtrl: Reloading all PCFs on server")
-			else
-				MsgN("PartCtrl: Loading new PCF file ", str, " on server")
-				//If we try to reload a pcf that hasn't been loaded before (i.e. create a new pcf with the particle editor or
-				//something, then try to load it) then vital tables like PartCtrl_PCFsInDupeOrder won't have it, which'll cause 
-				//errors, so run PartCtrl_ReadAndProcessPCFs again to rebuild those, but without also reloading all the PCFs.
-				new_file_only = str
-				table.insert(PartCtrl_AllPCFPaths, str)
-				PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
-			end
-
-			if PartCtrl_ReadAndProcessPCFs_StartupIsOver or !PartCtrl_ReadAndProcessPCFs_StartupHasRun then
-				PartCtrl_ReadAndProcessPCFs(new_file_only)
-			end
-		else
-			MsgN("PartCtrl: Reloading ", str, " on server")
-
-			if str != "UtilFx" then
-				PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
-			else
-				PartCtrl_ProcessUtilFx()
-			end
-
-			if str != "UtilFx" then
-				//Run GetDuplicateFx again, to rebuild PartCtrl_PCFsByParticleName for use by backcomp
-				PartCtrl_GetDuplicateFx()
-				//Make sure the reloaded effect is highest priority
-				//(not sure if this matters serverside, but better safe than sorry)
-				game.AddParticles(str)
-			end
-		end
-
+	else
 		//now send the update to all players
 		if !dont_network then
 			net.Start("PartCtrl_ReloadPCF_SendToCl")
 				net.WriteString(str)
 			net.Broadcast()
 		end
-
 	end
 
+end
+
+if CLIENT then
+	net.Receive("PartCtrl_ReloadPCF_SendToCl", function()
+		PartCtrl_ReloadPCF(net.ReadString())
+	end)
+else
 	util.AddNetworkString("PartCtrl_ReloadPCF_SendToCl")
 
 	concommand.Add("sv_partctrl_reloadpcf", function(ply, cmd, args)
@@ -707,8 +705,7 @@ else
 			return false
 		end
 		PartCtrl_ReloadPCF(args[1])
-	end, nil, "Reloads a .pcf file on the server and all clients")
-	
+	end, nil, "Reloads a .pcf file on the server and all clients; takes either \"all\" (without quotes) or a file path starting with particles/ and ending with .pcf")
 end
 
 

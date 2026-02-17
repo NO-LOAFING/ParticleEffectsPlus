@@ -4996,8 +4996,8 @@ end
 
 
 //Normally, we only need to run this function once per session, when the entity code in ent_partctrl calls it. This ensures that it runs AFTER all the autorun code has had 
-//a chance to run first and populate the blacklist. However, if the player mounts/unmounts something and calls the GameContentChanged hook, we want to run this again. This 
-//function is really expensive (~16 sec freezing with a few games and particle addons installed), so we don't want to run it any more than we have to.
+//a chance to run first and populate the blacklist. However, if the player mounts/unmounts something and calls the GameContentChanged hook (in spawnmenu.lua), we want to 
+//run this again. This function is really expensive (~16 sec freezing with a few games and particle addons installed), so we don't want to run it any more than we have to.
 //
 //This sounds simple, but here's what makes it more complicated: when a player starts a singleplayer game for the first time in a session, the GameContentChanged hook also
 //runs on startup. On subsequent games that session, the hook WON'T run on startup. On the server, the GameContentChanged hook runs just AFTER the entity code, but on the 
