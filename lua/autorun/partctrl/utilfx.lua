@@ -3,7 +3,7 @@ AddCSLuaFile()
 //Add util fx
 
 //Example:
---[[list.Add("PartCtrl_UtilFx", "EffectName", { //Name of the effect that util.Effect() will call
+--[[list.Add("PEPlus_UtilFx", "EffectName", { //Name of the effect that util.Effect() will call
 	title = "Garry's Mod",	//String; in the "Browse Particles" spawnlist, any game, addon, or legacy addon with this exact folder name will get a "Scripted Effects" subfolder containing this effect
 	title = {"MyCoolAddon", "My Cool Addon: Workshop Edition"}, //Can also be a table of strings instead, just in case you want to, say, support both a legacy addon folder name and a workshop addon name
 	
@@ -23,10 +23,10 @@ AddCSLuaFile()
 		//    related to the former.
 		
 		//Adds a position control for cpoint 0
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Normal, Entity, Attachment") //by default, this function adds a position control
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Normal, Entity, Attachment") //by default, this function adds a position control
 		
 		//Adds an axis control for cpoint 1's X axis; by default, this is a slider
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", { 
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", { 
 			axis = 0, //x
 			label = "Scale",
 			min = 1,
@@ -35,7 +35,7 @@ AddCSLuaFile()
 			decimals = 0, //optional
 		})
 		//Adds an axis control for cpoint 1's Y axis, with a dropdown
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
 			axis = 1, //y
 			label = "Color",
 			default = 0,
@@ -48,7 +48,7 @@ AddCSLuaFile()
 			},
 		})
 		//Adds an axis control for cpoint 1's Z axis, with checkboxes
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			axis = 2, //z
 			default = 0,
 			checkboxes = { //adds a checkbox for each option; the axis gets set to the SUM of all the boxes that are checked
@@ -59,7 +59,7 @@ AddCSLuaFile()
 		})
 		
 		//Adds axis controls for cpoint 2's X, Y and Z axis
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Start", "axis", { 
+		PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect Start", "axis", { 
 			vector = true, //this setting tells it to add a control for all 3 axes; min/max/default also use vectors in this mode
 			label = {"Start X", "Start Y", "Start Z"} //can optionally be a table of 3 different labels
 			min = Vector(-512,-512,-512),
@@ -73,7 +73,7 @@ AddCSLuaFile()
 
 	DoEffect = function(self, ed)
 		//Function, used when we're playing the effect to set its EffectData values, usually by grabbing information from the control points we set up earlier.
-		//"self" arg is the particle controller entity which has all the cpoint info, "ed" is the CEffectData object. https://wiki.facepunch.com/gmod/CEffectData
+		//"self" arg is the ent_peplus entity that's playing the effect and has all the cpoint info, "ed" is the CEffectData object. https://wiki.facepunch.com/gmod/CEffectData
 
 		//Sets the Origin, Angles and Normal from cpoint 0 - the particle entity has a self:GetCPoint() func that returns the position and angle of a cpoint 
 		//(this returns a cached table, don't worry about calling the func multiple times like this)
@@ -110,11 +110,11 @@ local needs_attachment = "Must be attached to a model, on a non-0 attachment"
 local needs_attachment_1 = "Must be attached to a model with at least 1 attachment; always uses attachment #1"
 local needs_model = "Must be attached to a model"
 
---[[list.Set("PartCtrl_UtilFx", "Spawnlist_Populator_Test", {
+--[[list.Set("PEPlus_UtilFx", "Spawnlist_Populator_Test", {
 	//test: populate a game, workshop addon, and legacy addon, with and without existing particles
-	title = {"Garry's Mod", "Half-Life 2: Deathmatch", "Hat Painter & Crit Glow Tools", "Animated Props", "ParticleControlOverhaul", "ukmodels", "NotARealGameOrAddon"},
+	title = {"Garry's Mod", "Half-Life 2: Deathmatch", "Hat Painter & Crit Glow Tools", "Animated Props", "ParticleEffectsPlus", "ukmodels", "NotARealGameOrAddon"},
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -123,11 +123,11 @@ local needs_model = "Must be attached to a model"
 })]]
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_sparks.cpp#L1524
-list.Set("PartCtrl_UtilFx", "ManhackSparks", {
+list.Set("PEPlus_UtilFx", "ManhackSparks", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -140,13 +140,13 @@ list.Set("PartCtrl_UtilFx", "ManhackSparks", {
 //doesn't seem to work, see code for this effect https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx.cpp#L1327; is it because vColor doesn't seem to be defined properly
 //so the effect is just black? only HL2 code that uses this effect is the prototype electrical drone helicopter, on which the effect doesn't show up either. ent_create npc_helicopter spawnflags 131072,
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_attackchopper.cpp#L2533
---[[list.Set("PartCtrl_UtilFx", "TeslaZap", {
+--[[list.Set("PEPlus_UtilFx", "TeslaZap", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Beam Width",
 			min = 0,
@@ -167,13 +167,13 @@ list.Set("PartCtrl_UtilFx", "ManhackSparks", {
 })]]
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx.cpp#L1285
-list.Set("PartCtrl_UtilFx", "TeslaHitboxes", {
+list.Set("PEPlus_UtilFx", "TeslaHitboxes", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.2, //default repeat rate and beam count taken from ragdoll boogie and antlion (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/RagdollBoogie.cpp#L119, https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/game/server/hl2/npc_antlion.cpp#L2254)
 	info = "This effect applies to a whole model if control point 0 is attached.", //on_model
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			axis = 0, //x
 			label = "Beam Count",
 			min = 1,
@@ -195,12 +195,12 @@ list.Set("PartCtrl_UtilFx", "TeslaHitboxes", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx.cpp#L812
-list.Set("PartCtrl_UtilFx", "CommandPointer", {
+list.Set("PEPlus_UtilFx", "CommandPointer", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0, //needs to render every frame
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
 			axis = 0, //x
 			label = "Color",
 			default = 0,
@@ -221,11 +221,11 @@ list.Set("PartCtrl_UtilFx", "CommandPointer", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx.cpp#L794
-list.Set("PartCtrl_UtilFx", "GunshipImpact", {
+list.Set("PEPlus_UtilFx", "GunshipImpact", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0, //internally this is the same as commandpointer, so it needs to render every frame if it wants to stay visible, but in the unused gunship code that calls this, it's just meant to be a little extra flair upon hitting a shot, so maybe don't repeat every frame? who cares, this effect sucks anyway 
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -236,11 +236,11 @@ list.Set("PartCtrl_UtilFx", "GunshipImpact", {
 
 //this effect has a lifetime of 100 seconds and is impossible to remove otherwise; extremely griefable, do not allow (it's just some ugly rainbow smoke anyway, nothing of value is lost) 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx.cpp#L755
---[[list.Set("PartCtrl_UtilFx", "Smoke", {
+--[[list.Set("PEPlus_UtilFx", "Smoke", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = -1, //whatever you do, don't repeat this
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Entity, Attachment")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -256,14 +256,14 @@ list.Set("PartCtrl_UtilFx", "GunshipImpact", {
 })]]
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx.cpp#L490
-list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
+list.Set("PEPlus_UtilFx", "MuzzleFlash", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.1,
 	info = needs_attachment_1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Entity, Attachment")
 		//flag definitions from here: https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shareddefs.h#L298
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			axis = 0, //x
 			label = "Muzzleflash Type",
 			default = 2,
@@ -281,7 +281,7 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 		})
 		//looks bad, renders in front of everything and gets skewed wildly by the camera angle, 
 		//and unlike pcf firstperson fx, we can't even fix this by attaching it to an entity
-		--[[PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+		--[[PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			axis = 1, //y
 			default = 0,
 			checkboxes = {
@@ -308,11 +308,11 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 
 //griefable, creates clientside models that last forever in singleplayer and 30 secs in multiplayer, which we have no way to clean up - clientside ents.GetAll() can't even find them 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_stickybolt.cpp#L137-L145
---[[list.Set("PartCtrl_UtilFx", "BoltImpact", {
+--[[list.Set("PEPlus_UtilFx", "BoltImpact", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = -1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -323,25 +323,25 @@ list.Set("PartCtrl_UtilFx", "MuzzleFlash", {
 
 //makes a barely noticeable yellow flash sprite and a loud metal sound
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_smoke_trail.cpp#L1127
-list.Set("PartCtrl_UtilFx", "RPGShotDown", {
+list.Set("PEPlus_UtilFx", "RPGShotDown", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.2,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
-		PartCtrl_InterceptSound = true //sound is very griefable and not very useful. don't add a toggle for it, just get rid of it.
+		PEPlus_InterceptSound = true //sound is very griefable and not very useful. don't add a toggle for it, just get rid of it.
 		return true
 	end
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_impact_effects.cpp#L614
-list.Set("PartCtrl_UtilFx", "GlassImpact", {
+list.Set("PEPlus_UtilFx", "GlassImpact", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -351,11 +351,11 @@ list.Set("PartCtrl_UtilFx", "GlassImpact", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/hl2mp/weapon_stunstick.cpp#L900
-list.Set("PartCtrl_UtilFx", "StunstickImpact", {
+list.Set("PEPlus_UtilFx", "StunstickImpact", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -367,13 +367,13 @@ list.Set("PartCtrl_UtilFx", "StunstickImpact", {
 //Gravity gun beam; code says it only works at all if its entity is a weapon, and even then it only seems to work on weapon_physcannon but not weapon_shotgun or SWEPs (do they use something other 
 //than C_BaseCombatWeapon?), also the beam only works if the weapon is being held by the local player (i.e. pick up a gravity gun you attached it to). No one is going to use this.
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/hl2mp/weapon_physcannon.cpp#L3683
---[[list.Set("PartCtrl_UtilFx", "PhyscannonImpact", {
+--[[list.Set("PEPlus_UtilFx", "PhyscannonImpact", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
 	info = needs_attachment_1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
 		local ent = self.ParticleInfo[0].ent
@@ -385,12 +385,12 @@ list.Set("PartCtrl_UtilFx", "StunstickImpact", {
 })]]
 
 //dynamic light only, hunter uses a pcf for the actual visuals (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/episodic/npc_hunter.cpp#L5965, https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L695)
-list.Set("PartCtrl_UtilFx", "HunterMuzzleFlash", {
+list.Set("PEPlus_UtilFx", "HunterMuzzleFlash", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.1, //hunter fire rate
 	info = needs_attachment .. ";\nDynamic light only, no particles",
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
 	end,
 	DoEffect = function(self, ed)
 		local ent = self.ParticleInfo[0].ent
@@ -402,12 +402,12 @@ list.Set("PartCtrl_UtilFx", "HunterMuzzleFlash", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_combinegunship.cpp#L1760, https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L654
-list.Set("PartCtrl_UtilFx", "GunshipMuzzleFlash", {
+list.Set("PEPlus_UtilFx", "GunshipMuzzleFlash", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.05, //gunship fire rate
 	info = needs_attachment,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
 	end,
 	DoEffect = function(self, ed)
 		local ent = self.ParticleInfo[0].ent
@@ -419,12 +419,12 @@ list.Set("PartCtrl_UtilFx", "GunshipMuzzleFlash", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L593
-list.Set("PartCtrl_UtilFx", "ChopperMuzzleFlash", {
+list.Set("PEPlus_UtilFx", "ChopperMuzzleFlash", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.1, //can't find the chopper fire rate but this seems close
 	info = needs_attachment,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
 	end,
 	DoEffect = function(self, ed)
 		local ent = self.ParticleInfo[0].ent
@@ -437,12 +437,12 @@ list.Set("PartCtrl_UtilFx", "ChopperMuzzleFlash", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L528
-list.Set("PartCtrl_UtilFx", "AirboatMuzzleFlash", {
+list.Set("PEPlus_UtilFx", "AirboatMuzzleFlash", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0, //needs to render every frame to look like the one on the vehicle
 	info = needs_attachment,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
 	end,
 	DoEffect = function(self, ed)
 		local attach = self.ParticleInfo[0].attach
@@ -458,11 +458,11 @@ list.Set("PartCtrl_UtilFx", "AirboatMuzzleFlash", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L403
-list.Set("PartCtrl_UtilFx", "AR2Impact", {
+list.Set("PEPlus_UtilFx", "AR2Impact", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.25, //lifetime value from code
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -472,12 +472,12 @@ list.Set("PartCtrl_UtilFx", "AR2Impact", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_tracers.cpp#L379
-list.Set("PartCtrl_UtilFx", "AR2Explosion", {
+list.Set("PEPlus_UtilFx", "AR2Explosion", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.75, //max lifetime value from code
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
 			axis = 0, //x
 			label = "Radius",
 			min = 1,
@@ -498,9 +498,9 @@ local tracer = {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.1,
 	DoProcess = function(tab, extras)
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Attachment, Entity")
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Attachment, Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Velocity",
 			min = 1000,
@@ -508,7 +508,7 @@ local tracer = {
 			default = extras.scale_default,
 		})
 		if extras.checkboxes then
-			PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+			PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
 				axis = 1, //y
 				default = 0,
 				checkboxes = {
@@ -537,33 +537,33 @@ local tracer = {
 //this is a mess but still better than writing out a dozen mostly-identical tables
 local tracer1 = table.Copy(tracer)
 tracer1.cpoint_distance_overrides = {[1] = {min = 129}}
-list.Set("PartCtrl_UtilFx", "AR2Tracer", tracer1)
+list.Set("PEPlus_UtilFx", "AR2Tracer", tracer1)
 local tracer1point5 = table.Copy(tracer)
 tracer1point5.cpoint_distance_overrides = {[1] = {min = 257}}
-list.Set("PartCtrl_UtilFx", "HelicopterTracer", tracer1point5)
+list.Set("PEPlus_UtilFx", "HelicopterTracer", tracer1point5)
 local tracer2 = table.Copy(tracer)
 tracer2.DoProcessExtras.scale_default = 10000
 tracer2.DoProcessExtras.checkboxes = false
-list.Set("PartCtrl_UtilFx", "AirboatGunTracer", tracer2)
+list.Set("PEPlus_UtilFx", "AirboatGunTracer", tracer2)
 local tracer3 = table.Copy(tracer)
 tracer3.DoProcessExtras.checkboxes = false
-list.Set("PartCtrl_UtilFx", "AirboatGunHeavyTracer", tracer3)
+list.Set("PEPlus_UtilFx", "AirboatGunHeavyTracer", tracer3)
 local tracer4 = table.Copy(tracer1point5)
 tracer4.DoProcessExtras.checkboxes = false
 tracer4.DoProcessExtras.scale_default = 6500 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/vehicle_jeep.cpp#L856
-list.Set("PartCtrl_UtilFx", "GaussTracer", tracer4)
+list.Set("PEPlus_UtilFx", "GaussTracer", tracer4)
 local tracer5 = table.Copy(tracer)
 tracer5.DoProcessExtras.scale_default = 5000 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/episodic/npc_hunter.cpp#L5242, https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/npc_strider.cpp#L2748
-list.Set("PartCtrl_UtilFx", "HunterTracer", tracer5)
+list.Set("PEPlus_UtilFx", "HunterTracer", tracer5)
 local tracer5point5 = table.Copy(tracer5)
 tracer5point5.cpoint_distance_overrides = {[1] = {min = 257}}
-list.Set("PartCtrl_UtilFx", "StriderTracer", tracer5point5)
-list.Set("PartCtrl_UtilFx", "GunshipTracer", tracer1point5) //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/npc_combinegunship.cpp#L2814
-//list.Set("PartCtrl_UtilFx", "TracerSound", tracer) //only the sound, not really this addon's purpose
-list.Set("PartCtrl_UtilFx", "Tracer", tracer5point5) //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_tracer.cpp#L112
+list.Set("PEPlus_UtilFx", "StriderTracer", tracer5point5)
+list.Set("PEPlus_UtilFx", "GunshipTracer", tracer1point5) //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/npc_combinegunship.cpp#L2814
+//list.Set("PEPlus_UtilFx", "TracerSound", tracer) //only the sound, not really this addon's purpose
+list.Set("PEPlus_UtilFx", "Tracer", tracer5point5) //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_tracer.cpp#L112
 //this is an interesting one. it's basically just a convenience function to create a pcf effect in the same way as the utilfx tracers, whiz and attachment handling included. 
 //uses the effectData's "HitBox" value to store the internal id number of the pcf effect. not useful in this addon, so don't include it. https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_tracer.cpp#L154
-//list.Set("PartCtrl_UtilFx", "ParticleTracer", tracer)
+//list.Set("PEPlus_UtilFx", "ParticleTracer", tracer)
 
 //the impact effects; these are complicated and all share the same code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_hl2_impacts.cpp#L240, https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_impact.cpp#L431)
 //Note that ImpactGauss and ImpactJeep have EXACTLY the same code, and the only difference they have from Impact is a scale value of 2 instead of 1; ImpactGunship is like those but scale 3 and doesn't 
@@ -576,8 +576,8 @@ local impact = {
 	info = "Control point 1 sets the model to play the impact effect on; uses the world if unattached.\nControl point 0 draws a line to 1, and plays the effect where the line hits the model.",
 	info_sfx = "Control point 0 draws a line to 1, and plays the effect at the point of impact.", //special fx have functionality to override what entity the impact effect uses, so omit the part about cpoint 1 setting it.
 	DoProcess = function(tab, extras)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin, Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Origin, Entity")
 
 		if extras.surfaceprop then
 			local options = {}
@@ -587,7 +587,7 @@ local impact = {
 					options[i] = name
 				end
 			end
-			PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect SurfaceProp", "axis", {
+			PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect SurfaceProp", "axis", {
 				axis = 0, //x
 				label = "Surface Properties",
 				default = 0,
@@ -600,11 +600,11 @@ local impact = {
 		local def = 0
 		if extras.toggleable_decals then options[1] = "No decals" end
 		if extras.has_sounds then 
-			options[128] = "No sound" //not a real flag; use this to store the setting for PartCtrl_InterceptSound without adding another control point
+			options[128] = "No sound" //not a real flag; use this to store the setting for PEPlus_InterceptSound without adding another control point
 			def = 128
 		end
 		if table.Count(options) > 0 then
-			PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+			PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
 				axis = 1, //y
 				default = def,
 				checkboxes = options,
@@ -614,7 +614,7 @@ local impact = {
 			[DMG_BLAST] = "DMG_BLAST (more knockback to client ragdolls)" //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_baseanimating.cpp#L395
 		}
 		if extras.has_decals then options[DMG_SLASH] = "DMG_SLASH (use unique decal)" end //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/baseentity_shared.cpp#L708
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect DamageType", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect DamageType", "axis", {
 			axis = 2, //z
 			default = 0,
 			checkboxes = options,
@@ -628,21 +628,21 @@ local impact = {
 		local ent = self.ParticleInfo[1].ent
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
 		//special functionality for impact fx: set effect entity to world if unattached, or to the entity that a trace effect hit
-		if ent.PartCtrl_Grip then
+		if ent.PEPlus_Grip then
 			ent = game.GetWorld()
 		end
-		ed:SetEntity(ent.PartCtrl_TraceHit or ent)
+		ed:SetEntity(ent.PEPlus_TraceHit or ent)
 
 		//trace effects also use the surfaceprop that the trace hit, unless we manually change it from the default
 		local sp = self.ParticleInfo[2].val.x
-		if ent.PartCtrl_SurfaceProp and sp == 0 then
-			sp = ent.PartCtrl_SurfaceProp
+		if ent.PEPlus_SurfaceProp and sp == 0 then
+			sp = ent.PEPlus_SurfaceProp
 		end
 		ed:SetSurfaceProp(sp)
 		local flags = self.ParticleInfo[2].val.y
 		if bit.band(flags, 128) == 128 then
 			flags = flags - 128
-			PartCtrl_InterceptSound = true
+			PEPlus_InterceptSound = true
 		end
 		ed:SetFlags(flags)
 		ed:SetDamageType(self.ParticleInfo[2].val.z)
@@ -652,35 +652,35 @@ local impact = {
 }
 local impact_noflags = table.Copy(impact)
 impact_noflags.DoProcessExtras.toggleable_decals = false
-list.Set("PartCtrl_UtilFx", "Impact", impact_noflags)
+list.Set("PEPlus_UtilFx", "Impact", impact_noflags)
 impact.info = impact.info .. "\nIdentical to \"Impact\", except decals can be disabled."
 impact.info_sfx = impact.info_sfx .. "\nIdentical to \"Impact\", except decals can be disabled."
-list.Set("PartCtrl_UtilFx", "Impact_GMOD", impact)
+list.Set("PEPlus_UtilFx", "Impact_GMOD", impact)
 local impact_noflags2 = table.Copy(impact_noflags)
 impact_noflags2.info = impact_noflags2.info .. "\nIdentical to \"Impact\", except particles have 2x scale."
 impact_noflags2.info_sfx = impact_noflags2.info_sfx .. "\nIdentical to \"Impact\", except particles have 2x scale."
-list.Set("PartCtrl_UtilFx", "ImpactGauss", impact_noflags2)
-list.Set("PartCtrl_UtilFx", "ImpactJeep", impact_noflags2)
+list.Set("PEPlus_UtilFx", "ImpactGauss", impact_noflags2)
+list.Set("PEPlus_UtilFx", "ImpactJeep", impact_noflags2)
 local impact_noflags3 = table.Copy(impact_noflags)
 impact_noflags3.info = impact_noflags3.info .. "\nIdentical to \"Impact\", except particles have 3x scale."
 impact_noflags3.info_sfx = impact_noflags3.info_sfx .. "\nIdentical to \"Impact\", except particles have 3x scale."
-list.Set("PartCtrl_UtilFx", "ImpactGunship", impact_noflags3)
+list.Set("PEPlus_UtilFx", "ImpactGunship", impact_noflags3)
 local impact_nodecals = table.Copy(impact_noflags)
 impact_nodecals.DoProcessExtras.has_decals = false
 impact_nodecals.info = impact_noflags3.info .. "\nNo decals; doesn't do material-specific particle effects except on metal or computer."
 impact_nodecals.info_sfx = impact_noflags3.info_sfx .. "\nNo decals; doesn't do material-specific particle effects except on metal or computer."
-list.Set("PartCtrl_UtilFx", "HelicopterImpact", impact_nodecals)
+list.Set("PEPlus_UtilFx", "HelicopterImpact", impact_nodecals)
 local impact_nodecals_nosurfaceprop = table.Copy(impact_nodecals)
 impact_nodecals_nosurfaceprop.DoProcessExtras.surfaceprop = false
 impact_nodecals_nosurfaceprop.DoProcessExtras.has_sounds = false
 impact_nodecals_nosurfaceprop.info = impact_noflags.info .. "\nNo decals, no material-specific particle effects, no sounds."
 impact_nodecals_nosurfaceprop.info_sfx = impact_noflags.info_sfx .. "\nNo decals, no material-specific particle effects, no sounds."
-list.Set("PartCtrl_UtilFx", "AirboatGunImpact", impact_nodecals_nosurfaceprop)
---[[list.Set("PartCtrl_UtilFx", "AirboatGunImpact", {
+list.Set("PEPlus_UtilFx", "AirboatGunImpact", impact_nodecals_nosurfaceprop)
+--[[list.Set("PEPlus_UtilFx", "AirboatGunImpact", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Origin, Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Origin, Entity")
 	end,
 	DoEffect = function (self, ed)
 		ed:SetStart(self:GetCPoint(0).pos + (self:GetCPoint(0).ang:Forward() * 10))
@@ -694,13 +694,13 @@ list.Set("PartCtrl_UtilFx", "AirboatGunImpact", impact_nodecals_nosurfaceprop)
 })]] //test; usable this way, but worse; not angled correctly because it uses the grip's hitbox i think
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/fx_antlion.cpp#L334
-list.Set("PartCtrl_UtilFx", "AntlionGib", {
+list.Set("PEPlus_UtilFx", "AntlionGib", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	//default_time = 0.75, //max effect lifetime from code
 	default_time = 3, //gib lifetime from code (2) + 1 sec fadeout time
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Gib Velocity Scale",
 			min = 0,
@@ -731,12 +731,12 @@ for _, model in pairs ({
 end
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/game/client/hl2/c_weapon_crossbow.cpp#L159
-list.Set("PartCtrl_UtilFx", "CrossbowLoad", {
+list.Set("PEPlus_UtilFx", "CrossbowLoad", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
 	info = needs_attachment,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
 	end,
 	DoEffect = function(self, ed)
 		local ent = self.ParticleInfo[0].ent
@@ -748,11 +748,11 @@ list.Set("PartCtrl_UtilFx", "CrossbowLoad", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/episodic/c_vort_charge_token.cpp#L481
-list.Set("PartCtrl_UtilFx", "VortDispel", {
+list.Set("PEPlus_UtilFx", "VortDispel", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1.25, //lifetime from code
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -761,12 +761,12 @@ list.Set("PartCtrl_UtilFx", "VortDispel", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_thumper_dust.cpp#L170
-list.Set("PartCtrl_UtilFx", "ThumperDust", {
+list.Set("PEPlus_UtilFx", "ThumperDust", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1.5, //lifetime from code
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Scale",
 			min = 1,
@@ -783,12 +783,12 @@ list.Set("PartCtrl_UtilFx", "ThumperDust", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_strider.cpp#L1047
-list.Set("PartCtrl_UtilFx", "StriderBlood", {
+list.Set("PEPlus_UtilFx", "StriderBlood", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1, //lifetime from code
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Scale",
 			min = 0,
@@ -805,12 +805,12 @@ list.Set("PartCtrl_UtilFx", "StriderBlood", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_strider.cpp#L949
-list.Set("PartCtrl_UtilFx", "StriderMuzzleFlash", {
+list.Set("PEPlus_UtilFx", "StriderMuzzleFlash", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.4, //max lifetime from code
 	info = needs_attachment,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
 	end,
 	DoEffect = function(self, ed)
 		local ent = self.ParticleInfo[0].ent
@@ -822,11 +822,11 @@ list.Set("PartCtrl_UtilFx", "StriderMuzzleFlash", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_prop_combine_ball.cpp#L340
-list.Set("PartCtrl_UtilFx", "cball_explode", {
+list.Set("PEPlus_UtilFx", "cball_explode", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -835,12 +835,12 @@ list.Set("PartCtrl_UtilFx", "cball_explode", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/hl2/c_prop_combine_ball.cpp#L326
-list.Set("PartCtrl_UtilFx", "cball_bounce", {
+list.Set("PEPlus_UtilFx", "cball_bounce", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
 			axis = 0, //x
 			label = "Radius",
 			min = 0,
@@ -858,19 +858,19 @@ list.Set("PartCtrl_UtilFx", "cball_bounce", {
 
 if IsMounted("hl1") then //these two fx have error models or textures if hl1 is unmounted, so make them require it; the other hl1 fx work either way, so they don't need this check
 	//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_shelleject.cpp#L21
-	list.Set("PartCtrl_UtilFx", "HL1ShellEject", {
+	list.Set("PEPlus_UtilFx", "HL1ShellEject", {
 		title = "Half-Life: Source",
 		default_time = 1,
 		DoProcess = function(tab)
-			PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
-			PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "axis", {
+			PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
+			PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "axis", {
 				vector = true,
 				label = {"Velocity Back/Fwd", "Velocity Right/Left", "Velocity Down/Up"},
 				min = Vector(-512,-512,-512),
 				max = Vector(512,512,512),
 				default = Vector(0,-65,137.5), //average velocity from hgrunt/assassin code (https://github.com/nillerusr/source-engine/blob/master/game/server/hl1/hl1_npc_hgrunt.cpp#L1235 / https://github.com/nillerusr/source-engine/blob/master/game/server/hl1/hl1_npc_hassassin.cpp#L601), which is also fairly close to the average velocity from hl1 weapon code (https://github.com/nillerusr/source-engine/blob/master/game/shared/hl1/hl1mp_basecombatweapon_shared.cpp#L75)
 			})
-			PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+			PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
 				axis = 0, //x
 				label = "Shell Type",
 				default = 0,
@@ -893,12 +893,12 @@ if IsMounted("hl1") then //these two fx have error models or textures if hl1 is 
 	})
 
 	//https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gibs.cpp#L306
-	list.Set("PartCtrl_UtilFx", "HL1Gib", {
+	list.Set("PEPlus_UtilFx", "HL1Gib", {
 		title = "Half-Life: Source",
 		default_time = 10,
 		DoProcess = function(tab)
-			PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-			PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect MaterialIndex", "axis", {
+			PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+			PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect MaterialIndex", "axis", {
 				axis = 0, //x
 				label = "Gib Type",
 				default = 1,
@@ -907,7 +907,7 @@ if IsMounted("hl1") then //these two fx have error models or textures if hl1 is 
 					[2] = "Alien gibs",
 				},
 			})
-			PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect HitBox", "axis", {
+			PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect HitBox", "axis", {
 				axis = 1, //y
 				label = "Gib Velocity",
 				default = 0,
@@ -917,7 +917,7 @@ if IsMounted("hl1") then //these two fx have error models or textures if hl1 is 
 					[200] = "400%",
 				},
 			})
-			PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
+			PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
 				axis = 2, //z
 				label = "Particle Color",
 				default = 0,
@@ -943,12 +943,12 @@ if IsMounted("hl1") then //these two fx have error models or textures if hl1 is 
 end
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L215
-list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact1", {
+list.Set("PEPlus_UtilFx", "HL1GaussWallImpact1", {
 	title = "Half-Life: Source",
 	default_time = 7, //sprite lifetime from code, + 1 for fadeout
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			axis = 0, //x
 			label = "Alpha",
 			min = 0,
@@ -965,11 +965,11 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact1", {
 })
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L225
-list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact2", {
+list.Set("PEPlus_UtilFx", "HL1GaussWallImpact2", {
 	title = "Half-Life: Source",
 	default_time = 5, //rough average lifetime, can't figure out how this is determined in code
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -979,11 +979,11 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallImpact2", {
 })
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L186
-list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchEnter", {
+list.Set("PEPlus_UtilFx", "HL1GaussWallPunchEnter", {
 	title = "Half-Life: Source",
 	default_time = 5, //rough average lifetime, can't figure out how this is determined in code
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -993,12 +993,12 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchEnter", {
 })
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L199
-list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
+list.Set("PEPlus_UtilFx", "HL1GaussWallPunchExit", {
 	title = "Half-Life: Source",
 	default_time = 7, //impact sprite lifetime from code, + 1 for fadeout
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			axis = 0, //x
 			label = "Alpha, Spark Count Scale",
 			min = 0,
@@ -1016,12 +1016,12 @@ list.Set("PartCtrl_UtilFx", "HL1GaussWallPunchExit", {
 })
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L170
-list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
+list.Set("PEPlus_UtilFx", "HL1GaussReflect", {
 	title = "Half-Life: Source",
 	default_time = 6, //sprite lifetime at default magnitude (see comments) + 1 for fadeout
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			axis = 0, //x
 			label = "Alpha, Lifetime Scale", //still uses the damage value for alpha, but also controls the lifetime of the sprite (flMagnitude * 0.05) 
 			min = 0,
@@ -1039,13 +1039,13 @@ list.Set("PartCtrl_UtilFx", "HL1GaussReflect", {
 })
 
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L117
-list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
+list.Set("PEPlus_UtilFx", "HL1GaussBeamReflect", {
 	title = "Half-Life: Source",
 	default_time = 0.11, //lifetime from code, plus an extra 100th of a second just to make it clear that this is a tracer and not a continuous beam
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
 			axis = 0, //x
 			label = "Beam Type",
 			default = 1,
@@ -1066,13 +1066,13 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 //Hard-coded to only function if attached to a player, and automatically attaches to cpoint 1 of their weapon. Looks identical to HL1GaussBeamReflect except the start of the beam
 //follows the attachment. I think we'll do without this one.
 //https://github.com/nillerusr/source-engine/blob/master/game/client/hl1/hl1_fx_gauss.cpp#L35
---[[list.Set("PartCtrl_UtilFx", "HL1GaussBeam", {
+--[[list.Set("PEPlus_UtilFx", "HL1GaussBeam", {
 	title = "Half-Life: Source",
 	default_time = 0.11, //lifetime from code, plus an extra 100th of a second just to make it clear that this is a tracer and not a continuous beam
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Entity")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
 			axis = 0, //x
 			label = "Beam Type",
 			default = 1,
@@ -1096,13 +1096,13 @@ list.Set("PartCtrl_UtilFx", "HL1GaussBeamReflect", {
 
 //No code for this one; the only utileffect not listed on https://wiki.facepunch.com/gmod/Default_Effects, found it by checking the effects_list concommand
 //Appears identical to HL1GaussBeamReflect, doesn't even have the special follow-the-attachment-point functionality of the regular HL1GaussBeam.
-list.Set("PartCtrl_UtilFx", "HL1GaussBeam_GMOD", {
+list.Set("PEPlus_UtilFx", "HL1GaussBeam_GMOD", {
 	title = "Half-Life: Source",
 	default_time = 0.11, //lifetime from code, plus an extra 100th of a second just to make it clear that this is a tracer and not a continuous beam
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect Flags", "axis", {
 			axis = 0, //x
 			label = "Beam Type",
 			default = 1,
@@ -1130,8 +1130,8 @@ local cstrikeshells = {
 	title = "Counter-Strike: Source",
 	default_time = 1, //arbitrary; these take 10 whole seconds to fade out which is too much
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			axis = 0, //x
 			label = "Velocity",
 			min = 0,
@@ -1154,21 +1154,21 @@ local cstrikeshells = {
 //EjectBrass_57 100
 //EjectBrass_12Gauge 70 95 90 
 //EjectBrass_9mm 100 65 75 90
-list.Set("PartCtrl_UtilFx", "EjectBrass_338Mag", cstrikeshells)
-list.Set("PartCtrl_UtilFx", "EjectBrass_762Nato", cstrikeshells)
-list.Set("PartCtrl_UtilFx", "EjectBrass_556", cstrikeshells)
-list.Set("PartCtrl_UtilFx", "EjectBrass_57", cstrikeshells)
-list.Set("PartCtrl_UtilFx", "EjectBrass_12Gauge", cstrikeshells)
-list.Set("PartCtrl_UtilFx", "EjectBrass_9mm", cstrikeshells)
+list.Set("PEPlus_UtilFx", "EjectBrass_338Mag", cstrikeshells)
+list.Set("PEPlus_UtilFx", "EjectBrass_762Nato", cstrikeshells)
+list.Set("PEPlus_UtilFx", "EjectBrass_556", cstrikeshells)
+list.Set("PEPlus_UtilFx", "EjectBrass_57", cstrikeshells)
+list.Set("PEPlus_UtilFx", "EjectBrass_12Gauge", cstrikeshells)
+list.Set("PEPlus_UtilFx", "EjectBrass_9mm", cstrikeshells)
 
 //https://github.com/GEEKiDoS/cstrike-asw/blob/master/src/game/client/cstrike/fx_cs_muzzleflash.cpp#L95C6-L95C29
-list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash_X", {
+list.Set("PEPlus_UtilFx", "CS_MuzzleFlash_X", {
 	title = "Counter-Strike: Source",
 	default_time = 0.08, //lifetime value from code
 	info = needs_attachment,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Scale",
 			min = 0,
@@ -1190,13 +1190,13 @@ list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash_X", {
 })
 
 //https://github.com/GEEKiDoS/cstrike-asw/blob/master/src/game/client/cstrike/fx_cs_muzzleflash.cpp#L22
-list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash", {
+list.Set("PEPlus_UtilFx", "CS_MuzzleFlash", {
 	title = "Counter-Strike: Source",
 	default_time = 0.08, //lifetime value from code
 	info = needs_attachment,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Scale",
 			min = 0,
@@ -1219,12 +1219,12 @@ list.Set("PartCtrl_UtilFx", "CS_MuzzleFlash", {
 
 //Can't find any code registering this effect or giving it a callback function, might be a garry creation. Is it an implmentation of this? It's the only name that matches. https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx.cpp#L185
 //Or maybe this? https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/EffectsClient.cpp#L160
-list.Set("PartCtrl_UtilFx", "MuzzleEffect", {
+list.Set("PEPlus_UtilFx", "MuzzleEffect", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.1, //lifetime from code?
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Scale",
 			min = 0,
@@ -1242,11 +1242,11 @@ list.Set("PartCtrl_UtilFx", "MuzzleEffect", {
 })
 
 //another one without a callback func i can find, is it this? //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_sparks.cpp#L620
-list.Set("PartCtrl_UtilFx", "MetalSpark", {
+list.Set("PEPlus_UtilFx", "MetalSpark", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.1, //lifetime from code?
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -1257,19 +1257,19 @@ list.Set("PartCtrl_UtilFx", "MetalSpark", {
 })
 
 //another one without a callback func, might be this (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_sparks.cpp#L300)
-list.Set("PartCtrl_UtilFx", "ElectricSpark", {
+list.Set("PEPlus_UtilFx", "ElectricSpark", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Trail Length",
 			min = 0,
 			max = 10, //reasonable limit of what looks good, and even this is pushing it
 			default = 1,
 		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			axis = 1, //y
 			label = "Spark Count, Lifetime Scale",
 			min = 0,
@@ -1287,26 +1287,26 @@ list.Set("PartCtrl_UtilFx", "ElectricSpark", {
 })
 
 //another without a callback func, might be this (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_sparks.cpp#L722)
-list.Set("PartCtrl_UtilFx", "Sparks", {
+list.Set("PEPlus_UtilFx", "Sparks", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Trail Length",
 			min = 0,
 			max = 32, //unlike ElectricSpark, this effect has a radius scalar, so it can actually still look good at higher values
 			default = 1,
 		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			axis = 1, //y
 			label = "Spark Count, Lifetime Scale",
 			min = 0,
 			max = 4, //see previous effect
 			default = 1,
 		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
 			axis = 2, //z
 			label = "Trail Width",
 			min = 0,
@@ -1325,20 +1325,20 @@ list.Set("PartCtrl_UtilFx", "Sparks", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L469
-list.Set("PartCtrl_UtilFx", "waterripple", {
+list.Set("PEPlus_UtilFx", "waterripple", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1.5, //lifetime value from code
 	info = "Requires nearby water surface",
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Scale",
 			min = 0,
 			max = 256, //arbitrary max
 			default = 8,
 		})
-		--[[PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+		--[[PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			axis = 1, //y
 			label = "Fluid Type",
 			default = 0,
@@ -1361,15 +1361,15 @@ local splash = {
 	default_time = 2, //max lifetime from code
 	info = "Ripples require nearby water surface",
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Scale",
 			min = 0,
 			max = 32, //hard-coded max for water splash (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L133-L138)
 			default = 6, //avg default size of gunshot splash (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/ammodef.cpp#L152-L171)
 		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			axis = 1, //y
 			label = "Fluid Type",
 			default = 0,
@@ -1378,7 +1378,7 @@ local splash = {
 				[1] = "Slime", //FX_WATER_IN_SLIME (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shareddefs.h#L566)
 			},
 		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "PartCtrl_InterceptSound", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "PEPlus_InterceptSound", "axis", {
 			axis = 2, //z
 			default = 1,
 			checkboxes = {
@@ -1390,22 +1390,22 @@ local splash = {
 		ed:SetOrigin(self:GetCPoint(0).pos)
 		ed:SetScale(self.ParticleInfo[1].val.x)
 		ed:SetFlags(self.ParticleInfo[1].val.y)
-		if self.ParticleInfo[1].val.z == 1 then PartCtrl_InterceptSound = true end
+		if self.ParticleInfo[1].val.z == 1 then PEPlus_InterceptSound = true end
 		return true
 	end
 }
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L450
-list.Set("PartCtrl_UtilFx", "gunshotsplash", splash)
+list.Set("PEPlus_UtilFx", "gunshotsplash", splash)
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_water.cpp#L431
 //Functionally 100% identical to gunshotsplash, but i've left them both here just in case another addon replaces them with different custom fx
-list.Set("PartCtrl_UtilFx", "watersplash", splash)
+list.Set("PEPlus_UtilFx", "watersplash", splash)
 
 local shelleject = {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 2, //max lifetime from code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/c_te_legacytempents.cpp#L1691)
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Entity")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -1418,20 +1418,20 @@ local shelleject = {
 }
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/fx_shelleject.cpp
-list.Set("PartCtrl_UtilFx", "ShotgunShellEject", shelleject)
-list.Set("PartCtrl_UtilFx", "RifleShellEject", shelleject)
-list.Set("PartCtrl_UtilFx", "ShellEject", shelleject)
+list.Set("PEPlus_UtilFx", "ShotgunShellEject", shelleject)
+list.Set("PEPlus_UtilFx", "RifleShellEject", shelleject)
+list.Set("PEPlus_UtilFx", "ShellEject", shelleject)
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_impact.cpp#L96
 //Only moves client ragdolls, not really in this addon's wheelhouse
---[[list.Set("PartCtrl_UtilFx", "RagdollImpact", {
+--[[list.Set("PEPlus_UtilFx", "RagdollImpact", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1,
 	info = "Draws a line between control points 0 and 1. If it hits a clientside ragdoll, pushes it.",
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "util.Effect DamageType", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Start")
+		PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect DamageType", "axis", {
 			axis = 0, //x
 			default = 0,
 			checkboxes = {
@@ -1448,11 +1448,11 @@ list.Set("PartCtrl_UtilFx", "ShellEject", shelleject)
 })]]
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_explosion.cpp#L1418
-list.Set("PartCtrl_UtilFx", "HelicopterMegaBomb", {
+list.Set("PEPlus_UtilFx", "HelicopterMegaBomb", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0.4, //max lifetime value from code
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -1461,26 +1461,26 @@ list.Set("PartCtrl_UtilFx", "HelicopterMegaBomb", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_explosion.cpp#L1314
-list.Set("PartCtrl_UtilFx", "WaterSurfaceExplosion", {
+list.Set("PEPlus_UtilFx", "WaterSurfaceExplosion", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 2,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
-		--[[PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		--[[PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			axis = 0, //x
 			label = "Force",
 			min = 0,
 			max = 1280,
 			default = 128, //default value used by all code that creates this effect
 		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 1, //y
 			label = "Scale",
 			min = 0,
 			max = 1280,
 			default = 128, //default value used by all code that creates this effect
 		})]]
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			axis = 2, //z
 			default = tonumber("0x4"),
 			checkboxes = { //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/tempentity.h
@@ -1489,7 +1489,7 @@ list.Set("PartCtrl_UtilFx", "WaterSurfaceExplosion", {
 				//[tonumber("0x8")] = "No particles", //TE_EXPLFLAG_NOPARTICLES //^
 			}
 		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 1, //y
 			default = 128, //default value used by all code that creates this effect
 			checkboxes = {
@@ -1507,26 +1507,26 @@ list.Set("PartCtrl_UtilFx", "WaterSurfaceExplosion", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_explosion.cpp#L804
-list.Set("PartCtrl_UtilFx", "Explosion", {
+list.Set("PEPlus_UtilFx", "Explosion", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 2,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
-		--[[PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		--[[PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			axis = 0, //x
 			label = "Force",
 			min = 0,
 			max = 1280,
 			default = 128,
 		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 1, //y
 			label = "Scale",
 			min = 0,
 			max = 1280,
 			default = 128,
 		})]]
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			axis = 2, //z
 			default = tonumber("0x4"),
 			checkboxes = { //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/tempentity.h
@@ -1559,11 +1559,11 @@ list.Set("PartCtrl_UtilFx", "Explosion", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_blood.cpp#L591
-list.Set("PartCtrl_UtilFx", "HunterDamage", {
+list.Set("PEPlus_UtilFx", "HunterDamage", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 3, //max lifetime from code
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -1573,12 +1573,12 @@ list.Set("PartCtrl_UtilFx", "HunterDamage", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_blood.cpp#L532
-list.Set("PartCtrl_UtilFx", "BloodImpact", {
+list.Set("PEPlus_UtilFx", "BloodImpact", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = .75, //max particle lifetime in code
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
 			axis = 0, //x
 			label = "Color",
 			default = BLOOD_COLOR_RED,
@@ -1593,7 +1593,7 @@ list.Set("PartCtrl_UtilFx", "BloodImpact", {
 				[BLOOD_COLOR_ANTLION_WORKER] = "Antlion Worker",
 			},
 		})
-		--[[PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		--[[PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 1, //y
 			label = "Scale",
 			min = 0,
@@ -1611,12 +1611,12 @@ list.Set("PartCtrl_UtilFx", "BloodImpact", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/fx_blood.cpp#L490
-list.Set("PartCtrl_UtilFx", "bloodspray", {
+list.Set("PEPlus_UtilFx", "bloodspray", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1, //max particle lifetime in code
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
 			axis = 0, //x
 			label = "Color",
 			default = BLOOD_COLOR_RED,
@@ -1631,14 +1631,14 @@ list.Set("PartCtrl_UtilFx", "bloodspray", {
 				[BLOOD_COLOR_ANTLION_WORKER] = "Antlion Worker",
 			},
 		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 1, //y
 			label = "Scale",
 			min = 0,
 			max = 128, //arbitrary max, this is uncapped
 			default = 8, //from most of the code that calls this effect (barnacle, zombie) https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_barnacle.cpp#L1670, https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_BaseZombie.cpp#L2281
 		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Flags", "axis", {
 			axis = 2, //z
 			default = tonumber("0x01") + tonumber("0x02") + tonumber("0x04"),
 			checkboxes = { //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/shareddefs.h#L628
@@ -1660,12 +1660,12 @@ list.Set("PartCtrl_UtilFx", "bloodspray", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_vehicle_jeep.cpp#L326
-list.Set("PartCtrl_UtilFx", "WheelDust", {
+list.Set("PEPlus_UtilFx", "WheelDust", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 0, //the code that plays this effect calls it every think; barely visible otherwise https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/fourwheelvehiclephysics.cpp#L767
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Scale",
 			min = 0,
@@ -1682,20 +1682,20 @@ list.Set("PartCtrl_UtilFx", "WheelDust", {
 })
 
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/c_rope.cpp#L868
-list.Set("PartCtrl_UtilFx", "ShakeRopes", {
+list.Set("PEPlus_UtilFx", "ShakeRopes", {
 	title = {"Garry's Mod", "Half-Life 2 & Episodes"},
 	default_time = 1, //arbitrary
 	info = "No visible particles, makes nearby ropes move",
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Radius", "axis", {
 			axis = 0, //x
 			label = "Radius",
 			min = 0,
 			max = 4096, //arbitrary
 			default = 1024, //1024 from chopper code (https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/server/hl2/cbasehelicopter.cpp#L361, https://github.com/ValveSoftware/source-sdk-2013/blob/masterf/mp/src/game/server/hl2/cbasehelicopter.h#L65), 1200 from strider (https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/hl2/npc_strider.cpp#L4417)
 		})
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Magnitude", "axis", {
 			axis = 1, //y
 			label = "Magnitude",
 			min = 0,
@@ -1714,17 +1714,17 @@ list.Set("PartCtrl_UtilFx", "ShakeRopes", {
 //https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/c_particle_system.cpp#L253
 //ParticleEffect is a convenience func to dispatch pcf effects through the util.Effect system, using the hitbox value to store an internal pcf effect ID; also uses some other effectdata values 
 //that aren't exposed to lua like a "customcolors" table and an "offset" value. ParticleEffectStop is similar, it makes pcf effects attached to an entity stop emission.
-//list.Set("PartCtrl_UtilFx", "ParticleEffect", )
-//list.Set("PartCtrl_UtilFx", "ParticleEffectStop", )
+//list.Set("PEPlus_UtilFx", "ParticleEffect", )
+//list.Set("PEPlus_UtilFx", "ParticleEffectStop", )
 
 //https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/base/entities/effects/dof_node.lua
 //Used by gmod depth-of-field post-process - no good way to render this and then clean it up afterward, because internally this works by creating a sprite that renders forever until we run the
 //DOF_Kill function and delete them all (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/postprocess/dof.lua#L40)
---[[list.Set("PartCtrl_UtilFx", "dof_node", {
+--[[list.Set("PEPlus_UtilFx", "dof_node", {
 	title = "Garry's Mod",
 	default_time = 0,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, -1, "placeholder")
+		PEPlus_CPoint_AddToProcessed(tab, -1, "placeholder")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetScale(1)
@@ -1734,12 +1734,12 @@ list.Set("PartCtrl_UtilFx", "ShakeRopes", {
 })]]
 
 //https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/base/entities/effects/tooltracer.lua#L4
-list.Set("PartCtrl_UtilFx", "ToolTracer", {
+list.Set("PEPlus_UtilFx", "ToolTracer", {
 	title = "Garry's Mod",
 	default_time = 0.25, //lifetime from code
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Entity, Attachment")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetStart(self:GetCPoint(0).pos)
@@ -1754,12 +1754,12 @@ list.Set("PartCtrl_UtilFx", "ToolTracer", {
 })
 
 //https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/balloon_pop.lua
-list.Set("PartCtrl_UtilFx", "balloon_pop", {
+list.Set("PEPlus_UtilFx", "balloon_pop", {
 	title = "Garry's Mod",
 	default_time = 3, //arbitrary; lifetime from code is 10, but this looks silly because most of the time is just spent with nearly invisible particles sitting on the ground
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Start", "axis", {
 			vector = true,
 			label = "Color",
 			min = Vector(0,0,0),
@@ -1767,7 +1767,7 @@ list.Set("PartCtrl_UtilFx", "balloon_pop", {
 			default = Vector(255,255,255), 
 			colorpicker = true,
 		})
-		PartCtrl_CPoint_AddToProcessed(tab, 2, "PartCtrl_InterceptSound", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 2, "PEPlus_InterceptSound", "axis", {
 			axis = 0, //x
 			default = 1,
 			checkboxes = {
@@ -1778,17 +1778,17 @@ list.Set("PartCtrl_UtilFx", "balloon_pop", {
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
 		ed:SetStart(self.ParticleInfo[1].val)
-		if self.ParticleInfo[2].val.x == 1 then PartCtrl_InterceptSound = true end
+		if self.ParticleInfo[2].val.x == 1 then PEPlus_InterceptSound = true end
 		return true
 	end
 })
 
 //https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/entity_remove.lua
-list.Set("PartCtrl_UtilFx", "entity_remove", {
+list.Set("PEPlus_UtilFx", "entity_remove", {
 	title = "Garry's Mod",
 	default_time = 1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
 	end,
 	DoEffect = function(self, ed)
 		local ent = self.ParticleInfo[0].ent
@@ -1800,11 +1800,11 @@ list.Set("PartCtrl_UtilFx", "entity_remove", {
 })
 
 //https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/inflator_magic.lua
-list.Set("PartCtrl_UtilFx", "inflator_magic", {
+list.Set("PEPlus_UtilFx", "inflator_magic", {
 	title = "Garry's Mod",
 	default_time = 0, //should run continuously
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -1813,13 +1813,13 @@ list.Set("PartCtrl_UtilFx", "inflator_magic", {
 })
 
 //https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/lasertracer.lua
-list.Set("PartCtrl_UtilFx", "LaserTracer", {
+list.Set("PEPlus_UtilFx", "LaserTracer", {
 	title = "Garry's Mod",
 	default_time = 0.1, //arbitrary, same as hl2 tracers; like those, this effect's lifetime depends on its length
 	cpoint_distance_overrides = {[1] = {min = 256}},
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Entity, Attachment")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Start, Entity, Attachment")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Origin")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetStart(self:GetCPoint(0).pos)
@@ -1834,12 +1834,12 @@ list.Set("PartCtrl_UtilFx", "LaserTracer", {
 })
 
 //https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/phys_freeze.lua
-list.Set("PartCtrl_UtilFx", "phys_freeze", {
+list.Set("PEPlus_UtilFx", "phys_freeze", {
 	title = "Garry's Mod",
 	default_time = 0.5,
 	info = needs_model,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Entity")
 	end,
 	DoEffect = function(self, ed)
 		//PlayerFrozeObject code sets origin, but the effect code doesn't use this, https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/init.lua#L150
@@ -1854,12 +1854,12 @@ list.Set("PartCtrl_UtilFx", "phys_freeze", {
 })
 
 //https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/phys_unfreeze.lua
-list.Set("PartCtrl_UtilFx", "phys_unfreeze", {
+list.Set("PEPlus_UtilFx", "phys_unfreeze", {
 	title = "Garry's Mod",
 	default_time = 0.5,
 	info = needs_model,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Entity")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -1872,12 +1872,12 @@ list.Set("PartCtrl_UtilFx", "phys_unfreeze", {
 })
 
 //https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/propspawn.lua
-list.Set("PartCtrl_UtilFx", "propspawn", {
+list.Set("PEPlus_UtilFx", "propspawn", {
 	title = "Garry's Mod",
 	default_time = 1,
 	info = needs_model,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
 	end,
 	DoEffect = function(self, ed)
 		local ent = self.ParticleInfo[0].ent
@@ -1888,11 +1888,11 @@ list.Set("PartCtrl_UtilFx", "propspawn", {
 })
 
 //https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/selection_indicator.lua
-list.Set("PartCtrl_UtilFx", "selection_indicator", {
+list.Set("PEPlus_UtilFx", "selection_indicator", {
 	title = "Garry's Mod",
 	default_time = 1,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal, Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal, Entity")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -1909,11 +1909,11 @@ list.Set("PartCtrl_UtilFx", "selection_indicator", {
 })
 
 //https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/selection_ring.lua
-list.Set("PartCtrl_UtilFx", "selection_ring", {
+list.Set("PEPlus_UtilFx", "selection_ring", {
 	title = "Garry's Mod",
 	default_time = 0.3, //max lifetime from code? or at least it's close?
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal, Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Normal, Entity")
 	end,
 	DoEffect = function(self, ed)
 		ed:SetOrigin(self:GetCPoint(0).pos)
@@ -1930,12 +1930,12 @@ list.Set("PartCtrl_UtilFx", "selection_ring", {
 })
 
 //https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/effects/wheel_indicator.lua
-list.Set("PartCtrl_UtilFx", "wheel_indicator", {
+list.Set("PEPlus_UtilFx", "wheel_indicator", {
 	title = "Garry's Mod",
 	default_time = 1.25,
 	DoProcess = function(tab)
-		PartCtrl_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
-		PartCtrl_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Entity")
+		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", {
 			axis = 0, //x
 			label = "Direction",
 			default = 1,
@@ -1959,13 +1959,13 @@ list.Set("PartCtrl_UtilFx", "wheel_indicator", {
 
 
 
-//Note: This function is called by PartCtrl_ReadAndProcessPCFs(), which is defined in partctrl/pcf_processing.lua
+//Note: This function is called by PEPlus_ReadAndProcessPCFs(), which is defined in peplus/pcf_processing.lua
 
-function PartCtrl_ProcessUtilFx()
+function PEPlus_ProcessUtilFx()
 
-	local utilfx = list.GetForEdit("PartCtrl_UtilFx", true)
+	local utilfx = list.GetForEdit("PEPlus_UtilFx", true)
 	local utilfx2
-	PartCtrl_UtilFxByTitle = {}
+	PEPlus_UtilFxByTitle = {}
 
 	if istable(utilfx) then
 		for k, v in pairs (utilfx) do
@@ -1989,9 +1989,9 @@ function PartCtrl_ProcessUtilFx()
 			//Set cpoint modes
 			for k, v in pairs (t.cpoints) do
 				if v.position then
-					t.cpoints[k].mode = PARTCTRL_CPOINT_MODE_POSITION
+					t.cpoints[k].mode = PEPLUS_CPOINT_MODE_POSITION
 				elseif v.axis then
-					t.cpoints[k].mode = PARTCTRL_CPOINT_MODE_AXIS
+					t.cpoints[k].mode = PEPLUS_CPOINT_MODE_AXIS
 					for i = 0, 2 do
 						for k2, v2 in pairs (v.axis) do
 							if v2.axis != nil and v2.axis == i then 
@@ -2021,8 +2021,8 @@ function PartCtrl_ProcessUtilFx()
 
 			//Add to table of all utilfx by "title" value (what game or addon folder they're placed in)
 			local function addtotab(str)
-				PartCtrl_UtilFxByTitle[str] = PartCtrl_UtilFxByTitle[str] or {}
-				PartCtrl_UtilFxByTitle[str][name] = true
+				PEPlus_UtilFxByTitle[str] = PEPlus_UtilFxByTitle[str] or {}
+				PEPlus_UtilFxByTitle[str][name] = true
 			end
 			if istable(v.title) then
 				for _, str in pairs (v.title) do
@@ -2032,8 +2032,8 @@ function PartCtrl_ProcessUtilFx()
 				addtotab(v.title)
 			end
 			//Also add it to the "All" subtable; dumb, but this is easier than cluttering up AddBrowseContentParticle to add a special case for All that loads all the subtables
-			PartCtrl_UtilFxByTitle.All = PartCtrl_UtilFxByTitle.All or {}
-			PartCtrl_UtilFxByTitle.All[name] = true
+			PEPlus_UtilFxByTitle.All = PEPlus_UtilFxByTitle.All or {}
+			PEPlus_UtilFxByTitle.All[name] = true
 
 			utilfx2 = utilfx2 or {}
 			utilfx2[name] = t
@@ -2041,6 +2041,6 @@ function PartCtrl_ProcessUtilFx()
 	end
 
 	//PrintTable(utilfx2)
-	PartCtrl_ProcessedPCFs.UtilFx = utilfx2
+	PEPlus_ProcessedPCFs.UtilFx = utilfx2
 
 end

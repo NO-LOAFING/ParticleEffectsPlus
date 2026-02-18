@@ -1,13 +1,13 @@
 AddCSLuaFile()
 
-ENT.Base 			= "ent_partctrl_sfx"
+ENT.Base 			= "ent_peplus_sfx"
 ENT.PrintName			= "Projectile Effect"
 ENT.Category			= "Particle Effects+: Special Effects"
 ENT.Information			= "Launches props that can have particle effects attached to them, and can play more particle effects when they expire, either on hit or on a timer."
 
 ENT.Spawnable			= true
 
-ENT.PartCtrl_ShortName		= "Projectile"
+ENT.PEPlus_ShortName		= "Projectile"
 ENT.SpecialEffectRoles		= {
 	[0] = "Start point",
 	[1] = "Projectile model",
@@ -19,7 +19,7 @@ ENT.ScriptedFxDontDisablePause	= true
 
 ENT.DefaultLoopTime = 0.8
 
-local svproj_enabled = GetConVar("sv_partctrl_allowserverprojectiles")
+local svproj_enabled = GetConVar("sv_peplus_allowserverprojectiles")
 
 
 
@@ -104,14 +104,14 @@ function ENT:SetSpecialEffectDefaults()
 		self:SetModel("models/weapons/w_models/w_rocket.mdl")
 
 		if !self.IsBlank then
-			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "rockettrail", "particles/rockettrail.pcf", "tf")
+			local p = PEPlus_SpawnParticle(self:GetPlayer(), self:GetPos(), "rockettrail", "particles/rockettrail.pcf", "tf")
 			if IsValid(p) then
 				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 				p.ParticleInfo[0].attach = 1
 				p.ParticleInfo[0].sfx_role = 1
 			end
 
-			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "ExplosionCore_Wall", "particles/explosion.pcf", "tf")
+			local p = PEPlus_SpawnParticle(self:GetPlayer(), self:GetPos(), "ExplosionCore_Wall", "particles/explosion.pcf", "tf")
 			if IsValid(p) then
 				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 				p.ParticleInfo[0].sfx_role = 2
@@ -122,14 +122,14 @@ function ENT:SetSpecialEffectDefaults()
 		self:SetModel("models/weapons/w_missile.mdl")
 
 		if !self.IsBlank then
-			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Rocket_Smoke", "particles/rocket_fx.pcf")
+			local p = PEPlus_SpawnParticle(self:GetPlayer(), self:GetPos(), "Rocket_Smoke", "particles/rocket_fx.pcf")
 			if IsValid(p) then
 				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 				p.ParticleInfo[0].attach = 1
 				p.ParticleInfo[0].sfx_role = 1
 			end
 
-			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Explosion", "UtilFx")
+			local p = PEPlus_SpawnParticle(self:GetPlayer(), self:GetPos(), "Explosion", "UtilFx")
 			if IsValid(p) then
 				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 				p.ParticleInfo[0].sfx_role = 2
@@ -497,7 +497,7 @@ if CLIENT then
 						help:SetText("If checked, uses serverside props for projectiles. These will collide properly with everything instead of passing through, but they'll also put more stress on the game (especially in multiplayer), and can show up in the wrong spot if bonemerged. Only turn this on if you need it!")
 					else
 						check:SetDisabled(true)
-						help:SetText("(disabled by sv_partctrl_allowserverprojectiles)")
+						help:SetText("(disabled by sv_peplus_allowserverprojectiles)")
 					end
 				end
 			end
@@ -755,21 +755,21 @@ if CLIENT then
 				slider:SetValue(v2.attach)
 				function slider.OnValueChanged(_, val)
 					val = math.Round(val)
-					if val != slider.PartCtrl_AttachSlider.attach then //only send updates on whole numbers
+					if val != slider.PEPlus_AttachSlider.attach then //only send updates on whole numbers
 						surface.PlaySound("weapons/pistol/pistol_empty.wav")
-						slider.PartCtrl_AttachSlider.attach = val
+						slider.PEPlus_AttachSlider.attach = val
 						ent2:DoInput("cpoint_position_attach", k, val)
 					end
 				end
 
 				//Let the HUDPaint hook in autorun detect that the player is hovering over this slider
 				//This doesn't look all that great, but it lets the player see the attachments, which is better than nothing
-				slider.PartCtrl_AttachSlider = {ent = self, attach = v2.attach}
-				slider.Slider.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider
-				slider.Slider.Knob.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
-				slider.TextArea.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
-				slider.Label.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
-				slider.Scratch.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+				slider.PEPlus_AttachSlider = {ent = self, attach = v2.attach}
+				slider.Slider.PEPlus_AttachSlider = slider.PEPlus_AttachSlider
+				slider.Slider.Knob.PEPlus_AttachSlider = slider.PEPlus_AttachSlider 
+				slider.TextArea.PEPlus_AttachSlider = slider.PEPlus_AttachSlider 
+				slider.Label.PEPlus_AttachSlider = slider.PEPlus_AttachSlider 
+				slider.Scratch.PEPlus_AttachSlider = slider.PEPlus_AttachSlider 
 			end
 		end
 
@@ -831,7 +831,7 @@ end
 function ENT:SpecialEffectInitialize()
 
 	if SERVER then
-		//do numpad stuff; just reuse the numpad funcs from the standard ent_partctrl
+		//do numpad stuff; just reuse the numpad funcs from the standard ent_peplus
 
 		self:SetNumpadState(false) //Numpad state should always start off as false
 		//Different from NumpadState. This value is always true when the key is held down and false when it's not, even if the numpad state is set to toggle instead.
@@ -840,8 +840,8 @@ function ENT:SpecialEffectInitialize()
 		//Set up numpad functions
 		local ply = self:GetPlayer() //NOTE: this still works if ply doesn't exist
 		local key = self:GetNumpad()
-		self.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", self, true)
-		self.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", self, false)
+		self.NumDown = numpad.OnDown(ply, key, "PEPlus_Numpad", self, true)
+		self.NumUp = numpad.OnUp(ply, key, "PEPlus_Numpad", self, false)
 
 		self:StopParticles() //if the projectile model has its own built-in particle fx, don't show them on this ent (i.e. tf2 sentry rockets)
 	else
@@ -858,7 +858,7 @@ end
 
 
 
-local cv_max = GetConVar("sv_partctrl_particlesperent")
+local cv_max = GetConVar("sv_peplus_particlesperent")
 
 function ENT:SpecialEffectThink()
 
@@ -991,8 +991,8 @@ function ENT:SpecialEffectThink()
 					local wait = false
 					if CLIENT then
 						for child, _ in pairs (self.SpecialEffectChildren) do
-							local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
-							if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+							local pcf = PEPlus_GetGamePCF(child:GetPCF(), child:GetPath())
+							if istable(PEPlus_ProcessedPCFs[pcf]) and istable(PEPlus_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
 							and !child.ParticleInfo then
 								wait = true
 								break
@@ -1017,8 +1017,8 @@ function ENT:SpecialEffectThink()
 						if CLIENT then
 							for child, _ in pairs (self.SpecialEffectChildren) do
 								child.MaxOldParticlesOverride = max
-								local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
-								if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+								local pcf = PEPlus_GetGamePCF(child:GetPCF(), child:GetPath())
+								if istable(PEPlus_ProcessedPCFs[pcf]) and istable(PEPlus_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
 								and !child.ParticleInfo then
 									wait = true
 									self.was_waiting = true
@@ -1043,14 +1043,14 @@ function ENT:SpecialEffectThink()
 		if CLIENT then
 			if max != nil then max = 0 end
 			for child, _ in pairs (self.SpecialEffectChildren) do
-				if child.particle and child.particle != partctrl_wait then
+				if child.particle and child.particle != peplus_wait then
 					child.MaxOldParticlesOverride = max
 					if child.particle.IsValid and child.particle:IsValid() then
 						//Stop any existing particles and throw them into the OldParticles table to get cleaned up
 						//child.particle:StopEmission() //doesn't interact well with tracer count; because all the tracers except the last one are already in OldParticles, only the last one gets cut off while the rest keep playing, which looks odd
 						table.insert(child.OldParticles, child.particle)
 					end
-					child.particle = partctrl_wait
+					child.particle = peplus_wait
 				end
 			end
 		end
@@ -1058,7 +1058,7 @@ function ENT:SpecialEffectThink()
 		self.was_waiting = true
 	end
 
-	//Limit the number of spawned projectiles, just like ent_partctrl does with particles
+	//Limit the number of spawned projectiles, just like ent_peplus does with particles
 	local max2 = cv_max:GetInt()
 	if max != nil then
 		if !numpadisdisabling then
@@ -1214,7 +1214,7 @@ function ENT:CreateProjectile()
 		if CLIENT then
 			proj = ClientsideModel(self:GetModel())
 		else
-			proj = ents.Create("ent_partctrl_proj")
+			proj = ents.Create("ent_peplus_proj")
 			proj:SetModel(self:GetModel())
 			proj:SetOwnerEntity(self) //reference to the effect ent on the projectile; it uses this to run StartParticles on clients
 		end
@@ -1311,7 +1311,7 @@ function ENT:CreateProjectile()
 			phys:EnableDrag(self:GetProjDrag())
 			if CLIENT and !self:GetProjPhysSounds() then
 				phys:SetMaterial("gmod_silent") //EntityEmitSound doesn't catch impact sounds, so use this to make them silent
-				proj.PartCtrl_ProjDisableSounds = true //gmod_silent doesn't catch scrape sounds, so use the hook below to remove them
+				proj.PEPlus_ProjDisableSounds = true //gmod_silent doesn't catch scrape sounds, so use the hook below to remove them
 				//serverside projectile ent handles both of these in its initialize func
 			end
 		end
@@ -1319,9 +1319,9 @@ function ENT:CreateProjectile()
 	end
 end
 
-hook.Add("EntityEmitSound", "PartCtrl_ProjDisableSounds", function(data)
+hook.Add("EntityEmitSound", "PEPlus_ProjDisableSounds", function(data)
 	local ent = data.Entity
-	if IsValid(ent) and ent.PartCtrl_ProjDisableSounds then
+	if IsValid(ent) and ent.PEPlus_ProjDisableSounds then
 		return false
 	end
 end)
@@ -1394,7 +1394,7 @@ if CLIENT then
 				ang = ang_down
 			end
 
-			hit = ents.CreateClientside("ent_partctrl_sfxtarget")
+			hit = ents.CreateClientside("ent_peplus_sfxtarget")
 			hit:SetPos(hitpos)
 			hit:SetAngles(ang_back) //immediately pointing exactly forward causes the angle to break for some reason, but this fixes it
 			hit:SetAngles(ang)
@@ -1404,12 +1404,12 @@ if CLIENT then
 		end
 
 		for child, _ in pairs (self.SpecialEffectChildrenSorted[tobool(hitpos)]) do
-			if child.PartCtrl_Ent then
-				local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
-				local cpointtab = PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
+			if child.PEPlus_Ent then
+				local pcf = PEPlus_GetGamePCF(child:GetPCF(), child:GetPath())
+				local cpointtab = PEPlus_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
 				local addtotarget = false
 				for k, v in pairs (child.ParticleInfo) do
-					if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+					if cpointtab[k].mode == PEPLUS_CPOINT_MODE_POSITION then
 						if v.sfx_role == 0 then
 							child.ParticleInfo[k].ent = ent
 							child.ParticleInfo[k].attach = self:GetAttachmentID()
@@ -1460,10 +1460,10 @@ function ENT:SpecialEffectRefresh()
 				if child.ParticleInfo then
 					local attach_to_proj = nil
 					local attach_to_expire = nil
-					local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
-					local cpointtab = PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
+					local pcf = PEPlus_GetGamePCF(child:GetPCF(), child:GetPath())
+					local cpointtab = PEPlus_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
 					for k, v in pairs (child.ParticleInfo) do
-						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+						if cpointtab[k].mode == PEPLUS_CPOINT_MODE_POSITION then
 							if v.sfx_role == 1 then
 								attach_to_proj = attach_to_proj or {}
 								attach_to_proj[k] = true
@@ -1545,11 +1545,11 @@ if SERVER then
 			if !svproj then
 				//This requires a ParticleStartTime value that only exists clientside, so tell the client to send it, using the same "effect_pause" input as the cpanel
 				if IsValid(ply) and ply.IsPlayer and ply:IsPlayer() then
-					net.Start("PartCtrl_DoPauseInput_SendToCl")
+					net.Start("PEPlus_DoPauseInput_SendToCl")
 						net.WriteEntity(self)
 					net.Send(ply)
 				else
-					local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
+					local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
 					local name = self:GetParticleName()
 					MsgN(self, " tried to send a numpad pause input with invalid player ", ply, ". Report this!")
 				end
@@ -1570,7 +1570,7 @@ if SERVER then
 			//Refresh special effect on server
 			if self.SpecialEffectRefresh then self:SpecialEffectRefresh() end
 			//Tell clients to refresh the special effect
-			net.Start("PartCtrl_SpecialEffect_Refresh_SendToCl")
+			net.Start("PEPlus_SpecialEffect_Refresh_SendToCl")
 				net.WriteEntity(self)
 			net.Broadcast()
 
@@ -1802,12 +1802,12 @@ else
 			numpad.Remove(self.NumDown)
 			numpad.Remove(self.NumUp)
 
-			self.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", self, true)
-			self.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", self, false)
+			self.NumDown = numpad.OnDown(ply, key, "PEPlus_Numpad", self, true)
+			self.NumUp = numpad.OnUp(ply, key, "PEPlus_Numpad", self, false)
 
 			//If the player is holding down the old key then let go of it
 			if self.NumpadKeyDown then
-				PartCtrlNumpadFunction(ply, self, false)
+				PEPlusNumpadFunction(ply, self, false)
 			end
 
 		elseif input == "numpad_toggle" then
@@ -1822,7 +1822,7 @@ else
 			if !toggle then
 				local keydown = self.NumpadKeyDown
 				if keydown != self:GetNumpadState() then
-					PartCtrlNumpadFunction(ply, self, keydown)
+					PEPlusNumpadFunction(ply, self, keydown)
 				end
 			end
 
@@ -1985,9 +1985,9 @@ end
 
 
 
-duplicator.RegisterEntityClass("ent_partctrl_sfx_proj", function(ply, data)
+duplicator.RegisterEntityClass("ent_peplus_sfx_proj", function(ply, data)
 
-	local ent = ents.Create("ent_partctrl_sfx_proj")
+	local ent = ents.Create("ent_peplus_sfx_proj")
 	if !ent:IsValid() then return false end
 
 	//default dtvars for old dupes that don't have them
@@ -2008,4 +2008,4 @@ duplicator.RegisterEntityClass("ent_partctrl_sfx_proj", function(ply, data)
 
 end, "Data")
 
-PartCtrl_AddBlankSpecialEffect(ENT) //Add blank variant to spawnmenu
+PEPlus_AddBlankSpecialEffect(ENT) //Add blank variant to spawnmenu

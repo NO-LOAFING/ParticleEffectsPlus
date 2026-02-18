@@ -1,6 +1,6 @@
 "UnlitGeneric"
 {
-	"$basetexture"		"sprites/grip_partctrl_selected"
+	"$basetexture"		"sprites/grip_peplus_selected"
 	"$ignorez"			"1"
 	"$vertexcolor"		"1"
 	"$vertexalpha"		"1"

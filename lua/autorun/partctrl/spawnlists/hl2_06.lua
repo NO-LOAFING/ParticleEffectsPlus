@@ -12,161 +12,161 @@
 		}
 		"2"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_gib_01"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"3"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_large_01"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"4"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_large_01b"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"5"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_large_02"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"6"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_large_02b"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"7"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_medium_01"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"8"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_medium_02"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"9"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_medium_02 Version #2"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"10"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"Smoke_medium_02b"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"11"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"Smoke_medium_02b Version #2"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"12"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_medium_02c"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"13"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_medium_02d"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"14"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_small_01"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"15"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_small_01b"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"16"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_burning_engine_01"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"17"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"smoke_exhaust_01"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"18"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Advisor_Pod_Explosion_Smoke"
 			"pcf"		"particles/advisor_fx.pcf"
 		}
 		"19"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"smoke_dark_plume_1"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"20"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"smoke_dog_v_strider_dropship"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"21"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"smoke_mesh_01"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"22"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"smoke_smoulder_01"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"23"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"door_explosion_shockwave"
 			"pcf"		"particles/door_explosion.pcf"
 		}
 		"24"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"door_explosion_smoke"
 			"pcf"		"particles/door_explosion.pcf"
@@ -178,56 +178,56 @@
 		}
 		"26"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"smoke_skybox_01a"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"27"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"smoke_skybox_01b"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"28"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Skybox_Haze_01"
 			"pcf"		"particles/skybox_smoke.pcf"
 		}
 		"29"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Skybox_Smoke_01"
 			"pcf"		"particles/skybox_smoke.pcf"
 		}
 		"30"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Skybox_Smoke_03"
 			"pcf"		"particles/skybox_smoke.pcf"
 		}
 		"31"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Skybox_Smoke_03_06a"
 			"pcf"		"particles/skybox_smoke.pcf"
 		}
 		"32"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Skybox_Smoke_04"
 			"pcf"		"particles/skybox_smoke.pcf"
 		}
 		"33"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Skybox_Smoke_05"
 			"pcf"		"particles/skybox_smoke.pcf"
@@ -239,42 +239,42 @@
 		}
 		"35"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"choreo_launch_camjet_1"
 			"pcf"		"particles/choreo_launch.pcf"
 		}
 		"36"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"choreo_launch_camjet_2"
 			"pcf"		"particles/choreo_launch.pcf"
 		}
 		"37"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"choreo_launch_rocket_jet"
 			"pcf"		"particles/choreo_launch.pcf"
 		}
 		"38"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"choreo_launch_rocket_skyboxsmoke"
 			"pcf"		"particles/choreo_launch.pcf"
 		}
 		"39"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"choreo_launch_rocket_start"
 			"pcf"		"particles/choreo_launch.pcf"
 		}
 		"40"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"choreo_launch_rocket_upsmoke"
 			"pcf"		"particles/choreo_launch.pcf"
@@ -286,77 +286,77 @@
 		}
 		"42"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"env_embers_large"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"43"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"env_embers_medium"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"44"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"env_embers_medium_spread"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"45"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"env_embers_small"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"46"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"env_embers_small_spread"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"47"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"env_embers_tiny"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"48"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"embers_large_01"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"49"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"embers_large_02"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"50"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"embers_medium_01"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"51"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"embers_medium_03"
 			"pcf"		"particles/fire_01.pcf"
 		}
 		"52"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"embers_small_01"
 			"pcf"		"particles/fire_01.pcf"
@@ -368,229 +368,229 @@
 		}
 		"54"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"ThumperDust"
 			"pcf"		"UtilFx"
 		}
 		"55"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"WheelDust"
 			"pcf"		"UtilFx"
 		}
 		"56"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"hunter_slide_dust"
 			"pcf"		"particles/hunter_projectile.pcf"
 		}
 		"57"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"advisor_beam1_break"
 			"pcf"		"particles/advisor.pcf"
 		}
 		"58"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"advisor_healthcharger_break"
 			"pcf"		"particles/advisor.pcf"
 		}
 		"59"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"advisor_pillar1_break"
 			"pcf"		"particles/advisor.pcf"
 		}
 		"60"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"advisor_plat_break"
 			"pcf"		"particles/advisor.pcf"
 		}
 		"61"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Advisor_Pod_Explosion_Debris"
 			"pcf"		"particles/advisor_fx.pcf"
 		}
 		"62"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"building_explosion"
 			"pcf"		"particles/building_explosion.pcf"
 		}
 		"63"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"strider_cannon_impact"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"64"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"strider_headbeating_01"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"65"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"strider_headbeating_02"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"66"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"strider_headbeating_03"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"67"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"strider_hit_ground"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"68"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"strider_impale_ground"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"69"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"strider_small_spray"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"70"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"strider_wall_smash"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"71"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"choreo_silo_door"
 			"pcf"		"particles/choreo_launch.pcf"
 		}
 		"72"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"door_explosion_chunks"
 			"pcf"		"particles/door_explosion.pcf"
 		}
 		"73"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"door_pound_core"
 			"pcf"		"particles/door_explosion.pcf"
 		}
 		"74"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"dust_bombdrop"
 			"pcf"		"particles/dust_bombdrop.pcf"
 		}
 		"75"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"dust_bridge_crack"
 			"pcf"		"particles/dust_rumble.pcf"
 		}
 		"76"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"dust_bridgefall"
 			"pcf"		"particles/dust_rumble.pcf"
 		}
 		"77"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"dust_bridgefall_2"
 			"pcf"		"particles/dust_rumble.pcf"
 		}
 		"78"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Dust_Ceiling_Inn"
 			"pcf"		"particles/dust_rumble.pcf"
 		}
 		"79"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Dust_Ceiling_Rumble_24Diam"
 			"pcf"		"particles/dust_rumble.pcf"
 		}
 		"80"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Dust_Ceiling_Rumble_256Line"
 			"pcf"		"particles/dust_rumble.pcf"
 		}
 		"81"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Dust_Ceiling_Rumble_512Square"
 			"pcf"		"particles/dust_rumble.pcf"
 		}
 		"82"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"explosion_cabin"
 			"pcf"		"particles/dust_rumble.pcf"
 		}
 		"83"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"ceiling_dust"
 			"pcf"		"particles/hunter_intro.pcf"
 		}
 		"84"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"portal_rift_dust"
 			"pcf"		"particles/skybox_smoke.pcf"
 		}
 		"85"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"rock_splinter_stalactite"
 			"pcf"		"particles/stalactite.pcf"
 		}
 		"86"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"rock_impact_stalactite"
 			"pcf"		"particles/stalactite.pcf"
@@ -602,63 +602,63 @@
 		}
 		"88"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"steam_train"
 			"pcf"		"particles/train_steam.pcf"
 		}
 		"89"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Advisor_Pod_Steam_01"
 			"pcf"		"particles/advisor_fx.pcf"
 		}
 		"90"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Advisor_Pod_Steam_02"
 			"pcf"		"particles/advisor_fx.pcf"
 		}
 		"91"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Advisor_Pod_Steam_Continuous"
 			"pcf"		"particles/advisor_fx.pcf"
 		}
 		"92"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"steamjet"
 			"pcf"		"particles/magnusson_burner.pcf"
 		}
 		"93"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"steam_jet_50"
 			"pcf"		"particles/steampuff.pcf"
 		}
 		"94"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"steam_jet_80"
 			"pcf"		"particles/steampuff.pcf"
 		}
 		"95"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"steam_large_01"
 			"pcf"		"particles/steampuff.pcf"
 		}
 		"96"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"steampuff"
 			"pcf"		"particles/steampuff.pcf"

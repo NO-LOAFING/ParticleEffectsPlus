@@ -9,15 +9,15 @@ if CLIENT then
 	
 	local AddParticles_Queued = {}
 	local AddParticles_QueuedTime = nil
-	PartCtrl_AddParticles_CrashCheck = {}
-	PartCtrl_AddParticles_CrashCheck_ThrottledPCFs = {}
-	PartCtrl_AddParticles_AddedParticles = PartCtrl_AddParticles_AddedParticles or {}
-	PartCtrl_AddParticles_AddedParticles_Overrides = PartCtrl_AddParticles_AddedParticles_Overrides or {}
+	PEPlus_AddParticles_CrashCheck = {}
+	PEPlus_AddParticles_CrashCheck_ThrottledPCFs = {}
+	PEPlus_AddParticles_AddedParticles = PEPlus_AddParticles_AddedParticles or {}
+	PEPlus_AddParticles_AddedParticles_Overrides = PEPlus_AddParticles_AddedParticles_Overrides or {}
 
-	function PartCtrl_AddParticles(pcf, effectname) //optional effectname arg for spawnicons and particle entities, which usually only care about conflicts with their one effect
+	function PEPlus_AddParticles(pcf, effectname) //optional effectname arg for spawnicons and particle entities, which usually only care about conflicts with their one effect
 
-		if !istable(PartCtrl_ProcessedPCFs[pcf]) then return end
-		if effectname and !istable(PartCtrl_ProcessedPCFs[pcf][effectname]) then return end
+		if !istable(PEPlus_ProcessedPCFs[pcf]) then return end
+		if effectname and !istable(PEPlus_ProcessedPCFs[pcf][effectname]) then return end
 
 		local doaddparticles = false
 		local key2 = table.KeyFromValue(AddParticles_Queued, pcf)
@@ -30,30 +30,30 @@ if CLIENT then
 			end
 		end
 
-		//MsgN("old PartCtrl_AddParticles_AddedParticles: ")
-		//PrintTable(PartCtrl_AddParticles_AddedParticles)
+		//MsgN("old PEPlus_AddParticles_AddedParticles: ")
+		//PrintTable(PEPlus_AddParticles_AddedParticles)
 		//We only want to run game.AddParticles if A: we haven't loaded this pcf before, 
 		//or B: since we last loaded it, another pcf has been loaded that overrode one of its effects, so we load this one again to un-override the effect
-		local key = table.KeyFromValue(PartCtrl_AddParticles_AddedParticles, pcf)
+		local key = table.KeyFromValue(PEPlus_AddParticles_AddedParticles, pcf)
 		if key == nil then
 			//MsgN(pcf .. " hasn't been added before, time to do AddParticles")
 			doaddparticles = true
 		end
 		//Get a list of all the pcfs that override one of our effects
-		if !istable(PartCtrl_AddParticles_AddedParticles_Overrides[pcf]) then
+		if !istable(PEPlus_AddParticles_AddedParticles_Overrides[pcf]) then
 			local tab = {}
-			for name, _ in pairs (PartCtrl_ProcessedPCFs[pcf]) do
-				for _, v in pairs (PartCtrl_PCFsByParticleName[name]) do
+			for name, _ in pairs (PEPlus_ProcessedPCFs[pcf]) do
+				for _, v in pairs (PEPlus_PCFsByParticleName[name]) do
 					tab[v] = true
 				end
 			end
-			for name, _ in pairs (PartCtrl_CulledFx[pcf]) do
-				for _, v in pairs (PartCtrl_PCFsByParticleName[name]) do
+			for name, _ in pairs (PEPlus_CulledFx[pcf]) do
+				for _, v in pairs (PEPlus_PCFsByParticleName[name]) do
 					tab[v] = true
 				end
 			end
 			tab[pcf] = nil
-			PartCtrl_AddParticles_AddedParticles_Overrides[pcf] = tab
+			PEPlus_AddParticles_AddedParticles_Overrides[pcf] = tab
 			//PrintTable(tab)
 		end
 		if !doaddparticles then
@@ -62,14 +62,14 @@ if CLIENT then
 				//If this function is being called by a spawnicon or particle entity, then only check its one effect for overrides.
 				//Otherwise, we don't care, and running game.AddParticles(pcf) again would just cause an unnecessary stutter.
 				local function CheckEffectAndChildren(effectname2)
-					if !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname2] == pcf) 
-					and !(PartCtrl_DuplicateFx[pcf][effectname2] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname2] == PartCtrl_DuplicateFx[pcf][effectname2]) then
-						for _, v in pairs (PartCtrl_PCFsByParticleName[effectname2]) do
+					if !(PEPlus_PCFsByParticleName_CurrentlyLoaded[effectname2] == pcf) 
+					and !(PEPlus_DuplicateFx[pcf][effectname2] and PEPlus_PCFsByParticleName_CurrentlyLoaded[effectname2] == PEPlus_DuplicateFx[pcf][effectname2]) then
+						for _, v in pairs (PEPlus_PCFsByParticleName[effectname2]) do
 							tab[v] = true
 						end
 						tab[pcf] = nil
 					end
-					for k, childtab in pairs (PartCtrl_ProcessedPCFs[pcf][effectname2].children) do
+					for k, childtab in pairs (PEPlus_ProcessedPCFs[pcf][effectname2].children) do
 						//Also check all child fx for overrides
 						CheckEffectAndChildren(childtab.child)
 					end
@@ -78,10 +78,10 @@ if CLIENT then
 				//MsgN("tab for effect ", effectname, ":")
 				//PrintTable(tab)
 			else
-				tab = PartCtrl_AddParticles_AddedParticles_Overrides[pcf]
+				tab = PEPlus_AddParticles_AddedParticles_Overrides[pcf]
 			end
 			if table.Count(tab) > 0 then
-				for k, v in SortedPairs (PartCtrl_AddParticles_AddedParticles) do
+				for k, v in SortedPairs (PEPlus_AddParticles_AddedParticles) do
 					if k > key and tab[v] then
 						//MsgN(k .. " " .. v .. " is greater than " .. key .. " " .. pcf .. ", time to do AddParticles")
 						doaddparticles = true
@@ -101,27 +101,27 @@ if CLIENT then
 			end
 			table.insert(AddParticles_Queued, pcf)
 			//Crash prevention: throttle effects from the queued pcf, and all pcfs it conflicts with
-			PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] = true
-			table.Merge(PartCtrl_AddParticles_CrashCheck_ThrottledPCFs, PartCtrl_AddParticles_AddedParticles_Overrides[pcf])
+			PEPlus_AddParticles_CrashCheck_ThrottledPCFs[pcf] = true
+			table.Merge(PEPlus_AddParticles_CrashCheck_ThrottledPCFs, PEPlus_AddParticles_AddedParticles_Overrides[pcf])
 
 			//Also move the pcf to the end of the AddedParticles list
 			if key then
-				table.remove(PartCtrl_AddParticles_AddedParticles, key)
+				table.remove(PEPlus_AddParticles_AddedParticles, key)
 			end
-			table.insert(PartCtrl_AddParticles_AddedParticles, pcf)
+			table.insert(PEPlus_AddParticles_AddedParticles, pcf)
 
 			local allfx = {}
-			for k, _ in pairs (PartCtrl_ProcessedPCFs[pcf]) do
+			for k, _ in pairs (PEPlus_ProcessedPCFs[pcf]) do
 				allfx[k] = true
 			end
-			for k, _ in pairs (PartCtrl_CulledFx[pcf]) do
+			for k, _ in pairs (PEPlus_CulledFx[pcf]) do
 				allfx[k] = true
 			end
 			for effectname, _ in pairs (allfx) do
-				if PartCtrl_DuplicateFx[pcf][effectname] then
-					PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] = PartCtrl_DuplicateFx[pcf][effectname]
+				if PEPlus_DuplicateFx[pcf][effectname] then
+					PEPlus_PCFsByParticleName_CurrentlyLoaded[effectname] = PEPlus_DuplicateFx[pcf][effectname]
 				else
-					PartCtrl_PCFsByParticleName_CurrentlyLoaded[effectname] = pcf
+					PEPlus_PCFsByParticleName_CurrentlyLoaded[effectname] = pcf
 				end
 			end
 
@@ -134,31 +134,31 @@ if CLIENT then
 	//TODO: if some other addon's entity works by running game.AddParticles when the entity spawns instead of on autorun for some reason, then 
 	//our delayed-load crash prevention system could hypothetically cause issues if it expects to be able to create its particle fx immediately. 
 	//revisit this if we find any instances of this actually happening!
-	PartCtrl_old_AddParticles = PartCtrl_old_AddParticles or game.AddParticles //don't get confused when reloading this file
-	if PartCtrl_old_AddParticles then
+	PEPlus_old_AddParticles = PEPlus_old_AddParticles or game.AddParticles //don't get confused when reloading this file
+	if PEPlus_old_AddParticles then
 		game.AddParticles = function(pcf)
-			if !PartCtrl_ProcessedPCFs then
-				//If another addon loads a pcf before we've built PartCtrl_ProcessedPCFs, just load it normally
+			if !PEPlus_ProcessedPCFs then
+				//If another addon loads a pcf before we've built PEPlus_ProcessedPCFs, just load it normally
 				//TODO: do we want to do something with these? if there are effect-replacement addons deliberately trying to override
 				//stock fx with fx from their own pcf, then we'll want to keep track of them here, then reload them in the same order 
-				//again after PartCtrl_ReadAndProcessPCFs, to make sure we don't break their overrides. revisit this if we find any 
+				//again after PEPlus_ReadAndProcessPCFs, to make sure we don't break their overrides. revisit this if we find any 
 				//addons we need to do this for!
-				//MsgN("mounting ", pcf, " before partctrl startup")
-				PartCtrl_old_AddParticles(pcf)
+				//MsgN("mounting ", pcf, " before pe+ startup")
+				PEPlus_old_AddParticles(pcf)
 				return
 			end
-			//MsgN("mounting ", pcf, " after partctrl startup")
-			PartCtrl_AddParticles(pcf)
+			//MsgN("mounting ", pcf, " after pe+ startup")
+			PEPlus_AddParticles(pcf)
 		end
 	end
 
-	hook.Add("Think", "PartCtrl_AddParticles_Think", function()
+	hook.Add("Think", "PEPlus_AddParticles_Think", function()
 
 		if #AddParticles_Queued > 0 then
 			local time = CurTime()
 			local delay = nil
 
-			if !PartCtrl_DoneFirstPrecache then
+			if !PEPlus_DoneFirstPrecache then
 				//MsgN("skipping")
 				//if we're loading pcfs on startup, then don't waste time searching for old fx to clean up
 				delay = 0
@@ -170,9 +170,9 @@ if CLIENT then
 				//many unique effects are stopped at once by the engine this way, it can crash. If our panel/entity code recreates them too soon after the engine stops them, it can also crash. 
 				//Finally, if there are too many existing particlesystems that simply share a pcf with one being overridden, then it can also crash (why? the engine doesn't even remove these ones!).
 				//To get around all this, we first remove all the offending particlesystems ourselves, then call game.AddParticles a frame later, after we can be sure they're all gone.
-				for v, _ in pairs (PartCtrl_AddParticles_CrashCheck_ThrottledPCFs) do
-					if istable(PartCtrl_AddParticles_CrashCheck[v]) then
-						for k2, v2 in pairs (PartCtrl_AddParticles_CrashCheck[v]) do
+				for v, _ in pairs (PEPlus_AddParticles_CrashCheck_ThrottledPCFs) do
+					if istable(PEPlus_AddParticles_CrashCheck[v]) then
+						for k2, v2 in pairs (PEPlus_AddParticles_CrashCheck[v]) do
 							if k2 and k2:IsValid() then
 								//MsgN(time, " ", k2, " removed")
 								AddParticles_QueuedTime = time
@@ -181,7 +181,7 @@ if CLIENT then
 							else
 								//Don't remove fx from the list until we're absolutely sure they're gone; some of them can
 								//be really stubborn, try swapping between spawnlists for blood_impact.pcf and its tf2 version
-								PartCtrl_AddParticles_CrashCheck[v][k2] = nil
+								PEPlus_AddParticles_CrashCheck[v][k2] = nil
 							end
 						end
 					end
@@ -192,16 +192,16 @@ if CLIENT then
 				for _, pcf in ipairs (AddParticles_Queued) do
 					//surface.PlaySound("vo/ravenholm/engage03.wav")
 					//MsgN("running game.AddParticles for ", pcf)
-					PartCtrl_old_AddParticles(pcf)
+					PEPlus_old_AddParticles(pcf)
 				end
 				AddParticles_Queued = {}
 				AddParticles_QueuedTime = nil
-				PartCtrl_AddParticles_CrashCheck_ThrottledPCFs = {}
+				PEPlus_AddParticles_CrashCheck_ThrottledPCFs = {}
 				//Stupid fix: the first time PrecacheParticleSystem is run by anything, it will cause a substantial stutter, 
 				//so get it over with during map load instead of disrupting gameplay the first time the player opens a spawnlist or something.
-				if !PartCtrl_DoneFirstPrecache then
+				if !PEPlus_DoneFirstPrecache then
 					PrecacheParticleSystem("")
-					PartCtrl_DoneFirstPrecache = true
+					PEPlus_DoneFirstPrecache = true
 				end
 			end
 		end

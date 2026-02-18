@@ -2,7 +2,7 @@ AddCSLuaFile()
 
 local PANEL = {}
 
-local svproj_enabled = GetConVar("sv_partctrl_allowserverprojectiles")
+local svproj_enabled = GetConVar("sv_peplus_allowserverprojectiles")
 
 
 
@@ -95,10 +95,10 @@ end
 
 
 local function GetParticleName(ent)
-	if ent.PartCtrl_Ent then
-		//return "Particle Controller [" .. tostring(ent:EntIndex()) .. "]: " .. ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")")
-		local pcf = PartCtrl_GetGamePCF(ent:GetPCF(), ent:GetPath())
-		return PartCtrl_ProcessedPCFs[pcf][ent:GetParticleName()].nicename .. " (" .. PartCtrl_GetDataPCFNiceName(pcf) .. ")"
+	if ent.PEPlus_Ent then
+		//return "Particle Effects+ Entity [" .. tostring(ent:EntIndex()) .. "]: " .. ent:GetParticleName() .. " (" .. ent:GetPCF() .. ")")
+		local pcf = PEPlus_GetGamePCF(ent:GetPCF(), ent:GetPath())
+		return PEPlus_ProcessedPCFs[pcf][ent:GetParticleName()].nicename .. " (" .. PEPlus_GetDataPCFNiceName(pcf) .. ")"
 	else
 		return ent.PrintName .. " [" .. tostring(ent:EntIndex()) .. "]"
 	end
@@ -151,13 +151,13 @@ function PANEL:RebuildControls()
 
 	local function BuildParticleEntControls(ent2, container)
 
-		local pcf = PartCtrl_GetGamePCF(ent2:GetPCF(), ent2:GetPath())
+		local pcf = PEPlus_GetGamePCF(ent2:GetPCF(), ent2:GetPath())
 		local name = ent2:GetParticleName()
 	
 	
 		//category for info; no header for this one
-		local info = PartCtrl_ProcessedPCFs[pcf][name].info
-		local info2 = PartCtrl_ProcessedPCFs[pcf][name].info_sfx
+		local info = PEPlus_ProcessedPCFs[pcf][name].info
+		local info2 = PEPlus_ProcessedPCFs[pcf][name].info_sfx
 		if ent != ent2 and info2 then info = info2 end //use alt info text for special effect children, if applicable
 		if info then
 	
@@ -438,7 +438,7 @@ function PANEL:RebuildControls()
 			cat:Dock(FILL)
 			container:AddItem(cat)
 
-			local default_looptime = PartCtrl_ProcessedPCFs[pcf][name].default_time or 0
+			local default_looptime = PEPlus_ProcessedPCFs[pcf][name].default_time or 0
 			local default_loopmode = 1
 			if ent2.utilfx then
 				if default_looptime < 0 then
@@ -598,8 +598,8 @@ function PANEL:RebuildControls()
 				filler:SetHeight(0)
 	
 				//Add mode-specific options
-				local mode = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k].mode
-				if mode == PARTCTRL_CPOINT_MODE_POSITION then
+				local mode = PEPlus_ProcessedPCFs[pcf][name].cpoints[k].mode
+				if mode == PEPLUS_CPOINT_MODE_POSITION then
 					if ent == ent2 then
 						local modelent = v2.ent
 						if IsValid(modelent) then
@@ -612,7 +612,7 @@ function PANEL:RebuildControls()
 							//button:DockMargin(0,0,0,0)
 							button:DockMargin(padding,padding,padding,0)
 		
-							if modelent.PartCtrl_Grip then
+							if modelent.PEPlus_Grip then
 								button:SetText("Attach to model")
 								button:SizeToContents()
 								button.DoClick = function()
@@ -620,7 +620,7 @@ function PANEL:RebuildControls()
 									ent2:DoInput("cpoint_position_ent_setwithtool", k)
 								end
 							else
-								if (modelent.GetPartCtrl_MergedGrip and modelent:GetPartCtrl_MergedGrip()) and IsValid(modelent:GetParent()) then
+								if (modelent.GetPEPlus_MergedGrip and modelent:GetPEPlus_MergedGrip()) and IsValid(modelent:GetParent()) then
 									button:SetText("Unmerge from model (" .. string.GetFileFromFilename(modelent:GetParent():GetModel()) .. ")")
 								else
 									button:SetText("Detach from model (" .. string.GetFileFromFilename(modelent:GetModel()) .. ")")
@@ -648,20 +648,20 @@ function PANEL:RebuildControls()
 									slider:SetValue(v2.attach)
 									function slider.OnValueChanged(_, val)
 										val = math.Round(val)
-										if val != slider.PartCtrl_AttachSlider.attach then //only send updates on whole numbers
+										if val != slider.PEPlus_AttachSlider.attach then //only send updates on whole numbers
 											surface.PlaySound("weapons/pistol/pistol_empty.wav")
-											slider.PartCtrl_AttachSlider.attach = val
+											slider.PEPlus_AttachSlider.attach = val
 											ent2:DoInput("cpoint_position_attach", k, val)
 										end
 									end
 		
 									//Let the HUDPaint hook in autorun detect that the player is hovering over this slider
-									slider.PartCtrl_AttachSlider = {ent = modelent, attach = v2.attach}
-									slider.Slider.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider
-									slider.Slider.Knob.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
-									slider.TextArea.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
-									slider.Label.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
-									slider.Scratch.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+									slider.PEPlus_AttachSlider = {ent = modelent, attach = v2.attach}
+									slider.Slider.PEPlus_AttachSlider = slider.PEPlus_AttachSlider
+									slider.Slider.Knob.PEPlus_AttachSlider = slider.PEPlus_AttachSlider 
+									slider.TextArea.PEPlus_AttachSlider = slider.PEPlus_AttachSlider 
+									slider.Label.PEPlus_AttachSlider = slider.PEPlus_AttachSlider 
+									slider.Scratch.PEPlus_AttachSlider = slider.PEPlus_AttachSlider 
 								end
 							end
 						end
@@ -697,11 +697,11 @@ function PANEL:RebuildControls()
 
 						if ent.SpecialEffectAddRoleControls then ent:SpecialEffectAddRoleControls(self, pnl, k, v2, ent2) end
 					end
-				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
+				elseif mode == PEPLUS_CPOINT_MODE_AXIS then
 					local tab = {
-						[1] = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k].axis_0,
-						[2] = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k].axis_1,
-						[3] = PartCtrl_ProcessedPCFs[pcf][name].cpoints[k].axis_2
+						[1] = PEPlus_ProcessedPCFs[pcf][name].cpoints[k].axis_0,
+						[2] = PEPlus_ProcessedPCFs[pcf][name].cpoints[k].axis_1,
+						[3] = PEPlus_ProcessedPCFs[pcf][name].cpoints[k].axis_2
 					}
 					if istable(tab[1]) and istable(tab[2]) and istable(tab[3]) and tab[1].colorpicker then
 						local col = vgui.Create("DColorMixer", pnl)
@@ -925,7 +925,7 @@ function PANEL:RebuildControls()
 
 	local trackpnl_parent
 
-	if ent.PartCtrl_Ent then
+	if ent.PEPlus_Ent then
 
 		local back = vgui.Create("DPanel", self)
 		back.Paint = function(self, w, h)
@@ -945,7 +945,7 @@ function PANEL:RebuildControls()
 
 		trackpnl_parent = back
 
-	elseif ent.PartCtrl_SpecialEffect then
+	elseif ent.PEPlus_SpecialEffect then
 
 		//Special effect controls have two separate tabs - first is for options on the special effect itself, second is for child fx
 		local tabs = vgui.Create("DPropertySheet", self)
@@ -1037,7 +1037,7 @@ function PANEL:RebuildControls()
 
 				pnl:DockPadding(0,0,0,padding) //DSizeToContents is finicky and ignores the bottom dock margin of the lowermost item
 
-				if modelent.PartCtrl_Grip then
+				if modelent.PEPlus_Grip then
 					button:SetText("Attach to model")
 					button:SizeToContents()
 					button.DoClick = function()
@@ -1045,7 +1045,7 @@ function PANEL:RebuildControls()
 						ent:DoInput("attachment_ent_setwithtool")
 					end
 				else
-					if (modelent.GetPartCtrl_MergedGrip and modelent:GetPartCtrl_MergedGrip()) and IsValid(modelent:GetParent()) then
+					if (modelent.GetPEPlus_MergedGrip and modelent:GetPEPlus_MergedGrip()) and IsValid(modelent:GetParent()) then
 						button:SetText("Unmerge from model (" .. string.GetFileFromFilename(modelent:GetParent():GetModel()) .. ")")
 					else
 						button:SetText("Detach from model (" .. string.GetFileFromFilename(modelent:GetModel()) .. ")")
@@ -1073,20 +1073,20 @@ function PANEL:RebuildControls()
 						slider:SetValue(ent:GetAttachmentID())
 						function slider.OnValueChanged(_, val)
 							val = math.Round(val)
-							if val != slider.PartCtrl_AttachSlider.attach then //only send updates on whole numbers
+							if val != slider.PEPlus_AttachSlider.attach then //only send updates on whole numbers
 								surface.PlaySound("weapons/pistol/pistol_empty.wav")
-								slider.PartCtrl_AttachSlider.attach = val
+								slider.PEPlus_AttachSlider.attach = val
 								ent:DoInput("attachment_attach", val)
 							end
 						end
 
 						//Let the HUDPaint hook in autorun detect that the player is hovering over this slider
-						slider.PartCtrl_AttachSlider = {ent = modelent, attach = ent:GetAttachmentID()}
-						slider.Slider.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider
-						slider.Slider.Knob.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
-						slider.TextArea.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
-						slider.Label.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
-						slider.Scratch.PartCtrl_AttachSlider = slider.PartCtrl_AttachSlider 
+						slider.PEPlus_AttachSlider = {ent = modelent, attach = ent:GetAttachmentID()}
+						slider.Slider.PEPlus_AttachSlider = slider.PEPlus_AttachSlider
+						slider.Slider.Knob.PEPlus_AttachSlider = slider.PEPlus_AttachSlider 
+						slider.TextArea.PEPlus_AttachSlider = slider.PEPlus_AttachSlider 
+						slider.Label.PEPlus_AttachSlider = slider.PEPlus_AttachSlider 
+						slider.Scratch.PEPlus_AttachSlider = slider.PEPlus_AttachSlider 
 					end
 				end
 
@@ -1489,7 +1489,7 @@ function PANEL:RebuildControls()
 		button:SetHeight(30)
 		button:Dock(TOP)
 
-		button:SetText("Add particle effect to " .. ent.PartCtrl_ShortName)
+		button:SetText("Add particle effect to " .. ent.PEPlus_ShortName)
 		button:SizeToContents()
 		button.DoClick = function()
 			surface.PlaySound("ui/buttonclickrelease.wav")
@@ -1505,7 +1505,7 @@ function PANEL:RebuildControls()
 
 			if !IsValid(ent) or !ent.SpecialEffectChildren then return end
 
-			if ent.SpecialEffectChildren[child] and child.PartCtrl_Ent then
+			if ent.SpecialEffectChildren[child] and child.PEPlus_Ent then
 
 				if !IsValid(container.ChildControls[child]) then
 
@@ -1530,7 +1530,7 @@ function PANEL:RebuildControls()
 					container.ChildControls[child] = cat
 
 					//Set the child's edit window to this one, so that info table updates and such will update these controls
-					child.PartCtrlWindow = self
+					child.PEPlusWindow = self
 
 					BuildParticleEntControls(child, container.ChildControls[child].container)
 
@@ -1711,8 +1711,8 @@ function PANEL:Think()
 
 	local ent = self.m_Entity
 	if !IsValid(ent) then self:OnEntityLost() return end
-	if ent.PartCtrlWindow != self and IsValid(ent.PartCtrlWindow) then self:OnEntityLost() return end //make sure we don't open duplicate control windows
-	ent.PartCtrlWindow = self
+	if ent.PEPlusWindow != self and IsValid(ent.PEPlusWindow) then self:OnEntityLost() return end //make sure we don't open duplicate control windows
+	ent.PEPlusWindow = self
 
 end
 
@@ -1730,4 +1730,4 @@ end
 
 
 
-vgui.Register("PartCtrlEditor", PANEL, "Panel")
+vgui.Register("PEPlusEditor", PANEL, "Panel")

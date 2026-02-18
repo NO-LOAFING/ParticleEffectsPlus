@@ -1,4 +1,4 @@
-//Entity used for ent_partctrl_sfx_proj serverside projectiles; calls StartParticle once initialized on clients
+//Entity used for ent_peplus_sfx_proj serverside projectiles; calls StartParticle once initialized on clients
 
 AddCSLuaFile()
 
@@ -12,7 +12,7 @@ ENT.DisableDuplicator		= true
 ENT.AutomaticFrameAdvance	= true
 
 if CLIENT then
-	language.Add("ent_partctrl_proj", "Physics Object")  //for killfeed notices
+	language.Add("ent_peplus_proj", "Physics Object")  //for killfeed notices
 end
 
 
@@ -34,7 +34,7 @@ function ENT:Initialize()
 		self.PhysicsSounds = owner:GetProjPhysSounds()
 	end
 	if !self.PhysicsSounds then
-		self.PartCtrl_ProjDisableSounds = true
+		self.PEPlus_ProjDisableSounds = true
 	end
 
 	//Play the idle animation, if applicable
@@ -55,8 +55,8 @@ if CLIENT then
 			local owner = self:GetOwnerEntity()
 			if IsValid(owner) then
 				for child, _ in pairs (owner.SpecialEffectChildren) do
-					local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
-					if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+					local pcf = PEPlus_GetGamePCF(child:GetPCF(), child:GetPath())
+					if istable(PEPlus_ProcessedPCFs[pcf]) and istable(PEPlus_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
 					and !child.ParticleInfo then
 						wait = true
 						break
@@ -78,12 +78,12 @@ end
 
 if SERVER then
 
-	util.AddNetworkString("PartCtrl_ProjEffectExpire_SendToCl")
+	util.AddNetworkString("PEPlus_ProjEffectExpire_SendToCl")
 
-	//Called by PhysicsCollide function defined in ent_partctrl_sfx_proj's CreateProjectile function
+	//Called by PhysicsCollide function defined in ent_peplus_sfx_proj's CreateProjectile function
 	function ENT:DoExpire(pos, norm)
 
-		net.Start("PartCtrl_ProjEffectExpire_SendToCl", true)
+		net.Start("PEPlus_ProjEffectExpire_SendToCl", true)
 			net.WriteEntity(self:GetOwnerEntity())
 			net.WriteVector(pos or self:GetPos())
 			net.WriteBool(tobool(norm))
@@ -96,7 +96,7 @@ if SERVER then
 
 else
 	
-	net.Receive("PartCtrl_ProjEffectExpire_SendToCl", function(_, ply)
+	net.Receive("PEPlus_ProjEffectExpire_SendToCl", function(_, ply)
 
 		local sfx = net.ReadEntity()
 		local pos = net.ReadVector()
@@ -105,7 +105,7 @@ else
 			norm = net.ReadVector()
 		end
 
-		if !IsValid(sfx) or !sfx.PartCtrl_SpecialEffect or !sfx:GetClass() == "ent_partctrl_sfx_proj" then return end
+		if !IsValid(sfx) or !sfx.PEPlus_SpecialEffect or !sfx:GetClass() == "ent_peplus_sfx_proj" then return end
 		sfx:StartParticle(nil, pos, norm)
 
 	end)

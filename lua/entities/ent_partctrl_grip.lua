@@ -1,4 +1,4 @@
-//Grip point entity, used by ent_partctrl's position cpoints when they're not attached to another entity
+//Grip point entity, used by ent_peplus's position cpoints when they're not attached to another entity
 //This is essentially just a copy of prop_effect, but without the attached entity
 
 AddCSLuaFile()
@@ -9,7 +9,7 @@ ENT.Type			= "anim"
 ENT.Spawnable			= false
 //ENT.RenderGroup		= RENDERGROUP_TRANSLUCENT //tries to make it draw on top of particles, doesn't always work
 
-ENT.PartCtrl_Grip		= true //lets us detect if an ent is an ent_partctrl_grip without having to compare strings with GetClass
+ENT.PEPlus_Grip			= true //lets us detect if an ent is an ent_peplus_grip without having to compare strings with GetClass
 
 
 
@@ -44,8 +44,8 @@ function ENT:Initialize()
 
 		//think func handles clientside collision group
 
-		AllPartCtrlGripEnts = AllPartCtrlGripEnts or {}
-		AllPartCtrlGripEnts[self] = true
+		AllPEPlusGripEnts = AllPEPlusGripEnts or {}
+		AllPEPlusGripEnts[self] = true
 		self.LastDrawn = 0
 
 	end
@@ -61,14 +61,14 @@ if CLIENT then
 
 	function ENT:OnRemove()
 
-		AllPartCtrlGripEnts[self] = nil
+		AllPEPlusGripEnts[self] = nil
 
 	end
 
 	function ENT:Think()
 
 		//Stupid hack: prevent the grip from colliding with ANY particle effects using traces, even traces with COLLISION_GROUP_NONE
-		//(test with particles/partctrl_test.pcf test_SetCPointtoImpactPoint) by setting the collision group to one that only
+		//(test with particles/peplus_test.pcf test_SetCPointtoImpactPoint) by setting the collision group to one that only
 		//collides with very specific things. Then, when we hover over it with the context menu, set it back to the default collision
 		//group, so that the context menu's trace can hit it and right click properties show up. (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/modules/properties.lua#L134)
 		if IsValid(g_ContextMenu) and g_ContextMenu:IsVisible() and self:BeingLookedAtByLocalPlayer() then
@@ -88,7 +88,7 @@ if CLIENT then
 
 	local GripMaterial = Material("sprites/grip")
 	local GripMaterialHover = Material("sprites/grip_hover")
-	local GripMaterialSelected = Material("sprites/grip_partctrl_selected")
+	local GripMaterialSelected = Material("sprites/grip_peplus_selected")
 
 	function ENT:Draw()
 
@@ -96,7 +96,7 @@ if CLIENT then
 			return
 		end
 
-		//Instead of drawing the grip sprite ourselves, we tell a PostDrawTranslucentRenderables hook in ent_partctrl to do it, so that it always renders above particle effects
+		//Instead of drawing the grip sprite ourselves, we tell the PostDrawTranslucentRenderables hook in ent_peplus to do it, so that it always renders above particle effects
 		self.LastDrawn = CurTime()
 
 	end
@@ -129,21 +129,21 @@ if CLIENT then
 		if !IsValid(ply) then return false end
 
 		local f = FrameNumber()
-		if ply.PartCtrl_LastPlayerTraceAll == f then
-			return ply.PartCtrl_PlayerTraceAll.Entity == self
+		if ply.PEPlus_LastPlayerTraceAll == f then
+			return ply.PEPlus_PlayerTraceAll.Entity == self
 		end
-		ply.PartCtrl_LastPlayerTraceAll = f
+		ply.PEPlus_LastPlayerTraceAll = f
 
 		//Emulate how properties check the point on the screen being aimed at (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/includes/modules/properties.lua#L212-L220, called by https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/spawnmenu/contextmenu.lua#L137-L230)
 		//This ensures that we always get the correct result, whether we're viewing from the player or a camera, and whether we're in the context menu or not
 		local pos = MainEyePos and MainEyePos() or EyePos()
-		ply.PartCtrl_PlayerTraceAll = util.TraceLine({
+		ply.PEPlus_PlayerTraceAll = util.TraceLine({
 			start = pos,
 			endpos = pos + gui.ScreenToVector(input.GetCursorPos()) * 1024,
 			filter = ply:GetViewEntity(),
 			collisiongroup = COLLISION_GROUP_VEHICLE //Make sure trace collides with the grip, no matter which collision group Think sets it to
 		})
-		return ply.PartCtrl_PlayerTraceAll.Entity == self
+		return ply.PEPlus_PlayerTraceAll.Entity == self
 
 	end
 
@@ -161,7 +161,7 @@ function ENT:PhysicsUpdate(physobj)
 		local isconstrained = false
 		local consts = constraint.GetTable(self)
 		for k, v in pairs (consts) do
-			if v.Type and v.Type != "PartCtrl_Ent" and v.Type != "PartCtrl_SpecialEffect" then
+			if v.Type and v.Type != "PEPlus_Ent" and v.Type != "PEPlus_SpecialEffect" then
 				isconstrained = true
 				break
 			end
@@ -194,9 +194,9 @@ end
 
 //Need to register this, or for some reason, our constraints will break when duped and refer back to the original entity
 //(i.e. spawn a beam particle, duplicate it, now right-click either pair with the duplicator and it'll copy both of them as if they were constrained together)
-duplicator.RegisterEntityClass("ent_partctrl_grip", function(ply, data)
+duplicator.RegisterEntityClass("ent_peplus_grip", function(ply, data)
 
-	local ent = ents.Create("ent_partctrl_grip")
+	local ent = ents.Create("ent_peplus_grip")
 	if !ent:IsValid() then return false end
 
 	//duplicator.GenericDuplicatorFunction(ply, data)
@@ -208,7 +208,7 @@ duplicator.RegisterEntityClass("ent_partctrl_grip", function(ply, data)
 	//If this ent was duplicated but doesn't have an associated particle entity (i.e. duped in multiplayer, and the particle ent was prevented from spawning) then delete it
 	timer.Simple(0, function()
 		if !IsValid(ent) then return end
-		if !istable(constraint.FindConstraint(ent, "PartCtrl_Ent")) and !istable(constraint.FindConstraint(ent, "PartCtrl_SpecialEffect")) then ent:Remove() end
+		if !istable(constraint.FindConstraint(ent, "PEPlus_Ent")) and !istable(constraint.FindConstraint(ent, "PEPlus_SpecialEffect")) then ent:Remove() end
 	end)
 
 	return ent

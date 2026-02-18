@@ -1,13 +1,13 @@
 AddCSLuaFile()
 
-ENT.Base 			= "ent_partctrl_sfx"
+ENT.Base 			= "ent_peplus_sfx"
 ENT.PrintName			= "Beam Effect"
 ENT.Category			= "Particle Effects+: Special Effects"
 ENT.Information			= "Makes particle effects work like a laser pointer, with one end where the \"beam\" starts, and the other end continuously moving to where it's pointing."
 
 ENT.Spawnable			= true
 
-ENT.PartCtrl_ShortName		= "Beam"
+ENT.PEPlus_ShortName		= "Beam"
 ENT.SpecialEffectRoles		= {
 	[0] = "Start point",
 	[1] = "Hit point",
@@ -46,13 +46,13 @@ function ENT:SetSpecialEffectDefaults()
 
 	if !self.IsBlank then
 		if IsMounted("tf") then
-			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "laser_sight_beam", "particles/class_fx.pcf", "tf")
+			local p = PEPlus_SpawnParticle(self:GetPlayer(), self:GetPos(), "laser_sight_beam", "particles/class_fx.pcf", "tf")
 			if IsValid(p) then
 				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 			end
 		else
 			//goofy recolored wrangler beam because there are no suitable default fx included with gmod at all
-			local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "partctrl_pointer_laser", "particles/partctrl_sfx.pcf")
+			local p = PEPlus_SpawnParticle(self:GetPlayer(), self:GetPos(), "peplus_pointer_laser", "particles/peplus_sfx.pcf")
 			if IsValid(p) then
 				p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 			end
@@ -263,7 +263,7 @@ if CLIENT then
 
 			local hit = self.HitTarget
 			if !IsValid(self.HitTarget) then
-				self.HitTarget = ents.CreateClientside("ent_partctrl_sfxtarget")
+				self.HitTarget = ents.CreateClientside("ent_peplus_sfxtarget")
 				hit = self.HitTarget
 				hit.OwnerEntity = self
 				hit:Spawn()
@@ -304,8 +304,8 @@ if CLIENT then
 			end
 			
 			//store values used by impact utilfx
-			hit.PartCtrl_TraceHit = tr.Entity
-			hit.PartCtrl_SurfaceProp = tr.SurfaceProps
+			hit.PEPlus_TraceHit = tr.Entity
+			hit.PEPlus_SurfaceProp = tr.SurfaceProps
 
 			//Handle pausing
 			if self.ParticleStartTime then
@@ -348,11 +348,11 @@ if CLIENT then
 
 			//Just set the entity values on the child fx, and let them do the rest of the work themselves
 			for child, _ in pairs (self.SpecialEffectChildren) do
-				if child.PartCtrl_Ent and child.ParticleInfo then
-					local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
-					local cpointtab = PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
+				if child.PEPlus_Ent and child.ParticleInfo then
+					local pcf = PEPlus_GetGamePCF(child:GetPCF(), child:GetPath())
+					local cpointtab = PEPlus_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
 					for k, v in pairs (child.ParticleInfo) do
-						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+						if cpointtab[k].mode == PEPLUS_CPOINT_MODE_POSITION then
 							if v.sfx_role == 0 then
 								child.ParticleInfo[k].ent = ent
 								child.ParticleInfo[k].attach = self:GetAttachmentID()
@@ -466,9 +466,9 @@ end
 
 
 
-duplicator.RegisterEntityClass("ent_partctrl_sfx_beam", function(ply, data)
+duplicator.RegisterEntityClass("ent_peplus_sfx_beam", function(ply, data)
 
-	local ent = ents.Create("ent_partctrl_sfx_beam")
+	local ent = ents.Create("ent_peplus_sfx_beam")
 	if !ent:IsValid() then return false end
 
 	//default dtvars for old dupes that don't have them
@@ -487,4 +487,4 @@ duplicator.RegisterEntityClass("ent_partctrl_sfx_beam", function(ply, data)
 
 end, "Data")
 
-PartCtrl_AddBlankSpecialEffect(ENT) //Add blank variant to spawnmenu
+PEPlus_AddBlankSpecialEffect(ENT) //Add blank variant to spawnmenu

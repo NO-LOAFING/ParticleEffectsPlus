@@ -1,15 +1,15 @@
 //TODO: should these be somewhere else? they're all assigned in pcf_processing.lua, but that file is super bloated, and this is the panel that actually displays them.
-language.Add("PartCtrl_Cull_ZeroAlpha",			"This effect has an alpha of 0, preventing it from rendering. If this effect was flagged\nin error (it's actually visible), then report this bug!")
-language.Add("PartCtrl_Cull_ZeroAlpha_Short",		"Effect doesn't render")
-language.Add("PartCtrl_Cull_NoRendererOrEmitter",	"This effect is missing a valid renderer, emitter, or material, and has no control points\ninherited from children, which means it's probably empty, blank, or invisible. If this\neffect was flagged in error (it's actually visible), then report this bug!")
-language.Add("PartCtrl_Cull_NoRendererOrEmitter_Short",	"Effect doesn't render")
-language.Add("PartCtrl_Cull_NoParticlePos",		"This effect doesn't have any operators setting the particles' spawn position (i.e. 'Position\nWithin Box Random'), or their position is being overwritten by another operator (i.e.\n'Set Control Point Positions') which means it will always spawn particles in the same\nimmovable location on the map. This isn't useful to players 99% of the time, and would\njust clutter up spawnlists and searches with unusable effects. If this effect was flagged\nin error (it's not actually stuck in one place), then report this bug!")
-language.Add("PartCtrl_Cull_NoParticlePos_Short",	"Effect is immovable")
-language.Add("PartCtrl_Cull_PreventNameBasedLookup",	"This effect has the value preventNameBasedLookup set to true, which prevents the game\nfrom spawning it directly, though other effects can still use it as a child.")
-language.Add("PartCtrl_Cull_PreventNameBasedLookup_Short","Effect is non-spawnable")
-language.Add("PartCtrl_Cull_ScreenSpace_NotViewModel",	"This effect has the value \"screen space effect\" set to true, but isn't set\nas a view model effect, which prevents it from rendering properly.")
-language.Add("PartCtrl_Cull_ScreenSpace_NotViewModel_Short","Effect doesn't render")
-language.Add("PartCtrl_Cull_ScreenSpace_Blacklisted",	"sv_partctrl_blacklist_screenspace is 1, blocking all fx with \"screen space effect\"")
+language.Add("PEPlus_Cull_ZeroAlpha",			"This effect has an alpha of 0, preventing it from rendering. If this effect was flagged\nin error (it's actually visible), then report this bug!")
+language.Add("PEPlus_Cull_ZeroAlpha_Short",		"Effect doesn't render")
+language.Add("PEPlus_Cull_NoRendererOrEmitter",	"This effect is missing a valid renderer, emitter, or material, and has no control points\ninherited from children, which means it's probably empty, blank, or invisible. If this\neffect was flagged in error (it's actually visible), then report this bug!")
+language.Add("PEPlus_Cull_NoRendererOrEmitter_Short",	"Effect doesn't render")
+language.Add("PEPlus_Cull_NoParticlePos",		"This effect doesn't have any operators setting the particles' spawn position (i.e. 'Position\nWithin Box Random'), or their position is being overwritten by another operator (i.e.\n'Set Control Point Positions') which means it will always spawn particles in the same\nimmovable location on the map. This isn't useful to players 99% of the time, and would\njust clutter up spawnlists and searches with unusable effects. If this effect was flagged\nin error (it's not actually stuck in one place), then report this bug!")
+language.Add("PEPlus_Cull_NoParticlePos_Short",	"Effect is immovable")
+language.Add("PEPlus_Cull_PreventNameBasedLookup",	"This effect has the value preventNameBasedLookup set to true, which prevents the game\nfrom spawning it directly, though other effects can still use it as a child.")
+language.Add("PEPlus_Cull_PreventNameBasedLookup_Short","Effect is non-spawnable")
+language.Add("PEPlus_Cull_ScreenSpace_NotViewModel",	"This effect has the value \"screen space effect\" set to true, but isn't set\nas a view model effect, which prevents it from rendering properly.")
+language.Add("PEPlus_Cull_ScreenSpace_NotViewModel_Short","Effect doesn't render")
+language.Add("PEPlus_Cull_ScreenSpace_Blacklisted",	"sv_peplus_blacklist_screenspace is 1, blocking all fx with \"screen space effect\"")
 
 local PANEL = {}
 
@@ -24,14 +24,14 @@ local icon_utilfx = Material("icon16/cog.png")
 local icon_info = Material("icon16/information.png")
 
 if system.IsLinux() then
-	surface.CreateFont("PartCtrl_DermaDefaultSmall", {
+	surface.CreateFont("PEPlus_DermaDefaultSmall", {
 		font		= "DejaVu Sans",
 		size		= 14, //don't have this font, so just have to trust that this is right (1pt larger than the tahoma, like in https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/derma/init.lua#L6C1-L45C4)
 		weight		= 1000,
 		extended	= true
 	})
 else
-	surface.CreateFont("PartCtrl_DermaDefaultSmall", {
+	surface.CreateFont("PEPlus_DermaDefaultSmall", {
 		font		= "Tahoma",
 		size		= 13,
 		weight		= 1000,
@@ -46,12 +46,12 @@ function PANEL:Setup(pcf, name, path)
 	self.path = path
 
 	self.nicename = name //display name on icon; use the name with caps because it looks nicer
-	if PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)] and PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name] then
-		self.nicename = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].nicename
+	if PEPlus_ProcessedPCFs[PEPlus_GetGamePCF(pcf, path)] and PEPlus_ProcessedPCFs[PEPlus_GetGamePCF(pcf, path)][name] then
+		self.nicename = PEPlus_ProcessedPCFs[PEPlus_GetGamePCF(pcf, path)][name].nicename
 	end
 	self:SetName(self.nicename)
 	
-	self:SetContentType("partctrl")
+	self:SetContentType("peplus")
 	if pcf == "UtilFx" then
 		self:SetMaterial("icon16/cog.png") //icon_utilfx) //why doesn't this one take a Material()? whatever
 	end
@@ -61,7 +61,7 @@ end
 
 local ViewAngle = Angle(25, 220, 0)
 local icon_loading = Material("vgui/loading-rotate.vmt") //TODO: replace this with a custom texture eventually, something bulkier that looks better when it's drawn small like this
-local cv_debugicons = GetConVar("cl_partctrl_debug_spawnicons")
+local cv_debugicons = GetConVar("cl_peplus_debug_spawnicons")
 function PANEL:Paint(w, h)
 
 	if !self.DoneSetup then
@@ -69,15 +69,15 @@ function PANEL:Paint(w, h)
 		return
 	end
 
-	//Add this effect to PartCtrl_IconFx - even if we're not showing a particle in this panel, 
+	//Add this effect to PEPlus_IconFx - even if we're not showing a particle in this panel, 
 	//we still want it to populate other stuff like icons and tooltips
-	local pcf = PartCtrl_GetGamePCF(self.pcf, self.path)
+	local pcf = PEPlus_GetGamePCF(self.pcf, self.path)
 	local name = self.childname or self.name //when the player hovers over a child effect in the dropdown, override the spawnicon to display that effect instead
-	PartCtrl_IconFx[pcf] = PartCtrl_IconFx[pcf] or {}
-	PartCtrl_IconFx[pcf][name] = PartCtrl_IconFx[pcf][name] or {}
-	PartCtrl_IconFx[pcf][name].panels = PartCtrl_IconFx[pcf][name].panels or {}
+	PEPlus_IconFx[pcf] = PEPlus_IconFx[pcf] or {}
+	PEPlus_IconFx[pcf][name] = PEPlus_IconFx[pcf][name] or {}
+	PEPlus_IconFx[pcf][name].panels = PEPlus_IconFx[pcf][name].panels or {}
 	
-	local itab = PartCtrl_IconFx[pcf][name]
+	local itab = PEPlus_IconFx[pcf][name]
 	local tooltip = self.nicename .. (itab.tooltip or "") //nicename is supplied by the contenticon, so that fx that are currently invalid (i.e. in a spawnlist, but from a currently unmounted game) can still retrieve it
 	local overridden = self:IsCurrentlyOverridden(pcf, name)
 
@@ -200,7 +200,7 @@ function PANEL:Paint(w, h)
 			end
 		else
 			//If particle is being throttled by crash prevention, draw loading icon
-			if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] and (!itab.particle or !(itab.particle.IsValid and itab.particle:IsValid())) then
+			if PEPlus_AddParticles_CrashCheck_ThrottledPCFs[pcf] and (!itab.particle or !(itab.particle.IsValid and itab.particle:IsValid())) then
 				local load_width = math.min(w,h) * 0.65
 				surface.SetDrawColor(255,255,255,255)
 				surface.SetMaterial(icon_loading)
@@ -229,7 +229,7 @@ function PANEL:Paint(w, h)
 			end
 			//Draw number
 			if v.num then
-				draw.SimpleTextOutlined(v.num, "PartCtrl_DermaDefaultSmall", x+8, y+7, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0,0,0,255))
+				draw.SimpleTextOutlined(v.num, "PEPlus_DermaDefaultSmall", x+8, y+7, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0,0,0,255))
 			end
 			x = x + 16 + 2 //move the position of the next icon to the right by the width of this icon, plus a bit more
 			if x + 16 > (w - self.Border - 8) then //if this would cause the next icon to stick out past the right edge of the panel, then start a new row instead
@@ -243,24 +243,24 @@ end
 
 function PANEL:IsCurrentlyOverridden(pcf, name)
 
-	if !PartCtrl_IconFx[pcf][name].MultiplyDefined then return false end
+	if !PEPlus_IconFx[pcf][name].MultiplyDefined then return false end
 
 	local function CheckEffectAndChildren(name2)
-		if !(PartCtrl_PCFsByParticleName_CurrentlyLoaded[name2] == pcf)
-		and !(PartCtrl_DuplicateFx[pcf][name2] and PartCtrl_PCFsByParticleName_CurrentlyLoaded[name2] == PartCtrl_DuplicateFx[pcf][name2]) then
-			return PartCtrl_PCFsByParticleName_CurrentlyLoaded[name2]
+		if !(PEPlus_PCFsByParticleName_CurrentlyLoaded[name2] == pcf)
+		and !(PEPlus_DuplicateFx[pcf][name2] and PEPlus_PCFsByParticleName_CurrentlyLoaded[name2] == PEPlus_DuplicateFx[pcf][name2]) then
+			return PEPlus_PCFsByParticleName_CurrentlyLoaded[name2]
 		end
-		for k, childtab in pairs (PartCtrl_ProcessedPCFs[pcf][name2].children) do
+		for k, childtab in pairs (PEPlus_ProcessedPCFs[pcf][name2].children) do
 			//Also check all child fx for overrides
 			local val = CheckEffectAndChildren(childtab.child)
 			if val then return val end
 		end
 	end
-	return PartCtrl_GetDataPCFNiceName(CheckEffectAndChildren(name))
+	return PEPlus_GetDataPCFNiceName(CheckEffectAndChildren(name))
 
 end
 
-PartCtrl_IconFx = {}
+PEPlus_IconFx = {}
 
 local function DoPosCPoints(self, p, particle3_k)
 
@@ -340,15 +340,15 @@ end
 //Each effect has one single particlesystem instance, which is shared between every spawnicon for that effect.
 //This is to try to reduce the lag caused by spawnmenu search loading, which rapidly deletes and replaces all the search result spawnicons every few
 //secs - instead of each new panel having to do all this from scratch each time, the effects can be seamlessly transfered over to the new panels.
-hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
+hook.Add("Think", "PEPlus_ManageIconFx_Think", function()
 
 	local autohide = !g_SpawnMenu:IsVisible()
 
-	for pcf, pcftab in pairs (PartCtrl_IconFx) do
+	for pcf, pcftab in pairs (PEPlus_IconFx) do
 		local utilfx = (pcf == "UtilFx")
 		for name, _ in pairs (pcftab) do
 
-			local self = PartCtrl_IconFx[pcf][name] //this works??
+			local self = PEPlus_IconFx[pcf][name] //this works??
 
 			//First, go through the list of panels using this effect, and remove any that are invalid or not visible
 			for panel, _ in pairs (self.panels) do
@@ -367,15 +367,15 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 
 			//Store first-time info
 			if !self.tooltip then
-				local tooltip = "\n(" .. PartCtrl_GetDataPCFNiceName(pcf) .. ")%PATH_DEV"
+				local tooltip = "\n(" .. PEPlus_GetDataPCFNiceName(pcf) .. ")%PATH_DEV"
 				
 				self.icons = {}
-				if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) or !istable(PartCtrl_ProcessedPCFs[pcf][name].cpoints) then
-					if PartCtrl_CulledFx[pcf] and PartCtrl_CulledFx[pcf][name] then
+				if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PEPlus_ProcessedPCFs[pcf][name]) or !istable(PEPlus_ProcessedPCFs[pcf][name].cpoints) then
+					if PEPlus_CulledFx[pcf] and PEPlus_CulledFx[pcf][name] then
 						//If effect was culled, add list of cull reasons to the tooltip, but use short non-technical reasons if possible
 						local text = ""
 						local docomma = false
-						for _, v in pairs (PartCtrl_CulledFx[pcf][name]) do
+						for _, v in pairs (PEPlus_CulledFx[pcf][name]) do
 							local v1 = language.GetPhrase(v)
 							if v1 != v then
 								local v2 = language.GetPhrase(v .. "_Short")
@@ -392,38 +392,38 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							docomma = true
 						end
 						tooltip = tooltip .. "\n\n\nERROR: Invalid particle effect (" .. text .. ")"
-					elseif !istable(PartCtrl_ProcessedPCFs[pcf]) then
+					elseif !istable(PEPlus_ProcessedPCFs[pcf]) then
 						tooltip = tooltip .. "\n\n\nERROR: Invalid particle effect (No loaded .pcf file with this name%PATH_NICE)"
 					else
 						tooltip = tooltip .. "\n\n\nERROR: Invalid particle effect (No effect with this name in this .pcf)"
 					end
 					table.insert(self.icons, {icon = icon_invalid})
 				else
-					if PartCtrl_DuplicateFx[pcf] and PartCtrl_DuplicateFx[pcf][name] then
-						tooltip = tooltip .. "\n\nThis is a duplicate of \"" .. name .. "\" from \"" .. PartCtrl_GetDataPCFNiceName(PartCtrl_DuplicateFx[pcf][name]) .. "\"."
+					if PEPlus_DuplicateFx[pcf] and PEPlus_DuplicateFx[pcf][name] then
+						tooltip = tooltip .. "\n\nThis is a duplicate of \"" .. name .. "\" from \"" .. PEPlus_GetDataPCFNiceName(PEPlus_DuplicateFx[pcf][name]) .. "\"."
 						table.insert(self.icons, {icon = Material("icon16/page_paste.png")})
 					end
 			
 					local types = {}
-					for _, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
+					for _, v in pairs (PEPlus_ProcessedPCFs[pcf][name].cpoints) do
 						types[v.mode] = types[v.mode] or 0
 						types[v.mode] = types[v.mode] + 1
 					end
 			
-					if types[PARTCTRL_CPOINT_MODE_POSITION] > 1 then
-						table.insert(self.icons, {icon = icon_position, num = types[PARTCTRL_CPOINT_MODE_POSITION]})
+					if types[PEPLUS_CPOINT_MODE_POSITION] > 1 then
+						table.insert(self.icons, {icon = icon_position, num = types[PEPLUS_CPOINT_MODE_POSITION]})
 					end
 			
-					self.particle2_playerposfix = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_playerposfix //particle operator "set control point to player" sets this to true
-					self.particle3_forcedpositions = PartCtrl_ProcessedPCFs[pcf][name].spawnicon_forcedpositions //particle operator "set control point positions" creates this table
-					self.PosCPoints, _, _, self.OffsetPosCPoints = PartCtrl_GetParticleDefaultPositions(pcf, name)
+					self.particle2_playerposfix = PEPlus_ProcessedPCFs[pcf][name].spawnicon_playerposfix //particle operator "set control point to player" sets this to true
+					self.particle3_forcedpositions = PEPlus_ProcessedPCFs[pcf][name].spawnicon_forcedpositions //particle operator "set control point positions" creates this table
+					self.PosCPoints, _, _, self.OffsetPosCPoints = PEPlus_GetParticleDefaultPositions(pcf, name)
 					self.doparticle2 = self.OffsetPosCPoints or self.particle2_playerposfix
 					self.iPositionCombine = {}
 					self.EditCPoints = {}
 					self.EditCPointsText = {}
 					self.ColorCPoints = {}
-					for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
-						if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+					for k, v in pairs (PEPlus_ProcessedPCFs[pcf][name].cpoints) do
+						if v.mode == PEPLUS_CPOINT_MODE_AXIS then
 							local tab = {
 								[1] = v.axis_0,
 								[2] = v.axis_1,
@@ -442,7 +442,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 									end
 								end
 							end
-						elseif v.mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+						elseif v.mode == PEPLUS_CPOINT_MODE_POSITION_COMBINE then
 							table.insert(self.iPositionCombine, k)
 						end
 					end
@@ -479,15 +479,15 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							end
 						end
 					end
-					if PartCtrl_ProcessedPCFs[pcf][name].info then
+					if PEPlus_ProcessedPCFs[pcf][name].info then
 						table.insert(self.icons, {icon = icon_info})
-						tooltip = tooltip .. "\n\nInfo:\n" .. table.concat(PartCtrl_ProcessedPCFs[pcf][name].info, "\n")
+						tooltip = tooltip .. "\n\nInfo:\n" .. table.concat(PEPlus_ProcessedPCFs[pcf][name].info, "\n")
 					end
 
 					//developer warnings for culled fx
-					if PartCtrl_CulledFx[pcf] and PartCtrl_CulledFx[pcf][name] then
+					if PEPlus_CulledFx[pcf] and PEPlus_CulledFx[pcf][name] then
 						tooltip = tooltip .. "\n\n\nERROR: This effect is invalid, and won't be loaded outside of developer mode."
-						for _, v in pairs (PartCtrl_CulledFx[pcf][name]) do
+						for _, v in pairs (PEPlus_CulledFx[pcf][name]) do
 							tooltip = tooltip .. "\n\n" .. language.GetPhrase(v) //use verbose cull reasons for this one
 						end
 						//tooltip reaches max length if lots of errors are on one effect, but whatever
@@ -508,16 +508,16 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 							local this_listed_dupes = {}
 							local this_listed_invalids = {}
 							local this_pcfs_added = 0
-							for _, v in pairs (PartCtrl_PCFsByParticleName[name2]) do
-								if PartCtrl_ProcessedPCFs[v][name2] and PartCtrl_DuplicateFx[v][name2] then
+							for _, v in pairs (PEPlus_PCFsByParticleName[name2]) do
+								if PEPlus_ProcessedPCFs[v][name2] and PEPlus_DuplicateFx[v][name2] then
 									if listed_dupes[v] == nil then
-										this_listed_dupes[v] = PartCtrl_DuplicateFx[v][name2]
+										this_listed_dupes[v] = PEPlus_DuplicateFx[v][name2]
 									end
 								else
 									this_listed_dupes[v] = false
 									this_pcfs_added = this_pcfs_added + 1
 								end
-								if PartCtrl_CulledFx[v] and PartCtrl_CulledFx[v][name2] then
+								if PEPlus_CulledFx[v] and PEPlus_CulledFx[v][name2] then
 									if listed_invalids[v] == nil then
 										this_listed_invalids[v] = true
 									end
@@ -539,7 +539,7 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 									conflicting_children = true
 								end
 							end
-							for k, childtab in pairs (PartCtrl_ProcessedPCFs[pcf][name2].children) do
+							for k, childtab in pairs (PEPlus_ProcessedPCFs[pcf][name2].children) do
 								//Also check all child fx for overrides
 								CheckEffectAndChildren(childtab.child, true)
 							end
@@ -548,9 +548,9 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 						if pcfs_added > 1 then
 							local text = ""
 							for k, _ in SortedPairs (listed_pcfs) do
-								text = text .. "\n" .. PartCtrl_GetDataPCFNiceName(k)
+								text = text .. "\n" .. PEPlus_GetDataPCFNiceName(k)
 								if listed_dupes[k] then 
-									text = text .. " (duplicate of " .. PartCtrl_GetDataPCFNiceName(listed_dupes[k]) .. ")"
+									text = text .. " (duplicate of " .. PEPlus_GetDataPCFNiceName(listed_dupes[k]) .. ")"
 								end
 								if listed_invalids[k] then
 									text = text .. " (invalid)"
@@ -578,10 +578,10 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 			end
 
 			//Manage the particle
-			if !utilfx and !PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] then //if this effect is being throttled, then we want the crash prevention func to handle removing it, not remove it here
+			if !utilfx and !PEPlus_AddParticles_CrashCheck_ThrottledPCFs[pcf] then //if this effect is being throttled, then we want the crash prevention func to handle removing it, not remove it here
 				if !self.reset and table.Count(self.panels) > 0
-				and istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][name]) //run remove particle check if these fail, because it's possible for a pcf or effect to become invalid after refreshing a pcf file
-				and !PartCtrl_ProcessedPCFs[pcf][name].prevent_name_based_lookup then //don't bother trying to create fx with this value, even in developer mode, it'll just fail and spam the console with errors
+				and istable(PEPlus_ProcessedPCFs[pcf]) and istable(PEPlus_ProcessedPCFs[pcf][name]) //run remove particle check if these fail, because it's possible for a pcf or effect to become invalid after refreshing a pcf file
+				and !PEPlus_ProcessedPCFs[pcf][name].prevent_name_based_lookup then //don't bother trying to create fx with this value, even in developer mode, it'll just fail and spam the console with errors
 					if !(self.particle and self.particle.IsValid and self.particle:IsValid()) then
 
 						//Create the particle
@@ -645,14 +645,14 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 								self.particle:SetControlPoint(k, v)
 							end
 							DoColorCPoints(self) //accomodate CERTAIN EFFECTS that don't change color after spawning, looking at you wrangler :shakefist:
-							PartCtrl_AddParticles_CrashCheck[pcf] = PartCtrl_AddParticles_CrashCheck[pcf] or {}
-							PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = true
+							PEPlus_AddParticles_CrashCheck[pcf] = PEPlus_AddParticles_CrashCheck[pcf] or {}
+							PEPlus_AddParticles_CrashCheck[pcf][self.particle] = true
 							if self.particle2 then
-								PartCtrl_AddParticles_CrashCheck[pcf][self.particle2] = true
+								PEPlus_AddParticles_CrashCheck[pcf][self.particle2] = true
 							end
 							if self.particle3 then
 								for _, v in pairs (self.particle3) do
-									PartCtrl_AddParticles_CrashCheck[pcf][v] = true
+									PEPlus_AddParticles_CrashCheck[pcf][v] = true
 								end
 							end
 						end
@@ -780,8 +780,8 @@ hook.Add("Think", "PartCtrl_ManageIconFx_Think", function()
 
 			if self.reset then
 				//Remove all info for this particle, recreate it from scratch next frame
-				//(this is set by reloading a pcf with the sv_partctrl_reloadpcf concommand)
-				PartCtrl_IconFx[pcf][name] = nil
+				//(this is set by reloading a pcf with the sv_peplus_reloadpcf concommand)
+				PEPlus_IconFx[pcf][name] = nil
 			end
 
 		end
@@ -791,18 +791,18 @@ end)
 
 function PANEL:DoClick()
 
-	local pcf = PartCtrl_GetGamePCF(self.pcf, self.path)
+	local pcf = PEPlus_GetGamePCF(self.pcf, self.path)
 
 	//If the icon's effect is currently being overridden by another pcf's effect of the same name, reload the pcf on click instead
 	if self:IsCurrentlyOverridden(pcf, self.name) then
 		surface.PlaySound("common/wpn_select.wav") //TODO: is this a good sound? needs to be different enough from the spawn sound so players can tell that clicking didn't spawn an effect yet.
-		PartCtrl_AddParticles(pcf, self.name) //crash prevention
+		PEPlus_AddParticles(pcf, self.name) //crash prevention
 		//Update the tooltip, so it doesn't still say the effect is being overridden by another pcf
 		timer.Simple(0, function()
 			if IsValid(self) then ChangeTooltip(self) end
 		end)
 	else
-		RunConsoleCommand("partctrl_spawnparticle", self.name, self.pcf, self.path)
+		RunConsoleCommand("peplus_spawnparticle", self.name, self.pcf, self.path)
 		surface.PlaySound("ui/buttonclickrelease.wav")
 	end
 
@@ -830,8 +830,8 @@ function PANEL:OpenMenu()
 				if IsValid(self) then
 					self.childname = nil
 					self.m_NiceName = self.nicename
-					if PartCtrl_IconFx[pcf] and PartCtrl_IconFx[pcf][child] and PartCtrl_IconFx[pcf][child].panels then
-						PartCtrl_IconFx[pcf][child].panels[self] = nil
+					if PEPlus_IconFx[pcf] and PEPlus_IconFx[pcf][child] and PEPlus_IconFx[pcf][child].panels then
+						PEPlus_IconFx[pcf][child].panels[self] = nil
 					end
 				end
 			end
@@ -841,8 +841,8 @@ function PANEL:OpenMenu()
 				if IsValid(self) then
 					self.childname = nil
 					self.m_NiceName = self.nicename
-					if PartCtrl_IconFx[pcf] and PartCtrl_IconFx[pcf][child] and PartCtrl_IconFx[pcf][child].panels then
-						PartCtrl_IconFx[pcf][child].panels[self] = nil
+					if PEPlus_IconFx[pcf] and PEPlus_IconFx[pcf][child] and PEPlus_IconFx[pcf][child].panels then
+						PEPlus_IconFx[pcf][child].panels[self] = nil
 					end
 				end
 			end
@@ -856,7 +856,7 @@ function PANEL:OpenMenu()
 			self.childmenu = menu
 		end
 
-		local pcf = PartCtrl_GetGamePCF(self.pcf, self.path) //use this unless we're doing something that handles the path arg on its own, like spawning an effect
+		local pcf = PEPlus_GetGamePCF(self.pcf, self.path) //use this unless we're doing something that handles the path arg on its own, like spawning an effect
 
 		local opt = menu:AddOption("Copy effect name to clipboard", function() SetClipboardText(nicename) end)
 		opt:SetIcon("icon16/page_copy.png")
@@ -875,45 +875,45 @@ function PANEL:OpenMenu()
 		end 
 
 		local opt = menu:AddOption("#spawnmenu.menu.spawn_with_toolgun", function()
-			RunConsoleCommand("gmod_tool", "partctrl_creator")
-			RunConsoleCommand("partctrl_creator_pcf", self.pcf)
-			RunConsoleCommand("partctrl_creator_name", name)
-			RunConsoleCommand("partctrl_creator_path", self.path or "")
+			RunConsoleCommand("gmod_tool", "peplus_creator")
+			RunConsoleCommand("peplus_creator_pcf", self.pcf)
+			RunConsoleCommand("peplus_creator_name", name)
+			RunConsoleCommand("peplus_creator_path", self.path or "")
 		end)
 		opt:SetIcon("icon16/brick_add.png")
 		AddChildHover(opt, name)
 
 		if !ischild then
 			//List all parents and children of this effect recursively; this means we don't have to clutter up the spawnlists with children
-			if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][self.name]) then
+			if istable(PEPlus_ProcessedPCFs[pcf]) and istable(PEPlus_ProcessedPCFs[pcf][self.name]) then
 				local function ListChildFx(submenu, submenuoption, name2, tabname)
 					local listed_fx = {} //don't list the same effect more than once - sometimes a parent can have multiple of the same child
-					for _, child in pairs (PartCtrl_ProcessedPCFs[pcf][name2][tabname]) do
+					for _, child in pairs (PEPlus_ProcessedPCFs[pcf][name2][tabname]) do
 						//ptab.children is a table of tables containing both child names and other info about them;
 						//ptab.parents is just a table of strings
 						if istable(child) then
 							child = child.child
 						end
-						if PartCtrl_ProcessedPCFs[pcf][child] and !listed_fx[child] then
+						if PEPlus_ProcessedPCFs[pcf][child] and !listed_fx[child] then
 							listed_fx[child] = true
-							local child_nicename = PartCtrl_ProcessedPCFs[pcf][child].nicename
+							local child_nicename = PEPlus_ProcessedPCFs[pcf][child].nicename
 							local OnClick = function()
-								RunConsoleCommand("partctrl_spawnparticle", child, self.pcf, self.path)
+								RunConsoleCommand("peplus_spawnparticle", child, self.pcf, self.path)
 								surface.PlaySound("ui/buttonclickrelease.wav")
 							end
 							local submenu2
 							local option2
-							if PartCtrl_ProcessedPCFs[pcf][child][tabname] and table.Count(PartCtrl_ProcessedPCFs[pcf][child][tabname]) > 0 then
+							if PEPlus_ProcessedPCFs[pcf][child][tabname] and table.Count(PEPlus_ProcessedPCFs[pcf][child][tabname]) > 0 then
 								submenu2, option2 = submenu:AddSubMenu(child_nicename, OnClick)
 								ListChildFx(submenu2, option2, child, tabname)
 							else
 								option2 = submenu:AddOption(child_nicename, OnClick)
 							end
-							if PartCtrl_CulledFx[pcf] and PartCtrl_CulledFx[pcf][child] then //in developer mode, add warnings to culled fx
+							if PEPlus_CulledFx[pcf] and PEPlus_CulledFx[pcf][child] then //in developer mode, add warnings to culled fx
 								option2:SetMaterial(icon_invalid)
 								//duplicate of text string from this panel's setup func, whatever
 								local tooltip = "ERROR: This effect is invalid, and won't be loaded outside of developer mode."
-								for _, v in pairs (PartCtrl_CulledFx[pcf][child]) do
+								for _, v in pairs (PEPlus_CulledFx[pcf][child]) do
 									tooltip = tooltip .. "\n\n" .. language.GetPhrase(v)
 								end
 								option2:SetTooltip(tooltip)
@@ -935,7 +935,7 @@ function PANEL:OpenMenu()
 					end
 					submenuoption:SetText(submenuoption:GetText() .. " (" .. table.Count(listed_fx) .. ")") //count the number of fx not including dupes
 				end
-				local ptab = PartCtrl_ProcessedPCFs[pcf][self.name]
+				local ptab = PEPlus_ProcessedPCFs[pcf][self.name]
 				if ptab.parents and table.Count(ptab.parents) > 0 then
 					local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn parent effect")
 					base_submenuoption:SetImage("icon16/shape_group.png")
@@ -953,7 +953,7 @@ function PANEL:OpenMenu()
 				self:OpenMenuExtra(menu)
 			end
 
-			hook.Run("SpawnmenuIconMenuOpen", menu, self, "partctrl")
+			hook.Run("SpawnmenuIconMenuOpen", menu, self, "peplus")
 			
 			//Do not allow removal from read only panels
 			if !IsValid(self:GetParent()) or !self:GetParent().GetReadOnly or !self:GetParent():GetReadOnly() then
@@ -973,28 +973,28 @@ function PANEL:OpenMenu()
 
 			if !ischild then
 				menu:AddOption("Reload " .. pcf, function()
-					RunConsoleCommand("sv_partctrl_reloadpcf", pcf)
+					RunConsoleCommand("sv_peplus_reloadpcf", pcf)
 				end)
 			end
 
 			if pcf != "UtilFx" then
 				local opt = menu:AddOption("Print raw PCF data for this effect", function()
-					MsgN("PartCtrl_ReadPCF(\"" .. pcf .. "\")[\"" .. name .. "\"]:")
-					PrintTable(PartCtrl_ReadPCF(pcf)[name])
+					MsgN("PEPlus_ReadPCF(\"" .. pcf .. "\")[\"" .. name .. "\"]:")
+					PrintTable(PEPlus_ReadPCF(pcf)[name])
 					MsgN()
 				end)
 				AddChildHover(opt, name)
 				local opt = menu:AddOption("Print raw PCF data for this effect (no defaults)", function()
-					MsgN("PartCtrl_NoDefPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
-					PrintTable(PartCtrl_NoDefPCFs[pcf][name])
+					MsgN("PEPlus_NoDefPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
+					PrintTable(PEPlus_NoDefPCFs[pcf][name])
 					MsgN()
 				end)
 				AddChildHover(opt, name)
 			end
 
 			local opt = menu:AddOption("Print processed PCF data for this effect", function()
-				MsgN("PartCtrl_ProcessedPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
-				PrintTable(PartCtrl_ProcessedPCFs[pcf][name])
+				MsgN("PEPlus_ProcessedPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
+				PrintTable(PEPlus_ProcessedPCFs[pcf][name])
 			end)
 			AddChildHover(opt, name)
 		end
@@ -1012,7 +1012,7 @@ function PANEL:Copy()
 	//This function is called when dragging an icon from a search into a spawnlist - the baseclass' version of this always creates a normal ContentIcon panel, and also causes errors
 	//because it tries to copy a nonexistent "material" value; don't overthink this, just have our own function, this works fine
 
-	local copy = vgui.Create("ContentIcon_PartCtrl", self:GetParent())
+	local copy = vgui.Create("ContentIcon_PEPlus", self:GetParent())
 	copy:Setup(self.pcf, self.name, self.path)
 
 	return copy
@@ -1033,13 +1033,13 @@ function PANEL:ToTable(bigtable)
 
 end
 
-vgui.Register("ContentIcon_PartCtrl", PANEL, "ContentIcon")
+vgui.Register("ContentIcon_PEPlus", PANEL, "ContentIcon")
 
-spawnmenu.AddContentType("partctrl", function(container, obj)
+spawnmenu.AddContentType("peplus", function(container, obj)
 
 	if !obj.pcf or !obj.name then return end //obj.path is optional
 
-	local icon = vgui.Create("ContentIcon_PartCtrl", container)
+	local icon = vgui.Create("ContentIcon_PEPlus", container)
 	icon:Setup(obj.pcf, obj.name, obj.path)
 
 	container:Add(icon)

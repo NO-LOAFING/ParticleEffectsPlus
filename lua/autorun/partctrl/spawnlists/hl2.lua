@@ -12,7 +12,7 @@
 		}
 		"2"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"ShakeRopes"
 			"pcf"		"UtilFx"
 		}
@@ -28,7 +28,7 @@
 		}
 		"5"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"blood_drip_synth_01b"
 			"pcf"		"particles/blood_impact.pcf"
@@ -45,13 +45,13 @@
 		}
 		"8"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"CommandPointer"
 			"pcf"		"UtilFx"
 		}
 		"9"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"GunshipImpact"
 			"pcf"		"UtilFx"
 		}
@@ -62,21 +62,21 @@
 		}
 		"11"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"blood_frozen"
 			"pcf"		"particles/choreo_gman.pcf"
 		}
 		"12"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"frozen_steam"
 			"pcf"		"particles/choreo_gman.pcf"
 		}
 		"13"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"muzzleflash_frozen"
 			"pcf"		"particles/choreo_gman.pcf"
@@ -88,147 +88,147 @@
 		}
 		"15"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"error"
 			"pcf"		"particles/error.pcf"
 		}
 		"16"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Weapon_Combine_Ion_Cannon_Backup"
 			"pcf"		"particles/weapon_fx.pcf"
 		}
 		"17"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"default"
 			"pcf"		"particles/default.pcf"
 		}
 		"18"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"bonfire"
 			"pcf"		"particles/bonfire.pcf"
 		}
 		"19"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"bonfire"
 			"pcf"		"particles/fireflow.pcf"
 		}
 		"20"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"smoke_blackbillow"
 			"pcf"		"particles/largefire.pcf"
 		}
 		"21"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"flame"
 			"pcf"		"particles/flamethrowertest.pcf"
 		}
 		"22"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"lit_smoke_sphere"
 			"pcf"		"particles/demo_particle_light.pcf"
 		}
 		"23"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"lit_smoke_sphere_sub"
 			"pcf"		"particles/demo_particle_light.pcf"
 		}
 		"24"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"test_green_alpha_sequence"
 			"pcf"		"particles/test_grnalpha.pcf"
 		}
 		"25"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"smoke_oily_01"
 			"pcf"		"particles/fire_ring.pcf"
 		}
 		"26"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"vomit"
 			"pcf"		"particles/test_noise.pcf"
 		}
 		"27"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"test_beam"
 			"pcf"		"particles/devtest.pcf"
 		}
 		"28"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"test_collision"
 			"pcf"		"particles/devtest.pcf"
 		}
 		"29"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"test_orientation"
 			"pcf"		"particles/devtest.pcf"
 		}
 		"30"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"test_lighting"
 			"pcf"		"particles/devtest.pcf"
 		}
 		"31"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"test_trails"
 			"pcf"		"particles/devtest.pcf"
 		}
 		"32"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"demo_falling_sand"
 			"pcf"		"particles/sand.pcf"
 		}
 		"33"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"demo_falling_sand_sub"
 			"pcf"		"particles/sand.pcf"
 		}
 		"34"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"demo_aurora_01"
 			"pcf"		"particles/aurora_sphere2.pcf"
 		}
 		"35"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"aurora_shockwave"
 			"pcf"		"particles/aurora_sphere2.pcf"

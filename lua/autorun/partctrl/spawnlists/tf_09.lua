@@ -12,133 +12,133 @@
 		}
 		"2"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"cinefx_goldrush"
 			"pcf"		"particles/cinefx.pcf"
 		}
 		"3"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"asplode_hoodoo"
 			"pcf"		"particles/dirty_explode.pcf"
 		}
 		"4"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"hightower_explosion"
 			"pcf"		"particles/cinefx.pcf"
 		}
 		"5"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"skull_island_explosion"
 			"pcf"		"particles/cinefx.pcf"
 		}
 		"6"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"flash_doomsday"
 			"pcf"		"particles/doomsday_fx.pcf"
 		}
 		"7"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"mvm_hatch_destroy"
 			"pcf"		"particles/mvm.pcf"
 		}
 		"8"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"mvm_tank_destroy"
 			"pcf"		"particles/mvm.pcf"
 		}
 		"9"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"fireSmokeExplosion"
 			"pcf"		"particles/bigboom.pcf"
 		}
 		"10"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"fireSmokeExplosion2"
 			"pcf"		"particles/bigboom.pcf"
 		}
 		"11"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"fireSmokeExplosion3"
 			"pcf"		"particles/bigboom.pcf"
 		}
 		"12"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"fireSmokeExplosion_track"
 			"pcf"		"particles/bigboom.pcf"
 		}
 		"13"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"fireSmoke_collumn"
 			"pcf"		"particles/bigboom.pcf"
 		}
 		"14"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"fireSmoke_collumnP"
 			"pcf"		"particles/bigboom.pcf"
 		}
 		"15"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"fireSmoke_Collumn_mvmAcres"
 			"pcf"		"particles/bigboom.pcf"
 		}
 		"16"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"fireSmoke_Collumn_mvmAcres_sm"
 			"pcf"		"particles/bigboom.pcf"
 		}
 		"17"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"fluidSmokeExpl_track"
 			"pcf"		"particles/bigboom.pcf"
 		}
 		"18"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"fluidSmokeExpl_ring"
 			"pcf"		"particles/bigboom.pcf"
 		}
 		"19"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"fluidSmokeExpl_ring_mvm"
 			"pcf"		"particles/bigboom.pcf"
 		}
 		"20"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"explosionTrail_seeds_mvm"
 			"pcf"		"particles/bigboom.pcf"
@@ -150,98 +150,98 @@
 		}
 		"22"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"burning_torch"
 			"pcf"		"particles/burningplayer.pcf"
 		}
 		"23"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"m_brazier_flame"
 			"pcf"		"particles/level_fx.pcf"
 		}
 		"24"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"m_torchflame"
 			"pcf"		"particles/level_fx.pcf"
 		}
 		"25"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"candle_light1"
 			"pcf"		"particles/sparks.pcf"
 		}
 		"26"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"candle_light2"
 			"pcf"		"particles/sparks.pcf"
 		}
 		"27"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"smoke_campfireflame"
 			"pcf"		"particles/smoke_blackbillow.pcf"
 		}
 		"28"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"cinefx_goldrush_flames"
 			"pcf"		"particles/cinefx.pcf"
 		}
 		"29"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"cauldron_flamethrower"
 			"pcf"		"particles/harbor_fx.pcf"
 		}
 		"30"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"h2013_corpse_flame"
 			"pcf"		"particles/cinefx.pcf"
 		}
 		"31"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"buildingdamage_fire1"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
 		"32"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"buildingdamage_fire2"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
 		"33"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"buildingdamage_fire3"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
 		"34"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"buildingdamage_dispenser_fire0"
 			"pcf"		"particles/buildingdamage.pcf"
 		}
 		"35"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"buildingdamage_dispenser_fire1"
 			"pcf"		"particles/buildingdamage.pcf"
@@ -253,98 +253,98 @@
 		}
 		"37"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"hwn_lava_01_smoke"
 			"pcf"		"particles/halloween.pcf"
 		}
 		"38"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"hwn_lava_02_smoke"
 			"pcf"		"particles/halloween.pcf"
 		}
 		"39"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"hwn_lava_03_smoke"
 			"pcf"		"particles/halloween.pcf"
 		}
 		"40"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"lava_01_smoke"
 			"pcf"		"particles/level_fx.pcf"
 		}
 		"41"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"lava_02_smoke"
 			"pcf"		"particles/level_fx.pcf"
 		}
 		"42"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"lava_03_smoke"
 			"pcf"		"particles/level_fx.pcf"
 		}
 		"43"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"lava_fire"
 			"pcf"		"particles/level_fx.pcf"
 		}
 		"44"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"lava_fire_04"
 			"pcf"		"particles/level_fx.pcf"
 		}
 		"45"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"lava_fireball"
 			"pcf"		"particles/level_fx.pcf"
 		}
 		"46"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"lava_fireball_03"
 			"pcf"		"particles/level_fx.pcf"
 		}
 		"47"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"lava_fountain"
 			"pcf"		"particles/level_fx.pcf"
 		}
 		"48"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"lava_playertouch"
 			"pcf"		"particles/level_fx.pcf"
 		}
 		"49"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"lava_smoke_01"
 			"pcf"		"particles/level_fx.pcf"
 		}
 		"50"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"tf"
 			"name"		"lava_smoke_02"
 			"pcf"		"particles/level_fx.pcf"

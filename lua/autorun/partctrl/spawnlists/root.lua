@@ -12,45 +12,45 @@
 		}
 		"2"
 		{
-			"material"		"entities/ent_partctrl_sfx_beam.png"
+			"material"		"entities/ent_peplus_sfx_beam.png"
 			"type"		"entity"
 			"nicename"		"Beam Effect"
-			"spawnname"		"ent_partctrl_sfx_beam"
+			"spawnname"		"ent_peplus_sfx_beam"
 		}
 		"3"
 		{
-			"material"		"entities/ent_partctrl_sfx_beam.png"
+			"material"		"entities/ent_peplus_sfx_beam.png"
 			"type"		"entity"
 			"nicename"		"Beam Effect (blank)"
-			"spawnname"		"ent_partctrl_sfx_beam_blank"
+			"spawnname"		"ent_peplus_sfx_beam_blank"
 		}
 		"4"
 		{
-			"material"		"entities/ent_partctrl_sfx_proj.png"
+			"material"		"entities/ent_peplus_sfx_proj.png"
 			"type"		"entity"
 			"nicename"		"Projectile Effect"
-			"spawnname"		"ent_partctrl_sfx_proj"
+			"spawnname"		"ent_peplus_sfx_proj"
 		}
 		"5"
 		{
-			"material"		"entities/ent_partctrl_sfx_proj.png"
+			"material"		"entities/ent_peplus_sfx_proj.png"
 			"type"		"entity"
 			"nicename"		"Projectile Effect (blank)"
-			"spawnname"		"ent_partctrl_sfx_proj_blank"
+			"spawnname"		"ent_peplus_sfx_proj_blank"
 		}
 		"6"
 		{
-			"material"		"entities/ent_partctrl_sfx_tracer.png"
+			"material"		"entities/ent_peplus_sfx_tracer.png"
 			"type"		"entity"
 			"nicename"		"Tracer Effect"
-			"spawnname"		"ent_partctrl_sfx_tracer"
+			"spawnname"		"ent_peplus_sfx_tracer"
 		}
 		"7"
 		{
-			"material"		"entities/ent_partctrl_sfx_tracer.png"
+			"material"		"entities/ent_peplus_sfx_tracer.png"
 			"type"		"entity"
 			"nicename"		"Tracer Effect (blank)"
-			"spawnname"		"ent_partctrl_sfx_tracer_blank"
+			"spawnname"		"ent_peplus_sfx_tracer_blank"
 		}
 	}
 	"name"		"Particle Effects+"

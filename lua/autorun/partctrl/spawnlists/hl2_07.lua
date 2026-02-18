@@ -12,171 +12,171 @@
 		}
 		"2"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"watersplash"
 			"pcf"		"UtilFx"
 		}
 		"3"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"gunshotsplash"
 			"pcf"		"UtilFx"
 		}
 		"4"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_splash_01"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"5"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_splash_02"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"6"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_splash_03"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"7"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"waterripple"
 			"pcf"		"UtilFx"
 		}
 		"8"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"WaterSurfaceExplosion"
 			"pcf"		"UtilFx"
 		}
 		"9"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_splash_02_animated"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"10"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_splash_02_continuous"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"11"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_foam_01"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"12"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_foam_line_long"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"13"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_foam_line_short"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"14"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_splash_leakypipe_silo"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"15"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_trail_medium"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"16"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_splash_01_refract"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"17"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_splash_01_surface1"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"18"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_splash_01_surface2"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"19"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_splash_02_refract"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"20"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_splash_02_surface2"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"21"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"WheelSplash"
 			"pcf"		"particles/vehicle.pcf"
 		}
 		"22"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"WheelSplashForward"
 			"pcf"		"particles/vehicle.pcf"
 		}
 		"23"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"water_gate_open"
 			"pcf"		"particles/choreo_dog_v_strider.pcf"
 		}
 		"24"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"slime_splash_01"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"25"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"slime_splash_02"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"26"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"slime_splash_03"
 			"pcf"		"particles/water_impact.pcf"
@@ -188,35 +188,35 @@
 		}
 		"28"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"WaterLeak_Pipe_1"
 			"pcf"		"particles/water_leaks.pcf"
 		}
 		"29"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"WaterLeak_Pipe_1_Main"
 			"pcf"		"particles/water_leaks.pcf"
 		}
 		"30"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"WaterLeak_Pipe_1_Main_Additive"
 			"pcf"		"particles/water_leaks.pcf"
 		}
 		"31"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"WaterLeak_Pipe_1_Old"
 			"pcf"		"particles/water_leaks.pcf"
 		}
 		"32"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"WaterLeak_Pipe_Silo_01"
 			"pcf"		"particles/water_leaks.pcf"
@@ -228,77 +228,77 @@
 		}
 		"34"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"water_drip_fast"
 			"pcf"		"particles/waterdrips.pcf"
 		}
 		"35"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"water_drip_moderate"
 			"pcf"		"particles/waterdrips.pcf"
 		}
 		"36"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"water_drip_slow"
 			"pcf"		"particles/waterdrips.pcf"
 		}
 		"37"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"slime_drip_slow"
 			"pcf"		"particles/waterdrips.pcf"
 		}
 		"38"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"slime_drip_slow_brown"
 			"pcf"		"particles/waterdrips.pcf"
 		}
 		"39"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"waterdrip_ground_fast"
 			"pcf"		"particles/waterdrips.pcf"
 		}
 		"40"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"waterdrip_ground_moderate"
 			"pcf"		"particles/waterdrips.pcf"
 		}
 		"41"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"waterdrip_ground_slow"
 			"pcf"		"particles/waterdrips.pcf"
 		}
 		"42"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"waterdrip_water_fast"
 			"pcf"		"particles/waterdrips.pcf"
 		}
 		"43"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"waterdrip_water_moderate"
 			"pcf"		"particles/waterdrips.pcf"
 		}
 		"44"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"waterdrip_water_slow"
 			"pcf"		"particles/waterdrips.pcf"
@@ -310,21 +310,21 @@
 		}
 		"46"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Waterfall_Spray_01"
 			"pcf"		"particles/waterfall.pcf"
 		}
 		"47"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Waterfall_Cascade_01"
 			"pcf"		"particles/waterfall.pcf"
 		}
 		"48"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Waterfall_Impact_01"
 			"pcf"		"particles/waterfall.pcf"
@@ -336,21 +336,21 @@
 		}
 		"50"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_bubble_trail_1"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"51"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_gunk_1"
 			"pcf"		"particles/water_impact.pcf"
 		}
 		"52"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"water_impact_bubbles_1"
 			"pcf"		"particles/water_impact.pcf"
@@ -362,56 +362,56 @@
 		}
 		"54"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"rain"
 			"pcf"		"particles/precipitation.pcf"
 		}
 		"55"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"rain_outer"
 			"pcf"		"particles/precipitation.pcf"
 		}
 		"56"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"rain_storm"
 			"pcf"		"particles/precipitation.pcf"
 		}
 		"57"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"rain_storm_outer"
 			"pcf"		"particles/precipitation.pcf"
 		}
 		"58"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"rain_storm_screen"
 			"pcf"		"particles/precipitation.pcf"
 		}
 		"59"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Rain_01"
 			"pcf"		"particles/rain.pcf"
 		}
 		"60"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Rain_01_character_head"
 			"pcf"		"particles/rain.pcf"
 		}
 		"61"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"Rain_01_character_shoulder"
 			"pcf"		"particles/rain.pcf"
@@ -423,21 +423,21 @@
 		}
 		"63"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"snow"
 			"pcf"		"particles/precipitation.pcf"
 		}
 		"64"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"snow_outer"
 			"pcf"		"particles/precipitation.pcf"
 		}
 		"65"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"choreo_borealis_snow"
 			"pcf"		"particles/choreo_launch.pcf"
@@ -449,14 +449,14 @@
 		}
 		"67"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"ash"
 			"pcf"		"particles/precipitation.pcf"
 		}
 		"68"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"garrysmod"
 			"name"		"ash_outer"
 			"pcf"		"particles/precipitation.pcf"
@@ -468,21 +468,21 @@
 		}
 		"70"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"aurora_01"
 			"pcf"		"particles/aurora.pcf"
 		}
 		"71"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"aurora_02"
 			"pcf"		"particles/aurora.pcf"
 		}
 		"72"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"aurora_02b"
 			"pcf"		"particles/aurora.pcf"

@@ -12,13 +12,13 @@
 		}
 		"2"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"HL1GaussBeam_GMOD"
 			"pcf"		"UtilFx"
 		}
 		"3"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"HL1GaussBeamReflect"
 			"pcf"		"UtilFx"
 		}
@@ -29,31 +29,31 @@
 		}
 		"5"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"HL1GaussReflect"
 			"pcf"		"UtilFx"
 		}
 		"6"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"HL1GaussWallImpact1"
 			"pcf"		"UtilFx"
 		}
 		"7"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"HL1GaussWallImpact2"
 			"pcf"		"UtilFx"
 		}
 		"8"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"HL1GaussWallPunchEnter"
 			"pcf"		"UtilFx"
 		}
 		"9"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"HL1GaussWallPunchExit"
 			"pcf"		"UtilFx"
 		}
@@ -64,7 +64,7 @@
 		}
 		"11"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"HL1ShellEject"
 			"pcf"		"UtilFx"
 		}
@@ -75,7 +75,7 @@
 		}
 		"13"
 		{
-			"type"		"partctrl"
+			"type"		"peplus"
 			"name"		"HL1Gib"
 			"pcf"		"UtilFx"
 		}

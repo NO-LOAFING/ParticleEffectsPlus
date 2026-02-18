@@ -21,27 +21,27 @@ TOOL.Information = {
 }
 
 if CLIENT then
-	language.Add("tool.partctrl_attacher.name", "Particle Attacher")
-	language.Add("tool.partctrl_attacher.desc", "Attach particle effects to models")
-	language.Add("tool.partctrl_attacher.help", "Particles are used for all sorts of different visual effects. You can spawn them from the spawn menu, and then attach them to models with this tool.")
+	language.Add("tool.peplus_attacher.name", "Particle Attacher")
+	language.Add("tool.peplus_attacher.desc", "Attach particle effects to models")
+	language.Add("tool.peplus_attacher.help", "Particles are used for all sorts of different visual effects. You can spawn them from the spawn menu, and then attach them to models with this tool.")
 
-	language.Add("tool.partctrl_attacher.middle", "Scroll through a model's attachments")
+	language.Add("tool.peplus_attacher.middle", "Scroll through a model's attachments")
 
-	language.Add("tool.partctrl_attacher.left0", "Select a particle effect to attach, or select a model to attach a particle effect to")
-	language.Add("tool.partctrl_attacher.leftuse0", "Select yourself")
+	language.Add("tool.peplus_attacher.left0", "Select a particle effect to attach, or select a model to attach a particle effect to")
+	language.Add("tool.peplus_attacher.leftuse0", "Select yourself")
 
-	language.Add("tool.partctrl_attacher.left1", "Now select a model or special effect to attach the particle effect to")
-	language.Add("tool.partctrl_attacher.leftuse1", "Select yourself") //have to duplicate this one just so we don't have it for stage 2, argh
-	language.Add("tool.partctrl_attacher.reload1", "Deselect particle effect and cancel")
+	language.Add("tool.peplus_attacher.left1", "Now select a model or special effect to attach the particle effect to")
+	language.Add("tool.peplus_attacher.leftuse1", "Select yourself") //have to duplicate this one just so we don't have it for stage 2, argh
+	language.Add("tool.peplus_attacher.reload1", "Deselect particle effect and cancel")
 
-	language.Add("tool.partctrl_attacher.left2", "Now select a particle effect to attach to the model")
-	language.Add("tool.partctrl_attacher.reload2", "Deselect model and cancel")
+	language.Add("tool.peplus_attacher.left2", "Now select a particle effect to attach to the model")
+	language.Add("tool.peplus_attacher.reload2", "Deselect model and cancel")
 
-	language.Add("tool.partctrl_attacher.left3", "Now select a model to attach the special effect to, or select a particle effect to attach to the special effect")
-	language.Add("tool.partctrl_attacher.leftuse3", "Select yourself") //^
-	language.Add("tool.partctrl_attacher.reload3", "Deselect special effect and cancel")
+	language.Add("tool.peplus_attacher.left3", "Now select a model to attach the special effect to, or select a particle effect to attach to the special effect")
+	language.Add("tool.peplus_attacher.leftuse3", "Select yourself") //^
+	language.Add("tool.peplus_attacher.reload3", "Deselect special effect and cancel")
 
-	language.Add("undone_PartCtrl_Ent", "Undone Attach Particle Effect")
+	language.Add("undone_PEPlus_Ent", "Undone Attach Particle Effect")
 end
 
 
@@ -62,27 +62,27 @@ function TOOL:LeftClick(trace)
 
 		local ent = trace.Entity
 		if IsValid(ent) then
-			if ent.PartCtrl_Grip then
+			if ent.PEPlus_Grip then
 				if CLIENT then
-					local tab = ent.PartCtrl_ParticleEnts
+					local tab = ent.PEPlus_ParticleEnts
 					if istable(tab) then
 						for k, _ in pairs (tab) do //a grip point entity should only have a single associated particle
-							if IsValid(k) and (k.PartCtrl_Ent or k.PartCtrl_SpecialEffect) then
+							if IsValid(k) and (k.PEPlus_Ent or k.PEPlus_SpecialEffect) then
 								return true
 							end
 						end
 					end
 				else
-					local tab = constraint.FindConstraint(ent, "PartCtrl_Ent")
-					if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_Ent then
-						self:GetWeapon():SetNWInt("PartCtrl_Attacher_CPoint", tab.CPoint)
-						self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", tab.Ent1)
+					local tab = constraint.FindConstraint(ent, "PEPlus_Ent")
+					if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PEPlus_Ent then
+						self:GetWeapon():SetNWInt("PEPlus_Attacher_CPoint", tab.CPoint)
+						self:GetWeapon():SetNWEntity("PEPlus_Attacher_CurEntity", tab.Ent1)
 						self:SetStage(1)
 						return true
 					else
-						local tab = constraint.FindConstraint(ent, "PartCtrl_SpecialEffect")
-						if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_SpecialEffect then
-							self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", tab.Ent1)
+						local tab = constraint.FindConstraint(ent, "PEPlus_SpecialEffect")
+						if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PEPlus_SpecialEffect then
+							self:GetWeapon():SetNWEntity("PEPlus_Attacher_CurEntity", tab.Ent1)
 							self:SetStage(3)
 							return true
 						end
@@ -90,7 +90,7 @@ function TOOL:LeftClick(trace)
 				end
 			else
 				if SERVER then
-					self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", ent)
+					self:GetWeapon():SetNWEntity("PEPlus_Attacher_CurEntity", ent)
 					self:SetStage(2)
 				end
 				return true
@@ -104,30 +104,30 @@ function TOOL:LeftClick(trace)
 		local ent = nil
 		local p = nil
 		local k = 0
-		if trace.Entity.PartCtrl_Grip then
+		if trace.Entity.PEPlus_Grip then
 			//Clicked on a particle effect - only proceed if the previously selected ent is a model or a special effect
 			//or clicked on a special effect - only proceed if the previously selected ent is a model or a particle effect
-			ent = self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")
+			ent = self:GetWeapon():GetNWEntity("PEPlus_Attacher_CurEntity")
 			if CLIENT then
-				local tab = trace.Entity.PartCtrl_ParticleEnts
+				local tab = trace.Entity.PEPlus_ParticleEnts
 				if istable(tab) then
 					for k2, _ in pairs (tab) do //a grip point entity should only have a single associated particle
-						if IsValid(k2) and (k2.PartCtrl_Ent or k2.PartCtrl_SpecialEffect) then
+						if IsValid(k2) and (k2.PEPlus_Ent or k2.PEPlus_SpecialEffect) then
 							p = k2
-							if (ent.PartCtrl_Ent and p.PartCtrl_Ent) or (ent.PartCtrl_SpecialEffect and p.PartCtrl_SpecialEffect) then return false end
+							if (ent.PEPlus_Ent and p.PEPlus_Ent) or (ent.PEPlus_SpecialEffect and p.PEPlus_SpecialEffect) then return false end
 							//don't worry about k for clients
 						end
 					end
 				end
 			else
-				local tab = constraint.FindConstraint(trace.Entity, "PartCtrl_Ent")
-				if !ent.PartCtrl_Ent and istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_Ent then
+				local tab = constraint.FindConstraint(trace.Entity, "PEPlus_Ent")
+				if !ent.PEPlus_Ent and istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PEPlus_Ent then
 					p = tab.Ent1
 					k = tab.CPoint
-				elseif !ent.PartCtrl_SpecialEffect then //don't try to attach a special effect to another special effect
-					local tab = constraint.FindConstraint(trace.Entity, "PartCtrl_SpecialEffect")
-					if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PartCtrl_SpecialEffect then
-						if !ent.PartCtrl_Ent then
+				elseif !ent.PEPlus_SpecialEffect then //don't try to attach a special effect to another special effect
+					local tab = constraint.FindConstraint(trace.Entity, "PEPlus_SpecialEffect")
+					if istable(tab) and IsValid(tab.Ent1) and tab.Ent1.PEPlus_SpecialEffect then
+						if !ent.PEPlus_Ent then
 							p = tab.Ent1
 						else
 							//we selected a particle and then a special effect, so swap them and make ent the special effect
@@ -142,17 +142,17 @@ function TOOL:LeftClick(trace)
 		else
 			//Clicked on a model - only proceed if the previously selected ent is a particle/special effect
 			ent = trace.Entity
-			p = self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")
-			if !p.PartCtrl_Ent and !p.PartCtrl_SpecialEffect then return false end
-			k = self:GetWeapon():GetNWInt("PartCtrl_Attacher_CPoint")
+			p = self:GetWeapon():GetNWEntity("PEPlus_Attacher_CurEntity")
+			if !p.PEPlus_Ent and !p.PEPlus_SpecialEffect then return false end
+			k = self:GetWeapon():GetNWInt("PEPlus_Attacher_CPoint")
 		end
 
 
-		if !ent.PartCtrl_SpecialEffect then
+		if !ent.PEPlus_SpecialEffect then
 
 			//Attach a particle effect or special effect to a model
 	
-			if !IsValid(ent) or !IsValid(p) or (!p.PartCtrl_SpecialEffect and (!istable(p.ParticleInfo) or !istable(p.ParticleInfo[k]) or PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(p:GetPCF(), p:GetPath())][p:GetParticleName()].cpoints[k].mode != PARTCTRL_CPOINT_MODE_POSITION)) then return false end
+			if !IsValid(ent) or !IsValid(p) or (!p.PEPlus_SpecialEffect and (!istable(p.ParticleInfo) or !istable(p.ParticleInfo[k]) or PEPlus_ProcessedPCFs[PEPlus_GetGamePCF(p:GetPCF(), p:GetPath())][p:GetParticleName()].cpoints[k].mode != PEPLUS_CPOINT_MODE_POSITION)) then return false end
 			if CLIENT then return true end
 
 			local const = p:AttachToEntity(ent, k, self:GetClientNumber("attachnum", 0), self:GetOwner(), true)
@@ -170,7 +170,7 @@ function TOOL:LeftClick(trace)
 
 		end
 	
-		self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", NULL)
+		self:GetWeapon():SetNWEntity("PEPlus_Attacher_CurEntity", NULL)
 		self:SetStage(0)
 	
 		return true
@@ -184,9 +184,9 @@ end
 
 function TOOL:Reload(trace)
 
-	if IsValid(self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")) then
+	if IsValid(self:GetWeapon():GetNWEntity("PEPlus_Attacher_CurEntity")) then
 		if SERVER then
-			self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", NULL)
+			self:GetWeapon():SetNWEntity("PEPlus_Attacher_CurEntity", NULL)
 			self:SetStage(0)
 		end
 		return true
@@ -205,7 +205,7 @@ if CLIENT then
 		local tr = pl:GetEyeTrace()
 
 		local ent = tr.Entity
-		local sel = self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")
+		local sel = self:GetWeapon():GetNWEntity("PEPlus_Attacher_CurEntity")
 		self.SelectedGripPoint = nil
 		//Draw a halo around the selected entity
 		if self:GetStage() > 0 and self:GetClientNumber("drawhalo") == 1 then
@@ -213,13 +213,13 @@ if CLIENT then
 			if IsValid(haloent) then
 				local animcolor = 189 + math.cos( RealTime() * 4 ) * 17
 
-				if haloent.PartCtrl_Ent then
+				if haloent.PEPlus_Ent then
 					//If our selected entity is a particle grip point, we can't draw a halo around the grip point model because it's scaled down to 0, and can't draw a halo around
 					//the grip sprite because that just draws a square around it. Instead, tell the group point entity to draw a different sprite.
 					if istable(haloent.ParticleInfo) then
-						self.SelectedGripPoint = haloent.ParticleInfo[self:GetWeapon():GetNWInt("PartCtrl_Attacher_CPoint")].ent
+						self.SelectedGripPoint = haloent.ParticleInfo[self:GetWeapon():GetNWInt("PEPlus_Attacher_CPoint")].ent
 					end
-				elseif haloent.PartCtrl_SpecialEffect then
+				elseif haloent.PEPlus_SpecialEffect then
 					self.SelectedGripPoint = haloent:GetSpecialEffectParent()
 				else
 					if IsValid(haloent.AttachedEntity) then haloent = haloent.AttachedEntity end
@@ -231,7 +231,7 @@ if CLIENT then
 			ent = sel
 		end
 		if IsValid(ent.AttachedEntity) then ent = ent.AttachedEntity end
-		if IsValid(ent) and !ent.PartCtrl_Grip then
+		if IsValid(ent) and !ent.PEPlus_Grip then
 			self.HighlightedEnt = ent
 			return
 		end
@@ -243,7 +243,7 @@ if CLIENT then
 	function TOOL:Holster()
 
 		self.HighlightedEnt = nil
-		self:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", NULL)
+		self:GetWeapon():SetNWEntity("PEPlus_Attacher_CurEntity", NULL)
 		self.SelectedGripPoint = nil
 
 	end
@@ -263,12 +263,12 @@ if CLIENT then
 		local function hookfunc(ply, bind, pressed)
 			if not pressed then return end
 			if bind == "invnext" then
-				local self = get_active_tool(ply, "partctrl_attacher")
+				local self = get_active_tool(ply, "peplus_attacher")
 				if not self then return end
 			
 				return self:ScrollDown(ply:GetEyeTraceNoCursor())
 			elseif bind == "invprev" then
-				local self = get_active_tool(ply, "partctrl_attacher")
+				local self = get_active_tool(ply, "peplus_attacher")
 				if not self then return end
 
 				return self:ScrollUp(ply:GetEyeTraceNoCursor())
@@ -276,9 +276,9 @@ if CLIENT then
 		end
 	
 		if game.SinglePlayer() then -- wtfgarry (have to have a delay in single player or the hook won't get added)
-			timer.Simple(5,function() hook.Add("PlayerBindPress", "partctrl_attacher_playerbindpress", hookfunc) end)
+			timer.Simple(5,function() hook.Add("PlayerBindPress", "peplus_attacher_playerbindpress", hookfunc) end)
 		else
-			hook.Add("PlayerBindPress", "partctrl_attacher_playerbindpress", hookfunc)
+			hook.Add("PlayerBindPress", "peplus_attacher_playerbindpress", hookfunc)
 		end
 	//End shamefully copied code here.
 
@@ -294,7 +294,7 @@ if CLIENT then
 
 		if attachnum < 0 then attachnum = attachcount end
 		if attachnum > attachcount then attachnum = 0 end
-		RunConsoleCommand("partctrl_attacher_attachnum", tostring(attachnum))
+		RunConsoleCommand("peplus_attacher_attachnum", tostring(attachnum))
 		surface.PlaySound("weapons/pistol/pistol_empty.wav")
 		return true
 	end
@@ -310,16 +310,16 @@ function TOOL:Think()
 
 	if SERVER then
 	
-		if self:GetStage() != 0 and !IsValid(self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")) then
+		if self:GetStage() != 0 and !IsValid(self:GetWeapon():GetNWEntity("PEPlus_Attacher_CurEntity")) then
 			self:SetStage(0)
 		end
 
 	else
 
-		local panel = controlpanel.Get("partctrl_attacher")
+		local panel = controlpanel.Get("peplus_attacher")
 		if !panel or !panel.effectlist then return end
 
-		local ent = self:GetWeapon():GetNWEntity("PartCtrl_Attacher_CurEntity")
+		local ent = self:GetWeapon():GetNWEntity("PEPlus_Attacher_CurEntity")
 		//Update the effectlist in the controlpanel if CurEntity has changed
 		panel.CurEntity = panel.CurEntity or nil
 		if panel.CurEntity != ent then
@@ -340,7 +340,7 @@ end
 
 function TOOL.BuildCPanel(panel)
 
-	panel:AddControl("Header", { Description = "#tool.partctrl_attacher.help" })
+	panel:AddControl("Header", { Description = "#tool.peplus_attacher.help" })
 
 	panel.effectlist = panel:AddControl("ListBox", {
 		Label = "Attached Effects (click to open editor in context menu)", 
@@ -353,19 +353,19 @@ function TOOL.BuildCPanel(panel)
 			local addedfx = false
 
 			local function AddEffect(effectent)
-				if !IsValid(effectent) or (!effectent.PartCtrl_SpecialEffect and (!effectent.PartCtrl_Ent or !effectent.GetParticleName)) then return end
+				if !IsValid(effectent) or (!effectent.PEPlus_SpecialEffect and (!effectent.PEPlus_Ent or !effectent.GetParticleName)) then return end
 				local str = effectent.PrintName
 				if effectent.GetParticleName then str = effectent:GetParticleName() end
 				local line = panel.effectlist:AddLine(str)
-				line.OnSelect = function() OpenPartCtrlEditor(effectent) line:SetSelected(false) end
+				line.OnSelect = function() OpenPEPlusEditor(effectent) line:SetSelected(false) end
 				addedfx = true
 			end
 
-			if ent.PartCtrl_Ent or ent.PartCtrl_SpecialEffect then
+			if ent.PEPlus_Ent or ent.PEPlus_SpecialEffect then
 				AddEffect(ent)
 			else
-				if istable(ent.PartCtrl_ParticleEnts) then
-					for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
+				if istable(ent.PEPlus_ParticleEnts) then
+					for k, _ in pairs (ent.PEPlus_ParticleEnts) do
 						AddEffect(k)
 					end
 				end
@@ -383,9 +383,9 @@ function TOOL.BuildCPanel(panel)
 	 	Type = "Integer",
 		Min = "0",
 		Max = "16",
-		Command = "partctrl_attacher_attachnum",
+		Command = "peplus_attacher_attachnum",
 	})
 
-	panel:AddControl("Checkbox", {Label = "Draw selection halo", Command = "partctrl_attacher_drawhalo"})
+	panel:AddControl("Checkbox", {Label = "Draw selection halo", Command = "peplus_attacher_drawhalo"})
 
 end

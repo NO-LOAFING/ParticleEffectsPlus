@@ -13,31 +13,31 @@ local searchParticles = nil
 
 if CLIENT then
 
-	local cv_childfx_spawnlist = GetConVar("cl_partctrl_childfx_in_autospawnlists")
+	local cv_childfx_spawnlist = GetConVar("cl_peplus_childfx_in_autospawnlists")
 
 	OnParticleNodeSelected = function(pcf, path, ViewPanel, pnlContent)
 
 		ViewPanel:Clear(true)
-		local pcf2 = PartCtrl_GetGamePCF(pcf, path)
+		local pcf2 = PEPlus_GetGamePCF(pcf, path)
 		//MsgN("running OnParticleNodeSelected for ", pcf, ", ", path)
 
-		if !istable(PartCtrl_ProcessedPCFs[pcf2]) then
+		if !istable(PEPlus_ProcessedPCFs[pcf2]) then
 			MsgN("OnParticleNodeSelected tried to make spawnlist for invalid pcf ", pcf2)
 		else
 			local dochildfx = cv_childfx_spawnlist:GetInt()
 			if dochildfx == 0 then
 				//No child fx
-				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
-					if !PartCtrl_ProcessedPCFs[pcf2][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][particle].parents) < 1 then
-						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {pcf = pcf, name = particle, path = path})
+				for particle, _ in SortedPairs (PEPlus_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
+					if !PEPlus_ProcessedPCFs[pcf2][particle].parents or table.Count(PEPlus_ProcessedPCFs[pcf2][particle].parents) < 1 then
+						spawnmenu.CreateContentIcon("peplus", ViewPanel, {pcf = pcf, name = particle, path = path})
 					end
 				end
 			elseif dochildfx == 1 then
 				local tab = {}
 				//Separate child fx
-				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
-					if !PartCtrl_ProcessedPCFs[pcf2][particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][particle].parents) < 1 then
-						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {pcf = pcf, name = particle, path = path})
+				for particle, _ in SortedPairs (PEPlus_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
+					if !PEPlus_ProcessedPCFs[pcf2][particle].parents or table.Count(PEPlus_ProcessedPCFs[pcf2][particle].parents) < 1 then
+						spawnmenu.CreateContentIcon("peplus", ViewPanel, {pcf = pcf, name = particle, path = path})
 					else
 						table.insert(tab, particle)
 					end
@@ -45,13 +45,13 @@ if CLIENT then
 				if table.Count(tab) > 0 then
 					spawnmenu.CreateContentIcon("header", ViewPanel, {text = "Child effects"})
 					for k, particle in pairs (tab) do
-						spawnmenu.CreateContentIcon("partctrl", ViewPanel, {pcf = pcf, name = particle, path = path})
+						spawnmenu.CreateContentIcon("peplus", ViewPanel, {pcf = pcf, name = particle, path = path})
 					end
 				end
 			else
 				//All fx sorted alphabetically
-				for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
-					spawnmenu.CreateContentIcon("partctrl", ViewPanel, {pcf = pcf, name = particle, path = path})
+				for particle, _ in SortedPairs (PEPlus_ProcessedPCFs[pcf2]) do //sort them in alphabetical order
+					spawnmenu.CreateContentIcon("peplus", ViewPanel, {pcf = pcf, name = particle, path = path})
 				end
 			end
 		end
@@ -66,11 +66,11 @@ if CLIENT then
 
 		ViewPanel:Clear(true)
 
-		if !istable(PartCtrl_UtilFxByTitle[name]) then
+		if !istable(PEPlus_UtilFxByTitle[name]) then
 			MsgN("OnUtilFxNodeSelected tried to make spawnlist for invalid title ", name)
 		else
-			for particle, _ in SortedPairs (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
-				spawnmenu.CreateContentIcon("partctrl", ViewPanel, {pcf = "UtilFx", name = particle})
+			for particle, _ in SortedPairs (PEPlus_UtilFxByTitle[name]) do //sort them in alphabetical order
+				spawnmenu.CreateContentIcon("peplus", ViewPanel, {pcf = "UtilFx", name = particle})
 			end
 		end
 
@@ -81,7 +81,7 @@ if CLIENT then
 
 	end
 
-	function PartCtrl_CreateCustomSpawnlist(tab, name, icon) //globally available so we can use it to make arbitrary spawnlists for testing
+	function PEPlus_CreateCustomSpawnlist(tab, name, icon) //globally available so we can use it to make arbitrary spawnlists for testing
 
 		local tab2 = {}
 
@@ -89,20 +89,20 @@ if CLIENT then
 		if dochildfx == 0 then
 			//No child fx
 			for k, v in pairs (tab) do
-				local pcf2 = PartCtrl_GetGamePCF(v.pcf, v.path)
-				if !PartCtrl_ProcessedPCFs[pcf2][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][v.particle].parents) < 1 then
-					table.insert(tab2, {type = "partctrl", pcf = v.pcf, name = v.particle, path = v.path})
+				local pcf2 = PEPlus_GetGamePCF(v.pcf, v.path)
+				if !PEPlus_ProcessedPCFs[pcf2][v.particle].parents or table.Count(PEPlus_ProcessedPCFs[pcf2][v.particle].parents) < 1 then
+					table.insert(tab2, {type = "peplus", pcf = v.pcf, name = v.particle, path = v.path})
 				end
 			end
 		elseif dochildfx == 1 then
 			//Separate child fx
 			local tab3 = {}
 			for k, v in pairs (tab) do
-				local pcf2 = PartCtrl_GetGamePCF(v.pcf, v.path)
-				if !PartCtrl_ProcessedPCFs[pcf2][v.particle].parents or table.Count(PartCtrl_ProcessedPCFs[pcf2][v.particle].parents) < 1 then
-					table.insert(tab2, {type = "partctrl", pcf = v.pcf, name = v.particle, path = v.path})
+				local pcf2 = PEPlus_GetGamePCF(v.pcf, v.path)
+				if !PEPlus_ProcessedPCFs[pcf2][v.particle].parents or table.Count(PEPlus_ProcessedPCFs[pcf2][v.particle].parents) < 1 then
+					table.insert(tab2, {type = "peplus", pcf = v.pcf, name = v.particle, path = v.path})
 				else
-					table.insert(tab3, {type = "partctrl", pcf = v.pcf, name = v.particle, path = v.path})
+					table.insert(tab3, {type = "peplus", pcf = v.pcf, name = v.particle, path = v.path})
 				end
 			end
 			if table.Count(tab3) > 0 then
@@ -112,7 +112,7 @@ if CLIENT then
 		else
 			//All fx sorted alphabetically
 			for k, v in pairs (tab) do
-				tab2[k] = {type = "partctrl", pcf = v.pcf, name = v.particle, path = v.path}
+				tab2[k] = {type = "peplus", pcf = v.pcf, name = v.particle, path = v.path}
 			end
 		end
 
@@ -140,7 +140,7 @@ if CLIENT then
 		if !string.EndsWith(path, "/") && string.len(path) > 1 then path = path .. "/" end
 
 		local fi, fo = file.Find(path .. "particles", pathid)
-		if (!fi && !fo) and !PartCtrl_UtilFxByTitle[name] then return end
+		if (!fi && !fo) and !PEPlus_UtilFxByTitle[name] then return end
 
 		local particles = node:AddFolder(name, path .. "particles", pathid, true, false, "*.*") //unlike ES, the arg after pathid is true, which adds nodes for files as well
 		particles:SetIcon(icon)
@@ -164,7 +164,7 @@ if CLIENT then
 		
 			if showfiles then
 				//Create unique node for utilfx
-				if !particles.utilfxnode and PartCtrl_UtilFxByTitle[name] then
+				if !particles.utilfxnode and PEPlus_UtilFxByTitle[name] then
 					//MsgN("making utilfx node for ", name)
 					particles.utilfxnode = particles:AddNode("Scripted Effects", "icon16/page_gear.png")
 					particles.utilfxnode.utilfx = true
@@ -175,16 +175,16 @@ if CLIENT then
 
 						menu:AddOption("#spawnmenu.createautospawnlist", function()
 							local tab = {}
-							for particle, _ in SortedPairs (PartCtrl_UtilFxByTitle[name]) do //sort them in alphabetical order
+							for particle, _ in SortedPairs (PEPlus_UtilFxByTitle[name]) do //sort them in alphabetical order
 								table.insert(tab, {pcf = "UtilFx", particle = particle})
 							end
-							PartCtrl_CreateCustomSpawnlist(tab, "Scripted Effects", "icon16/page_gear.png")
+							PEPlus_CreateCustomSpawnlist(tab, "Scripted Effects", "icon16/page_gear.png")
 						end):SetIcon("icon16/page_add.png")
 
 						//developer control to reload a .pcf file manually; we want this for utilfx too just in case one of the list entries was edited
 						if GetConVarNumber("developer") >= 1 then
 							menu:AddOption("Reload UtilFx", function()
-								RunConsoleCommand("sv_partctrl_reloadpcf", "UtilFx")
+								RunConsoleCommand("sv_peplus_reloadpcf", "UtilFx")
 							end)
 						end
 
@@ -208,8 +208,8 @@ if CLIENT then
 				if showfiles then
 					local function AddFile(name, filename, path)
 						//Clear out .txt file particle manifests and such, also clear out bad .pcf files that weren't processed
-						local filename2 = PartCtrl_GetGamePCF(filename, path)
-						if !istable(PartCtrl_ProcessedPCFs[filename2]) then return end
+						local filename2 = PEPlus_GetGamePCF(filename, path)
+						if !istable(PEPlus_ProcessedPCFs[filename2]) then return end
 
 						local Node = self:AddNode(name, "icon16/page.png")
 						Node:SetFileName(filename)
@@ -231,10 +231,10 @@ if CLIENT then
 
 							menu:AddOption("#spawnmenu.createautospawnlist", function()
 								local tab = {}
-								for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[filename2]) do //sort them in alphabetical order
+								for particle, _ in SortedPairs (PEPlus_ProcessedPCFs[filename2]) do //sort them in alphabetical order
 									table.insert(tab, {pcf = filename, particle = particle, path = path})
 								end
-								PartCtrl_CreateCustomSpawnlist(tab, name)
+								PEPlus_CreateCustomSpawnlist(tab, name)
 							end):SetIcon("icon16/page_add.png")
 
 							//developer control to reload a .pcf file manually
@@ -242,7 +242,7 @@ if CLIENT then
 								menu:AddSpacer()
 
 								menu:AddOption("Reload " .. filename2, function()
-									RunConsoleCommand("sv_partctrl_reloadpcf", filename2)
+									RunConsoleCommand("sv_peplus_reloadpcf", filename2)
 								end)
 							end
 
@@ -253,20 +253,20 @@ if CLIENT then
 					for k, name in SortedPairs (files) do
 						local tab = {}
 						local pcf = string.Trim(foldername .. "/" .. name, "/")
-						local file_path = PartCtrl_GamePCFs_DefaultPaths[pcf] 
+						local file_path = PEPlus_GamePCFs_DefaultPaths[pcf] 
 						//note: due to how this is implemented, this means if a game has an identical copy of a higher-priority 
 						//game's pcf, it will use that game's path instead. (i.e hl2 has a bunch of duplicates of gmod pcfs, so 
 						//if you open a spawnlist for any of these pcfs, none of them will have the "hl2" path like the other hl2
 						//pcfs do) i don't *think* there are any situations where this is a problem, but *maybe* this could cause
 						//issues with some weird combination of mounted game changes between sessions? not sure.
 						////test
-						//if PartCtrl_ProcessedPCFs[pcf] and file_path != path then
+						//if PEPlus_ProcessedPCFs[pcf] and file_path != path then
 						//	MsgN(path, "'s ", pcf, " is from ", file_path, "!")
 						//end
 
 						//For the "All" folder, add every data pcf for this file, in addition to the mounted pcf file
-						if path == "GAME" and PartCtrl_GamePCFs[pcf] then
-							for path2, pcf2 in pairs (PartCtrl_GamePCFs[pcf]) do
+						if path == "GAME" and PEPlus_GamePCFs[pcf] then
+							for path2, pcf2 in pairs (PEPlus_GamePCFs[pcf]) do
 								if pcf2 != pcf then
 									table.insert(tab, {
 										name = name .. " (" .. path2  .. ")", pcf = pcf, path = path2
@@ -275,7 +275,7 @@ if CLIENT then
 							end
 						end
 
-						if self.is_game_folder and PartCtrl_GetGamePCF(pcf, path) != pcf then
+						if self.is_game_folder and PEPlus_GetGamePCF(pcf, path) != pcf then
 							//For game folders, if this game is using a data pcf for this file, always label it
 							//(and set the right file_path to make our spawnlist use it)
 							name = name .. " (" .. path  .. ")"
@@ -352,7 +352,7 @@ if CLIENT then
 		for _, addon in SortedPairsByMemberValue(engine.GetAddons(), "title") do
 			if !addon.downloaded then continue end
 			if !addon.mounted then continue end
-			if !table.HasValue(select(2, file.Find("*", addon.title)), "particles") and !PartCtrl_UtilFxByTitle[addon.title] then continue end
+			if !table.HasValue(select(2, file.Find("*", addon.title)), "particles") and !PEPlus_UtilFxByTitle[addon.title] then continue end
 			AddBrowseContentParticle(node, addon.title, "icon16/bricks.png", "", addon.title, addon.wsid)
 		end
 	end
@@ -360,7 +360,7 @@ if CLIENT then
 		local addon_particles = {}
 		local _, particle_folders = file.Find("addons/*", "MOD")
 		for _, addon in SortedPairs(particle_folders) do
-			if !file.IsDir("addons/" .. addon .. "/particles/", "MOD") and !PartCtrl_UtilFxByTitle[addon] then continue end
+			if !file.IsDir("addons/" .. addon .. "/particles/", "MOD") and !PEPlus_UtilFxByTitle[addon] then continue end
 			table.insert(addon_particles, addon)
 		end
 
@@ -387,10 +387,10 @@ if CLIENT then
 		end
 	end
 
-	hook.Add("PopulateContent", "PartCtrl_PopulateContent", function(pnlContent, tree, browseNode) timer.Simple(0.5, function()
+	hook.Add("PopulateContent", "PEPlus_PopulateContent", function(pnlContent, tree, browseNode) timer.Simple(0.5, function()
 
-		if (!IsValid(tree) or !IsValid(pnlContent) or !istable(PartCtrl_ProcessedPCFs)) then //check to make sure PartCtrl_ProcessedPCFs exists because AddBrowseContentParticle needs it
-			print("ParticleControl: Failed to initialize PopulateContent hook")
+		if (!IsValid(tree) or !IsValid(pnlContent) or !istable(PEPlus_ProcessedPCFs)) then //check to make sure PEPlus_ProcessedPCFs exists because AddBrowseContentParticle needs it
+			print("Particle Effects+: Failed to initialize PopulateContent hook")
 			return
 		end
 
@@ -398,7 +398,7 @@ if CLIENT then
 		ViewPanel:SetVisible(false)
 		ViewPanel.IconList:SetReadOnly(true) //not in enhanced spawnmenu; prevents contenticons in pcf spawnlists from being deleted using dropdown
 		//Make these globally accessible so the developer pcf refresh button can access them
-		PartCtrl_ViewPanel = ViewPanel
+		PEPlus_ViewPanel = ViewPanel
 		ViewPanel.pnlContent = pnlContent
 
 		local browseParticles = tree:AddNode("#spawnmenu.category.browseparticles", "icon16/fire.png")
@@ -424,7 +424,7 @@ if CLIENT then
 
 		//browseParticles:SetExpanded(true)
 
-		if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running PopulateContent") end
+		if GetConVarNumber("developer") >= 1 then MsgN("Particle Effects+: running PopulateContent") end
 
 	end) end)
 
@@ -433,8 +433,8 @@ if CLIENT then
 
 	//Search populator
 
-	local cv_childfx_search = GetConVar("cl_partctrl_childfx_in_search")
-	local cv_dupes_search = GetConVar("cl_partctrl_dupes_in_search")
+	local cv_childfx_search = GetConVar("cl_peplus_childfx_in_search")
+	local cv_dupes_search = GetConVar("cl_peplus_dupes_in_search")
 
 	search.AddProvider(function(str)
 
@@ -442,23 +442,23 @@ if CLIENT then
 
 		if searchParticles == nil then
 			searchParticles = {}
-			for pcf, _ in SortedPairs (PartCtrl_ProcessedPCFs) do
-				if !PartCtrl_AllDataPCFs[pcf] then
-					for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do
+			for pcf, _ in SortedPairs (PEPlus_ProcessedPCFs) do
+				if !PEPlus_AllDataPCFs[pcf] then
+					for particle, _ in SortedPairs (PEPlus_ProcessedPCFs[pcf]) do
 						table.insert(searchParticles, {
 							name = particle, 
 							searchtext = particle:lower() .. " " .. pcf:lower(), //lowercase needs to be separate, because effect names are case-sensitive when spawning them
 							pcf = pcf,
-							path = PartCtrl_GamePCFs_DefaultPaths[pcf] //optional, can be nil
+							path = PEPlus_GamePCFs_DefaultPaths[pcf] //optional, can be nil
 						}) 
 					end
 				else
-					for particle, _ in SortedPairs (PartCtrl_ProcessedPCFs[pcf]) do
+					for particle, _ in SortedPairs (PEPlus_ProcessedPCFs[pcf]) do
 						table.insert(searchParticles, {
 							name = particle, 
-							searchtext = particle:lower() .. " " .. pcf:lower() .. " " .. PartCtrl_GetDataPCFNiceName(pcf):lower(), //let us search for both the nicename and internal name
-							pcf = PartCtrl_AllDataPCFs[pcf].original_filename,
-							path = PartCtrl_AllDataPCFs[pcf].path
+							searchtext = particle:lower() .. " " .. pcf:lower() .. " " .. PEPlus_GetDataPCFNiceName(pcf):lower(), //let us search for both the nicename and internal name
+							pcf = PEPlus_AllDataPCFs[pcf].original_filename,
+							path = PEPlus_AllDataPCFs[pcf].path
 						}) 
 					end
 				end
@@ -468,16 +468,16 @@ if CLIENT then
 		local results = {}
 
 		for k, v in ipairs (searchParticles) do
-			local pcf = PartCtrl_GetGamePCF(v.pcf, v.path)
-			if (cv_childfx_search:GetBool() or !PartCtrl_ProcessedPCFs[pcf][v.name].parents or table.Count(PartCtrl_ProcessedPCFs[pcf][v.name].parents) < 1) 
-			and (cv_dupes_search:GetBool() or !PartCtrl_DuplicateFx[pcf] or !PartCtrl_DuplicateFx[pcf][v.name]) then
+			local pcf = PEPlus_GetGamePCF(v.pcf, v.path)
+			if (cv_childfx_search:GetBool() or !PEPlus_ProcessedPCFs[pcf][v.name].parents or table.Count(PEPlus_ProcessedPCFs[pcf][v.name].parents) < 1) 
+			and (cv_dupes_search:GetBool() or !PEPlus_DuplicateFx[pcf] or !PEPlus_DuplicateFx[pcf][v.name]) then
 				for k2, v2 in ipairs (searchTerms) do
 					if !v.searchtext:find(v2, nil, true) then
 						break
 					elseif k2 == #searchTerms then
 						local entry = {
 							text = v.name,
-							icon = spawnmenu.CreateContentIcon("partctrl", g_SpawnMenu.SearchPropPanel, {pcf = v.pcf, name = v.name, path = v.path}),
+							icon = spawnmenu.CreateContentIcon("peplus", g_SpawnMenu.SearchPropPanel, {pcf = v.pcf, name = v.name, path = v.path}),
 							words = {v.name}
 						}
 						table.insert(results, entry)
@@ -489,21 +489,21 @@ if CLIENT then
 
 		return results
 
-	end, "partctrl")
+	end, "peplus")
 
 
 
 
 	//Curated game spawnlists
 
-	hook.Add("PopulatePropMenu", "PartCtrl_GameSpawnlists", function()
+	hook.Add("PopulatePropMenu", "PEPlus_GameSpawnlists", function()
 
 		local function ReadSpawnlist(path, parent, gameid, listid)
-			local str = file.Read("lua/autorun/partctrl/spawnlists/" .. path .. ".lua", "GAME")
+			local str = file.Read("lua/autorun/peplus/spawnlists/" .. path .. ".lua", "GAME")
 			if str then
 				local tab = util.KeyValuesToTable(str)
 				if tab then
-					local name = "PartCtrl_GameSpawnlists_" .. string.StripExtension(string.GetFileFromFilename(path))
+					local name = "PEPlus_GameSpawnlists_" .. string.StripExtension(string.GetFileFromFilename(path))
 					spawnmenu.AddPropCategory(name, tab.name, tab.contents, tab.icon, listid, parent, gameid)
 					return spawnmenu.GetCustomPropTable()[name].id
 				end
@@ -560,7 +560,7 @@ end
 
 //PCF reloading function; this would be in pcf_processing, except it has to be able to access a bunch of spawnmenu-related local vars
 
-function PartCtrl_ReloadPCF(str, dont_network)
+function PEPlus_ReloadPCF(str, dont_network)
 
 	local realm
 	if CLIENT then
@@ -571,34 +571,34 @@ function PartCtrl_ReloadPCF(str, dont_network)
 
 	if str then str = string.Trim(string.Replace(str, "\\", "/")) end
 	if str != "UtilFx" and str != "all" and (!str or !file.Exists(str, "GAME")) then
-		MsgN("sv_partctrl_reloadpcf: Failed to reload PCF ", str, " on ", realm, "; file not found")
+		MsgN("sv_peplus_reloadpcf: Failed to reload PCF ", str, " on ", realm, "; file not found")
 		if !str or !string.StartsWith(str, "particles/") or !string.EndsWith(str, ".pcf") then
 			MsgN("(this should either be \"all\" (without quotes) or a full file path starting with particles/ and ending with .pcf)") //technically wrong because data pcfs end with .txt internally, OH WELL
 		end
 		return
 	end
 
-	if str != "UtilFx" and (!PartCtrl_ProcessedPCFs or !PartCtrl_ProcessedPCFs[str]) then //TODO: this doesn't catch cases where a player adds a new pcf with the same name as one from a game (ideally we should catch these and seamlessly convert the old one to a data pcf)
+	if str != "UtilFx" and (!PEPlus_ProcessedPCFs or !PEPlus_ProcessedPCFs[str]) then //TODO: this doesn't catch cases where a player adds a new pcf with the same name as one from a game (ideally we should catch these and seamlessly convert the old one to a data pcf)
 		local new_file_only
 		if str == "all" then
-			MsgN("sv_partctrl_reloadpcf: Reloading all PCFs on ", realm)
+			MsgN("sv_peplus_reloadpcf: Reloading all PCFs on ", realm)
 		else
-			MsgN("sv_partctrl_reloadpcf: Loading new PCF ", str, " on ", realm)
+			MsgN("sv_peplus_reloadpcf: Loading new PCF ", str, " on ", realm)
 			//If we try to reload a pcf that hasn't been loaded before (i.e. create a new pcf with the particle editor or
-			//something, then try to load it) then vital tables like PartCtrl_PCFsInDupeOrder won't have it, which'll cause 
-			//errors, so run PartCtrl_ReadAndProcessPCFs again to rebuild those, but without also reloading all the PCFs.
+			//something, then try to load it) then vital tables like PEPlus_PCFsInDupeOrder won't have it, which'll cause 
+			//errors, so run PEPlus_ReadAndProcessPCFs again to rebuild those, but without also reloading all the PCFs.
 			new_file_only = str
-			table.insert(PartCtrl_AllPCFPaths, str)
-			PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
+			table.insert(PEPlus_AllPCFPaths, str)
+			PEPlus_ProcessedPCFs[str] = PEPlus_ProcessPCF(str)
 		end
 
-		if PartCtrl_ReadAndProcessPCFs_StartupIsOver or !PartCtrl_ReadAndProcessPCFs_StartupHasRun then
-			PartCtrl_ReadAndProcessPCFs(new_file_only)
+		if PEPlus_ReadAndProcessPCFs_StartupIsOver or !PEPlus_ReadAndProcessPCFs_StartupHasRun then
+			PEPlus_ReadAndProcessPCFs(new_file_only)
 		end
 
 		if new_file_only then 
 			if CLIENT then
-				PartCtrl_AddParticles(str)
+				PEPlus_AddParticles(str)
 			else
 				game.AddParticles(str)
 			end
@@ -627,24 +627,24 @@ function PartCtrl_ReloadPCF(str, dont_network)
 		end
 	else
 		//TODO: this probably doesn't work for data pcfs in multiplayer if a player has different content mounted than the server
-		MsgN("sv_partctrl_reloadpcf: Reloading PCF ", str, " on ", realm)
+		MsgN("sv_peplus_reloadpcf: Reloading PCF ", str, " on ", realm)
 
 		if str != "UtilFx" then
-			PartCtrl_ProcessedPCFs[str] = PartCtrl_ProcessPCF(str)
+			PEPlus_ProcessedPCFs[str] = PEPlus_ProcessPCF(str)
 		else
-			PartCtrl_ProcessUtilFx()
+			PEPlus_ProcessUtilFx()
 		end
 
 		if str != "UtilFx" then
 			//Handle duplicate fx detection again; it's possible that an effect was updated to start/stop being a dupe, OR that an 
 			//effect being updated made an effect from a lower-priority PCF start/stop being considered a dupe of this pcf's effect
-			//Server also needs this to rebuild PartCtrl_PCFsByParticleName for use by backcomp
-			PartCtrl_GetDuplicateFx()
+			//Server also needs this to rebuild PEPlus_PCFsByParticleName for use by backcomp
+			PEPlus_GetDuplicateFx()
 
 			if CLIENT then
 				//Make sure the reloaded pcf is highest priority
-				//(try to prevent oddness with PartCtrl_PCFsByParticleName_CurrentlyLoaded on fx that change dupe status)
-				PartCtrl_AddParticles(str)
+				//(try to prevent oddness with PEPlus_PCFsByParticleName_CurrentlyLoaded on fx that change dupe status)
+				PEPlus_AddParticles(str)
 			else
 				//(not sure if this matters serverside, but better safe than sorry)
 				game.AddParticles(str)
@@ -656,14 +656,14 @@ function PartCtrl_ReloadPCF(str, dont_network)
 			searchParticles = nil
 
 			//if this pcf's auto-generated spawnlist is currently open, then rebuild it (to handle fx being added to or removed from the list)
-			if IsValid(PartCtrl_ViewPanel) and IsValid(PartCtrl_ViewPanel.pnlContent) then
-				if PartCtrl_ViewPanel.pnlContent.SelectedPanel == PartCtrl_ViewPanel and PartCtrl_ViewPanel.CurrentPCF == str then
+			if IsValid(PEPlus_ViewPanel) and IsValid(PEPlus_ViewPanel.pnlContent) then
+				if PEPlus_ViewPanel.pnlContent.SelectedPanel == PEPlus_ViewPanel and PEPlus_ViewPanel.CurrentPCF == str then
 					//MsgN("we doin this")
 					if str != "UtilFx" then
-						if PartCtrl_AllDataPCFs[str] then str = PartCtrl_AllDataPCFs[str].original_filename end
-						OnParticleNodeSelected(str, PartCtrl_ViewPanel.CurrentPath, PartCtrl_ViewPanel, PartCtrl_ViewPanel.pnlContent)
+						if PEPlus_AllDataPCFs[str] then str = PEPlus_AllDataPCFs[str].original_filename end
+						OnParticleNodeSelected(str, PEPlus_ViewPanel.CurrentPath, PEPlus_ViewPanel, PEPlus_ViewPanel.pnlContent)
 					else
-						OnUtilFxNodeSelected(PartCtrl_ViewPanel.CurrentUtilFxName, PartCtrl_ViewPanel, PartCtrl_ViewPanel.pnlContent)
+						OnUtilFxNodeSelected(PEPlus_ViewPanel.CurrentUtilFxName, PEPlus_ViewPanel, PEPlus_ViewPanel.pnlContent)
 					end
 				end
 			end
@@ -671,20 +671,20 @@ function PartCtrl_ReloadPCF(str, dont_network)
 	end
 
 	if CLIENT then
-		//Refresh spawnicons (this is handled by the think hook in contenticon_partctrl.lua)
+		//Refresh spawnicons (this is handled by the think hook in contenticon_peplus.lua)
 		//Do this for all spawnicons, not just the ones for the pcf we updated (i.e. in case 
 		//updating one of this pcf's fx made a lower priority pcf's effect no longer a dupe of it)
-		if PartCtrl_IconFx then
-			for pcf, _ in pairs (PartCtrl_IconFx) do
-				for name, _ in pairs (PartCtrl_IconFx[pcf]) do
-					PartCtrl_IconFx[pcf][name].reset = true
+		if PEPlus_IconFx then
+			for pcf, _ in pairs (PEPlus_IconFx) do
+				for name, _ in pairs (PEPlus_IconFx[pcf]) do
+					PEPlus_IconFx[pcf][name].reset = true
 				end
 			end
 		end
 	else
 		//now send the update to all players
 		if !dont_network then
-			net.Start("PartCtrl_ReloadPCF_SendToCl")
+			net.Start("PEPlus_ReloadPCF_SendToCl")
 				net.WriteString(str)
 			net.Broadcast()
 		end
@@ -693,24 +693,24 @@ function PartCtrl_ReloadPCF(str, dont_network)
 end
 
 if CLIENT then
-	net.Receive("PartCtrl_ReloadPCF_SendToCl", function()
-		PartCtrl_ReloadPCF(net.ReadString())
+	net.Receive("PEPlus_ReloadPCF_SendToCl", function()
+		PEPlus_ReloadPCF(net.ReadString())
 	end)
 else
-	util.AddNetworkString("PartCtrl_ReloadPCF_SendToCl")
+	util.AddNetworkString("PEPlus_ReloadPCF_SendToCl")
 
-	concommand.Add("sv_partctrl_reloadpcf", function(ply, cmd, args)
+	concommand.Add("sv_peplus_reloadpcf", function(ply, cmd, args)
 		//Only let server owners run this command cause it can lag everyone
 		//Mostly copied from gmod's lua/autorun/developer_functions.lua (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/autorun/developer_functions.lua#L79)
 		if !game.SinglePlayer() and IsValid(ply) and !ply:IsListenServerHost() and !ply:IsSuperAdmin() then
 			return false
 		end
-		PartCtrl_ReloadPCF(args[1])
+		PEPlus_ReloadPCF(args[1])
 	end, nil, "Reloads a .pcf file on the server and all clients; takes either \"all\" (without quotes) or a file path starting with particles/ and ending with .pcf")
 end
 
 
-hook.Add("GameContentChanged", "PartCtrl_GameContentChanged", function()
-	if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running GameContentChanged") end
-	PartCtrl_ReloadPCF("all", true) //clients should run this hook on their own, no need to network it
+hook.Add("GameContentChanged", "PEPlus_GameContentChanged", function()
+	if GetConVarNumber("developer") >= 1 then MsgN("Particle Effects+: running GameContentChanged") end
+	PEPlus_ReloadPCF("all", true) //clients should run this hook on their own, no need to network it
 end)

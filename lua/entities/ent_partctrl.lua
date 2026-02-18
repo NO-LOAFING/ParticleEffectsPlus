@@ -1,19 +1,19 @@
 AddCSLuaFile()
 
 ENT.Base 			= "base_gmodentity"
-ENT.PrintName			= "Particle Controller"
+ENT.PrintName			= "Particle Effects+ Entity"
 
 ENT.Spawnable			= false
 //ENT.RenderGroup		= RENDERGROUP_NONE
 
-ENT.PartCtrl_Ent		= true //lets us detect if an ent is an ent_partctrl without having to compare strings with GetClass
+ENT.PEPlus_Ent			= true //lets us detect if an ent is an ent_peplus without having to compare strings with GetClass
 
 if CLIENT then
-	language.Add("Undone_PartCtrl", "Undone Particle Effect")
-    	language.Add("Cleanup_partctrl", "Particle Effects")
-   	language.Add("Cleaned_partctrl", "Cleaned up all Particle Effects")
-	language.Add("SBoxLimit_partctrl", "You've hit the Particle Effect limit!")
-   	language.Add("max_partctrl", "Max Particle Effects:")
+	language.Add("Undone_PEPlus", "Undone Particle Effect")
+    	language.Add("Cleanup_peplus", "Particle Effects")
+   	language.Add("Cleaned_peplus", "Cleaned up all Particle Effects")
+	language.Add("SBoxLimit_peplus", "You've hit the Particle Effect limit!")
+   	language.Add("max_peplus", "Max Particle Effects:")
 end
 
 
@@ -52,21 +52,21 @@ function ENT:Initialize()
 	self:DrawShadow(false) //make sure the ent's shadow doesn't render, just in case RENDERGROUP_NONE/SetNoDraw don't work and we have to rely on the blank draw function
 	self:SetCollisionBounds(vector_origin,vector_origin) //stop this ent from bloating up duplicator bounds
 
-	local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
+	local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
 	local name = self:GetParticleName()
-	if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then
+	if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PaPEPlusrocessedPCFs[pcf][name]) then
 		MsgN(self, " particle ", pcf, " ", name, " is invalid")
 		//if SERVER then self:Remove() end //not a great solution; causes our grip ents to delete themselves
 		return
-		//TODO: should we handle this better? if we load a dupe or something with an effect that's no longer valid, it just spawns an orphaned ent_partctrl that doesn't do anything, but is that
+		//TODO: should we handle this better? if we load a dupe or something with an effect that's no longer valid, it just spawns an orphaned ent_peplus that doesn't do anything, but is that
 		//what we want? what if it's not valid because the player just doesn't have a game or addon loaded, and they decide to save it again and then load it again with the game reenabled?
 	end
 
-	self.utilfx = PartCtrl_ProcessedPCFs[pcf][name].utilfx
+	self.utilfx = PEPlus_ProcessedPCFs[pcf][name].utilfx
 
 	if SERVER then
 		if !self.ParticleInfo then 
-			MsgN("ERROR: PartCtrl particle " .. name .. " (" .. pcf .. ") doesn't have an info table! Something went wrong!") 
+			MsgN("ERROR: ent_peplus " .. name .. " (" .. pcf .. ") doesn't have an info table! Something went wrong!") 
 			self:Remove() 
 			return
 		end
@@ -78,20 +78,20 @@ function ENT:Initialize()
 		//Set up numpad functions
 		local ply = self:GetPlayer() //NOTE: this still works if ply doesn't exist
 		local key = self:GetNumpad()
-		self.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", self, true)
-		self.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", self, false)
+		self.NumDown = numpad.OnDown(ply, key, "PEPlus_Numpad", self, true)
+		self.NumUp = numpad.OnUp(ply, key, "PEPlus_Numpad", self, false)
 	end
 
 	if CLIENT then
 		self:OnSpecialEffectParentChanged(nil, nil, self:GetSpecialEffectParent()) //nwvar callbacks don't run when the value is set immediately upon spawning, so run it manually
 
 		if !self.utilfx then
-			PartCtrl_AddParticles(pcf, name) //crash prevention
+			PEPlus_AddParticles(pcf, name) //crash prevention
 		end
 
 		//For PostDrawTranslucentRenderables hook
-		AllPartCtrlEnts = AllPartCtrlEnts or {}
-		AllPartCtrlEnts[self] = true
+		AllPEPlusEnts = AllPaPEPlusts or {}
+		AllPEPlusEnts[self] = true
 		self.LastDrawn = 0
 	end
 
@@ -103,18 +103,18 @@ end
 local cv_max
 local cv_distancescalar_helpers
 if CLIENT then 
-	cv_max = GetConVar("sv_partctrl_particlesperent")
-	cv_distancescalar_helpers = GetConVar("cl_partctrl_distancescalar_helpers")
+	cv_max = GetConVar("sv_peplus_particlesperent")
+	cv_distancescalar_helpers = GetConVar("cl_peplus_distancescalar_helpers")
 end
 
 function ENT:Think()
 
 	if CLIENT then
 
-		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
+		local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
 		local name = self:GetParticleName()
-		if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then return end
-		local ptab = PartCtrl_ProcessedPCFs[pcf][name]
+		if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PaPEPlusrocessedPCFs[pcf][name]) then return end
+		local ptab = PEPlus_ProcessedPCFs[pcf][name]
 		local time = CurTime()
 		self.cpoint_posang = {} //Reset this table every think
 
@@ -122,7 +122,7 @@ function ENT:Think()
 
 		//If we don't have an info table, or need to update it, then request it from the server
 		if !self.ParticleInfo_Received then
-			net.Start("PartCtrl_InfoTable_GetFromSv", true)
+			net.Start("PEPlus_InfoTable_GetFromSv", true)
 				net.WriteEntity(self)
 			net.SendToServer()
 
@@ -217,12 +217,12 @@ function ENT:Think()
 			if self.ParticleInfo_LastCPoint == nil then
 				for k, v in pairs (self.ParticleInfo) do
 					if self.AdvBoneCPointsToUpdate and self.AdvBoneCPointsToUpdate[k] then continue end //bounds are actually relative to the last position cpoint that *isn't* using PATTACH_CUSTOMORIGIN; if all pos cpoints are using that, then they're relative to worldspace
-					if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+					if ptab.cpoints[k].mode == PEPLUS_CPOINT_MODE_POSITION then
 						self.ParticleInfo_LastCPoint = k
 						if self.ParticleInfo_FirstPos == nil then
 							self.ParticleInfo_FirstPos = k
 						end
-					elseif ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+					elseif ptab.cpoints[k].mode == PEPLUS_CPOINT_MODE_POSITION_COMBINE then
 						self.ParticleInfo_LastCPoint = self.ParticleInfo_FirstPos or self.ParticleInfo_LastCPoint
 					end
 				end
@@ -232,10 +232,10 @@ function ENT:Think()
 			local pos
 			local k = self.ParticleInfo_LastCPoint
 			if k then
-				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+				if ptab.cpoints[k].mode == PEPLUS_CPOINT_MODE_POSITION_COMBINE then
 					k = self.ParticleInfo_FirstPos
 				end
-				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+				if ptab.cpoints[k].mode == PEPLUS_CPOINT_MODE_POSITION then
 					local p = self:GetCPoint(k)
 					if p then pos = p.pos end
 				end
@@ -315,12 +315,12 @@ function ENT:Think()
 					if self.particle or self.utilfx then 
 						if self.particle and !(self.particle.IsValid and self.particle:IsValid()) then
 							//Particle is non-nil but invalid; that probably means that it ran to completion and expired, so make a new particle
-							if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle] then
+							if PEPlus_AddParticles_CrashCheck[pcf] and PaPEPlusddParticles_CrashCheck[pcf][self.particle] then
 								//Remove now-invalid particles from the crashcheck list
-								PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = nil
+								PEPlus_AddParticles_CrashCheck[pcf][self.particle] = nil
 							end
 							
-							if self.particle == partctrl_wait then
+							if self.particle == peplus_wait then
 								//MsgN(time, ": waiting")
 								self.ParticleStartTime = nil //effect was either disabled and enabled, or clobbered by crashcheck, so reset the timer
 								self.ParticlePauseTime = nil
@@ -346,7 +346,7 @@ function ENT:Think()
 							self.utilfx_waiting = nil
 						end
 						if loop == 2 then //loop mode 2: repeat every X seconds
-							//TODO: do we need to handle partctrl_wait differently? tested, doesn't seem so
+							//TODO: do we need to handle peplus_wait differently? tested, doesn't seem so
 							
 							if self.LastLoop and (self.LastLoop + math.max(0.0001, self:GetLoopDelay())) <= time then //don't let the loop delay actually be 0 here, otherwise it'll make a new effect every frame while paused
 								//This loop mode can start a new particle while the old particle is still valid, so handle it
@@ -367,14 +367,14 @@ function ENT:Think()
 					end
 				end
 			else
-				if self.particle and self.particle != partctrl_wait then
+				if self.particle and self.particle != peplus_wait then
 					if self.particle.IsValid and self.particle:IsValid() then
 						//Stop any existing particles and throw them into the OldParticles table to get cleaned up
 						self.particle:StopEmission()
 						table.insert(self.OldParticles, self.particle)
 					end
 					//Create a new particle as soon as we're no longer disabled
-					self.particle = partctrl_wait
+					self.particle = peplus_wait
 				end
 				self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
 				if self.utilfx then self.utilfx_waiting = true end //tell utilfx to replay when reenabled as well, since they don't have a self.particle to check for
@@ -386,9 +386,9 @@ function ENT:Think()
 			if v and !(v.IsValid and v:IsValid()) then
 				//MsgN("old particle ", k, " ", v, " expired")
 				//Particle is non-nil but invalid; that probably means that it ran to completion and expired
-				if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][v] then
+				if PEPlus_AddParticles_CrashCheck[pcf] and PaPEPlusddParticles_CrashCheck[pcf][v] then
 					//Remove now-invalid particles from the crashcheck list
-					PartCtrl_AddParticles_CrashCheck[pcf][v] = nil
+					PEPlus_AddParticles_CrashCheck[pcf][v] = nil
 				end
 				table.remove(self.OldParticles, k)
 			end
@@ -404,9 +404,9 @@ function ENT:Think()
 			local v = self.OldParticles[1]
 			//MsgN(#self.OldParticles, " is too many particles, removing oldest ", v)
 			if IsValid(v) then v:StopEmissionAndDestroyImmediately() end
-			--[[if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][v] then
+			--[[if PEPlus_AddParticles_CrashCheck[pcf] and PaPEPlusddParticles_CrashCheck[pcf][v] then
 				//Remove now-invalid particles from the crashcheck list
-				PartCtrl_AddParticles_CrashCheck[pcf][v] = nil
+				PEPlus_AddParticles_CrashCheck[pcf][v] = nil
 			end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
 			table.remove(self.OldParticles, 1)
 		end
@@ -499,32 +499,32 @@ end
 
 if CLIENT then
 
-	local PartCtrl_IsSkyboxDrawing = false
+	local PEPlus_IsSkyboxDrawing = false
 
-	hook.Add("PreDrawSkyBox", "PartCtrl_IsSkyboxDrawing_Pre", function()
-		PartCtrl_IsSkyboxDrawing = true
+	hook.Add("PreDrawSkyBox", "PEPlus_IsSkyboxDrawing_Pre", function()
+		PEPlus_IsSkyboxDrawing = true
 	end)
 
-	hook.Add("PostDrawSkyBox", "PartCtrl_IsSkyboxDrawing_Post", function()
-		PartCtrl_IsSkyboxDrawing = false
+	hook.Add("PostDrawSkyBox", "PEPlus_IsSkyboxDrawing_Post", function()
+		PEPlus_IsSkyboxDrawing = false
 	end)
 
 	//make these global so that special fx can use them too
-	//partctrl_colortext = Color(130,255,31,255) //matches effect grip
-	partctrl_colortext = Color(31,201,255,255) //matches arrow texture
-	partctrl_colorborder = Color(255,255,255,255)
-	surface.CreateFont( "PartCtrl_3D2DFont", {
+	//peplus_colortext = Color(130,255,31,255) //matches effect grip
+	peplus_colortext = Color(31,201,255,255) //matches arrow texture
+	peplus_colorborder = Color(255,255,255,255)
+	surface.CreateFont( "PEPlus_3D2DFont", {
 		font = "Arial",
 		size = 100,
 		weight = 5000,
 	} )
-	partctrl_arrowmat = Material("sprites/partctrl_arrow")
+	peplus_arrowmat = Material("sprites/peplus_arrow")
 
 	function ENT:Draw()
 
 		//Don't draw our particles in the 3D skybox if their renderbounds are clipping into it but we're not actually in there
 		//(common problem for ents with big renderbounds on gm_flatgrass, where the 3D skybox area is right under the floor)
-		if PartCtrl_IsSkyboxDrawing and !self:GetNWBool("IsInSkybox") then
+		if PEPlus_IsSkyboxDrawing and !self:GetNWBool("IsInSkybox") then
 			if IsValid(self.particle) and self.particle.SetShouldDraw then
 				self.particle:SetShouldDraw(false)
 			end
@@ -554,13 +554,13 @@ if CLIENT then
 	end
 
 	local icon_loading = Material("vgui/loading-rotate.vmt")
-	local mat_plane = Material("sprites/partctrl_plane_solid.vmt") //Material("sprites/partctrl_plane.vmt") //this looks nicer but it could be mistaken for a legitimate part of an effect
+	local mat_plane = Material("sprites/peplus_plane_solid.vmt") //Material("sprites/peplus_plane.vmt") //this looks nicer but it could be mistaken for a legitimate part of an effect
 	function ENT:DrawCPointHelpers(k)
 
 		if self.ParticleInfo and !IsValid(self:GetSpecialEffectParent()) then
-			local window = IsValid(self.PartCtrlWindow) and g_ContextMenu:IsVisible()
-			local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
-			local ptab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()]
+			local window = IsValid(self.PEPlusWindow) and g_ContextMenu:IsVisible()
+			local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
+			local ptab = PEPlus_ProcessedPCFs[pcf][self:GetParticleName()]
 
 			local view = LocalPlayer():GetViewEntity()
 			local camang = nil
@@ -574,7 +574,7 @@ if CLIENT then
 
 			local p = self:GetCPoint(k)
 			if istable(p) then
-				if window or self.ParticleInfo[k].ent.PartCtrl_Grip then //hide helpers when they're attached to other ents unless the window is open
+				if window or self.ParticleInfo[k].ent.PEPlus_Grip then //hide helpers when they're attached to other ents unless the window is open
 					//Draw plane helpers
 					if ptab.cpoint_planes and ptab.cpoint_planes[k] then
 						render.SetMaterial(mat_plane)
@@ -626,17 +626,17 @@ if CLIENT then
 					end
 				
 					//Draw cpoint helpers (arrow showing cpoint orientation, number showing cpoint id)
-					render.SetMaterial(partctrl_arrowmat)
+					render.SetMaterial(peplus_arrowmat)
 					render.DrawBeam(p.pos + (p.ang:Forward() * -3.01), p.pos + (p.ang:Forward() * (20-3.01)), 20, 1, 0, color_white)
 
 					cam.IgnoreZ(true)
 					cam.Start3D2D(p.pos, camang, 0.125)
-						draw.SimpleTextOutlined(k,"PartCtrl_3D2DFont",0,-50,partctrl_colortext,TEXT_ALIGN_CENTER,TEXT_ALIGN_BOTTOM,3,partctrl_colorborder)
+						draw.SimpleTextOutlined(k,"PEPlus_3D2DFont",0,-50,peplus_colortext,TEXT_ALIGN_CENTER,TEXT_ALIGN_BOTTOM,3,peplus_colorborder)
 					cam.End3D2D()
 					cam.IgnoreZ(false)
 				end
 				//If particle is being throttled by crash prevention, draw loading icon
-				if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] and (!self.particle or !(self.particle.IsValid and self.particle:IsValid())) then
+				if PEPlus_AddParticles_CrashCheck_ThrottledPCFs[pcf] and (!self.particle or !(self.particle.IsValid and self.particle:IsValid())) then
 					//This has to use 3D2D again instead of a simple render.DrawSprite, 
 					//just because DrawSprite doesn't seem to have a way to rotate the image
 					cam.IgnoreZ(true)
@@ -658,7 +658,7 @@ if CLIENT then
 
 	end
 
-	hook.Add("PostDrawTranslucentRenderables", "PartCtrl_DrawParticleHelpers", function(depth, skybox)
+	hook.Add("PostDrawTranslucentRenderables", "PEPlus_DrawParticleHelpers", function(depth, skybox)
 
 		if !skybox then
 			if GetConVarNumber("cl_draweffectrings") == 0 then return end
@@ -678,9 +678,9 @@ if CLIENT then
 			local time = CurTime()
 			local todraw = {}
 
-			if istable(AllPartCtrlGripEnts) then
+			if istable(AllPEPlusGripEnts) then
 				//Queue grip point rings			
-				for self, _ in pairs (AllPartCtrlGripEnts) do
+				for self, _ in pairs (AllPEPlusGripEnts) do
 					if self.LastDrawn == time then
 						local pos = self:GetPos()
 						table.insert(todraw, {
@@ -691,16 +691,16 @@ if CLIENT then
 				end
 			end
 
-			if istable(AllPartCtrlEnts) then
+			if istable(AllPEPlusEnts) then
 				//Queue cpoint helpers
-				for self, _ in pairs (AllPartCtrlEnts) do
+				for self, _ in pairs (AllPEPlusEnts) do
 					if self.LastDrawn == time then
-						if !self.PartCtrl_SpecialEffect then
+						if !self.PEPlus_SpecialEffect then
 							if self.ParticleInfo then
-								local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
-								local ptab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()]
+								local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
+								local ptab = PEPlus_ProcessedPCFs[pcf][self:GetParticleName()]
 								for k, v in pairs (self.ParticleInfo) do
-									if ptab.cpoints[k] and ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+									if ptab.cpoints[k] and ptab.cpoints[k].mode == PEPLUS_CPOINT_MODE_POSITION then
 										local p = self:GetCPoint(k)
 										if istable(p) then
 											table.insert(todraw, {
@@ -726,7 +726,7 @@ if CLIENT then
 
 			//Check the particle attacher tool, and draw a different sprite for the currently selected grip
 			local sel
-			if wep:GetClass() == "gmod_tool" and wep.Mode == "partctrl_attacher" then sel = wep:GetToolObject(sel) end
+			if wep:GetClass() == "gmod_tool" and wep.Mode == "peplus_attacher" then sel = wep:GetToolObject(sel) end
 			if sel then sel = sel.SelectedGripPoint end
 
 			//Draw them in order of distance from the camera, so closer ones render on top of farther ones
@@ -746,12 +746,12 @@ if CLIENT then
 
 	function ENT:RemoveParticle()
 
-		//local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
+		//local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
 		if self.particle and self.particle.IsValid and self.particle:IsValid() then
 			self.particle:StopEmissionAndDestroyImmediately()
-			--[[if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][self.particle] then
+			--[[if PEPlus_AddParticles_CrashCheck[pcf] and PaPEPlusddParticles_CrashCheck[pcf][self.particle] then
 				//Remove now-invalid particles from the crashcheck list
-				PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = nil
+				PEPlus_AddParticles_CrashCheck[pcf][self.particle] = nil
 			end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
 		end
 		//Clean up old particles
@@ -759,9 +759,9 @@ if CLIENT then
 			for k, v in pairs (self.OldParticles) do
 				if v and v.IsValid and v:IsValid() then
 					v:StopEmissionAndDestroyImmediately()
-					--[[if PartCtrl_AddParticles_CrashCheck[pcf] and PartCtrl_AddParticles_CrashCheck[pcf][v] then
+					--[[if PEPlus_AddParticles_CrashCheck[pcf] and PaPEPlusddParticles_CrashCheck[pcf][v] then
 						//Remove now-invalid particles from the crashcheck list
-						PartCtrl_AddParticles_CrashCheck[pcf][v] = nil
+						PEPlus_AddParticles_CrashCheck[pcf][v] = nil
 					end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
 				end
 			end
@@ -779,9 +779,9 @@ if CLIENT then
 			self.ParticlePauseTime = nil
 			self:StartParticle()
 		end
-		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
-		if !self.utilfx and !self.particle and PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] then
-			self.particle = partctrl_wait	//ordinarily, ENT:Think won't try to recreate the particle if self.particle is nil, which is what we want. however, if crash prevention
+		local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
+		if !self.utilfx and !self.particle and PEPlus_AddParticles_CrashCheck_ThrottledPCFs[pcf] then
+			self.particle = peplus_wait	//ordinarily, ENT:Think won't try to recreate the particle if self.particle is nil, which is what we want. however, if crash prevention
 		end					//prevented us from creating our effect here, then make this value non-nil so ENT:Think will try to create it once crash prevention is over.
 		//Reset loop-related vars
 		self.OldParticles = {}
@@ -841,16 +841,16 @@ if CLIENT then
 
 	end
 
-	hook.Add("EntityEmitSound", "PartCtrl_UtilFxInterceptSound", function(data)
-		if PartCtrl_InterceptSound then return false end
+	hook.Add("EntityEmitSound", "PEPlus_UtilFxInterceptSound", function(data)
+		if PEPlus_InterceptSound then return false end
 	end)
 
 	function ENT:StartParticle()
 
 		if !self.ParticleInfo then return end
-		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
+		local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
 		local name = self:GetParticleName()
-		local ptab = PartCtrl_ProcessedPCFs[pcf][name]
+		local ptab = PEPlus_ProcessedPCFs[pcf][name]
 
 		//If doing utilfx, then do that and stop here
 		if self.utilfx then
@@ -872,12 +872,12 @@ if CLIENT then
 					ed:SetNormal(norm)
 				end
 				util.Effect(name, ed, true)
-				PartCtrl_InterceptSound = nil //this is set to true by some DoEffect funcs, to suppress sounds played during the effect
+				PEPlus_InterceptSound = nil //this is set to true by some DoEffect funcs, to suppress sounds played during the effect
 			end
 			return
 		end
 
-		if PartCtrl_AddParticles_CrashCheck_ThrottledPCFs[pcf] then return end
+		if PEPlus_AddParticles_CrashCheck_ThrottledPCFs[pcf] then return end
 		if !self.precached then
 			PrecacheParticleSystem(name)
 			self.precached = true
@@ -889,11 +889,11 @@ if CLIENT then
 		//Create our particle system and attach it to our first position cpoint
 		local firstcpoint = nil
 		local function DoFirstCPoint(k)
-			if istable(self.ParticleInfo[k]) and ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION and IsValid(self.ParticleInfo[k].ent) then
+			if istable(self.ParticleInfo[k]) and ptab.cpoints[k].mode == PEPLUS_CPOINT_MODE_POSITION and IsValid(self.ParticleInfo[k].ent) then
 				local ent = self.ParticleInfo[k].ent
 				local attach
 				local pattach
-				if (ent.GetPartCtrl_MergedGrip and ent:GetPartCtrl_MergedGrip()) then
+				if (ent.GetPEPlus_MergedGrip and ent:GetPaPEPlusergedGrip()) then
 					//This cpoint's ent is a particle grip point that was attached to a model with Advanced Bonemerge.
 					//We want the cpoint to follow the attached grip, but also still associate model-covering fx with
 					//the parent model it was attached to. To accomplish this, we set ent to the parent model, and 
@@ -928,7 +928,7 @@ if CLIENT then
 			end
 		end
 		for k, v in SortedPairs (self.ParticleInfo) do
-			if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+			if ptab.cpoints[k].mode == PEPLUS_CPOINT_MODE_POSITION then
 				firstcpoint = k
 				break 
 			end
@@ -949,9 +949,9 @@ if CLIENT then
 				if k != ignore then
 				//if k >= 0 then //don't do this for -1 because it's not a real cpoint
 					local mode = ptab.cpoints[k].mode
-					if mode == PARTCTRL_CPOINT_MODE_POSITION or mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+					if mode == PEPLUS_CPOINT_MODE_POSITION or mode == PEPLUS_CPOINT_MODE_POSITION_COMBINE then
 						local tab = self.ParticleInfo[k]
-						if mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+						if mode == PEPLUS_CPOINT_MODE_POSITION_COMBINE then
 							//"combine" this cpoint with the first position cpoint by having it follow all the same parameters as that one
 							tab = self.ParticleInfo[firstcpoint]
 						end
@@ -960,11 +960,11 @@ if CLIENT then
 							if IsValid(ent) then
 								local attachstr
 								local pattach
-								if (ent.GetPartCtrl_MergedGrip and ent:GetPartCtrl_MergedGrip()) then
+								if (ent.GetPEPlus_MergedGrip and ent:GetPaPEPlusergedGrip()) then
 									self.AdvBoneCPointsToUpdate = self.AdvBoneCPointsToUpdate or {}
-									if mode == PARTCTRL_CPOINT_MODE_POSITION then
+									if mode == PEPLUS_CPOINT_MODE_POSITION then
 										self.AdvBoneCPointsToUpdate[k] = k
-									else//if mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+									else//if mode == PEPLUS_CPOINT_MODE_POSITION_COMBINE then
 										self.AdvBoneCPointsToUpdate[k] = firstcpoint
 									end
 									ent = ent:GetParent()
@@ -990,7 +990,7 @@ if CLIENT then
 								end
 							end
 						end
-					elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
+					elseif mode == PEPLUS_CPOINT_MODE_AXIS then
 						local rel = nil
 						local rel_ang = nil
 						local axistab = ptab.cpoints[k].axis_0
@@ -1002,9 +1002,9 @@ if CLIENT then
 						if rel != nil and ptab.cpoints[rel] != nil then
 							//If this cpoint is relative to another cpoint, then move it to that cpoint's position + this cpoint's value
 							local mode2 = ptab.cpoints[rel].mode
-							if mode2 == PARTCTRL_CPOINT_MODE_POSITION or mode2 == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+							if mode2 == PEPLUS_CPOINT_MODE_POSITION or mode2 == PEPLUS_CPOINT_MODE_POSITION_COMBINE then
 								local tab = self.ParticleInfo[rel]
-								if mode2 == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+								if mode2 == PEPLUS_CPOINT_MODE_POSITION_COMBINE then
 									tab = self.ParticleInfo[firstcpoint]
 								end
 								if tab then
@@ -1025,14 +1025,14 @@ if CLIENT then
 										end
 									end
 								end
-							elseif mode2 == PARTCTRL_CPOINT_MODE_AXIS then
+							elseif mode2 == PEPLUS_CPOINT_MODE_AXIS then
 								if self.ParticleInfo[k] and self.ParticleInfo[rel] then
 									self.particle:SetControlPoint(k, self.ParticleInfo[k].val + self.ParticleInfo[rel].val)
 								end
 							end
 						elseif rel_ang != nil then
 							//If this cpoint is relative to the angle of another cpoint, then rotate its value accordingly
-							if rel_ang == -1 or ptab.cpoints[rel_ang].mode == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then rel_ang = firstcpoint end
+							if rel_ang == -1 or ptab.cpoints[rel_ang].mode == PEPLUS_CPOINT_MODE_POSITION_COMBINE then rel_ang = firstcpoint end
 							if ptab.cpoints[rel_ang] != nil then
 								self.RelativeCPointsToUpdate = self.RelativeCPointsToUpdate or {}
 								self.RelativeCPointsToUpdate[k] = rel_ang
@@ -1050,8 +1050,8 @@ if CLIENT then
 
 			self:UpdateCPoints()
 			
-			PartCtrl_AddParticles_CrashCheck[pcf] = PartCtrl_AddParticles_CrashCheck[pcf] or {}
-			PartCtrl_AddParticles_CrashCheck[pcf][self.particle] = true
+			PEPlus_AddParticles_CrashCheck[pcf] = PaPEPlusddParticles_CrashCheck[pcf] or {}
+			PEPlus_AddParticles_CrashCheck[pcf][self.particle] = true
 		end
 
 	end
@@ -1069,10 +1069,10 @@ function ENT:OnRemove()
 		//Remove us from the list of particles on each cpoint ent (used by properties)
 		if istable(self.ParticleInfo) then
 			for k, v in pairs (self.ParticleInfo) do
-				if IsValid(v.ent) and istable(v.ent.PartCtrl_ParticleEnts) then
-					v.ent.PartCtrl_ParticleEnts[self] = nil
+				if IsValid(v.ent) and istable(v.ent.PEPlus_ParticleEnts) then
+					v.ent.PEPlus_ParticleEnts[self] = nil
 					//Refresh attacher tool effect list if this effect was removed from the list
-					local panel = controlpanel.Get("partctrl_attacher")
+					local panel = controlpanel.Get("peplus_attacher")
 					if panel and panel.effectlist and panel.CurEntity == v.ent then
 						panel.effectlist.PopulateEffectList(panel.CurEntity)
 					end
@@ -1081,8 +1081,8 @@ function ENT:OnRemove()
 		end
 
 		//For PostDrawTranslucentRenderables hook
-		if istable(AllPartCtrlEnts) then
-			AllPartCtrlEnts[self] = nil
+		if istable(AllPEPlusEnts) then
+			AllPEPlusEnts[self] = nil
 		end
 	end
 
@@ -1093,8 +1093,8 @@ function ENT:OnRemove()
 				sfxpar.SpecialEffectChildren[self] = nil	
 			end
 			//If we're a child of a special effect, remove us from its control window
-			if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
-				self.PartCtrlWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
+			if IsValid(self.PEPlusWindow) and self.PaPEPlusndow.m_Entity != self then
+				self.PEPlusWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
 			end
 		end
 		if sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
@@ -1107,15 +1107,15 @@ end
 
 if CLIENT then
 
-	net.Receive("PartCtrl_DoPauseInput_SendToCl", function(_, ply)
+	net.Receive("PEPlus_DoPauseInput_SendToCl", function(_, ply)
 		local self = net.ReadEntity()
-		if !IsValid(self) or !((self.PartCtrl_Ent and istable(self.ParticleInfo)) or self.PartCtrl_SpecialEffect) then return end
+		if !IsValid(self) or !((self.PEPlus_Ent and istable(self.ParticleInfo)) or self.PaPEPluspecialEffect) then return end
 		self:DoInput("effect_pause")
 	end)
 	
 else
 
-	util.AddNetworkString("PartCtrl_DoPauseInput_SendToCl")
+	util.AddNetworkString("PEPlus_DoPauseInput_SendToCl")
 
 	function ENT:UpdateTransmitState()
 
@@ -1141,11 +1141,11 @@ else
 			//Mode 1: Pause/unpause effect
 			//This requires a ParticleStartTime value that only exists clientside, so tell the client to send it, using the same "effect_pause" input as the cpanel
 			if IsValid(ply) and ply.IsPlayer and ply:IsPlayer() then
-				net.Start("PartCtrl_DoPauseInput_SendToCl")
+				net.Start("PEPlus_DoPauseInput_SendToCl")
 					net.WriteEntity(self)
 				net.Send(ply)
 			else
-				local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
+				local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
 				local name = self:GetParticleName()
 				MsgN(self, " (", pcf, " ", name, ") tried to send a numpad pause input with invalid player ", ply, ". Report this!")
 			end
@@ -1154,7 +1154,7 @@ else
 
 			//Mode 2: Restart effect
 			//Tell all clients to restart the effect
-			net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+			net.Start("PEPlus_InfoTableUpdate_SendToCl")
 				net.WriteEntity(self)
 			net.Broadcast()
 
@@ -1162,7 +1162,7 @@ else
 
 	end
 
-	function PartCtrlNumpadFunction(pl, ent, keydown)
+	function PEPlusNumpadFunction(pl, ent, keydown)
 
 		if !IsValid(ent) then return end
 		if !ent.GetNumpadState then return end  //if the function doesn't exist yet, not if the function returns false
@@ -1183,7 +1183,7 @@ else
 	
 	end
 
-	numpad.Register("PartCtrl_Numpad", PartCtrlNumpadFunction)
+	numpad.Register("PEPlus_Numpad", PaPEPlusmpadFunction)
 
 	function ENT:AttachToEntity(ent, k, attach, ply, addundo)
 
@@ -1193,7 +1193,7 @@ else
 		if !IsValid(oldent) then return false end
 		local oldconst = nil
 		local doparent = false
-		local tab = constraint.FindConstraint(oldent, "PartCtrl_Ent")
+		local tab = constraint.FindConstraint(oldent, "PEPlus_Ent")
 		if istable(tab) and tab.Ent1 == self then
 			oldconst = tab.Constraint
 			doparent = tab.DoParent
@@ -1213,22 +1213,22 @@ else
 		//Detach the corresponding cpoint of the particle effect from the grip point we clicked on, then attach that cpoint to the new parent
 		oldent:DontDeleteOnRemove(self)
 		self:DontDeleteOnRemove(oldent)
-		oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
+		oldconst:RemoveCallOnRemove("PEPlus_Ent_UnmergeOnUndo")
 		oldconst:Remove()
 		oldent:Remove()
-		local const = constraint.PartCtrl_Ent(self, ent, k, doparent, ply)
+		local const = constraint.PEPlus_Ent(self, ent, k, doparent, ply)
 
 		
 		if addundo then
 			//Add an undo entry
-			undo.Create("PartCtrl_Ent")
+			undo.Create("PEPlus_Ent")
 				undo.AddEntity(const)  //the constraint entity will detach us upon being removed
 				undo.SetPlayer(ply)
 			undo.Finish("Attach Particle Effect " ..self:GetParticleName() .. " to "  .. string.GetFileFromFilename(tostring(ent:GetModel())))
 		end
 
 		//Tell clients to retrieve the updated info table
-		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+		net.Start("PEPlus_InfoTableUpdate_SendToCl")
 			net.WriteEntity(self)
 		net.Broadcast()
 
@@ -1240,16 +1240,16 @@ else
 
 		//Detach ALL of the particle's cpoints and delete any corresponding grip points, then attach it to the special effect
 
-		if !IsValid(ent) or !ent.PartCtrl_SpecialEffect or !istable(self.ParticleInfo) then return false end
+		if !IsValid(ent) or !ent.PEPlus_SpecialEffect or !istable(self.ParticleInfo) then return false end
 
-		local const = constraint.PartCtrl_SpecialEffect(ent, self, ply)
-		constraint.RemoveConstraints(self, "PartCtrl_Ent")
-		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
-		local cpointtab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()].cpoints
+		local const = constraint.PEPlus_SpecialEffect(ent, self, ply)
+		constraint.RemoveConstraints(self, "PEPlus_Ent")
+		local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
+		local cpointtab = PEPlus_ProcessedPCFs[pcf][self:GetParticleName()].cpoints
 		local cpoints_for_defaults = {}
 		for k, v in pairs (self.ParticleInfo) do
-			if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
-				if v.ent.PartCtrl_Grip then
+			if cpointtab[k].mode == PEPLUS_CPOINT_MODE_POSITION then
+				if v.ent.PEPlus_Grip then
 					v.ent:DontDeleteOnRemove(self)
 					v.ent:Remove()
 				end
@@ -1264,14 +1264,14 @@ else
 
 		if addundo then
 			//Add an undo entry
-			undo.Create("PartCtrl_Ent")
+			undo.Create("PEPlus_Ent")
 				undo.AddEntity(const)  //the constraint entity will detach us upon being removed
 				undo.SetPlayer(ply)
 			undo.Finish("Attach Particle Effect " .. self:GetParticleName() .. " to "  .. ent.PrintName)
 		end
 
 		//Tell clients to retrieve the updated info table
-		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+		net.Start("PEPlus_InfoTableUpdate_SendToCl")
 			net.WriteEntity(self)
 		net.Broadcast()
 
@@ -1288,7 +1288,7 @@ else
 		if !IsValid(ent) then return false end
 
 		//If the ent is an adv bonemerged grip point, then unmerge it instead
-		if (ent.GetPartCtrl_MergedGrip and ent:GetPartCtrl_MergedGrip()) then
+		if (ent.GetPEPlus_MergedGrip and ent:GetPaPEPlusergedGrip()) then
 			if ent:Unmerge(ply) then
 				ply:SendLua("GAMEMODE:AddNotify('#undone_AdvBonemerge', NOTIFY_UNDO, 2)")
 				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
@@ -1301,7 +1301,7 @@ else
 
 		local oldconst = nil
 		local doparent = false
-		local tab = constraint.FindConstraints(ent, "PartCtrl_Ent")
+		local tab = constraint.FindConstraints(ent, "PEPlus_Ent")
 		if istable(tab) then
 			for k2, v2 in pairs (tab) do
 				if v2.Ent1 == self and v2.CPoint == k then
@@ -1312,7 +1312,7 @@ else
 		end
 		if !IsValid(oldconst) then return false end
 
-		local g = ents.Create("ent_partctrl_grip")
+		local g = ents.Create("ent_peplus_grip")
 		if !IsValid(g) then return false end
 		g:Spawn()
 
@@ -1323,12 +1323,12 @@ else
 		g:SetPos(Vector(p.pos.x, p.pos.y, height))
 		g:SetAngles(p.ang)
 
-		oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
+		oldconst:RemoveCallOnRemove("PEPlus_Ent_UnmergeOnUndo")
 		oldconst:Remove()
 		//Check if we want to clear DeleteOnRemove or not - if the same particle has another cpoint attached to the same entity, then we want to maintain
 		//the DeleteOnRemove, but if this was the only cpoint attached to that entity, then clear the DeleteOnRemove
 		local clear = true
-		local tab = constraint.FindConstraints(ent, "PartCtrl_Ent")
+		local tab = constraint.FindConstraints(ent, "PEPlus_Ent")
 		if istable(tab) then
 			for k2, v2 in pairs (tab) do
 				if v2.Constraint != oldconst and v2.Ent1 == self then
@@ -1341,11 +1341,11 @@ else
 			ent:DontDeleteOnRemove(self)
 		end
 		self.ParticleInfo[k].attach = 0
-		constraint.PartCtrl_Ent(self, g, k, doparent, ply)
+		constraint.PEPlus_Ent(self, g, k, doparent, ply)
 
 
 		//Tell clients to retrieve the updated info table
-		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+		net.Start("PEPlus_InfoTableUpdate_SendToCl")
 			net.WriteEntity(self)
 		net.Broadcast()
 
@@ -1359,8 +1359,8 @@ else
 		//Detaches EVERY cpoint from the special effect parent, and spawns new grips for all of them to attach to instead
 
 		if !istable(self.ParticleInfo) then return false end
-		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
-		local ptab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()]
+		local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
+		local ptab = PEPlus_ProcessedPCFs[pcf][self:GetParticleName()]
 		if !ptab then return end
 		local parentent = self:GetSpecialEffectParent()
 		if !IsValid(parentent) then return false end
@@ -1368,7 +1368,7 @@ else
 		if !IsValid(parentmodel) then return false end
 
 
-		local tab = constraint.FindConstraints(self, "PartCtrl_SpecialEffect")
+		local tab = constraint.FindConstraints(self, "PEPlus_SpecialEffect")
 		if istable(tab) then
 			for k2, v2 in pairs (tab) do
 				if v2.Ent2 == self and v2.Ent1 == parentent then
@@ -1377,11 +1377,11 @@ else
 			end
 		end
 		if !IsValid(oldconst) then return false end
-		oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
+		oldconst:RemoveCallOnRemove("PEPlus_Ent_UnmergeOnUndo")
 		oldconst:Remove()
 		parentent:DontDeleteOnRemove(self)
 
-		local grips, mins, maxs = PartCtrl_GetParticleDefaultPositions(pcf, self:GetParticleName())
+		local grips, mins, maxs = PEPlus_GetParticleDefaultPositions(pcf, self:GetParticleName())
 		local pos = parentmodel:GetPos()
 		local _, bboxtop1 = parentmodel:GetRotatedAABB(parentmodel:GetCollisionBounds())
 		local height = bboxtop1.z + pos.z - mins.z
@@ -1389,23 +1389,23 @@ else
 
 
 		for k, v in pairs (ptab.cpoints) do
-			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+			if v.mode == PEPLUS_CPOINT_MODE_POSITION then
 				self.ParticleInfo[k].sfx_role = 0
 				self.ParticleInfo[k].attach = 0
 			end
 		end
 
 		local parent = nil
-		grips, parent = PartCtrl_SpawnParticleGripPoints(grips, pos)
+		grips, parent = PEPlus_SpawnParticleGripPoints(grips, pos)
 
 		self:SetSpecialEffectParent(nil)
 		for k, v in pairs (grips) do
-			constraint.PartCtrl_Ent(self, v, k, parent == v, ply)
+			constraint.PEPlus_Ent(self, v, k, parent == v, ply)
 		end
 
 
 		//Tell clients to retrieve the updated info table
-		net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+		net.Start("PEPlus_InfoTableUpdate_SendToCl")
 			net.WriteEntity(self)
 		net.Broadcast()
 
@@ -1450,7 +1450,7 @@ if CLIENT then
 
 	function ENT:DoInput(input, ...)
 
-		net.Start("PartCtrl_EditMenuInput_SendToSv")
+		net.Start("PEPlus_EditMenuInput_SendToSv")
 
 			net.WriteEntity(self)
 			local args = {...}
@@ -1458,7 +1458,7 @@ if CLIENT then
 			net.WriteUInt(EditMenuInputs[input], EditMenuInputs_bits)
 
 			if string.StartsWith(input, "cpoint_") then
-				net.WriteInt(args[1], partctrl_cpointbits) //cpoint id, can be -1
+				net.WriteInt(args[1], peplus_cpointbits) //cpoint id, can be -1
 			end
 
 			//if input == "cpoint_position_ent_setwithtool" then
@@ -1533,13 +1533,13 @@ if CLIENT then
 
 else
 
-	util.AddNetworkString("PartCtrl_EditMenuInput_SendToSv")
+	util.AddNetworkString("PEPlus_EditMenuInput_SendToSv")
 
 	//Respond to inputs from the clientside edit menu
-	net.Receive("PartCtrl_EditMenuInput_SendToSv", function(_, ply)
+	net.Receive("PEPlus_EditMenuInput_SendToSv", function(_, ply)
 
 		local self = net.ReadEntity()
-		if !IsValid(self) or !self.PartCtrl_Ent or !istable(self.ParticleInfo) then return end
+		if !IsValid(self) or !self.PEPlus_Ent or !istable(self.ParticleInfo) then return end
 
 		local input = net.ReadUInt(EditMenuInputs_bits)
 		if !input then return end
@@ -1548,28 +1548,28 @@ else
 		local k = nil
 		local cpointtab = nil
 		if string.StartsWith(input, "cpoint_") then
-			k = net.ReadInt(partctrl_cpointbits) //cpoint id, can be -1
-			local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
-			cpointtab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()].cpoints[k]
+			k = net.ReadInt(peplus_cpointbits) //cpoint id, can be -1
+			local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
+			cpointtab = PEPlus_ProcessedPCFs[pcf][self:GetParticleName()].cpoints[k]
 		end
 		local refreshtable = false
 
 		if input == "cpoint_position_ent_setwithtool" then
 			
 			if !IsValid(ply) then return end
-			if !GetConVar("toolmode_allow_partctrl_attacher"):GetBool() then return end //TODO: this was copied from advbonemerge, which also does a CanTool check with a fake trace. is that necessary here?
+			if !GetConVar("toolmode_allow_peplus_attacher"):GetBool() then return end //TODO: this was copied from advbonemerge, which also does a CanTool check with a fake trace. is that necessary here?
 
-			local tool = ply:GetTool("partctrl_attacher")
+			local tool = ply:GetTool("peplus_attacher")
 			if !istable(tool) or !IsValid(tool:GetWeapon()) then return end
 
-			ply:ConCommand("gmod_tool partctrl_attacher")
+			ply:ConCommand("gmod_tool peplus_attacher")
 			//Fix: The tool's holster function clears the nwentity, and if this is already the toolgun's selected tool, it'll "holster" the tool before "deploying" it again.
 			//To make this worse, it's different if the toolgun is the active weapon or not (if active, it holsters then deploys; if not active, it deploys, holsters, then deploys again)
 			//so instead of having to deal with any of that, just set the entity on a delay so we're sure the tool is already done equipping.
 			timer.Simple(0.1, function()
 				if !IsValid(self) or !IsValid(ply) then return end
-				tool:GetWeapon():SetNWInt("PartCtrl_Attacher_CPoint", k)
-				tool:GetWeapon():SetNWEntity("PartCtrl_Attacher_CurEntity", self)
+				tool:GetWeapon():SetNWInt("PEPlus_Attacher_CPoint", k)
+				tool:GetWeapon():SetNWEntity("PEPlus_Attacher_CurEntity", self)
 				tool:SetStage(1)
 			end)
 
@@ -1578,7 +1578,7 @@ else
 			//Send a notification to the player saying whether or not we managed to detach the particle
 			local detach = self:DetachFromEntity(k, ply)
 			if detach == true then
-				ply:SendLua("GAMEMODE:AddNotify('#undone_PartCtrl_Ent', NOTIFY_UNDO, 2)")
+				ply:SendLua("GAMEMODE:AddNotify('#undone_PEPlus_Ent', NOTIFY_UNDO, 2)")
 				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
 			elseif detach == false then
 				ply:SendLua("GAMEMODE:AddNotify('Failed to detach particle', NOTIFY_ERROR, 5)")
@@ -1590,7 +1590,7 @@ else
 
 			local new = net.ReadUInt(8)
 
-			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_POSITION then return end
+			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PEPLUS_CPOINT_MODE_POSITION then return end
 
 			self.ParticleInfo[k].attach = new
 			refreshtable = true
@@ -1599,7 +1599,7 @@ else
 			
 			local new = net.ReadUInt(2)
 
-			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_POSITION then return end
+			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PEPLUS_CPOINT_MODE_POSITION then return end
 
 			self.ParticleInfo[k].sfx_role = new
 			refreshtable = true
@@ -1609,7 +1609,7 @@ else
 			local axis = net.ReadUInt(2)
 			local new = net.ReadFloat()
 
-			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_AXIS then return end
+			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PEPLUS_CPOINT_MODE_AXIS then return end
 
 			//Sanity check: for some axis controls ("Emission Count Scale"), going out of range causes a crash, so make sure that doesn't happen
 			local tab = cpointtab["axis_" .. axis-1]
@@ -1629,7 +1629,7 @@ else
 
 			local new = Vector(net.ReadFloat(), net.ReadFloat(), net.ReadFloat())
 
-			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PARTCTRL_CPOINT_MODE_AXIS then return end
+			if !istable(self.ParticleInfo[k]) or cpointtab.mode != PEPLUS_CPOINT_MODE_AXIS then return end
 
 			self.ParticleInfo[k].val = new
 			refreshtable = true
@@ -1658,12 +1658,12 @@ else
 			numpad.Remove(self.NumDown)
 			numpad.Remove(self.NumUp)
 
-			self.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", self, true)
-			self.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", self, false)
+			self.NumDown = numpad.OnDown(ply, key, "PEPlus_Numpad", self, true)
+			self.NumUp = numpad.OnUp(ply, key, "PEPlus_Numpad", self, false)
 
 			//If the player is holding down the old key then let go of it
 			if self.NumpadKeyDown then
-				PartCtrlNumpadFunction(ply, self, false)
+				PEPlusNumpadFunction(ply, self, false)
 			end
 
 		elseif input == "numpad_toggle" then
@@ -1678,7 +1678,7 @@ else
 			if !toggle then
 				local keydown = self.NumpadKeyDown
 				if keydown != self:GetNumpadState() then
-					PartCtrlNumpadFunction(ply, self, keydown)
+					PEPlusNumpadFunction(ply, self, keydown)
 				end
 			end
 
@@ -1718,7 +1718,7 @@ else
 			local sfxpar = self:GetSpecialEffectParent()
 			if IsValid(sfxpar) and sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
 			//Tell clients to retrieve the updated info table
-			net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+			net.Start("PEPlus_InfoTableUpdate_SendToCl")
 				net.WriteEntity(self)
 			net.Broadcast()
 		end
@@ -1726,20 +1726,20 @@ else
 	end)
 
 	//Used by Advanced Bonemerge to fix merged fx breaking when their parent (or parent's parent, etc.) is changed
-	function PartCtrl_RefreshAllChildFx(ent)
+	function PEPlus_RefreshAllChildFx(ent)
 
 		//MsgN("refreshing all child fx: ", ent)
 		if !IsValid(ent) then return end
-		if ent.PartCtrl_Ent then
+		if ent.PEPlus_Ent then
 			//Tell clients to retrieve the updated info table
-			net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+			net.Start("PEPlus_InfoTableUpdate_SendToCl")
 				net.WriteEntity(ent)
 			net.Broadcast()
-		elseif ent.PartCtrl_SpecialEffect then
+		elseif ent.PEPlus_SpecialEffect then
 			//Refresh special effect on server
 			if ent.SpecialEffectRefresh then ent:SpecialEffectRefresh() end
 			//Tell clients to refresh the special effect
-			net.Start("PartCtrl_SpecialEffect_Refresh_SendToCl")
+			net.Start("PEPlus_SpecialEffect_Refresh_SendToCl")
 				net.WriteEntity(ent)
 			net.Broadcast()
 		else
@@ -1750,13 +1750,13 @@ else
 			end
 			//Also add all particle effect ents attached to the ent to the list; these won't be 
 			//listed by GetChildren if they're attached by a position cpoint after the first
-			for _, v in pairs (constraint.FindConstraints(ent, "PartCtrl_Ent")) do
+			for _, v in pairs (constraint.FindConstraints(ent, "PEPlus_Ent")) do
 				if IsValid(v.Ent1) then 
 					tab[v.Ent1] = true
 				end
 			end
 			for k, _ in pairs (tab) do
-				PartCtrl_RefreshAllChildFx(k)
+				PEPlus_RefreshAllChildFx(k)
 			end
 		end
 
@@ -1770,25 +1770,25 @@ end
 //Networking for infotable
 if SERVER then 
 
-	util.AddNetworkString("PartCtrl_InfoTable_GetFromSv")
-	util.AddNetworkString("PartCtrl_InfoTable_SendToCl")
-	util.AddNetworkString("PartCtrl_InfoTableUpdate_SendToCl")
+	util.AddNetworkString("PEPlus_InfoTable_GetFromSv")
+	util.AddNetworkString("PEPlus_InfoTable_SendToCl")
+	util.AddNetworkString("PEPlus_InfoTableUpdate_SendToCl")
 
 	//If we received a request for an info table, then send it to the client
-	net.Receive("PartCtrl_InfoTable_GetFromSv", function(_, ply)
+	net.Receive("PEPlus_InfoTable_GetFromSv", function(_, ply)
 		local ent = net.ReadEntity()
 		if !IsValid(ent) or !istable(ent.ParticleInfo) then return end
-		local pcf = PartCtrl_GetGamePCF(ent:GetPCF(), ent:GetPath())
-		if !istable(PartCtrl_ProcessedPCFs[pcf]) then return end
-		local ptab = PartCtrl_ProcessedPCFs[pcf][ent:GetParticleName()]
+		local pcf = PEPlus_GetGamePCF(ent:GetPCF(), ent:GetPath())
+		if !istable(PEPlus_ProcessedPCFs[pcf]) then return end
+		local ptab = PEPlus_ProcessedPCFs[pcf][ent:GetParticleName()]
 		if !istable(ptab) then return end
 
 		if !IsValid(ent:GetSpecialEffectParent()) then //children of special fx don't need valid .ent values
-			//Make sure the table is ready to send first - if we're a dupe, and our constraints haven't restored the .ent values for our cpoints using PARTCTRL_CPOINT_MODE_POSITION,
+			//Make sure the table is ready to send first - if we're a dupe, and our constraints haven't restored the .ent values for our cpoints using PEPLUS_CPOINT_MODE_POSITION,
 			//then this is most likely a bad dupe, so remove us and stop here
 			local badparticle = nil
 			for k, v in pairs (ent.ParticleInfo) do
-				if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_POSITION and v.ent == nil then
+				if ptab.cpoints[k].mode == PEPLUS_CPOINT_MODE_POSITION and v.ent == nil then
 					//MsgN("stop")
 					//return
 					badparticle = k
@@ -1796,10 +1796,10 @@ if SERVER then
 				end
 			end
 			if badparticle != nil then
-				MsgN("ent_partctrl ", ent, " (", ent:GetParticleName(), ") has nil target entity ", badparticle, "; most likely a bad dupe, removing")
+				MsgN("ent_peplus ", ent, " (", ent:GetParticleName(), ") has nil target entity ", badparticle, "; most likely a bad dupe, removing")
 				for k, v in pairs (ent.ParticleInfo) do
 					//don't leave behind any orphaned grip points (i.e. loaded a dupe; one cpoint was attached to a non-dupable entity, another was attached to a grip)
-					if IsValid(v.ent) and v.ent.PartCtrl_Grip then
+					if IsValid(v.ent) and v.ent.PEPlus_Grip then
 						v.ent:Remove()
 					end
 				end
@@ -1809,20 +1809,20 @@ if SERVER then
 			//MsgN("go")
 		end
 
-		net.Start("PartCtrl_InfoTable_SendToCl", true)
+		net.Start("PEPlus_InfoTable_SendToCl", true)
 
 			net.WriteEntity(ent)
 
-			net.WriteInt(table.Count(ent.ParticleInfo), partctrl_cpointbits + 1) //+1 for the super edge case where all 64 cpoints are occupied AND we use fallback cpoint -1
+			net.WriteInt(table.Count(ent.ParticleInfo), peplus_cpointbits + 1) //+1 for the super edge case where all 64 cpoints are occupied AND we use fallback cpoint -1
 			for k, v in pairs (ent.ParticleInfo) do
-				net.WriteInt(k, partctrl_cpointbits)
+				net.WriteInt(k, peplus_cpointbits)
 
 				local mode = ptab.cpoints[k].mode
-				if mode == PARTCTRL_CPOINT_MODE_POSITION then
+				if mode == PEPLUS_CPOINT_MODE_POSITION then
 					net.WriteEntity(v.ent or NULL)
 					net.WriteUInt(v.attach or 0, 8) //don't know what the max attachment number is, assume 255
 					net.WriteUInt(v.sfx_role or 0, 2) //max of 3, since we don't need any more so far (projectile effect has 0-2)
-				elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
+				elseif mode == PEPLUS_CPOINT_MODE_AXIS then
 					//we network vectors as 3 floats so that compression doesn't mess up precise values
 					local val = v.val or Vector()
 					net.WriteFloat(val.x)
@@ -1837,24 +1837,24 @@ if SERVER then
 else
 
 	//If we received an info table from the server, then use it
-	net.Receive("PartCtrl_InfoTable_SendToCl", function()
+	net.Receive("PEPlus_InfoTable_SendToCl", function()
 
 		local self = net.ReadEntity()
-		if !IsValid(self) or !self.PartCtrl_Ent then return end 
-		local pcf = PartCtrl_GetGamePCF(self:GetPCF(), self:GetPath())
-		if !istable(PartCtrl_ProcessedPCFs[pcf]) then return end
-		local ptab = PartCtrl_ProcessedPCFs[pcf][self:GetParticleName()]
+		if !IsValid(self) or !self.PEPlus_Ent then return end 
+		local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
+		if !istable(PEPlus_ProcessedPCFs[pcf]) then return end
+		local ptab = PEPlus_ProcessedPCFs[pcf][self:GetParticleName()]
 		if !istable(ptab) then return end
 
 		local tab = {}
 		local badents_tab = {}
 
-		for i = 1, net.ReadInt(partctrl_cpointbits + 1) do
-			local k = net.ReadInt(partctrl_cpointbits)
+		for i = 1, net.ReadInt(peplus_cpointbits + 1) do
+			local k = net.ReadInt(peplus_cpointbits)
 			local v = {}
 
 			local mode = ptab.cpoints[k].mode
-			if mode == PARTCTRL_CPOINT_MODE_POSITION then
+			if mode == PEPLUS_CPOINT_MODE_POSITION then
 				//v.ent = net.ReadEntity()
 				//the ent can be null if it's outside the player's pvs, so tell the think func to keep checking until it becomes valid
 				local entnum = net.ReadUInt(MAX_EDICT_BITS)
@@ -1863,7 +1863,7 @@ else
 
 				v.attach = net.ReadUInt(8)
 				v.sfx_role = net.ReadUInt(2)
-			elseif mode == PARTCTRL_CPOINT_MODE_AXIS then
+			elseif mode == PEPLUS_CPOINT_MODE_AXIS then
 				v.val = Vector(net.ReadFloat(), net.ReadFloat(), net.ReadFloat())
 				for i = 0, 2 do
 					//Sanity check: for some axis controls ("Emission Count Scale"), going out of range causes a crash, so make sure that doesn't happen
@@ -1897,51 +1897,51 @@ else
 		local parwindow
 		if IsValid(sfxpar) then
 			if sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
-			parwindow = sfxpar.PartCtrlWindow //don't check if this is valid; we want to do all this even if the parent's window isn't open, to clear our old window
+			parwindow = sfxpar.PEPlusWindow //don't check if this is valid; we want to do all this even if the parent's window isn't open, to clear our old window
 			//If we were just parented, and still have our own control window from back when we were unparented, close it
-			if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow != parwindow then
-				self.PartCtrlWindow:OnEntityLost()
+			if IsValid(self.PEPlusWindow) and self.PaPEPlusndow != parwindow then
+				self.PEPlusWindow:OnEntityLost()
 			end
 			//Assign ourself to the parent's control window, so that info table updates and such will update those controls
-			self.PartCtrlWindow = parwindow
+			self.PEPlusWindow = parwindow
 		end
-		if IsValid(self.PartCtrlWindow) and self.PartCtrlWindow.m_Entity != self then
+		if IsValid(self.PEPlusWindow) and self.PaPEPlusndow.m_Entity != self then
 			//Update the list of children to add or remove us
-			self.PartCtrlWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
+			self.PEPlusWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
 			//If we're no longer parented, then stop being assigned to its control window
 			if !parwindow then
-				self.PartCtrlWindow = nil
+				self.PEPlusWindow = nil
 			end
 		end
 		if istable(oldtab) then
-			local window = IsValid(self.PartCtrlWindow) and istable(self.PartCtrlWindow.CPointCategories) and istable(self.PartCtrlWindow.CPointCategories[self])
+			local window = IsValid(self.PEPlusWindow) and istable(self.PaPEPlusndow.CPointCategories) and istable(self.PartPEPlusow.CPointCategories[self])
 			for k, v in pairs (oldtab) do
 				if self.ParticleInfo[k].ent != oldtab[k].ent then
 					local oldent = oldtab[k].ent
 					//Remove us from the list of particles on the old ent
-					if oldent.PartCtrl_ParticleEnts then
-						oldent.PartCtrl_ParticleEnts[self] = nil
+					if oldent.PEPlus_ParticleEnts then
+						oldent.PEPlus_ParticleEnts[self] = nil
 					end
 					//Refresh attacher tool effect list if this effect was removed from the list
-					local panel = controlpanel.Get("partctrl_attacher")
+					local panel = controlpanel.Get("peplus_attacher")
 					if panel and panel.effectlist and panel.CurEntity == oldent then
 						panel.effectlist.PopulateEffectList(panel.CurEntity)
 					end
 				end
 				//Refresh control window if we changed something that requires the controls to be rebuilt
 				if window and ((!IsValid(sfxpar) and self.ParticleInfo[k].ent != oldtab[k].ent) or self.ParticleInfo[k].sfx_role != oldtab[k].sfx_role) then
-					self.PartCtrlWindow.CPointCategories[self][k].RebuildContents(self.ParticleInfo[k])
+					self.PEPlusWindow.CPointCategories[self][k].RebuildContents(self.ParticleInfo[k])
 				end
 			end
 		end
-		if !IsValid(sfxpar) then //don't do this if we're a special effect's child, otherwise we'll get added to the PartCtrl_ParticleEnts list on the special effect's parent
+		if !IsValid(sfxpar) then //don't do this if we're a special effect's child, otherwise we'll get added to the PEPlus_ParticleEnts list on the special effect's parent
 			for k, v in pairs (self.ParticleInfo) do
 				if IsValid(v.ent) then
 					//Store us in a list on the cpoint ent (used by properties)
-					v.ent.PartCtrl_ParticleEnts = v.ent.PartCtrl_ParticleEnts or {}
-					v.ent.PartCtrl_ParticleEnts[self] = true
+					v.ent.PEPlus_ParticleEnts = v.ent.PaPEPlusarticleEnts or {}
+					v.ent.PEPlus_ParticleEnts[self] = true
 					//Refresh attacher tool effect list if this effect was added to the list
-					local panel = controlpanel.Get("partctrl_attacher")
+					local panel = controlpanel.Get("peplus_attacher")
 					if panel and panel.effectlist and panel.CurEntity == v.ent then
 						panel.effectlist.PopulateEffectList(panel.CurEntity)
 					end
@@ -1953,9 +1953,9 @@ else
 	end)
 
 	//If we received a message from the server telling us an ent's info table is out of date, then change its ParticleInfo_Received value so its Think function requests a new one
-	net.Receive("PartCtrl_InfoTableUpdate_SendToCl", function()
+	net.Receive("PEPlus_InfoTableUpdate_SendToCl", function()
 		local ent = net.ReadEntity()
-		if !IsValid(ent) or !ent.PartCtrl_Ent then return end
+		if !IsValid(ent) or !ent.PEPlus_Ent then return end
 
 		ent.ParticleInfo_Received = false
 	end)
@@ -1970,23 +1970,23 @@ end
 //while the worst-case-scenario particle effect could have up to 64 cpoint entities + the 1 particle entity itself
 if SERVER then
 	
-	function constraint.PartCtrl_Ent(Ent1, Ent2, CPoint, DoParent, ply)
+	function constraint.PEPlus_Ent(Ent1, Ent2, CPoint, DoParent, ply)
 
-		if !Ent1 or !Ent2 or !Ent1.PartCtrl_Ent then return end
-		local pcf = PartCtrl_GetGamePCF(Ent1:GetPCF(), Ent1:GetPath())
-		//if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][Ent1:GetParticleName()]) then return end //causes grip ents from dupes with invalid fx to delete themselves due to having no particle
+		if !Ent1 or !Ent2 or !Ent1.PEPlus_Ent then return end
+		local pcf = PEPlus_GetGamePCF(Ent1:GetPCF(), Ent1:GetPath())
+		//if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PEPlus_ProcessedPCFs[pcf][Ent1:GetParticleName()]) then return end //causes grip ents from dupes with invalid fx to delete themselves due to having no particle
 		
 		//create a dummy ent for the constraint functions to use
 		local const = ents.Create("info_target")
 		const:Spawn()
 		const:Activate()
 
-		if !(Ent2.PartCtrl_Grip or (Ent2.GetPartCtrl_MergedGrip and Ent2:GetPartCtrl_MergedGrip())) then
+		if !(Ent2.PEPlus_Grip or (Ent2.GetPEPlus_MergedGrip and Ent2:GetPEPlus_MergedGrip())) then
 			//If the constraint is removed by an Undo, unmerge the second entity - this shouldn't do anything if the constraint's removed some other way i.e. one of the ents is removed
 			timer.Simple(0.1, function()  //CallOnRemove won't do anything if we try to run it now instead of on a timer
 				if const:GetTable() then  //CallOnRemove can error if this table doesn't exist - this can happen if the constraint is removed at the same time it's created for some reason
-					const:CallOnRemove("PartCtrl_Ent_UnmergeOnUndo", function(const,Ent1,ply)
-						//MsgN("PartCtrl_Ent_UnmergeOnUndo called by constraint ", const, ", ents ", Ent1, " ", Ent2)
+					const:CallOnRemove("PEPlus_Ent_UnmergeOnUndo", function(const,Ent1,ply)
+						//MsgN("PEPlus_Ent_UnmergeOnUndo called by constraint ", const, ", ents ", Ent1, " ", Ent2)
 						//NOTE: if we use the remover tool to get rid of ent2, it'll still be valid for a second, so we need to look for the NoDraw and MoveType that the tool sets the ent to instead.
 						//this might have a few false positives, but i don't think that many people will be attaching stuff to invisible, intangible ents a whole lot anyway so it's not a huge deal
 						if !IsValid(const) or !IsValid(Ent2) or Ent2:IsMarkedForDeletion() or (Ent2:GetNoDraw() == true and Ent2:GetMoveType() == MOVETYPE_NONE) or !IsValid(Ent1) or Ent1:IsMarkedForDeletion() or !IsValid(ply) or !Ent1.DetachFromEntity then return end
@@ -1996,7 +1996,7 @@ if SERVER then
 			end)
 		end
 
-		if istable(Ent1.ParticleInfo) and istable(Ent1.ParticleInfo[CPoint]) and PartCtrl_ProcessedPCFs[pcf] and PartCtrl_ProcessedPCFs[pcf][Ent1:GetParticleName()] and PartCtrl_ProcessedPCFs[pcf][Ent1:GetParticleName()].cpoints[CPoint] and PartCtrl_ProcessedPCFs[pcf][Ent1:GetParticleName()].cpoints[CPoint].mode == PARTCTRL_CPOINT_MODE_POSITION then
+		if istable(Ent1.ParticleInfo) and istable(Ent1.ParticleInfo[CPoint]) and PEPlus_ProcessedPCFs[pcf] and PEPlus_ProcessedPCFs[pcf][Ent1:GetParticleName()] and PEPlus_ProcessedPCFs[pcf][Ent1:GetParticleName()].cpoints[CPoint] and PEPlus_ProcessedPCFs[pcf][Ent1:GetParticleName()].cpoints[CPoint].mode == PEPLUS_CPOINT_MODE_POSITION then
 			Ent1.ParticleInfo[CPoint].ent = Ent2
 		end
 		if DoParent then
@@ -2005,7 +2005,7 @@ if SERVER then
 			Ent1:SetParent(Ent2)
 		end
 
-		if (Ent2.PartCtrl_Grip or (Ent2.GetPartCtrl_MergedGrip and Ent2:GetPartCtrl_MergedGrip())) then
+		if (Ent2.PEPlus_Grip or (Ent2.GetPEPlus_MergedGrip and Ent2:GetPEPlus_MergedGrip())) then
 			Ent1:DeleteOnRemove(Ent2)
 		end
 		Ent2:DeleteOnRemove(Ent1)
@@ -2013,7 +2013,7 @@ if SERVER then
 		constraint.AddConstraintTable(Ent1, const, Ent2)
 		
 		local ctable = {
-			Type = "PartCtrl_Ent",
+			Type = "PEPlus_Ent",
 			Ent1 = Ent1,
 			Ent2 = Ent2,
 			CPoint = CPoint,
@@ -2026,7 +2026,7 @@ if SERVER then
 		return const
 		
 	end
-	duplicator.RegisterConstraint("PartCtrl_Ent", constraint.PartCtrl_Ent, "Ent1", "Ent2", "CPoint", "DoParent", "ply")
+	duplicator.RegisterConstraint("PEPlus_Ent", constraint.PEPlus_Ent, "Ent1", "Ent2", "CPoint", "DoParent", "ply")
 
 
 
@@ -2054,14 +2054,14 @@ if SERVER then
 
 	//When NPCs die and create a serverside ragdoll, then transfer over the particle to the ragdoll
 	//TODO: can we do a clientside version of this for clientside ragdolls?
-	hook.Add("CreateEntityRagdoll", "PartCtrl_CreateEntityRagdoll", function(oldent, rag)
+	hook.Add("CreateEntityRagdoll", "PEPlus_CreateEntityRagdoll", function(oldent, rag)
 		local oldentconsts = constraint.GetTable(oldent)
 		for k, const in pairs (oldentconsts) do
 			if const.Entity then
-				if const.Type == "PartCtrl_Ent" or const.Type == "PartCtrl_SpecialEffect" then
+				if const.Type == "PEPlus_Ent" or const.Type == "PEPlus_SpecialEffect" then
 					//Clear DeleteOnRemoves and transfer over parents
 					local oldconst = const.Constraint
-					oldconst:RemoveCallOnRemove("PartCtrl_Ent_UnmergeOnUndo")
+					oldconst:RemoveCallOnRemove("PEPlus_Ent_UnmergeOnUndo")
 					const.Ent1:DontDeleteOnRemove(const.Ent2)
 					const.Ent2:DontDeleteOnRemove(const.Ent1)
 					if const.Ent1:GetParent() == oldent then const.Ent1:SetParent(rag) end
@@ -2092,8 +2092,8 @@ if SERVER then
 					duplicator.CreateConstraintFromTable(const, entstab)
 
 					//Tell clients to retrieve the updated info table from the constraint func
-					if const.Ent1 and const.Ent1.PartCtrl_Ent then
-						net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+					if const.Ent1 and const.Ent1.PEPlus_Ent then
+						net.Start("PEPlus_InfoTableUpdate_SendToCl")
 							net.WriteEntity(const.Ent1)
 						net.Broadcast()
 					end
@@ -2107,7 +2107,7 @@ end
 
 
 
-duplicator.RegisterEntityClass("ent_partctrl", function(ply, data)
+duplicator.RegisterEntityClass("ent_peplus", function(ply, data)
 
 	//default dtvars for old dupes that don't have them
 	if data.DT.PauseTime == nil then data.DT.PauseTime = -1 end
@@ -2116,7 +2116,7 @@ duplicator.RegisterEntityClass("ent_partctrl", function(ply, data)
 
 	if IsValid(ply) and !gamemode.Call("PlayerSpawnParticle", ply, data.DT.ParticleName, data.DT.PCF, data.DT.Path) then return false end
 
-	local ent = ents.Create("ent_partctrl")
+	local ent = ents.Create("ent_peplus")
 	if !ent:IsValid() then return false end
 
 	//duplicator.GenericDuplicatorFunction(ply, data)
@@ -2139,15 +2139,15 @@ end, "Data")
 
 local grip_radius = 6/2
 
-function PartCtrl_GetParticleDefaultPositions(pcf, name)
+function PEPlus_GetParticleDefaultPositions(pcf, name)
 
-	local ptab = PartCtrl_ProcessedPCFs[pcf][name]
+	local ptab = PEPlus_ProcessedPCFs[pcf][name]
 
 	local grips = {}
 	local igrips = {}
 	local offset_grips
 	for k, v in pairs (ptab.cpoints) do
-		if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+		if v.mode == PEPLUS_CPOINT_MODE_POSITION then
 			if !ptab.cpoint_planes or !ptab.cpoint_planes[k] then
 				if ptab.cpoint_distance_overrides and ptab.cpoint_distance_overrides[k] and ptab.cpoint_distance_overrides[k].offset_from_main_row then
 					offset_grips = offset_grips or {}
@@ -2254,11 +2254,11 @@ end
 
 if SERVER then
 
-	function PartCtrl_SpawnParticleGripPoints(grips, localpos)
+	function PEPlus_SpawnParticleGripPoints(grips, localpos)
 		
 		local parent = nil
 		for k, pos in pairs (grips) do
-			local g = ents.Create("ent_partctrl_grip")
+			local g = ents.Create("ent_peplus_grip")
 			if IsValid(g) then
 				g:SetPos(pos + localpos)
 				g:Spawn()
@@ -2271,43 +2271,43 @@ if SERVER then
 
 	end
 
-	function PartCtrl_SpawnParticle(ply, pos, name, pcf_original, path, disableundo)
+	function PEPlus_SpawnParticle(ply, pos, name, pcf_original, path, disableundo)
 
-		//MsgN("PartCtrl_SpawnParticle ", name, " ", pcf_original, " ", path)
+		//MsgN("PEPlus_SpawnParticle ", name, " ", pcf_original, " ", path)
 		local name = string.lower(name)
 
 		if !IsValid(ply) and pos == nil then
-			MsgN("PartCtrl_SpawnParticle has no player or position, can't get spawn location")
+			MsgN("PEPlus_SpawnParticle has no player or position, can't get spawn location")
 			return
 		end
 
 		if !name or !pcf_original then
-			MsgN("partctrl_spawnparticle: failed, missing name or pcf (first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf)")
+			MsgN("peplus_spawnparticle: failed, missing name or pcf (first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf)")
 			return
 		end
-		local pcf = PartCtrl_GetGamePCF(pcf_original, path)
-		if !istable(PartCtrl_ProcessedPCFs) then
-			MsgN("partctrl_spawnparticle: failed, no PartCtrl_ProcessedPCFs table (this shouldn't happen, report this bug!)")
+		local pcf = PEPlus_GetGamePCF(pcf_original, path)
+		if !istable(PEPlus_ProcessedPCFs) then
+			MsgN("peplus_spawnparticle: failed, no PEPlus_ProcessedPCFs table (this shouldn't happen, report this bug!)")
 			return
-		elseif !istable(PartCtrl_ProcessedPCFs[pcf]) then
-			MsgN("partctrl_spawnparticle: failed, invalid pcf \"", pcf, "\"")
+		elseif !istable(PEPlus_ProcessedPCFs[pcf]) then
+			MsgN("peplus_spawnparticle: failed, invalid pcf \"", pcf, "\"")
 			return
-		elseif !istable(PartCtrl_ProcessedPCFs[pcf][name]) then
-			MsgN("partctrl_spawnparticle: failed, invalid name \"", name, "\" in pcf \"", pcf, "\"")
+		elseif !istable(PEPlus_ProcessedPCFs[pcf][name]) then
+			MsgN("peplus_spawnparticle: failed, invalid name \"", name, "\" in pcf \"", pcf, "\"")
 			return
 		end
 
 		if IsValid(ply) and !gamemode.Call("PlayerSpawnParticle", ply, name, pcf_original, path) then return end
 
 		local tab = {}
-		for k, v in pairs (PartCtrl_ProcessedPCFs[pcf][name].cpoints) do
-			if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+		for k, v in pairs (PEPlus_ProcessedPCFs[pcf][name].cpoints) do
+			if v.mode == PEPLUS_CPOINT_MODE_POSITION then
 				tab[k] = {
 					ent = nil,
 					attach = 0,
 					sfx_role = 0,
 				}
-			elseif v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+			elseif v.mode == PEPLUS_CPOINT_MODE_AXIS then
 				tab[k] = {
 					val = Vector(0,0,0)
 				}
@@ -2322,7 +2322,7 @@ if SERVER then
 			end
 		end
 
-		local grips, mins, maxs = PartCtrl_GetParticleDefaultPositions(pcf, name)
+		local grips, mins, maxs = PEPlus_GetParticleDefaultPositions(pcf, name)
 		if IsValid(ply) and pos == nil then
 			//util.TraceHull returns a nonsense hitpos if we're up against a surface, and doesn't spawn things exactly where we click unless we
 			//move all the mins, maxs, and all the grips to put 0,0,0 flat against the surface. Just copy how gmod's prop spawn func does it instead.
@@ -2374,9 +2374,9 @@ if SERVER then
 		end
 
 		local parent = nil
-		grips, parent = PartCtrl_SpawnParticleGripPoints(grips, pos)
+		grips, parent = PEPlus_SpawnParticleGripPoints(grips, pos)
 
-		local p = ents.Create("ent_partctrl")
+		local p = ents.Create("ent_peplus")
 		if !IsValid(p) then return end
 		p:SetPlayer(ply)
 		p:SetParticleName(name)
@@ -2388,7 +2388,7 @@ if SERVER then
 			p:SetLoopDelay(0)
 		else
 			//utilfx don't support mode 1 (wait for end of effect) because we don't have a way to tell when a util effect is over, so use mode 2 (just a timer) instead
-			local time = PartCtrl_ProcessedPCFs[pcf][name].default_time
+			local time = PEPlus_ProcessedPCFs[pcf][name].default_time
 			if time < 0 then
 				//-1 sets no loop by default
 				p:SetLoopMode(0)
@@ -2406,13 +2406,13 @@ if SERVER then
 		p:Spawn()
 
 		for k, v in pairs (grips) do
-			constraint.PartCtrl_Ent(p, v, k, parent == v, ply)
+			constraint.PEPlus_Ent(p, v, k, parent == v, ply)
 		end
 
 		if IsValid(ply) then
 			gamemode.Call("PlayerSpawnedParticle", ply, name, pcf_original, path, p)
 			if !disableundo then
-				undo.Create("PartCtrl")
+				undo.Create("PEPlus")
 					undo.SetPlayer(ply)
 					undo.AddEntity(p)
 					local str = tostring(pcf_original)
@@ -2420,7 +2420,7 @@ if SERVER then
 						str = str .. " (" .. tostring(path) .. ")"
 					end
 				undo.Finish("Particle Effect (" .. tostring(name) .. " (" .. str .. "))")
-				ply:AddCleanup("partctrl", p)
+				ply:AddCleanup("peplus", p)
 			end
 		end
 
@@ -2428,22 +2428,22 @@ if SERVER then
 
 	end
 
-	//Console command for contenticon_partctrl to spawn particles
-	concommand.Add("partctrl_spawnparticle", function(ply, cmd, args)
-		PartCtrl_SpawnParticle(ply, nil, args[1], args[2], args[3])
+	//Console command for contenticon_peplus to spawn particles
+	concommand.Add("peplus_spawnparticle", function(ply, cmd, args)
+		PEPlus_SpawnParticle(ply, nil, args[1], args[2], args[3])
 	end, nil, "Spawns a particle effect; first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf, third arg is game path (optional, for conflicting pcfs)")
 
 	//Add hooks for these, in case someone wants to selectively prevent players from spawning particles
 	function GAMEMODE:PlayerSpawnParticle(ply, name, pcf, path)
 		local function LimitReachedProcess()
 			if !IsValid(ply) then return true end
-			return ply:CheckLimit("partctrl")
+			return ply:CheckLimit("peplus")
 		end
 		return LimitReachedProcess()
 	end
 
 	function GAMEMODE:PlayerSpawnedParticle(ply, name, pcf, path, ent)
-		ply:AddCount("partctrl", ent)
+		ply:AddCount("peplus", ent)
 	end
 
 end
@@ -2462,19 +2462,19 @@ if SERVER then
 
 		function meta:SetColor(color, ...)
 
-			if isentity(self) and IsValid(self) and self.PartCtrl_Grip then
-				local tab = constraint.FindConstraint(self, "PartCtrl_Ent")
+			if isentity(self) and IsValid(self) and self.PEPlus_Grip then
+				local tab = constraint.FindConstraint(self, "PEPlus_Ent")
 				if istable(tab) then
 					local ent = tab.Ent1
-					if IsValid(ent) and ent.PartCtrl_Ent and istable(ent.ParticleInfo) and istable(PartCtrl_ProcessedPCFs) then
-						local pcf = PartCtrl_GetGamePCF(ent:GetPCF(), ent:GetPath())
+					if IsValid(ent) and ent.PEPlus_Ent and istable(ent.ParticleInfo) and istable(PEPlus_ProcessedPCFs) then
+						local pcf = PEPlus_GetGamePCF(ent:GetPCF(), ent:GetPath())
 						local name = ent:GetParticleName()
-						if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then return end
-						local ptab = PartCtrl_ProcessedPCFs[pcf][name]
+						if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PEPlus_ProcessedPCFs[pcf][name]) then return end
+						local ptab = PEPlus_ProcessedPCFs[pcf][name]
 						local refreshtable = false
 						local color2 = Vector(color.r/255, color.g/255, color.b/255)
 						for k, v in pairs (ent.ParticleInfo) do
-							if ptab.cpoints[k].mode == PARTCTRL_CPOINT_MODE_AXIS then
+							if ptab.cpoints[k].mode == PEPLUS_CPOINT_MODE_AXIS then
 								for i = 0, 2 do
 									local tab = ptab.cpoints[k]["axis_" .. i]
 									if istable(tab) and tab.colorpicker then
@@ -2486,7 +2486,7 @@ if SERVER then
 						end
 						if refreshtable then
 							//Tell clients to retrieve the updated info table
-							net.Start("PartCtrl_InfoTableUpdate_SendToCl")
+							net.Start("PEPlus_InfoTableUpdate_SendToCl")
 								net.WriteEntity(ent)
 							net.Broadcast()
 						end
@@ -2505,15 +2505,15 @@ end
 
 
 
-if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running entity code") end
+if GetConVarNumber("developer") >= 1 then MsgN("Particle Effects+: running entity code") end
 
-//See PartCtrl_ReadAndProcessPCFs comments in pcf_processing.lua
+//See PEPlus_ReadAndProcessPCFs comments in pcf_processing.lua
 
-if !PartCtrl_ReadAndProcessPCFs_StartupHasRun then
-	PartCtrl_ReadAndProcessPCFs()
+if !PEPlus_ReadAndProcessPCFs_StartupHasRun then
+	PEPlus_ReadAndProcessPCFs()
 end
 
 timer.Simple(0, function()
-	if GetConVarNumber("developer") >= 1 then MsgN("PartCtrl: running entity code on timer") end
-	PartCtrl_ReadAndProcessPCFs_StartupIsOver = true
+	if GetConVarNumber("developer") >= 1 then MsgN("Particle Effects+: running entity code on timer") end
+	PEPlus_ReadAndProcessPCFs_StartupIsOver = true
 end)

@@ -1,76 +1,76 @@
 AddCSLuaFile()
 
 //silly pretend enums
-PARTCTRL_CPOINT_MODE_NONE		= 0
-PARTCTRL_CPOINT_MODE_POSITION		= 1
-PARTCTRL_CPOINT_MODE_POSITION_COMBINE	= 2
-PARTCTRL_CPOINT_MODE_AXIS		= 3
+PEPLUS_CPOINT_MODE_NONE		= 0
+PEPLUS_CPOINT_MODE_POSITION		= 1
+PEPLUS_CPOINT_MODE_POSITION_COMBINE	= 2
+PEPLUS_CPOINT_MODE_AXIS		= 3
 
 //for networking convenience
-partctrl_cpointbits = 7 //-1 - 63
+peplus_cpointbits = 7 //-1 - 63
 
-partctrl_wait = "wait" //another convenient global, used by particlesystems that can't currently be created (due to CrashCheck or a disabled particle entity) but should be created as soon as possible
+peplus_wait = "wait" //another convenient global, used by particlesystems that can't currently be created (due to CrashCheck or a disabled particle entity) but should be created as soon as possible
 
 //for vector/axis cpoints; names and comments from https://github.com/SourceSDK2013Ports/csgo-src/blob/main/src/public/particles/particles.h#L78
-PARTCTRL_PARTICLE_ATTRIBUTE_XYZ = 0 // required
-PARTCTRL_PARTICLE_ATTRIBUTE_LIFE_DURATION = 1 // particle lifetime (duration) of particle as a float.
-PARTCTRL_PARTICLE_ATTRIBUTE_PREV_XYZ = 2 // prev coordinates for verlet integration
-PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS = 3 // radius of particle
-PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION = 4 // rotation angle of particle
-PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION_SPEED = 5 // rotation speed of particle
-PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB = 6 // tint of particle
-PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA = 7 // alpha tint of particle
-PARTCTRL_PARTICLE_ATTRIBUTE_CREATION_TIME = 8 // creation time stamp (relative to particle system creation)
-PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER = 9 // sequnece # (which animation sequence number this particle uses )
-PARTCTRL_PARTICLE_ATTRIBUTE_TRAIL_LENGTH = 10 // length of the trail 
-PARTCTRL_PARTICLE_ATTRIBUTE_PARTICLE_ID = 11 // unique particle identifier
-PARTCTRL_PARTICLE_ATTRIBUTE_YAW = 12 // unique rotation around up vector
-PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 = 13 // second sequnece # (which animation sequence number this particle uses )
-PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_INDEX = 14 // hit box index
-PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ = 15
-PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 = 16
-PARTCTRL_PARTICLE_ATTRIBUTE_SCRATCH_VEC = 17 //scratch field used for storing arbitraty vec data
-PARTCTRL_PARTICLE_ATTRIBUTE_SCRATCH_FLOAT = 18 //scratch field used for storing arbitraty float data	
-PARTCTRL_PARTICLE_ATTRIBUTE_UNUSED = 19
-PARTCTRL_PARTICLE_ATTRIBUTE_PITCH = 20
-PARTCTRL_PARTICLE_ATTRIBUTE_NORMAL = 21 // 0 0 0 if none
-PARTCTRL_PARTICLE_ATTRIBUTE_GLOW_RGB = 22 // glow color
-PARTCTRL_PARTICLE_ATTRIBUTE_GLOW_ALPHA = 23 // glow alpha
+PEPLUS_PARTICLE_ATTRIBUTE_XYZ = 0 // required
+PEPLUS_PARTICLE_ATTRIBUTE_LIFE_DURATION = 1 // particle lifetime (duration) of particle as a float.
+PEPLUS_PARTICLE_ATTRIBUTE_PREV_XYZ = 2 // prev coordinates for verlet integration
+PEPLUS_PARTICLE_ATTRIBUTE_RADIUS = 3 // radius of particle
+PEPLUS_PARTICLE_ATTRIBUTE_ROTATION = 4 // rotation angle of particle
+PEPLUS_PARTICLE_ATTRIBUTE_ROTATION_SPEED = 5 // rotation speed of particle
+PEPLUS_PARTICLE_ATTRIBUTE_TINT_RGB = 6 // tint of particle
+PEPLUS_PARTICLE_ATTRIBUTE_ALPHA = 7 // alpha tint of particle
+PEPLUS_PARTICLE_ATTRIBUTE_CREATION_TIME = 8 // creation time stamp (relative to particle system creation)
+PEPLUS_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER = 9 // sequnece # (which animation sequence number this particle uses )
+PEPLUS_PARTICLE_ATTRIBUTE_TRAIL_LENGTH = 10 // length of the trail 
+PEPLUS_PARTICLE_ATTRIBUTE_PARTICLE_ID = 11 // unique particle identifier
+PEPLUS_PARTICLE_ATTRIBUTE_YAW = 12 // unique rotation around up vector
+PEPLUS_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 = 13 // second sequnece # (which animation sequence number this particle uses )
+PEPLUS_PARTICLE_ATTRIBUTE_HITBOX_INDEX = 14 // hit box index
+PEPLUS_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ = 15
+PEPLUS_PARTICLE_ATTRIBUTE_ALPHA2 = 16
+PEPLUS_PARTICLE_ATTRIBUTE_SCRATCH_VEC = 17 //scratch field used for storing arbitraty vec data
+PEPLUS_PARTICLE_ATTRIBUTE_SCRATCH_FLOAT = 18 //scratch field used for storing arbitraty float data	
+PEPLUS_PARTICLE_ATTRIBUTE_UNUSED = 19
+PEPLUS_PARTICLE_ATTRIBUTE_PITCH = 20
+PEPLUS_PARTICLE_ATTRIBUTE_NORMAL = 21 // 0 0 0 if none
+PEPLUS_PARTICLE_ATTRIBUTE_GLOW_RGB = 22 // glow color
+PEPLUS_PARTICLE_ATTRIBUTE_GLOW_ALPHA = 23 // glow alpha
 //old attributes from pre-csgo particles https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/public/particles/particles.h#L62
-//PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P0 = 17 // particle trace caching fields // start pnt of trace
-//PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P1 = 18 // end pnt of trace
-//PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_T = 19 // 0..1 if hit
-//PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL = 20 // 0 0 0 if no hit
+//PEPLUS_PARTICLE_ATTRIBUTE_TRACE_P0 = 17 // particle trace caching fields // start pnt of trace
+//PEPLUS_PARTICLE_ATTRIBUTE_TRACE_P1 = 18 // end pnt of trace
+//PEPLUS_PARTICLE_ATTRIBUTE_TRACE_HIT_T = 19 // 0..1 if hit
+//PEPLUS_PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL = 20 // 0 0 0 if no hit
 local ParticleAttributeNames = { //names and comments from https://github.com/SourceSDK2013Ports/csgo-src/blob/main/src/particles/particles.cpp#L3782
-	[PARTCTRL_PARTICLE_ATTRIBUTE_XYZ] = "Position", // XYZ, 0
-	[PARTCTRL_PARTICLE_ATTRIBUTE_LIFE_DURATION] = "Life Duration", // LIFE_DURATION, 1 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_PREV_XYZ] = "Position Previous", // PREV_XYZ 
-	[PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS] = "Radius", // RADIUS, 3 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION] = "Roll", // ROTATION, 4 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION_SPEED] = "Roll Speed", // ROTATION_SPEED, 5 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB] = "Color", // TINT_RGB, 6 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA] = "Alpha", // ALPHA, 7 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_CREATION_TIME] = "Creation Time", // CREATION_TIME, 8 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER] = "Texture", //better display name, technically inaccurate but players are more likely to understand what this means; original: "Sequence Number", // SEQUENCE_NUMBER, 9 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_TRAIL_LENGTH] = "Trail Length", // TRAIL_LENGTH, 10 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_PARTICLE_ID] = "Particle ID", // PARTICLE_ID, 11 ); 
-	[PARTCTRL_PARTICLE_ATTRIBUTE_YAW] = "Yaw", // YAW, 12 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Texture", //better display name, technically inaccurate but players are more likely to understand what this means; original: "Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
-	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_INDEX] = "Hitbox Index", // HITBOX_INDEX, 14
-	[PARTCTRL_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ] = "Hitbox Offset Position", // HITBOX_XYZ_RELATIVE 15
-	[PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2] = "Alpha", //better display name, there's no difference between the two alphas as far as players are concerned; original: "Alpha Alternate", // ALPHA2, 16
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SCRATCH_VEC] = "Scratch Vector", // SCRATCH_VEC 17
-	[PARTCTRL_PARTICLE_ATTRIBUTE_SCRATCH_FLOAT] = "Scratch Float", // SCRATCH_FLOAT 18
-	[PARTCTRL_PARTICLE_ATTRIBUTE_UNUSED] = "Unused Particle Attribute", //NULL,
-	[PARTCTRL_PARTICLE_ATTRIBUTE_PITCH] = "Pitch", // PITCH, 20
-	[PARTCTRL_PARTICLE_ATTRIBUTE_NORMAL] = "Normal", // NORMAL, 21
-	[PARTCTRL_PARTICLE_ATTRIBUTE_GLOW_RGB] = "Glow RGB", //GLOW_RGB,22 //i don't think these last two are implemented in gmod, actually?
-	[PARTCTRL_PARTICLE_ATTRIBUTE_GLOW_ALPHA] = "Glow Alpha", //GLOW_ALPHA,23
+	[PEPLUS_PARTICLE_ATTRIBUTE_XYZ] = "Position", // XYZ, 0
+	[PEPLUS_PARTICLE_ATTRIBUTE_LIFE_DURATION] = "Life Duration", // LIFE_DURATION, 1 );
+	[PEPLUS_PARTICLE_ATTRIBUTE_PREV_XYZ] = "Position Previous", // PREV_XYZ 
+	[PEPLUS_PARTICLE_ATTRIBUTE_RADIUS] = "Radius", // RADIUS, 3 );
+	[PEPLUS_PARTICLE_ATTRIBUTE_ROTATION] = "Roll", // ROTATION, 4 );
+	[PEPLUS_PARTICLE_ATTRIBUTE_ROTATION_SPEED] = "Roll Speed", // ROTATION_SPEED, 5 );
+	[PEPLUS_PARTICLE_ATTRIBUTE_TINT_RGB] = "Color", // TINT_RGB, 6 );
+	[PEPLUS_PARTICLE_ATTRIBUTE_ALPHA] = "Alpha", // ALPHA, 7 );
+	[PEPLUS_PARTICLE_ATTRIBUTE_CREATION_TIME] = "Creation Time", // CREATION_TIME, 8 );
+	[PEPLUS_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER] = "Texture", //better display name, technically inaccurate but players are more likely to understand what this means; original: "Sequence Number", // SEQUENCE_NUMBER, 9 );
+	[PEPLUS_PARTICLE_ATTRIBUTE_TRAIL_LENGTH] = "Trail Length", // TRAIL_LENGTH, 10 );
+	[PEPLUS_PARTICLE_ATTRIBUTE_PARTICLE_ID] = "Particle ID", // PARTICLE_ID, 11 ); 
+	[PEPLUS_PARTICLE_ATTRIBUTE_YAW] = "Yaw", // YAW, 12 );
+	[PEPLUS_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1] = "Texture", //better display name, technically inaccurate but players are more likely to understand what this means; original: "Sequence Number 1", // SEQUENCE_NUMBER1, 13 );
+	[PEPLUS_PARTICLE_ATTRIBUTE_HITBOX_INDEX] = "Hitbox Index", // HITBOX_INDEX, 14
+	[PEPLUS_PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ] = "Hitbox Offset Position", // HITBOX_XYZ_RELATIVE 15
+	[PEPLUS_PARTICLE_ATTRIBUTE_ALPHA2] = "Alpha", //better display name, there's no difference between the two alphas as far as players are concerned; original: "Alpha Alternate", // ALPHA2, 16
+	[PEPLUS_PARTICLE_ATTRIBUTE_SCRATCH_VEC] = "Scratch Vector", // SCRATCH_VEC 17
+	[PEPLUS_PARTICLE_ATTRIBUTE_SCRATCH_FLOAT] = "Scratch Float", // SCRATCH_FLOAT 18
+	[PEPLUS_PARTICLE_ATTRIBUTE_UNUSED] = "Unused Particle Attribute", //NULL,
+	[PEPLUS_PARTICLE_ATTRIBUTE_PITCH] = "Pitch", // PITCH, 20
+	[PEPLUS_PARTICLE_ATTRIBUTE_NORMAL] = "Normal", // NORMAL, 21
+	[PEPLUS_PARTICLE_ATTRIBUTE_GLOW_RGB] = "Glow RGB", //GLOW_RGB,22 //i don't think these last two are implemented in gmod, actually?
+	[PEPLUS_PARTICLE_ATTRIBUTE_GLOW_ALPHA] = "Glow Alpha", //GLOW_ALPHA,23
 	//old attributes from pre-csgo particles https://github.com/nillerusr/source-engine/blob/master/particles/particles.cpp#L3026
-	//[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P0] = "PARTICLE_ATTRIBUTE_TRACE_P0 (internal)",
-	//[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_P1] = "PARTICLE_ATTRIBUTE_TRACE_P1 (internal)",
-	//[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_T] = "PARTICLE_ATTRIBUTE_TRACE_HIT_T (internal)",
-	//[PARTCTRL_PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL] = "PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL (internal)"
+	//[PEPLUS_PARTICLE_ATTRIBUTE_TRACE_P0] = "PARTICLE_ATTRIBUTE_TRACE_P0 (internal)",
+	//[PEPLUS_PARTICLE_ATTRIBUTE_TRACE_P1] = "PARTICLE_ATTRIBUTE_TRACE_P1 (internal)",
+	//[PEPLUS_PARTICLE_ATTRIBUTE_TRACE_HIT_T] = "PARTICLE_ATTRIBUTE_TRACE_HIT_T (internal)",
+	//[PEPLUS_PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL] = "PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL (internal)"
 }
 
 //from the only good glua file parser code i could find on github; we use this to get strings (https://github.com/RaphaelIT7/gmod-lua-gma-writer/blob/master/gma.lua#L202)
@@ -1688,7 +1688,7 @@ defs = tab
 tab = nil
 
 //the above table is generated by creating a test effect with default values, and then using the function below to output a lua-readable version of its contents,
-//i.e. PrintTable(PartCtrl_ReadPCF("particles/text.pcf")["test"} - make sure to set sv_partctrl_cachereadpcf 0 so that the json bug doesn't turn color objects into normal tables
+//i.e. PrintTable(PEPlus_ReadPCF("particles/test.pcf")["test"} - make sure to set sv_peplus_cachereadpcf 0 so that the json bug doesn't turn color objects into normal tables
 --[[local function PrintTable( t, indent, done ) //edited PrintTable that outputs a correctly formatted lua table we can paste into code
 	local Msg = Msg
 
@@ -1740,9 +1740,9 @@ end]]
 //https://developer.valvesoftware.com/wiki/PCF, https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3, https://developer.valvesoftware.com/wiki/DMX/Binary
 
 local cache_version = "1" //update this in case ReadPCF is updated post-release to return a different table
-local docache = GetConVar("sv_partctrl_cachereadpcf")
+local docache = GetConVar("sv_peplus_cachereadpcf")
 
-function PartCtrl_ReadPCF(filename, path)
+function PEPlus_ReadPCF(filename, path)
 
 	local function RestoreDefaultValues(tab)
 		for p, ptab in pairs (tab) do
@@ -1771,10 +1771,10 @@ function PartCtrl_ReadPCF(filename, path)
 		//PrintTable(tab)
 	end
 	local function do_nodefs(tab)
-		//Store a leaner table without default values - this gets used by PartCtrl_GetDuplicateFx()
+		//Store a leaner table without default values - this gets used by PEPlus_GetDuplicateFx()
 		//This is a good place to do this because it means we don't have to read the file a second time to populate this
 		if CLIENT and !path then
-			PartCtrl_NoDefPCFs[filename] = table.Copy(tab)
+			PEPlus_NoDefPCFs[filename] = table.Copy(tab)
 		end
 	end
 
@@ -1784,13 +1784,13 @@ function PartCtrl_ReadPCF(filename, path)
 
 	local checksum
 	if docache:GetBool() then
-		//If possible, load the results of this function from cache instead. This makes PartCtrl_ReadAndProcessPCFs 2-3x faster on all subsequent
+		//If possible, load the results of this function from cache instead. This makes PEPlus_ReadAndProcessPCFs 2-3x faster on all subsequent
 		//startups (compared to without caching), but makes the very first load quite a bit slower as we save the files to the cache, and also adds
 		//approx. 50MB to the data folder (because of how BIG tf2's pcfs are!).
 		checksum = file.Read(filename, path or "GAME")
-		if !checksum then MsgN("PartCtrl: ", filename, " (", path or "GAME", ") can't be read, report this bug!") return end
+		if !checksum then MsgN("PEPlus_ReadPCF: ", filename, " (", path or "GAME", ") can't be read, report this bug!") return end
 		checksum = util.SHA256(checksum) //if the pcf file is updated, then the checksum will be different; this stops us from loading outdated data
-		local cached_file = file.Read("partctrl_cache_" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", "DATA")
+		local cached_file = file.Read("peplus_cache_v" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", "DATA")
 		if cached_file then
 			//"true" arg below stops it from converting all table keys from strings to numbers where possible.
 			//this prevents edge cases where an effect just named a number can get converted into a bad name, and doesn't 
@@ -1800,30 +1800,30 @@ function PartCtrl_ReadPCF(filename, path)
 			if cached_file then
 				do_nodefs(cached_file)
 				RestoreDefaultValues(cached_file) //saved cache files omit all default values to save space and read time, so repopulate those
-				if dodebug then MsgN("PartCtrl: ", filename, " loading from cache") end
+				if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " loading from cache") end
 				return cached_file
 			end
 		end
 	end
 
 	local f = file.Open(filename, "rb", path or "GAME")
-	if !f then MsgN("PartCtrl: ", filename, " (", path or "GAME", ") can't be opened, report this bug!") return end
-	//path arg is only used by PartCtrl_GetPCFConflicts, don't worry about it past this point
+	if !f then MsgN("PEPlus_ReadPCF: ", filename, " (", path or "GAME", ") can't be opened, report this bug!") return end
+	//path arg is only used by PEPlus_GetPCFConflicts, don't worry about it past this point
 
 	//If the pcf is packed into the current map, then write a copy of it into the data folder and read that instead.
 	//This is necessary because performing read operations on packed files takes a very long time (only if the map file is compressed, but we don't have 
 	//a way to check for that); pd_watergate's *7* packed pcfs add *10 whole minutes* to the load time if we don't cache them like this!
 	if file.Exists(filename, "BSP") then
-		if dodebug then MsgN("PartCtrl: ", filename, " is packed into the current BSP file, caching") end
-		if file.Write("temp_partctrl_readpcfcache.txt", f:Read()) then
-			f = file.Open("temp_partctrl_readpcfcache.txt", "rb", "DATA")
-			if !f then MsgN("PartCtrl: ", filename, " cache was written, but can't be read; report this bug!") return end
+		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " is packed into the current BSP file, caching") end
+		if file.Write("temp_peplus_readpcfcache.txt", f:Read()) then
+			f = file.Open("temp_peplus_readpcfcache.txt", "rb", "DATA")
+			if !f then MsgN("PEPlus_ReadPCF: ", filename, " cache was written, but can't be read; report this bug!") return end
 		else
-			MsgN("PartCtrl: ", filename, " was unable to be cached; report this bug!")
+			MsgN("PEPlus_ReadPCF: ", filename, " was unable to be cached; report this bug!")
 			return
 		end
 	end
-	//we *could* run file.Delete("temp_partctrl_readpcfcache.txt", "DATA") after we're done with it, but that doesn't seem necessary; 
+	//we *could* run file.Delete("temp_peplus_readpcfcache.txt", "DATA") after we're done with it, but that doesn't seem necessary; 
 	//there's only ever one of these files at a time and they're not that big, it'd just be another write operation on the user's HD for no benefit
 
 	local version
@@ -1840,7 +1840,7 @@ function PartCtrl_ReadPCF(filename, path)
 	elseif header == "<!-- dmx encoding binary 5 format pcf 2 -->\n" then //used by most portal 2 pcfs and all(?) alien swarm pcfs
 		version = 5
 	else
-		if dodebug then MsgN("PartCtrl: ", filename, " has unsupported pcf format ", string.TrimRight(header, "\n"), ", ignoring") end
+		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " has unsupported pcf format ", string.TrimRight(header, "\n"), ", ignoring") end
 		return
 	end
 
@@ -1945,7 +1945,7 @@ function PartCtrl_ReadPCF(filename, path)
 				at = string.Replace(at, "_ARRAY", "")
 				local tab2 = {}
 				local arraysize = f:ReadULong() //int, is ReadULong the right way to interpret this?
-				if arraysize > 1000 then MsgN("PartCtrl: ", filename, " got crazy array size ", arraysize, " - we screwed up file reading somewhere, report this bug!") return end
+				if arraysize > 1000 then MsgN("PEPlus_ReadPCF: ", filename, " got crazy array size ", arraysize, " - we screwed up file reading somewhere, report this bug!") return end
 				for i = 1, arraysize do
 					table.insert(tab2, DoAttribute(true))
 				end
@@ -1962,11 +1962,11 @@ function PartCtrl_ReadPCF(filename, path)
 		local body = {}
 		local attributecount = f:ReadULong() //int, is ReadULong the right way to interpret this?
 		//MsgN("attributecount = ", attributecount)
-		if !attributecount then MsgN("PartCtrl: ", filename, " got no attribute count - we screwed up file reading somewhere, report this bug!") return end
-		if attributecount > 100 then MsgN("PartCtrl: ", filename, " got crazy attribute count ", attributecount, " - we screwed up file reading somewhere, report this bug!") return end
+		if !attributecount then MsgN("PEPlus_ReadPCF: ", filename, " got no attribute count - we screwed up file reading somewhere, report this bug!") return end
+		if attributecount > 100 then MsgN("PEPlus_ReadPCF: ", filename, " got crazy attribute count ", attributecount, " - we screwed up file reading somewhere, report this bug!") return end
 		for i = 1, attributecount do
 			local attrib = DmAttribute()
-			if !attrib.Name then MsgN("PartCtrl: ", filename, " attribute ", i, " has no name value - we screwed up file reading somewhere, report this bug!") return end
+			if !attrib.Name then MsgN("PEPlus_ReadPCF: ", filename, " attribute ", i, " has no name value - we screwed up file reading somewhere, report this bug!") return end
 			table.insert(body, attrib)
 		end
 		ElementBodies[i-1] = body
@@ -1987,7 +1987,7 @@ function PartCtrl_ReadPCF(filename, path)
 
 		local v = {}
 		if !ElementBodies[i] then
-			MsgN("PartCtrl: ", filename, " element index ", i, " has no body - we screwed up file reading somewhere, report this bug!")
+			MsgN("PEPlus_ReadPCF: ", filename, " element index ", i, " has no body - we screwed up file reading somewhere, report this bug!")
 			break //note: in all the cases where this bug has happened (reading pcfs packed into compressed tf2 maps before 3/26/25 update) every element after the first one with this bug will also be empty, so stop here
 		else
 			for i, attrib in pairs (ElementBodies[i]) do
@@ -2028,31 +2028,31 @@ function PartCtrl_ReadPCF(filename, path)
 	//Looks like in every pcf, 0 is the only unparented element, so start there to save time instead of iterating over the whole table again
 	local Elements = {}
 	if !ElementsUnsorted[0].v.particleSystemDefinitions or !ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable then 
-		if dodebug then MsgN("PartCtrl: ", filename, " element 0 doesn't contain a particleSystemDefinitions table, ignoring") end
+		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " element 0 doesn't contain a particleSystemDefinitions table, ignoring") end
 		return
 	end
 	for _, i in pairs (ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable) do
 		if !ElementsUnsorted[i] then
-			if dodebug then MsgN("PartCtrl: ", filename, " tried to get DmeParticleSystemDefinition from nil element ", i) end
+			if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " tried to get DmeParticleSystemDefinition from nil element ", i) end
 		elseif ElementsUnsorted[i].k.Type != "DmeParticleSystemDefinition" then
-			if dodebug then MsgN("PartCtrl: ", filename, " tried to get DmeParticleSystemDefinition element ", ElementsUnsorted[i].k.Name, ", but it was a ", ElementsUnsorted[i].k.Type, " element") end
+			if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " tried to get DmeParticleSystemDefinition element ", ElementsUnsorted[i].k.Name, ", but it was a ", ElementsUnsorted[i].k.Type, " element") end
 		else
 			for k, v in pairs (ElementsUnsorted[i].v) do
 				if istable(v) and v.ElementTable then
 					local tab = {}
 					for et_k, et_i in pairs (v.ElementTable) do
 						if !ElementsUnsorted[et_i] then
-							if dodebug then MsgN("PartCtrl: ", filename, " attribute ", k, " tried to get nil element ", et_i) end
+							if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " attribute ", k, " tried to get nil element ", et_i) end
 						else
 							if ElementsUnsorted[et_i].k.Type == "DmeParticleChild" then
 								if !ElementsUnsorted[et_i].v.child then
-									if dodebug then MsgN("PartCtrl: ", filename, " DmeParticleChild has no child value") end
+									if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " DmeParticleChild has no child value") end
 								else
 									//store particle children as strings (names of the corresponding fx) to keep the table simple and avoid recursive nonsense
 									local childName = nil
 									for et2_k, et2_i in pairs (ElementsUnsorted[et_i].v.child.ElementTable) do
 										if !ElementsUnsorted[et2_i] then
-											if dodebug then MsgN("PartCtrl: ", filename, " DmeParticleChild tried to get nil element ", et2_i) end
+											if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " DmeParticleChild tried to get nil element ", et2_i) end
 										else
 											//table.insert(tab, ElementsUnsorted[et2_i].k.Name)
 											childName = string.lower(ElementsUnsorted[et2_i].k.Name) //for this addon's purposes, we make effect names all lowercase, see below
@@ -2148,19 +2148,19 @@ function PartCtrl_ReadPCF(filename, path)
 	if docache:GetBool() then
 		str = util.TableToJSON(str)
 		if str then
-			local dirs = string.Explode("/", "partctrl_cache_" .. cache_version ..  "/" .. filename)
+			local dirs = string.Explode("/", "peplus_cache_v" .. cache_version ..  "/" .. filename)
 			local d = ""
 			for k,v in ipairs(dirs) do
 				d = (d..v.."/")
 				if !file.IsDir(d, "DATA") then file.CreateDir(d) end
 			end
-			if file.Write("partctrl_cache_" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", str) then
-				if dodebug then MsgN("PartCtrl: ", filename, " saved to cache") end
+			if file.Write("peplus_cache_v" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", str) then
+				if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " saved to cache") end
 			else
-				if dodebug then MsgN("PartCtrl: ", filename, " couldn't be cached because file.Write failed?") end
+				if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " couldn't be cached because file.Write failed?") end
 			end
 		else
-			if dodebug then MsgN("PartCtrl: ", filename, " couldn't be cached because util.TableToJSON failed?") end
+			if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " couldn't be cached because util.TableToJSON failed?") end
 		end
 	end
 	
@@ -2172,13 +2172,13 @@ end
 
 
 //For testing purposes, lists all fx using a certain operator, and optionally prints the operator's values
-//Example: PartCtrl_GetParticlesWithOperator("Remap Control Point to Vector") to get all fx in all pcfs with that operator, 
-//or PartCtrl_GetParticlesWithOperator("Remap Control Point to Vector", "particles/critglowtool_colorablefx.pcf") for just the fx in that file;
+//Example: PEPlus_GetParticlesWithOperator("Remap Control Point to Vector") to get all fx in all pcfs with that operator, 
+//or PEPlus_GetParticlesWithOperator("Remap Control Point to Vector", "particles/critglowtool_colorablefx.pcf") for just the fx in that file;
 //add an extra "true" arg to the end of either of those to print the operator's values
-function PartCtrl_GetParticlesWithOperator(desiredfunc, filename, extended)
+function PEPlus_GetParticlesWithOperator(desiredfunc, filename, extended)
 	desiredfunc = string.lower(desiredfunc)
 	local function GetOperatorsFromFile(desiredfunc, filename, extended)
-		local tab = PartCtrl_ReadPCF(filename)
+		local tab = PEPlus_ReadPCF(filename)
 		if tab then
 			for particle, ptab in SortedPairs (tab) do
 				for category, ops in pairs (ptab) do
@@ -2202,7 +2202,7 @@ function PartCtrl_GetParticlesWithOperator(desiredfunc, filename, extended)
 	//filename arg is optional; if so, then check every file
 	if !isstring(filename) then
 		extended = filename
-		for _, filename2 in pairs (PartCtrl_AllPCFPaths) do
+		for _, filename2 in pairs (PEPlus_AllPCFPaths) do
 			GetOperatorsFromFile(desiredfunc, filename2, extended)
 		end
 	else
@@ -2214,11 +2214,11 @@ end
 //Test: Get a list of all pcfs that are defined by multiple games, and for each one, print the checksums of each copy of the file, along with the checksum
 //of the one actually being loaded by the game. This lets us determine which games have unique instances of a pcf as opposed to identical copies, and also 
 //tells us which ones are getting loaded vs. getting clobbered by mount order.
-//TODO: almost certainly not necessary any more with the new data pcfs system
-function PartCtrl_GetPCFConflicts(alternate)
+//TODO: almost certainly not necessary any more with the new data pcf system
+function PEPlus_GetPCFConflicts(alternate)
 	
 	local particles = {}
-	for k, v in pairs (PartCtrl_AllPCFPaths) do
+	for k, v in pairs (PEPlus_AllPCFPaths) do
 		particles[v] = {}
 	end
 	local games = engine.GetGames()
@@ -2246,7 +2246,7 @@ function PartCtrl_GetPCFConflicts(alternate)
 				//alternative: get checksum of the table we return from reading the file, just in case there's some false positive making
 				//file.Read return a non-identical string even if nothing relevant is different (i.e. file save timestamp or something?)
 				//the results of this turned out to be no different from the above, and it's much slower, so don't do this by default.
-				local f = PartCtrl_ReadPCF(name, v.folder)
+				local f = PEPlus_ReadPCF(name, v.folder)
 				if f then
 					particles[name][v.depot .. ": " .. folder2] = util.SHA256(util.TableToKeyValues(f))
 				end
@@ -2264,7 +2264,7 @@ function PartCtrl_GetPCFConflicts(alternate)
 				end
 			else
 				//see above
-				local f = PartCtrl_ReadPCF(name)
+				local f = PEPlus_ReadPCF(name)
 				if f then
 					particles[name]["      0: mounted          "] = util.SHA256(util.TableToKeyValues(f)) //top of list
 				end
@@ -2277,7 +2277,7 @@ end
 
 
 //Test: Prints all differences between 2 raw pcf data tables.
-function PartCtrl_ComparePCFs(file1, file2, shownil)
+function PEPlus_ComparePCFs(file1, file2, shownil)
 
 	local checksum1 = util.SHA256(file.Read(file1, "GAME"))
 	local checksum2 = util.SHA256(file.Read(file2, "GAME"))
@@ -2362,7 +2362,7 @@ function PartCtrl_ComparePCFs(file1, file2, shownil)
 		return results
 	end
 
-	for _, v in pairs (Compare(PartCtrl_ReadPCF(file1), PartCtrl_ReadPCF(file2), true)) do
+	for _, v in pairs (Compare(PEPlus_ReadPCF(file1), PEPlus_ReadPCF(file2), true)) do
 		if istable(v) then
 			PrintTable(v)
 		else
@@ -2374,12 +2374,12 @@ end
 
 
 //Test: Get all missing materials in a pcf
-function PartCtrl_GetMissingPCFMats(filename)
+function PEPlus_GetMissingPCFMats(filename)
 
 	local function Check(filename2)
 		local tab = {}
 	
-		for particle, ptab in pairs (PartCtrl_ReadPCF(filename2)) do
+		for particle, ptab in pairs (PEPlus_ReadPCF(filename2)) do
 			local mat = "materials\\" .. string.StripExtension(ptab.material) .. ".vmt"
 			if !file.Exists(mat, "GAME") then
 				table.insert(tab, particle .. ": " .. mat)
@@ -2408,7 +2408,7 @@ function PartCtrl_GetMissingPCFMats(filename)
 	if filename then
 		Check(filename)
 	else
-		for k, v in pairs (PartCtrl_AllPCFPaths) do
+		for k, v in pairs (PEPlus_AllPCFPaths) do
 			Check(v)
 		end
 	end
@@ -2417,18 +2417,18 @@ end
 
 
 //Test: Get all particle effects used by info_particle_system ents on the map
-//TODO: should rework this from scratch, can we get a list of ents from the server but then do PartCtrl_PCFsByParticleName for each of them on client?
-//DOUBLE TODO: update 1/3/26 makes PartCtrl_PCFsByParticleName accessible serverside again, see if we can fix this
-function PartCtrl_GetMapFx()
+//TODO: should rework this from scratch, can we get a list of ents from the server but then do PEPlus_PCFsByParticleName for each of them on client?
+//DOUBLE TODO: update 1/3/26 makes PEPlus_PCFsByParticleName accessible serverside again, see if we can fix this
+function PEPlus_GetMapFx()
 
 	for k, v in pairs (ents.FindByClass("info_particle_system")) do
 		local name = v:GetInternalVariable("effect_name")
 		MsgN(name)
-		//this no longer works now that we only build PartCtrl_PCFsByParticleName clientside to save time
-		--[[for _, v2 in pairs (PartCtrl_PCFsByParticleName[name]) do 
+		//this no longer works now that we only build PEPlus_PCFsByParticleName clientside to save time
+		--[[for _, v2 in pairs (PEPlus_PCFsByParticleName[name]) do 
 			//wanted to use this to figure out which instance of this effect is currently mounted,
 			//but info_particle_system ents are only serverside and this table is only clientside, argh
-			//MsgN(v2, " ", table.KeyFromValue(PartCtrl_AddParticles_AddedParticles, v2))
+			//MsgN(v2, " ", table.KeyFromValue(PEPlus_AddParticles_AddedParticles, v2))
 			MsgN(v2)
 		end
 		MsgN("")]]
@@ -2437,7 +2437,7 @@ function PartCtrl_GetMapFx()
 end
 
 
-function PartCtrl_GetUnhandledOperators()
+function PEPlus_GetUnhandledOperators()
 	local allcategories = {
 		renderers = {},
 		operators = {},
@@ -2446,8 +2446,8 @@ function PartCtrl_GetUnhandledOperators()
 		forces = {}, //forcegenerator
 		constraints = {},
 	}
-	for _, filename in pairs (PartCtrl_AllPCFPaths) do
-		local tab = PartCtrl_ReadPCF(filename)
+	for _, filename in pairs (PEPlus_AllPCFPaths) do
+		local tab = PEPlus_ReadPCF(filename)
 		if tab then
 			for particle, ptab in pairs (tab) do
 				for category, _ in pairs (allcategories) do
@@ -2498,7 +2498,7 @@ local badoutputparams = {
 	["operator fade oscillate"] = 0,
 	["operator end cap state"] = -1,
 }]]
-function PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processedv, op)
+function PEPlus_CPoint_AddToProcessed(processed, k, name, processedk, processedv, op)
 	if op then
 		//if an output has a fadein/fadeout, then it isn't always overriding this cpoint, so we don't care about it - reject it
 		if (processedk == "output" or processedk == "output_axis" or processedk == "output_children")
@@ -2612,7 +2612,7 @@ local function cpoint_from_op_value(processed, op, value, processedk, processedv
 				name = op._categoryName .. " " .. name
 			end
 		end
-		PartCtrl_CPoint_AddToProcessed(processed, k, name, processedk, processedv, op)
+		PEPlus_CPoint_AddToProcessed(processed, k, name, processedk, processedv, op)
 	end
 end
 
@@ -2643,10 +2643,10 @@ local function DoScalarIO(op, use_distance_input, is_position_control)
 			inMax = math.Remap(big, outMin, outMax, inMin, inMax)
 			outMax = big
 		end
-		if field == PARTCTRL_PARTICLE_ATTRIBUTE_RADIUS and !is_multiplier then
+		if field == PEPLUS_PARTICLE_ATTRIBUTE_RADIUS and !is_multiplier then
 			//radius scalars should default to a nice big size, not 1 pixel
 			default = math.Remap(32, outMin, outMax, inMin, inMax)
-		elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA or field == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA2 then 
+		elseif field == PEPLUS_PARTICLE_ATTRIBUTE_ALPHA or field == PEPLUS_PARTICLE_ATTRIBUTE_ALPHA2 then 
 			//Alpha should always default to max visibility;
 			//make sure to handle wacky fx like tf2's speech_mediccall that flip the scale around on output
 			if outMin <= outMax then
@@ -2654,7 +2654,7 @@ local function DoScalarIO(op, use_distance_input, is_position_control)
 			else
 				default = math.min(inMin, inMax)
 			end
-		elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER or field == PARTCTRL_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 then
+		elseif field == PEPLUS_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER or field == PEPLUS_PARTICLE_ATTRIBUTE_SEQUENCE_NUMBER1 then
 			//don't let sequence number scalars set the value to 64, or it'll crash (for particles/asw_order_fx.pcf order_use_item)
 			if outMax > 63 then
 				inMax = math.Remap(63, outMin, outMax, inMin, inMax)
@@ -2709,16 +2709,16 @@ local function DoVectorIO(op)
 	local is_multiplier = op["output is scalar of initial random range"] or op["output is scalar of current value"] //initializers don't have the latter, but this should be fine
 	local default = nil
 	local colorpicker = nil
-	if field == PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION then
+	if field == PEPLUS_PARTICLE_ATTRIBUTE_ROTATION then
 		//Convert roll controls from radians to degrees to make them more user-friendly
 		outMin = Vector(math.deg(outMin.x), math.deg(outMin.y), math.deg(outMin.z))
 		outMax = Vector(math.deg(outMax.x), math.deg(outMax.y), math.deg(outMax.z))
 	end
-	if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB or is_multiplier then
+	if field == PEPLUS_PARTICLE_ATTRIBUTE_TINT_RGB or is_multiplier then
 		//Color should default to the equivalent of 1,1,1 (white),
 		//and multipliers should default to 100%
 		default = Vector(math.Remap(1, outMin.x, outMax.x, inMin.x, inMax.x), math.Remap(1, outMin.y, outMax.y, inMin.y, inMax.y), math.Remap(1, outMin.z, outMax.z, inMin.z, inMax.z))
-		if field == PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB then
+		if field == PEPLUS_PARTICLE_ATTRIBUTE_TINT_RGB then
 			colorpicker = true
 		end
 	else
@@ -2732,11 +2732,11 @@ local function DoVectorIO(op)
 	if is_multiplier then
 		label = label .. " Scale"
 	end
-	if field == PARTCTRL_PARTICLE_ATTRIBUTE_ROTATION then
+	if field == PEPLUS_PARTICLE_ATTRIBUTE_ROTATION then
 		label = {"Pitch", "Yaw", "Roll"}
-	elseif field == PARTCTRL_PARTICLE_ATTRIBUTE_XYZ then
+	elseif field == PEPLUS_PARTICLE_ATTRIBUTE_XYZ then
 		label = {label .. " Back/Fwd", label .. " Right/Left", label .. " Down/Up"}
-	elseif field != PARTCTRL_PARTICLE_ATTRIBUTE_TINT_RGB then
+	elseif field != PEPLUS_PARTICLE_ATTRIBUTE_TINT_RGB then
 		label = {label .. " X", label .. " Y", label .. " Z"}
 	end
 
@@ -2774,7 +2774,7 @@ local processfuncs = {
 				end
 				if scalar then
 					cpoint_from_op_value(processed, op, "scale CP end", "axis", {
-						axis = 0, //arbitrary; any axis could work for this, but ent_partctrl:StartParticle checks axis_0 for relative_to_cpoint
+						axis = 0, //arbitrary; any axis could work for this, but ent_peplus:StartParticle checks axis_0 for relative_to_cpoint
 						label = scalar,
 						inMin = 0,
 						outMin = 0,
@@ -2885,7 +2885,7 @@ local processfuncs = {
 				local endp = op["end control point number"]
 				local name = op._categoryName .. " " .. op.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 				for i = startp, endp do
-					PartCtrl_CPoint_AddToProcessed(processed, i, name, "position_combine", nil, op)
+					PEPlus_CPoint_AddToProcessed(processed, i, name, "position_combine", nil, op)
 				end
 			else
 				//uses start and end cpoint only
@@ -2988,7 +2988,7 @@ local processfuncs = {
 		["remap distance between two control points to scalar"] = function(processed, op)
 			//this uses all the same scalars as remap control point to scalar, but actually uses the distance between two positions to get the value
 			local tab = DoScalarIO(op, true)
-			tab.axis = 0 //arbitrary; any axis could work for this, but ent_partctrl:StartParticle checks axis_0 for relative_to_cpoint
+			tab.axis = 0 //arbitrary; any axis could work for this, but ent_peplus:StartParticle checks axis_0 for relative_to_cpoint
 			tab.relative_to_cpoint = op["starting control point"] //?
 			cpoint_from_op_value(processed, op, "ending control point", "axis", tab)
 			cpoint_from_op_value(processed, op, "starting control point", "position_combine") //this is iffy; we assume the start cpoint might be attached to something while the end point isn't, which *is* the case with all existing fx, but doesn't necessarily have to be
@@ -3048,7 +3048,7 @@ local processfuncs = {
 			local endp = startp + (op["# of control points to set"] - 1)
 			local name = op._categoryName .. " " .. op.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 			for i = startp, endp do
-				PartCtrl_CPoint_AddToProcessed(processed, i, name, "output_children", {groupid = groupid}, op)
+				PEPlus_CPoint_AddToProcessed(processed, i, name, "output_children", {groupid = groupid}, op)
 			end
 			//some fx (i.e. utaunt_tornado_oscillate_) emit invisible particles (no renderer) and then use them to set the position of a child control point. ordinarily, we'd cull the
 			//cpoint data from fx with no renderer, because their operators don't do anything that the player can see, but in this case, we don't want to do that, so mark as having a renderer.
@@ -3135,7 +3135,7 @@ local processfuncs = {
 			//even output isn't great because either A: the cpoint being rotated is the first cpoint, it gets assigned to fallback cpoint
 			//-1 instead, and it uses the angle of *that* instead, or B: the cpoint being rotated doesn't get a position set and ends up
 			//at 0,0,0. hrmph.
-			//only way to fix all this would be to add special handling for cpoints using this operator, where ent_partctrl would use
+			//only way to fix all this would be to add special handling for cpoints using this operator, where ent_peplus would use
 			//something other than self.particle:AddControlPoint so that the cpoint angle doesn't get set. i can't find any working 
 			//effects that actually use this, so that would be overengineered for now.
 			cpoint_from_op_value(processed, op, "Control Point", "output")
@@ -3166,7 +3166,7 @@ local processfuncs = {
 			local endp = startp + (op["# of control points to set"] - 1)
 			local name = op._categoryName .. " " .. op.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 			for i = startp, endp do
-				PartCtrl_CPoint_AddToProcessed(processed, i, name, "output", nil, op)
+				PEPlus_CPoint_AddToProcessed(processed, i, name, "output", nil, op)
 			end
 		end,
 		["set cp offset to cp percentage between two control points"] = function(processed, op)
@@ -3272,7 +3272,7 @@ local processfuncs = {
 				local endp = op["end control point number"]
 				local name = op._categoryName .. " " .. op.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 				for i = startp, endp do
-					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {overridable_by_constraint = true, sets_particle_pos = true}, op)
+					PEPlus_CPoint_AddToProcessed(processed, i, name, nil, {overridable_by_constraint = true, sets_particle_pos = true}, op)
 				end
 			else
 				//uses start and end cpoint only
@@ -3287,7 +3287,7 @@ local processfuncs = {
 				local endp = op["end control point number"]
 				local name = op._categoryName .. " " .. op.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 				for i = startp, endp-startp do //note: if the starting cpoint is non-0, it behaves oddly and deducts that many cpoints from the other end, see portal2 particles/debug.pcf debug_sc_square; this is almost certainly a bug, but a valve effect was designed with it in mind, so we're going with it
-					PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {
+					PEPlus_CPoint_AddToProcessed(processed, i, name, nil, {
 						overridable_by_constraint = true,
 						sets_particle_pos = true, 
 						pathseqcheck_min_particles = (op["particles to map from start to end"] / (endp - startp)) * (i - startp - 1)
@@ -3361,7 +3361,7 @@ local processfuncs = {
 			end
 			local name = op._categoryName .. " " .. op.functionName .. ": cpoints " .. tostring(startp) .. " to " .. tostring(endp)
 			for i = startp, endp do
-				PartCtrl_CPoint_AddToProcessed(processed, i, name, nil, {sets_particle_pos = true}, op)
+				PEPlus_CPoint_AddToProcessed(processed, i, name, nil, {sets_particle_pos = true}, op)
 			end
 		end,
 		["position modify offset random"] = function(processed, op)
@@ -3406,7 +3406,7 @@ local processfuncs = {
 				cpoint_from_op_value(processed, op, "control_point_number", nil, {overridable_by_constraint = true, sets_particle_pos = true})
 			else
 				local name = op._categoryName .. " " .. op.functionName .. ": randomly distribute to highest supplied Control Point"
-				PartCtrl_CPoint_AddToProcessed(processed, -1, name, "position_combine", {sets_particle_pos = true, force_allow_minusone = true}, op)
+				PEPlus_CPoint_AddToProcessed(processed, -1, name, "position_combine", {sets_particle_pos = true, force_allow_minusone = true}, op)
 				//TODO: ehh, this makes it combine with the control of the first available position control; 
 				//works on all fx i could find, but could potentially result in bad cpoints on more complex fx 
 			end
@@ -3467,12 +3467,12 @@ local processfuncs = {
 			//for particles/blood_impact.pcf blood_impact_synth_01_short: ignore the initializer "alpha random" zero alpha check if the zero alpha is being
 			//overwritten by the scalar. TODO: there's almost certainly a lot of other scalar operators that could potentially do the same thing, but we'll
 			//just add those if we run into them. there's really no good reason for fx to be set up this way, it just makes alpha random do nothing.
-			if op["output field"] == PARTCTRL_PARTICLE_ATTRIBUTE_ALPHA then
+			if op["output field"] == PEPLUS_PARTICLE_ATTRIBUTE_ALPHA then
 				processed.ignore_zero_alpha = true
 			end
 		end,
 		["remap scalar to vector"] = function(processed, op)
-			if op["output field"] == PARTCTRL_PARTICLE_ATTRIBUTE_XYZ then //cpoint is only used by position vector (0) to make the position relative to that cpoint (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3155)
+			if op["output field"] == PEPLUS_PARTICLE_ATTRIBUTE_XYZ then //cpoint is only used by position vector (0) to make the position relative to that cpoint (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3155)
 				cpoint_from_op_value(processed, op, "control_point_number", nil, {sets_particle_pos = true}) //yes, this sets particle pos, see unusual_poseidon_light_ fx
 			end
 		end,
@@ -3534,8 +3534,8 @@ local processfuncs = {
 					if i != -1 then
 						local groupid = op["Child Group ID to affect"]
 						local name = op._categoryName .. " " .. op.functionName .. ": control points to broadcast to children (n + 1)"
-						PartCtrl_CPoint_AddToProcessed(processed, i, name, "output_children", {groupid = groupid}, op)
-						PartCtrl_CPoint_AddToProcessed(processed, i + 1, name, "output_children", {groupid = groupid}, op) //this sets axis 0 to a force value, and the other two to 0 (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3586)
+						PEPlus_CPoint_AddToProcessed(processed, i, name, "output_children", {groupid = groupid}, op)
+						PEPlus_CPoint_AddToProcessed(processed, i + 1, name, "output_children", {groupid = groupid}, op) //this sets axis 0 to a force value, and the other two to 0 (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_initializers.cpp#L3586)
 					end
 				else
 					//let players manually set the values if they spawned a child effect on its own, or for some hypothetical use case where it's 
@@ -3586,7 +3586,7 @@ local processfuncs = {
 							overridable_by_drag = drag,
 						})
 						local name = op._categoryName .. " " .. op.functionName .. ": control_point_number (+ 1 for Inherit from parent)"
-						PartCtrl_CPoint_AddToProcessed(processed, op.control_point_number + 1, name, "axis", {
+						PEPlus_CPoint_AddToProcessed(processed, op.control_point_number + 1, name, "axis", {
 							axis = 0,
 							label = "Alternate " .. label .. " Value", //TODO: add explanation for player; no existing fx actually have use_min true for now
 							inMin = 0,
@@ -3790,26 +3790,26 @@ local processfuncs = {
 		end,
 		//code says this one always uses cpoint 0 for some trace stuff, but when trying to test it, on every single effect i could find or make with this operator, it just doesn't seem to work at all? particles pass through brushes, displacements, and static props just fine. (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_constraints.cpp#L473)
 		//TODO: test on a map that isn't gm_flatgrass, maybe it's a problem with distance from the world origin or something
-		//["prevent passing through static part of world"] = function(processed, op) PartCtrl_CPoint_AddToProcessed(processed, 0, op._categoryName .. " " .. op.functionName .. ": always uses cpoint 0", nil, nil, op) end,
+		//["prevent passing through static part of world"] = function(processed, op) PEPlus_CPoint_AddToProcessed(processed, 0, op._categoryName .. " " .. op.functionName .. ": always uses cpoint 0", nil, nil, op) end,
 	}
 }
-local PartCtrl_BadMaterials = PartCtrl_BadMaterials or {}
-local blacklist_screenfx = GetConVar("sv_partctrl_blacklist_screenspace")
-function PartCtrl_ProcessPCF(filename)
+local PEPlus_BadMaterials = PEPlus_BadMaterials or {}
+local blacklist_screenfx = GetConVar("sv_peplus_blacklist_screenspace")
+function PEPlus_ProcessPCF(filename)
 	local original_filename = filename
-	if PartCtrl_AllDataPCFs[filename] then original_filename = PartCtrl_AllDataPCFs[filename].original_filename end //make sure hook funcs receive the original pcf file path, not a data pcf file path, becaues the latter isn't consistent between sessions
+	if PEPlus_AllDataPCFs[filename] then original_filename = PEPlus_AllDataPCFs[filename].original_filename end //make sure hook funcs receive the original pcf file path, not a data pcf file path, becaues the latter isn't consistent between sessions
 
-	if hook.Call("PartCtrl_PreProcessPCF", nil, original_filename) == false then return end //Let hook funcs prevent PCFs from being read by returning false
+	if hook.Call("PEPlus_PreProcessPCF", nil, original_filename) == false then return end //Let hook funcs prevent PCFs from being read by returning false
 
 	//don't print non-critical messages unless we're in developer mode; 
 	//always print messages for bugs that player should report
 	local dodebug = (GetConVarNumber("developer") >= 1)
 
-	local t = PartCtrl_ReadPCF(filename)
+	local t = PEPlus_ReadPCF(filename)
 	if !t then
-		if dodebug then MsgN("PartCtrl: ", filename, " couldn't be read") end
+		if dodebug then MsgN("PEPlus_ProcessPCF: ", filename, " couldn't be read") end
 	else
-		PartCtrl_CulledFx[filename] = {}
+		PEPlus_CulledFx[filename] = {}
 		local t2 = {}
 		for particle, ptab in pairs (t) do
 			local processed = {
@@ -3876,8 +3876,8 @@ function PartCtrl_ProcessPCF(filename)
 			//there's a few exceptions like trails, ropes, and sprites with a different orientation_type, but these aren't worth preserving)
 			local mat = "materials/" .. ptab.material
 			if !string.EndsWith(mat, ".vmt") then mat = mat .. ".vmt" end
-			if PartCtrl_BadMaterials[mat] == nil then PartCtrl_BadMaterials[mat] = file.Exists(mat, "GAME") end
-			if !PartCtrl_BadMaterials[mat] then
+			if PEPlus_BadMaterials[mat] == nil then PEPlus_BadMaterials[mat] = file.Exists(mat, "GAME") end
+			if !PEPlus_BadMaterials[mat] then
 				t2[particle].has_renderer = false
 			else
 				//Don't count fx as having a renderer if they have 0 alpha, since they won't render visibly
@@ -3888,15 +3888,15 @@ function PartCtrl_ProcessPCF(filename)
 				//The intention here is to prevent cases where a player spawns an effect on the ground in front 
 				//of them, can't see anything because it's too close to render, and mistakenly thinks it's broken.
 				if CLIENT and t2[particle].has_renderer and t2[particle].has_emitter then
-					if true or isbool(PartCtrl_BadMaterials[mat]) then
+					if true or isbool(PEPlus_BadMaterials[mat]) then
 						local mat2 = Material(string.Replace(string.TrimLeft(mat, "materials/"), "\\", "/"))
-						PartCtrl_BadMaterials[mat] = {
+						PEPlus_BadMaterials[mat] = {
 							min = mat2:GetFloat("$endfadesize") or 20, //for mats that don't have these values at all (not SpriteCard), act as if they're default
 							min_alt = mat2:GetFloat("$maxsize") or 20,
 						}
 					end
-					processed.dist_min = PartCtrl_BadMaterials[mat].min
-					processed.dist_min_alt =  PartCtrl_BadMaterials[mat].min_alt
+					processed.dist_min = PEPlus_BadMaterials[mat].min
+					processed.dist_min_alt =  PEPlus_BadMaterials[mat].min_alt
 				end
 			end
 		end
@@ -3918,7 +3918,7 @@ function PartCtrl_ProcessPCF(filename)
 				depth = depth or 0
 				depth = depth + 1
 				if depth > 99 then
-					MsgN("PartCtrl: ", filename, " ", particle2, " child ", child, " cpoints_from_child_fx has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
+					MsgN("PEPlus_ProcessPCF: ", filename, " ", particle2, " child ", child, " cpoints_from_child_fx has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
 					return cpoints
 				end
 				for _, childtab in pairs (t[particle2].children) do
@@ -3980,7 +3980,7 @@ function PartCtrl_ProcessPCF(filename)
 			t2[particle].cpoints_with_children = cpoints_from_child_fx(cpoints, particle)
 		end
 		for particle, _ in pairs (t2) do
-			//Store the PARTCTRL_CPOINT_MODE_ for each cpoint
+			//Store the PEPLUS_CPOINT_MODE_ for each cpoint
 			local modes = {}
 			local output_children = {}
 			local output_axis = {}
@@ -4058,7 +4058,7 @@ function PartCtrl_ProcessPCF(filename)
 							//- output_axis follows the same two rules above but only overrides a single axis
 							if modes[k] == nil then
 								did_output = true
-								modes[k] = PARTCTRL_CPOINT_MODE_NONE
+								modes[k] = PEPLUS_CPOINT_MODE_NONE
 							end
 						end
 						remove_if_other_cpoint_is_empty[k] = {}
@@ -4081,17 +4081,17 @@ function PartCtrl_ProcessPCF(filename)
 							for k2, v2 in pairs (newtab) do
 								if v2.pathseqcheck_fail then continue end
 								if (t2[particle2].has_renderer and t2[particle2].has_emitter) or v2.doesnt_need_renderer_or_emitter then
-									if modes[k] == nil or modes[k] == PARTCTRL_CPOINT_MODE_POSITION_COMBINE or (did_output and ignore_outputs) then
+									if modes[k] == nil or modes[k] == PEPLUS_CPOINT_MODE_POSITION_COMBINE or (did_output and ignore_outputs) then
 										if (t2[particle2].constraint_does_override and v2.overridable_by_constraint)
 										or (v2.overridable_by_drag and t2[particle2].drag_for_override 
 										and t2[particle2].drag_for_override >= v2.overridable_by_drag) then
-											modes[k] = PARTCTRL_CPOINT_MODE_POSITION_COMBINE
+											modes[k] = PEPLUS_CPOINT_MODE_POSITION_COMBINE
 										else
-											modes[k] = PARTCTRL_CPOINT_MODE_POSITION
+											modes[k] = PEPLUS_CPOINT_MODE_POSITION
 										end
 										did_output = false //make sure position_combine below doesn't override this
 									end
-									if modes[k] == PARTCTRL_CPOINT_MODE_POSITION then
+									if modes[k] == PEPLUS_CPOINT_MODE_POSITION then
 										//also make a list of all the cpoints that have "on_model" fx so that we can print extra info about it in spawnicons
 										if CLIENT and v2.on_model then
 											on_model = on_model or {}
@@ -4174,7 +4174,7 @@ function PartCtrl_ProcessPCF(filename)
 								if ((t2[particle2].has_renderer and t2[particle2].has_emitter) or v2.doesnt_need_renderer_or_emitter) 
 								and (!t2[particle2].movement_lock or !t2[particle2].movement_lock[k] or t2[particle].movement_lock_cpoint == k) then
 									if modes[k] == nil or (did_output and ignore_outputs) then
-										modes[k] = PARTCTRL_CPOINT_MODE_POSITION_COMBINE
+										modes[k] = PEPLUS_CPOINT_MODE_POSITION_COMBINE
 									end
 								end
 								if v2.sets_particle_pos and !t2[particle2].sets_particle_pos_forcedisable then
@@ -4206,7 +4206,7 @@ function PartCtrl_ProcessPCF(filename)
 								end
 							end
 							if doaxis and (t2[particle2].has_renderer and t2[particle2].has_emitter) then
-								modes[k] = PARTCTRL_CPOINT_MODE_AXIS
+								modes[k] = PEPLUS_CPOINT_MODE_AXIS
 							end
 						end
 					end
@@ -4245,14 +4245,14 @@ function PartCtrl_ProcessPCF(filename)
 				depth = depth or 0
 				depth = depth + 1
 				if depth > 99 then
-					MsgN("PartCtrl: ", filename, " ", particle2, " CPointModesFromChildren has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
+					MsgN("PEPlus_ProcessPCF: ", filename, " ", particle2, " CPointModesFromChildren has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
 					return
 				end
 
 				if istable(t2[particle2].children) then
 					for _, childtab in pairs (t2[particle2].children) do
 						if !t2[childtab.child] then
-							if dodebug then MsgN("PartCtrl: ", filename, " ", particle2, " CPointModesFromChildren tried to get nonexistent child effect ", child) end
+							if dodebug then MsgN("PEPlus: ", filename, " ", particle2, " CPointModesFromChildren tried to get nonexistent child effect ", child) end
 						elseif !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
 							SetCPointModes(childtab.child, particle2)
 							//Now inherit from the child's children, and so on
@@ -4267,7 +4267,7 @@ function PartCtrl_ProcessPCF(filename)
 			//Do remove_if_other_cpoint_is_empty thing for operator "set control point positions"; this operator has "parent" cpoints that move 
 			//around "child" cpoints, but if those child cpoints don't actually do anything, then the parent cpoints are useless, so remove them.
 			for k, v in pairs (remove_if_other_cpoint_is_empty) do
-				if istable(v) and table.Count(v) > 0 and modes[k] == PARTCTRL_CPOINT_MODE_POSITION then
+				if istable(v) and table.Count(v) > 0 and modes[k] == PEPLUS_CPOINT_MODE_POSITION then
 					local empty = true
 					for k2, _ in pairs (v) do
 						if t2[particle].cpoints_with_children[k2] and t2[particle].cpoints_with_children[k2].position then
@@ -4277,7 +4277,7 @@ function PartCtrl_ProcessPCF(filename)
 					end
 					if empty then
 						//MsgN(particle, ": empty detected: cpoint ", k)
-						modes[k] = PARTCTRL_CPOINT_MODE_NONE
+						modes[k] = PEPLUS_CPOINT_MODE_NONE
 					end
 				end
 			end
@@ -4287,11 +4287,11 @@ function PartCtrl_ProcessPCF(filename)
 			local needfallback = -1
 			for k, v in pairs (modes) do
 				if !shouldcull and !needfallback and pos_control_count > 1 then break end
-				if shouldcull and v != PARTCTRL_CPOINT_MODE_NONE then
+				if shouldcull and v != PEPLUS_CPOINT_MODE_NONE then
 					//Clear out empty effects (no renderer, no emitter, no cpoints even from children)
 					shouldcull = false
 				end
-				if v == PARTCTRL_CPOINT_MODE_POSITION then
+				if v == PEPLUS_CPOINT_MODE_POSITION then
 					if needfallback then 
 						//Create fallback position cpoint for effects that don't have any
 						needfallback = nil
@@ -4311,7 +4311,7 @@ function PartCtrl_ProcessPCF(filename)
 				else
 					//If possible, turn the first available position_combine cpoint into a normal position cpoint
 					for k, v in SortedPairs (modes) do
-						if k != -1 and v == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+						if k != -1 and v == PEPLUS_CPOINT_MODE_POSITION_COMBINE then
 							needfallback = k
 							break
 						end
@@ -4324,7 +4324,7 @@ function PartCtrl_ProcessPCF(filename)
 				t2[particle].cpoints_with_children[needfallback].position = t2[particle].cpoints_with_children[needfallback].position or {}
 				table.insert(t2[particle].cpoints_with_children[needfallback].position, {name = "fallback position cpoint created due to no position cpoint"})
 
-				modes[needfallback] = PARTCTRL_CPOINT_MODE_POSITION
+				modes[needfallback] = PEPLUS_CPOINT_MODE_POSITION
 			end
 			//Finally, store the cpoint modes
 			for k, v in pairs (modes) do
@@ -4368,7 +4368,7 @@ function PartCtrl_ProcessPCF(filename)
 			local sets_particle_pos_2 = nil
 			if sets_particle_pos then
 				for k, v in pairs (sets_particle_pos) do
-					if modes[k] == PARTCTRL_CPOINT_MODE_POSITION or modes[k] == PARTCTRL_CPOINT_MODE_POSITION_COMBINE then
+					if modes[k] == PEPLUS_CPOINT_MODE_POSITION or modes[k] == PEPLUS_CPOINT_MODE_POSITION_COMBINE then
 						sets_particle_pos_2 = sets_particle_pos_2 or {}
 						sets_particle_pos_2[k] = true
 					end
@@ -4379,7 +4379,7 @@ function PartCtrl_ProcessPCF(filename)
 			//Do info text for on_model
 			if CLIENT and on_model then
 				if pos_control_count and pos_control_count == 1 then
-					PartCtrl_AddInfoText(t2[particle], "Applies to a whole model if attached")
+					PEPlus_AddInfoText(t2[particle], "Applies to a whole model if attached")
 				else
 					local text = ""
 					local docomma = false
@@ -4394,7 +4394,7 @@ function PartCtrl_ProcessPCF(filename)
 					else
 						text2 = "Applies to a whole model if control point %CPOINTS is attached"
 					end
-					PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
+					PEPlus_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 				end
 			end
 
@@ -4435,7 +4435,7 @@ function PartCtrl_ProcessPCF(filename)
 						else
 							text2 = "Control point %CPOINTS controls a plane that prevents particles from passing through"
 						end
-						PartCtrl_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
+						PEPlus_AddInfoText(t2[particle], string.Replace(text2, "%CPOINTS", text))
 					end
 				end
 
@@ -4522,7 +4522,7 @@ function PartCtrl_ProcessPCF(filename)
 								else
 									text = "Control point " .. k .. " increases " .. text_increase .. " and decreases " .. text_decrease .. " of particles as they get closer to it"
 								end
-								PartCtrl_AddInfoText(t2[particle], text)
+								PEPlus_AddInfoText(t2[particle], text)
 							end
 						end
 					end
@@ -4549,7 +4549,7 @@ function PartCtrl_ProcessPCF(filename)
 								text = text .. k2
 								docomma = true
 							end
-							PartCtrl_AddInfoText(t2[particle], text)
+							PEPlus_AddInfoText(t2[particle], text)
 						end
 					end
 				end
@@ -4564,14 +4564,14 @@ function PartCtrl_ProcessPCF(filename)
 					depth = depth or 0
 					depth = depth + 1
 					if depth > 99 then
-						MsgN("PartCtrl: ", filename, " ", particle2, " StartTimeFromChildren has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
+						MsgN("PEPlus_ProcessPCF: ", filename, " ", particle2, " StartTimeFromChildren has crazy recursion when trying to get child fx, aborting - report this bug!") //don't even know if this is possible, but want to be safe anyway
 						return
 					end
 
 					if istable(t2[particle2].children) then
 						for _, childtab in pairs (t2[particle2].children) do
 							if !t2[childtab.child] then
-								if dodebug then MsgN("PartCtrl: ", filename, " ", particle2, " StartTimeFromChildren tried to get nonexistent child effect ", child) end
+								if dodebug then MsgN("PEPlus_ProcessPCF: ", filename, " ", particle2, " StartTimeFromChildren tried to get nonexistent child effect ", child) end
 							elseif !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
 								if t2[childtab.child].starttime_raw != nil then
 									//starttime
@@ -4606,9 +4606,9 @@ function PartCtrl_ProcessPCF(filename)
 					if starttime > 0.5 then
 						t2[particle].starttime = starttime
 						if starttime == 1 then
-							PartCtrl_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " second")
+							PEPlus_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " second")
 						else
-							PartCtrl_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " seconds")
+							PEPlus_AddInfoText(t2[particle], "Effect starts after " .. starttime .. " seconds")
 						end
 					end
 				end
@@ -4625,7 +4625,7 @@ function PartCtrl_ProcessPCF(filename)
 				//for mats like materials\particle\smoke1\dust_motes.vmt that use a very
 				//low maxsize value to become extremely difficult to see when close up
 				or (min_alt != nil and min_alt < 0.01) then
-					PartCtrl_AddInfoText(t2[particle], "Not visible if too close to the camera")
+					PEPlus_AddInfoText(t2[particle], "Not visible if too close to the camera")
 				end
 			end
 		end
@@ -4636,7 +4636,7 @@ function PartCtrl_ProcessPCF(filename)
 			for k, v in pairs (t2[particle].cpoints) do
 				if v.mode == nil then
 					//Fill in empty mode entries
-					t2[particle].cpoints[k].mode = PARTCTRL_CPOINT_MODE_NONE
+					t2[particle].cpoints[k].mode = PEPLUS_CPOINT_MODE_NONE
 				end
 				if v.output_axis then
 					for k2, v2 in pairs (v.output_axis) do
@@ -4682,7 +4682,7 @@ function PartCtrl_ProcessPCF(filename)
 						end
 					end
 					t2[particle].cpoints[k].axis = newaxes
-					if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+					if v.mode == PEPLUS_CPOINT_MODE_AXIS then
 						for i = 0, 2 do
 							if !t2[particle].cpoints[k]["axis_overridden_" .. i] then
 								if #newaxes_by_axis[i] > 0 then
@@ -4740,7 +4740,7 @@ function PartCtrl_ProcessPCF(filename)
 											if newtab.relative_to_cpoint != tab2.relative_to_cpoint 
 											or newtab.relative_to_cpoint_angle != tab2.relative_to_cpoint_angle
 											or newtab.textentry != tab2.textentry then
-												MsgN("PartCtrl: can't combine axis entries for ", filename, " ", particle, " cpoint ", k, " axis ", i, "; report this bug!")
+												MsgN("PEPlus_ProcessPCF: can't combine axis entries for ", filename, " ", particle, " cpoint ", k, " axis ", i, "; report this bug!")
 												//TODO: bail how? no existing fx run into this issue.
 											end
 											local function CombineValues(val, mathfunc)
@@ -4866,18 +4866,18 @@ function PartCtrl_ProcessPCF(filename)
 			//Cull empty effects
 			if t2[particle].renderer_emitter_shouldcull then
 				if t2[particle].has_zero_alpha then
-					PartCtrl_AddCullReason(t2[particle], "#PartCtrl_Cull_ZeroAlpha")
+					PEPlus_AddCullReason(t2[particle], "#PEPlus_Cull_ZeroAlpha")
 				else
-					PartCtrl_AddCullReason(t2[particle], "#PartCtrl_Cull_NoRendererOrEmitter")
+					PEPlus_AddCullReason(t2[particle], "#PEPlus_Cull_NoRendererOrEmitter")
 				end
 			end
 			//Cull effects that are stuck at the world origin because they don't have any cpoints setting their particle pos
 			if !t2[particle].sets_particle_pos then
-				PartCtrl_AddCullReason(t2[particle], "#PartCtrl_Cull_NoParticlePos")
+				PEPlus_AddCullReason(t2[particle], "#PEPlus_Cull_NoParticlePos")
 			end
 			//Also, now that their parents have inherited cpoint data from them, cull effects with preventNameBasedLookup, since we can't spawn them on their own.
 			if t2[particle].prevent_name_based_lookup then
-				PartCtrl_AddCullReason(t2[particle], "#PartCtrl_Cull_PreventNameBasedLookup")
+				PEPlus_AddCullReason(t2[particle], "#PEPlus_Cull_PreventNameBasedLookup")
 			end
 			
 			//Handle screenspace fx
@@ -4893,26 +4893,26 @@ function PartCtrl_ProcessPCF(filename)
 				if vm then
 					screenspace = true
 				else
-					PartCtrl_AddCullReason(t2[particle], "#PartCtrl_Cull_ScreenSpace_NotViewModel")
+					PEPlus_AddCullReason(t2[particle], "#PEPlus_Cull_ScreenSpace_NotViewModel")
 				end
 			end
 			if screenspace then
 				if blacklist_screenfx:GetBool() then
-					PartCtrl_AddCullReason(t2[particle], "#PartCtrl_Cull_ScreenSpace_Blacklisted")
+					PEPlus_AddCullReason(t2[particle], "#PEPlus_Cull_ScreenSpace_Blacklisted")
 				elseif CLIENT then
-					PartCtrl_AddInfoText(t2[particle], "Screenspace effect: draws an overlay directly onto the screen")
+					PEPlus_AddInfoText(t2[particle], "Screenspace effect: draws an overlay directly onto the screen")
 				end
 			elseif CLIENT and vm then
 				//Also add info text for viewmodel effects here, because this isn't inherited and doesn't apply to screenspace fx
-				PartCtrl_AddInfoText(t2[particle], "Viewmodel effect: draws in front of everything, and has a distorted position unless attached to a model on a non-0 attachment")
+				PEPlus_AddInfoText(t2[particle], "Viewmodel effect: draws in front of everything, and has a distorted position unless attached to a model on a non-0 attachment")
 			end
 		end
 		//Now that the processed table is finished, let hook funcs modify it arbitrarily (including deciding which fx to cull)
-		hook.Call("PartCtrl_PostProcessPCF", nil, original_filename, t2)
+		hook.Call("PEPlus_PostProcessPCF", nil, original_filename, t2)
 		for particle, _ in pairs (t2) do
 			//Cull bad effects from the table
-			local cull = t2[particle].shouldcull //this will be a table if we ran PartCtrl_AddCullReason(), or nil otherwise
-			PartCtrl_CulledFx[filename][particle] = cull
+			local cull = t2[particle].shouldcull //this will be a table if we ran PEPlus_AddCullReason(), or nil otherwise
+			PEPlus_CulledFx[filename][particle] = cull
 			//If the player starts up the game in developer mode, effects aren't culled, but instead have a warning in the spawnicon telling the dev why they won't show up to players.
 			if cull and !dodebug then
 				t2[particle] = nil
@@ -4935,19 +4935,19 @@ function PartCtrl_ProcessPCF(filename)
 		end
 		
 		if table.Count(t2) == 0 then
-			if dodebug then MsgN("PartCtrl: ", filename, " contains no usable effects, ignoring") end
+			if dodebug then MsgN("PEPlus_ProcessPCF: ", filename, " contains no usable effects, ignoring") end
 		else
 			return t2
 		end
 	end
 end
 
-function PartCtrl_AddCullReason(tab, str)
+function PEPlus_AddCullReason(tab, str)
 	tab.shouldcull = tab.shouldcull or {}
 	table.insert(tab.shouldcull, str)
 end
 
-function PartCtrl_AddInfoText(tab, str)
+function PEPlus_AddInfoText(tab, str)
 	tab.info = tab.info or {}
 	table.insert(tab.info, str)
 end
@@ -4995,7 +4995,7 @@ end
 ]]
 
 
-//Normally, we only need to run this function once per session, when the entity code in ent_partctrl calls it. This ensures that it runs AFTER all the autorun code has had 
+//Normally, we only need to run this function once per session, when the entity code in ent_peplus calls it. This ensures that it runs AFTER all the autorun code has had 
 //a chance to run first and populate the blacklist. However, if the player mounts/unmounts something and calls the GameContentChanged hook (in spawnmenu.lua), we want to 
 //run this again. This function is really expensive (~16 sec freezing with a few games and particle addons installed), so we don't want to run it any more than we have to.
 //
@@ -5006,13 +5006,13 @@ end
 //GameContentChanged being run AFTER startup.
 //
 //Our solution to this is to define a brief "startup" period, during which the function is only allowed to run once, and then after which it can run all it likes. This is 
-//controlled by a timer.Simple in the entity code, which sets PartCtrl_ReadAndProcessPCFs_StartupIsOver to true after all the stuff mentioned in the last paragraph has had
+//controlled by a timer.Simple in the entity code, which sets PEPlus_ReadAndProcessPCFs_StartupIsOver to true after all the stuff mentioned in the last paragraph has had
 //time to happen already.
 //
 //TODO: make sure this works in multiplayer
 
-PartCtrl_ReadAndProcessPCFs_StartupHasRun = PartCtrl_ReadAndProcessPCFs_StartupHasRun
-PartCtrl_ReadAndProcessPCFs_StartupIsOver = PartCtrl_ReadAndProcessPCFs_StartupIsOver
+PEPlus_ReadAndProcessPCFs_StartupHasRun = PEPlus_ReadAndProcessPCFs_StartupHasRun
+PEPlus_ReadAndProcessPCFs_StartupIsOver = PEPlus_ReadAndProcessPCFs_StartupIsOver
 
 local badendings = {
 	["_dx80.pcf"] = true,
@@ -5030,43 +5030,43 @@ local function HasBadEnding(filename, path)
 	end
 end
 
-function PartCtrl_ReadAndProcessPCFs(new_file_only)
+function PEPlus_ReadAndProcessPCFs(new_file_only)
 
 	local starttime = SysTime()
 
 	if !new_file_only then 
-		PartCtrl_AllPCFPaths = {}
-		local function PartCtrl_FindAllPCFPaths(dir)
+		PEPlus_AllPCFPaths = {}
+		local function PEPlus_FindAllPCFPaths(dir)
 			local files, dirs = file.Find(dir .. "*", "GAME")
 			for _, filename in pairs (files) do
 				filename = dir .. filename
 				if !HasBadEnding(filename, "GAME") then
-					table.insert(PartCtrl_AllPCFPaths, filename)
+					table.insert(PEPlus_AllPCFPaths, filename)
 				end
 			end
 			for _, dirname in pairs (dirs) do
-				PartCtrl_FindAllPCFPaths(dir .. dirname .. "/")
+				PEPlus_FindAllPCFPaths(dir .. dirname .. "/")
 			end
 		end
-		PartCtrl_FindAllPCFPaths("particles/")
+		PEPlus_FindAllPCFPaths("particles/")
 	
-		PartCtrl_PCFsByParticleName_CurrentlyLoaded = {}
-		if CLIENT then PartCtrl_NoDefPCFs = {} end //cache these so that dupe detection doesn't have to waste several seconds reading all of them again
-		PartCtrl_CulledFx = {} //also build a list of fx that are culled from ProcessedPCFs, because we still need them for pcf conflict/dupe detection (i.e. load a pcf, it has culled fx with the same name as non-culled fx, so we want to detect that the latter got overwritten by the former, and tell the player about it in spawnicons)
+		PEPlus_PCFsByParticleName_CurrentlyLoaded = {}
+		if CLIENT then PEPlus_NoDefPCFs = {} end //cache these so that dupe detection doesn't have to waste several seconds reading all of them again
+		PEPlus_CulledFx = {} //also build a list of fx that are culled from ProcessedPCFs, because we still need them for pcf conflict/dupe detection (i.e. load a pcf, it has culled fx with the same name as non-culled fx, so we want to detect that the latter got overwritten by the former, and tell the player about it in spawnicons)
 
-		PartCtrl_ProcessedPCFs = {}
-		PartCtrl_AllDataPCFs = {} //spawnlists, spawnicons, and PartCtrl_ProcessPCF use this table to quickly get a data pcf's original filename and path
-		for _, filename in pairs (PartCtrl_AllPCFPaths) do
-			PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
+		PEPlus_ProcessedPCFs = {}
+		PEPlus_AllDataPCFs = {} //spawnlists, spawnicons, and PEPlus_ProcessPCF use this table to quickly get a data pcf's original filename and path
+		for _, filename in pairs (PEPlus_AllPCFPaths) do
+			PEPlus_ProcessedPCFs[filename] = PEPlus_ProcessPCF(filename)
 		end
-		PartCtrl_GamePCFs = {}
-		PartCtrl_GamePCFs_DefaultPaths = {} //which game is each pcf currently loaded from? nil if not currently loaded from a game.
+		PEPlus_GamePCFs = {}
+		PEPlus_GamePCFs_DefaultPaths = {} //which game is each pcf currently loaded from? nil if not currently loaded from a game.
 	end
 
 
 	//Categorize all the pcfs by searching for them in load priority order
 	local allpcfs = {}
-	for k, _ in pairs (PartCtrl_ProcessedPCFs) do
+	for k, _ in pairs (PEPlus_ProcessedPCFs) do
 		allpcfs[k] = true
 	end
 	allpcfs.UtilFx = nil
@@ -5091,9 +5091,9 @@ function PartCtrl_ReadAndProcessPCFs(new_file_only)
 				if do_game_pcfs and !HasBadEnding(filename, path) then
 					if new_file_only and new_file_only != filename then
 						//If we're only running this func to add a new file, then we should already have
-						//PartCtrl_GamePCFs entries for every other file, so just reuse those instead
-						if PartCtrl_GamePCFs[filename] and PartCtrl_GamePCFs[filename][path] then
-							filename = PartCtrl_GamePCFs[filename][path]
+						//PEPlus_GamePCFs entries for every other file, so just reuse those instead
+						if PEPlus_GamePCFs[filename] and PEPlus_GamePCFs[filename][path] then
+							filename = PEPlus_GamePCFs[filename][path]
 						end
 					else
 						local original_filename = filename
@@ -5112,7 +5112,7 @@ function PartCtrl_ReadAndProcessPCFs(new_file_only)
 						//unique effects that we don't want the player to be locked out of using, so write copies of these files to
 						//the data folder, and load those instead.
 						if game_pcf_hashes[filename] and f2_hash and game_pcf_hashes[filename] != f2_hash then
-							local writepath = "partctrl_datapcfs/" .. path .. "/" .. filename
+							local writepath = "peplus_datapcfs/" .. path .. "/" .. filename
 							writepath = string.Replace(writepath, ".pcf", ".txt")
 							local write_new_file = true
 							if file.Exists(writepath, "DATA") then
@@ -5143,14 +5143,14 @@ function PartCtrl_ReadAndProcessPCFs(new_file_only)
 								end
 							end
 							//Add the data pcf to all the tables
-							if !PartCtrl_ProcessedPCFs[filename] then
-								PartCtrl_AllDataPCFs[filename] = {
+							if !PEPlus_ProcessedPCFs[filename] then
+								PEPlus_AllDataPCFs[filename] = {
 									original_filename = original_filename,
 									path = path
 								}
-								PartCtrl_ProcessedPCFs[filename] = PartCtrl_ProcessPCF(filename)
-								table.insert(PartCtrl_AllPCFPaths, filename)
-								if PartCtrl_ProcessedPCFs[filename] then //don't do this ProcessPCF returns nothing
+								PEPlus_ProcessedPCFs[filename] = PEPlus_ProcessPCF(filename)
+								table.insert(PEPlus_AllPCFPaths, filename)
+								if PEPlus_ProcessedPCFs[filename] then //don't do this ProcessPCF returns nothing
 									allpcfs[filename] = true
 								end
 							end
@@ -5159,14 +5159,14 @@ function PartCtrl_ReadAndProcessPCFs(new_file_only)
 						//used by particle ents and spawnicons, which store the *original* filename and the game path, and then use this 
 						//table to retrieve the right pcf for the game. This ensures that that saves/spawnlists continue to work 
 						//seamlessly between sessions, even as different combinations of mounted games change which ones use data pcfs.
-						PartCtrl_GamePCFs[original_filename] = PartCtrl_GamePCFs[original_filename] or {}
-						PartCtrl_GamePCFs[original_filename][path] = filename
-						PartCtrl_GamePCFs_DefaultPaths[original_filename] = PartCtrl_GamePCFs_DefaultPaths[original_filename] or path
+						PEPlus_GamePCFs[original_filename] = PEPlus_GamePCFs[original_filename] or {}
+						PEPlus_GamePCFs[original_filename][path] = filename
+						PEPlus_GamePCFs_DefaultPaths[original_filename] = PEPlus_GamePCFs_DefaultPaths[original_filename] or path
 					end
 				else
 					//If the currently loaded instance of this pcf isn't from a game at all, put a blank entry in here for now
 					//so that game paths can't overwrite it later
-					PartCtrl_GamePCFs_DefaultPaths[filename] = PartCtrl_GamePCFs_DefaultPaths[filename] or ""
+					PEPlus_GamePCFs_DefaultPaths[filename] = PEPlus_GamePCFs_DefaultPaths[filename] or ""
 				end
 				
 				if allpcfs[filename] then
@@ -5240,8 +5240,8 @@ function PartCtrl_ReadAndProcessPCFs(new_file_only)
 	table.Add(pcfs_dupe_order, pcfs_sorted[6]) //garrysmod/download/ folder
 	table.Add(pcfs_dupe_order, pcfs_sorted[1]) //packed into bsp
 	table.Add(pcfs_dupe_order, pcfs_sorted[7]) //other
-	PartCtrl_PCFsInDupeOrder = pcfs_dupe_order //global so that PartCtrl_GetDuplicateFx can be run again later without rebuilding this table
-	PartCtrl_GetDuplicateFx() //run this on server too, to build PartCtrl_PCFsByParticleName for use by backcomp
+	PEPlus_PCFsInDupeOrder = pcfs_dupe_order //global so that PEPlus_GetDuplicateFx can be run again later without rebuilding this table
+	PEPlus_GetDuplicateFx() //run this on server too, to build PEPlus_PCFsByParticleName for use by backcomp
 
 	if CLIENT and !new_file_only then
 		//Run AddParticles in another particular order, so things like gmod fx take priority by default;
@@ -5258,40 +5258,40 @@ function PartCtrl_ReadAndProcessPCFs(new_file_only)
 		table.Add(pcfs_load_order, pcfs_sorted[6]) //garrysmod/download/ folder
 		table.Add(pcfs_load_order, pcfs_sorted[7]) //other
 		for _, filename in SortedPairs (pcfs_load_order, true) do
-			PartCtrl_AddParticles(filename)
+			PEPlus_AddParticles(filename)
 		end
 	end
 
 
 	//clean unnecessary entries out of this table now that we're done building it
-	for k, v in pairs (PartCtrl_GamePCFs_DefaultPaths) do
-		if v == "" then //if PartCtrl_GamePCFs[k] == nil then
-			PartCtrl_GamePCFs_DefaultPaths[k] = nil
+	for k, v in pairs (PEPlus_GamePCFs_DefaultPaths) do
+		if v == "" then //if PEPlus_GamePCFs[k] == nil then
+			PEPlus_GamePCFs_DefaultPaths[k] = nil
 		end
 	end
 
 	if !new_file_only then 
 		//add util fx to processedpcfs as well, so that particle entities and spawnicons can use them natively
-		PartCtrl_ProcessUtilFx()
+		PEPlus_ProcessUtilFx()
 
-		PartCtrl_ReadAndProcessPCFs_StartupHasRun = true
+		PEPlus_ReadAndProcessPCFs_StartupHasRun = true
 
-		MsgN("PartCtrl: PartCtrl_ReadAndProcessPCFs took " , SysTime() - starttime, " secs")
+		MsgN("PEPlus_ReadAndProcessPCFs: took " , SysTime() - starttime, " secs")
 	end
 
 end
 
 //If this game has this pcf, but it's not currently loadable because it's being overridden by a conflicting pcf of the same name, this returns 
 //the filepath for a copy of the inaccessible pcf, located in the data folder (a "data pcf"). Otherwise, returns the same pcf we gave it.
-//(for details, see the part of PartCtrl_ReadAndProcessPCFs() where we populate PartCtrl_GamePCFs)
-function PartCtrl_GetGamePCF(pcf, path)
-	if !path or !PartCtrl_GamePCFs[pcf] or !PartCtrl_GamePCFs[pcf][path] then return pcf end
-	return PartCtrl_GamePCFs[pcf][path]
+//(for details, see the part of PEPlus_ReadAndProcessPCFs() where we populate PEPlus_GamePCFs)
+function PEPlus_GetGamePCF(pcf, path)
+	if !path or !PEPlus_GamePCFs[pcf] or !PEPlus_GamePCFs[pcf][path] then return pcf end
+	return PEPlus_GamePCFs[pcf][path]
 end
 
-function PartCtrl_GetDataPCFNiceName(pcf)
+function PEPlus_GetDataPCFNiceName(pcf)
 	if pcf == "UtilFx" then return "Scripted Effect" end
-	local tab = PartCtrl_AllDataPCFs[pcf]
+	local tab = PEPlus_AllDataPCFs[pcf]
 	if !tab then return pcf end
 	return tab.original_filename .. " (" .. tab.path .. ")"
 end
@@ -5302,38 +5302,38 @@ end
 //Determine which fx are actually identical copies of another effect of the same name.
 //This is used to prevent unnecessary AddParticles loading and bad "effect is unloaded, click to load" info in spawnicons (dupes are considered 
 //equivalent to the effect they're a copy of), and also to prevent search results from getting clogged up with multiple identical effects.
-//On server, this function only builds PartCtrl_PCFsByParticleName, for use by backcomp.
-function PartCtrl_GetDuplicateFx()
+//On server, this function only builds PEPlus_PCFsByParticleName, for use by backcomp.
+function PEPlus_GetDuplicateFx()
 
-	if CLIENT then PartCtrl_DuplicateFx = {} end
-	PartCtrl_PCFsByParticleName = {}
+	if CLIENT then PEPlus_DuplicateFx = {} end
+	PEPlus_PCFsByParticleName = {}
 	//TODO: can't do debug spew for everything when developer mode is on, since there's too much stuff per pcf, so currently this is all done 
 	//for a single pcf and/or effect defined manually in code. i guess this could be moved to some convars in case other devs want to use it?
 	
-	for _, filename in SortedPairs (PartCtrl_PCFsInDupeOrder) do
-		if CLIENT then PartCtrl_DuplicateFx[filename] = {} end
+	for _, filename in SortedPairs (PEPlus_PCFsInDupeOrder) do
+		if CLIENT then PEPlus_DuplicateFx[filename] = {} end
 		//local dodebug = filename == "particles/rain_fx_unused.pcf"
 		local dupe_candidates = {}
 
 		local allfx = {}
-		for k, _ in pairs (PartCtrl_ProcessedPCFs[filename]) do
+		for k, _ in pairs (PEPlus_ProcessedPCFs[filename]) do
 			allfx[k] = true
 		end
-		for k, _ in pairs (PartCtrl_CulledFx[filename]) do
+		for k, _ in pairs (PEPlus_CulledFx[filename]) do
 			allfx[k] = true
 		end
 
 		for effect, _ in SortedPairs (allfx) do
 			//local dodebug = effect == "halloween_boss_foot_fire_customcolor"
 			//if dodebug then MsgN(effect) end
-			//if dodebug and effect == "ash_eddy_b" then PrintTable(PartCtrl_PCFsByParticleName[effect]) end
-			PartCtrl_PCFsByParticleName[effect] = PartCtrl_PCFsByParticleName[effect] or {}
+			//if dodebug and effect == "ash_eddy_b" then PrintTable(PEPlus_PCFsByParticleName[effect]) end
+			PEPlus_PCFsByParticleName[effect] = PEPlus_PCFsByParticleName[effect] or {}
 			if CLIENT then
-				for _, filename2 in SortedPairs (PartCtrl_PCFsByParticleName[effect]) do
+				for _, filename2 in SortedPairs (PEPlus_PCFsByParticleName[effect]) do
 					//Compare the effect to all other fx of the same name (except the ones that we know 
 					//are dupes themselves) to determine if this effect is a duplicate of one of them
-					if PartCtrl_DuplicateFx[filename2][effect] then
-						//if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " this potential candidate is a dupe of ", PartCtrl_DuplicateFx[filename2][effect], ", skipping") end
+					if PEPlus_DuplicateFx[filename2][effect] then
+						//if dodebug then MsgN(filename .. "/" .. filename2 .. ": ", effect, " this potential candidate is a dupe of ", PEPlus_DuplicateFx[filename2][effect], ", skipping") end
 						continue
 					end
 					//if dupe_candidates[effect] then break end
@@ -5422,7 +5422,7 @@ function PartCtrl_GetDuplicateFx()
 					//note: this needs to use copies of the cached tables, not the originals, otherwise table.SortByMember above will modify the 
 					//cached table and cause inconsistent results (i.e. operators with the same functionName no longer being in the same order) 
 					//if this function is run multiple times in a session
-					CompareTables(table.Copy(PartCtrl_NoDefPCFs[filename][effect]), table.Copy(PartCtrl_NoDefPCFs[filename2][effect]), 1, filename .. "/" .. filename2 .. ": " .. effect)
+					CompareTables(table.Copy(PEPlus_NoDefPCFs[filename][effect]), table.Copy(PEPlus_NoDefPCFs[filename2][effect]), 1, filename .. "/" .. filename2 .. ": " .. effect)
 					if is_dupe then
 						dupe_candidates[effect] = dupe_candidates[effect] or {}
 						table.insert(dupe_candidates[effect], filename2)
@@ -5431,7 +5431,7 @@ function PartCtrl_GetDuplicateFx()
 					end
 				end
 			end
-			table.insert(PartCtrl_PCFsByParticleName[effect], filename)
+			table.insert(PEPlus_PCFsByParticleName[effect], filename)
 		end
 		if SERVER then continue end
 		//Double check to make sure all the children of an effect are dupes as well
@@ -5458,7 +5458,7 @@ function PartCtrl_GetDuplicateFx()
 				//   smoke_large_01 is different. This requires us to keep a whole list of potential dupe candidates instead of just the first 
 				//   we find, and then also associate the child embers_large_01 with the left4dead2 pcf, despite that pcf not being in the 
 				//   child's list of dupe candidates.
-				for _, tab in pairs (PartCtrl_NoDefPCFs[filename][effect2].children) do
+				for _, tab in pairs (PEPlus_NoDefPCFs[filename][effect2].children) do
 					if !dupe_candidates[tab.child] then
 						//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " has no dupe candidates, discarding") end
 						children_all_dupes = false
@@ -5470,9 +5470,9 @@ function PartCtrl_GetDuplicateFx()
 								//if dodebug --[[and tab.child == "embers_large_01"]] then PrintTable(dupe_candidates[tab.child]) end
 								for k2, v2 in pairs (dupe_candidates[tab.child]) do
 									//if dodebug --[[and tab.child == "embers_large_01"]] then
-									//	MsgN("DUPECHECK: v = ", v, ", PartCtrl_DuplicateFx = ", PartCtrl_DuplicateFx[v][tab.child], ", v2 = ", v2)
+									//	MsgN("DUPECHECK: v = ", v, ", PEPlus_DuplicateFx = ", PEPlus_DuplicateFx[v][tab.child], ", v2 = ", v2)
 									//end
-									if PartCtrl_DuplicateFx[v][tab.child] == v2 then //this seems like nonsense but it works, argh
+									if PEPlus_DuplicateFx[v][tab.child] == v2 then //this seems like nonsense but it works, argh
 										//if dodebug then MsgN(filename, ": ", effect, ": child ", tab.child, " dupecheck found that ", v, " is a dupe of ", v2, ", so the former should remain in candidates") end
 										dupecheck = true
 										break
@@ -5498,7 +5498,7 @@ function PartCtrl_GetDuplicateFx()
 
 			CheckIfChildrenAreDupes(effect)
 			if children_all_dupes then
-				PartCtrl_DuplicateFx[filename][effect] = dupe_candidates[effect][1]
+				PEPlus_DuplicateFx[filename][effect] = dupe_candidates[effect][1]
 				//if dodebug then MsgN(filename .. "/" .. dupe_candidates[effect][1] .. ": " .. effect .. ": dupe found!") end
 			end
 		end

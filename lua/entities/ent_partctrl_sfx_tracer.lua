@@ -1,13 +1,13 @@
 AddCSLuaFile()
 
-ENT.Base 			= "ent_partctrl_sfx"
+ENT.Base 			= "ent_peplus_sfx"
 ENT.PrintName			= "Tracer Effect"
 ENT.Category			= "Particle Effects+: Special Effects"
 ENT.Information			= "Fires out particle effects like bullet tracers, with one end where each \"bullet\" starts, and the other where it hits something."
 
 ENT.Spawnable			= true
 
-ENT.PartCtrl_ShortName		= "Tracer"
+ENT.PEPlus_ShortName		= "Tracer"
 ENT.SpecialEffectRoles		= {
 	[0] = "Start point",
 	[1] = "Hit point",
@@ -69,12 +69,12 @@ function ENT:SetSpecialEffectDefaults()
 	self:SetTracerHitDir(0)
 
 	if !self.IsBlank then
-		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Tracer", "UtilFx")
+		local p = PEPlus_SpawnParticle(self:GetPlayer(), self:GetPos(), "Tracer", "UtilFx")
 		if IsValid(p) then
 			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 		end
 
-		local p = PartCtrl_SpawnParticle(self:GetPlayer(), self:GetPos(), "Impact_GMOD", "UtilFx")
+		local p = PEPlus_SpawnParticle(self:GetPlayer(), self:GetPos(), "Impact_GMOD", "UtilFx")
 		if IsValid(p) then
 			p:AttachToSpecialEffect(self, self:GetPlayer(), false)
 		end
@@ -279,7 +279,7 @@ if SERVER then
 
 	function ENT:SpecialEffectInitialize()
 
-		//do numpad stuff; just reuse the numpad funcs from the standard ent_partctrl
+		//do numpad stuff; just reuse the numpad funcs from the standard ent_peplus
 
 		self:SetNumpadState(false) //Numpad state should always start off as false
 		//Different from NumpadState. This value is always true when the key is held down and false when it's not, even if the numpad state is set to toggle instead.
@@ -288,8 +288,8 @@ if SERVER then
 		//Set up numpad functions
 		local ply = self:GetPlayer() //NOTE: this still works if ply doesn't exist
 		local key = self:GetNumpad()
-		self.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", self, true)
-		self.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", self, false)
+		self.NumDown = numpad.OnDown(ply, key, "PEPlus_Numpad", self, true)
+		self.NumUp = numpad.OnUp(ply, key, "PEPlus_Numpad", self, false)
 
 	end
 
@@ -300,7 +300,7 @@ end
 
 if CLIENT then
 
-	local cv_max = GetConVar("sv_partctrl_particlesperent")
+	local cv_max = GetConVar("sv_peplus_particlesperent")
 
 	function ENT:SpecialEffectThink()
 
@@ -367,8 +367,8 @@ if CLIENT then
 					local wait = false
 					for child, _ in pairs (self.SpecialEffectChildren) do
 						child.MaxOldParticlesOverride = max
-						local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
-						if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+						local pcf = PEPlus_GetGamePCF(child:GetPCF(), child:GetPath())
+						if istable(PEPlus_ProcessedPCFs[pcf]) and istable(PEPlus_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
 						and !child.ParticleInfo then
 							wait = true
 							break
@@ -386,8 +386,8 @@ if CLIENT then
 						local wait = false
 						for child, _ in pairs (self.SpecialEffectChildren) do
 							child.MaxOldParticlesOverride = max
-							local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
-							if istable(PartCtrl_ProcessedPCFs[pcf]) and istable(PartCtrl_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
+							local pcf = PEPlus_GetGamePCF(child:GetPCF(), child:GetPath())
+							if istable(PEPlus_ProcessedPCFs[pcf]) and istable(PEPlus_ProcessedPCFs[pcf][child:GetParticleName()]) //don't get stuck here if a child has an invalid effect, just skip it
 							and !child.ParticleInfo then
 								wait = true
 								self.was_waiting = true
@@ -409,14 +409,14 @@ if CLIENT then
 		else
 			if max != nil then max = 0 end
 			for child, _ in pairs (self.SpecialEffectChildren) do
-				if child.particle and child.particle != partctrl_wait then
+				if child.particle and child.particle != peplus_wait then
 					child.MaxOldParticlesOverride = max
 					if child.particle.IsValid and child.particle:IsValid() then
 						//Stop any existing particles and throw them into the OldParticles table to get cleaned up
 						//child.particle:StopEmission() //doesn't interact well with tracer count; because all the tracers except the last one are already in OldParticles, only the last one gets cut off while the rest keep playing, which looks odd
 						table.insert(child.OldParticles, child.particle)
 					end
-					child.particle = partctrl_wait
+					child.particle = peplus_wait
 				end
 			end
 			self.LastLoop = nil //reset loop time, so it restarts the timer as soon as we reenable
@@ -488,7 +488,7 @@ if CLIENT then
 			tr.filter = ent
 			tr = util.TraceLine(tr)
 
-			local hit = ents.CreateClientside("ent_partctrl_sfxtarget")
+			local hit = ents.CreateClientside("ent_peplus_sfxtarget")
 			hit:SetPos(tr.HitPos)
 			local hitdir = self:GetTracerHitDir()
 			if hitdir == 0 then
@@ -527,8 +527,8 @@ if CLIENT then
 			hit.OwnerEntity = self
 			hit.Particles = {}
 			//store values used by impact utilfx
-			hit.PartCtrl_TraceHit = tr.Entity
-			hit.PartCtrl_SurfaceProp = tr.SurfaceProps
+			hit.PEPlus_TraceHit = tr.Entity
+			hit.PEPlus_SurfaceProp = tr.SurfaceProps
 
 			//Save particle creation time (used for pausing, which needs to pause at a certain point in the effect's lifetime)
 			if !self.ParticleStartTime then
@@ -536,14 +536,14 @@ if CLIENT then
 			end
 
 			for child, _ in pairs (self.SpecialEffectChildren) do
-				if child.PartCtrl_Ent then
-					local pcf = PartCtrl_GetGamePCF(child:GetPCF(), child:GetPath())
+				if child.PEPlus_Ent then
+					local pcf = PEPlus_GetGamePCF(child:GetPCF(), child:GetPath())
 					local name = child:GetParticleName()
-					if !istable(PartCtrl_ProcessedPCFs[pcf]) or !istable(PartCtrl_ProcessedPCFs[pcf][name]) then continue end //skip invalid fx
-					local cpointtab = PartCtrl_ProcessedPCFs[pcf][name].cpoints
+					if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PEPlus_ProcessedPCFs[pcf][name]) then continue end //skip invalid fx
+					local cpointtab = PEPlus_ProcessedPCFs[pcf][name].cpoints
 					local addtotarget = false
 					for k, v in pairs (child.ParticleInfo) do
-						if cpointtab[k].mode == PARTCTRL_CPOINT_MODE_POSITION then
+						if cpointtab[k].mode == PEPLUS_CPOINT_MODE_POSITION then
 							if v.sfx_role == 0 then
 								child.ParticleInfo[k].ent = ent
 								child.ParticleInfo[k].attach = self:GetAttachmentID()
@@ -608,7 +608,7 @@ if SERVER then
 			//Mode 1: Pause/unpause effect
 			//This requires a ParticleStartTime value that only exists clientside, so tell the client to send it, using the same "effect_pause" input as the cpanel
 			if IsValid(ply) and ply.IsPlayer and ply:IsPlayer() then
-				net.Start("PartCtrl_DoPauseInput_SendToCl")
+				net.Start("PEPlus_DoPauseInput_SendToCl")
 					net.WriteEntity(self)
 				net.Send(ply)
 			else
@@ -621,7 +621,7 @@ if SERVER then
 			////Refresh special effect on server
 			//if self.SpecialEffectRefresh then self:SpecialEffectRefresh() end
 			//Tell clients to refresh the special effect
-			net.Start("PartCtrl_SpecialEffect_Refresh_SendToCl")
+			net.Start("PEPlus_SpecialEffect_Refresh_SendToCl")
 				net.WriteEntity(self)
 			net.Broadcast()
 
@@ -742,12 +742,12 @@ else
 			numpad.Remove(self.NumDown)
 			numpad.Remove(self.NumUp)
 
-			self.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", self, true)
-			self.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", self, false)
+			self.NumDown = numpad.OnDown(ply, key, "PEPlus_Numpad", self, true)
+			self.NumUp = numpad.OnUp(ply, key, "PEPlus_Numpad", self, false)
 
 			//If the player is holding down the old key then let go of it
 			if self.NumpadKeyDown then
-				PartCtrlNumpadFunction(ply, self, false)
+				PEPlusNumpadFunction(ply, self, false)
 			end
 
 		elseif input == "numpad_toggle" then
@@ -762,7 +762,7 @@ else
 			if !toggle then
 				local keydown = self.NumpadKeyDown
 				if keydown != self:GetNumpadState() then
-					PartCtrlNumpadFunction(ply, self, keydown)
+					PEPlusNumpadFunction(ply, self, keydown)
 				end
 			end
 
@@ -835,9 +835,9 @@ end
 
 
 
-duplicator.RegisterEntityClass("ent_partctrl_sfx_tracer", function(ply, data)
+duplicator.RegisterEntityClass("ent_peplus_sfx_tracer", function(ply, data)
 
-	local ent = ents.Create("ent_partctrl_sfx_tracer")
+	local ent = ents.Create("ent_peplus_sfx_tracer")
 	if !ent:IsValid() then return false end
 
 	//default dtvars for old dupes that don't have them
@@ -856,4 +856,4 @@ duplicator.RegisterEntityClass("ent_partctrl_sfx_tracer", function(ply, data)
 
 end, "Data")
 
-PartCtrl_AddBlankSpecialEffect(ENT) //Add blank variant to spawnmenu
+PEPlus_AddBlankSpecialEffect(ENT) //Add blank variant to spawnmenu

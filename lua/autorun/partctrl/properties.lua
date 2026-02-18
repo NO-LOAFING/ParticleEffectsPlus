@@ -2,15 +2,15 @@ AddCSLuaFile()
 
 if CLIENT then
 
-	partctrlwindows = {}
+	pepluswindows = {}
 
-	function OpenPartCtrlEditor(ent)
+	function OpenPEPlusEditor(ent)
 
-		if IsValid(ent.PartCtrlWindow) then return end
+		if IsValid(ent.PEPlusWindow) then return end
 
 		local width = 367 //width of 367 nicely fits color picker
 		local height = 400
-		if ent.PartCtrl_SpecialEffect then
+		if ent.PEPlus_SpecialEffect then
 			width = width + 16 //special fx controls have some extra width because of the tab layout
 			height = 500 //special fx also just have more controls in general, so make it higher by default
 		end
@@ -25,21 +25,21 @@ if CLIENT then
 		//When opening multiple edit windows, move the default position slightly for each window open so they don't get completely hidden by each other until the player moves them
 		local x, y = window:GetPos()
 		local xmax, ymax = g_ContextMenu:GetSize()
-		window:SetPos(math.min(x + (#partctrlwindows * 25), xmax - 25), math.min(y + (#partctrlwindows * 25), ymax - 25))
+		window:SetPos(math.min(x + (#pepluswindows * 25), xmax - 25), math.min(y + (#pepluswindows * 25), ymax - 25))
 
-		local control = window:Add("PartCtrlEditor")
+		local control = window:Add("PEPlusEditor")
 		window.Control = control
 		control:SetEntity(ent)
 		control:Dock(FILL)
 
-		table.insert(partctrlwindows, window)
+		table.insert(pepluswindows, window)
 
 		control.OnEntityLost = function()
 			window:Remove()
 		end
 
 		window.OnRemove = function()
-			table.remove(partctrlwindows, table.KeyFromValue(partctrlwindows, window))
+			table.remove(pepluswindows, table.KeyFromValue(pepluswindows, window))
 		end
 
 		//Fix: If the control window is created while the context menu is closed (by opening a control window with the attacher tool while holding Q) then it'll be unclickable
@@ -53,17 +53,17 @@ end
 
 //Make these funcs global so advbonemerge tool dropdown can use them too
 
-PartCtrl_EditProperty_Filter = function(self, ent, ply)
+PEPlus_EditProperty_Filter = function(self, ent, ply)
 
 	if !IsValid(ent) then return false end
-	if !gamemode.Call("CanProperty", ply, "editpartctrl", ent) then return false end
+	if !gamemode.Call("CanProperty", ply, "editpeplus", ent) then return false end
 
-	if !istable(ent.PartCtrl_ParticleEnts) then return false end
-	local count = table.Count(ent.PartCtrl_ParticleEnts) 
+	if !istable(ent.PEPlus_ParticleEnts) then return false end
+	local count = table.Count(ent.PEPlus_ParticleEnts) 
 	if count < 1 then return false end
 	if count == 1 then
-		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
-			if !(IsValid(k) and ((k.PartCtrl_Ent and k.GetPCF) or k.PartCtrl_SpecialEffect)) then
+		for k, _ in pairs (ent.PEPlus_ParticleEnts) do
+			if !(IsValid(k) and ((k.PEPlus_Ent and k.GetPCF) or k.PEPlus_SpecialEffect)) then
 				return false
 			end
 		end
@@ -73,39 +73,39 @@ PartCtrl_EditProperty_Filter = function(self, ent, ply)
 
 end
 
-PartCtrl_EditProperty_MenuOpen = function(self, option, ent)
+PEPlus_EditProperty_MenuOpen = function(self, option, ent)
 
 	//If the entity has one particle effect, then this property is an option to open a window for it; 
 	//if it has multiple particle effects, then this property is a dropdown containing options for each one
 
-	if table.Count(ent.PartCtrl_ParticleEnts) == 1 then
+	if table.Count(ent.PEPlus_ParticleEnts) == 1 then
 
-		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
+		for k, _ in pairs (ent.PEPlus_ParticleEnts) do
 			local str = k.PrintName
 			if k.GetParticleName then
-				local pcf = PartCtrl_GetGamePCF(k:GetPCF(), k:GetPath())
-				if PartCtrl_ProcessedPCFs[pcf] and PartCtrl_ProcessedPCFs[pcf][k:GetParticleName()] then
-					str = PartCtrl_ProcessedPCFs[pcf][k:GetParticleName()].nicename
+				local pcf = PEPlus_GetGamePCF(k:GetPCF(), k:GetPath())
+				if PEPlus_ProcessedPCFs[pcf] and PEPlus_ProcessedPCFs[pcf][k:GetParticleName()] then
+					str = PEPlus_ProcessedPCFs[pcf][k:GetParticleName()].nicename
 				end
 			end
 			option:SetText("Edit Particle Effect (" .. str .. ")")
-			option.DoClick = function() OpenPartCtrlEditor(k) end
+			option.DoClick = function() OpenPEPlusEditor(k) end
 		end
 
 	else
 		
 		local submenu = option:AddSubMenu()
-		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
-			if IsValid(k) and ((k.PartCtrl_Ent and k.GetPCF) or k.PartCtrl_SpecialEffect) then
+		for k, _ in pairs (ent.PEPlus_ParticleEnts) do
+			if IsValid(k) and ((k.PEPlus_Ent and k.GetPCF) or k.PEPlus_SpecialEffect) then
 				local str = k.PrintName
 				if k.GetParticleName then
-					local pcf = PartCtrl_GetGamePCF(k:GetPCF(), k:GetPath())
-					if PartCtrl_ProcessedPCFs[pcf] and PartCtrl_ProcessedPCFs[pcf][k:GetParticleName()] then
-						str = PartCtrl_ProcessedPCFs[pcf][k:GetParticleName()].nicename
+					local pcf = PEPlus_GetGamePCF(k:GetPCF(), k:GetPath())
+					if PEPlus_ProcessedPCFs[pcf] and PEPlus_ProcessedPCFs[pcf][k:GetParticleName()] then
+						str = PEPlus_ProcessedPCFs[pcf][k:GetParticleName()].nicename
 					end
 				end
 				local opt = submenu:AddOption(str)
-				opt.DoClick = function() OpenPartCtrlEditor(k) end
+				opt.DoClick = function() OpenPEPlusEditor(k) end
 			end
 		end
 
@@ -113,15 +113,15 @@ PartCtrl_EditProperty_MenuOpen = function(self, option, ent)
 
 end
 
-properties.Add("editpartctrl", {
+properties.Add("editpeplus", {
 	MenuLabel = "Edit Particle Effects..",
 	Order = 90000, //for reference, edit properties is 90001 and edit animprop is 90002
 	PrependSpacer = true,
 	MenuIcon = "icon16/fire.png", //TODO: better icon?
 	
-	Filter = PartCtrl_EditProperty_Filter,
+	Filter = PEPlus_EditProperty_Filter,
 
-	MenuOpen = PartCtrl_EditProperty_MenuOpen,
+	MenuOpen = PEPlus_EditProperty_MenuOpen,
 
 	Action = function(self, ent)
 	
@@ -132,7 +132,7 @@ properties.Add("editpartctrl", {
 
 //Developer properties for table dumps to console
 
-properties.Add("partctrl_dev_printpcfdata", {
+properties.Add("peplus_dev_printpcfdata", {
 	MenuLabel = "Print raw PCF data for this effect",
 	Order = 90000.51, //this works, incredible
 	PrependSpacer = false,
@@ -142,7 +142,7 @@ properties.Add("partctrl_dev_printpcfdata", {
 
 		if GetConVarNumber("developer") < 1 then return false end
 		if !IsValid(ent) then return false end
-		if !istable(ent.PartCtrl_ParticleEnts) or table.Count(ent.PartCtrl_ParticleEnts) != 1 then return false end
+		if !istable(ent.PEPlus_ParticleEnts) or table.Count(ent.PEPlus_ParticleEnts) != 1 then return false end
 
 		return true
 
@@ -150,14 +150,14 @@ properties.Add("partctrl_dev_printpcfdata", {
 
 	Action = function(self, ent)
 	
-		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
+		for k, _ in pairs (ent.PEPlus_ParticleEnts) do
 			if IsValid(k) then
-				if k.PartCtrl_SpecialEffect then MsgN("Can't get raw pcf data for special effect " .. k.PrintName) return end
+				if k.PEPlus_SpecialEffect then MsgN("Can't get raw pcf data for special effect " .. k.PrintName) return end
 				if k:GetPCF() == "UtilFx" then MsgN("UtilFx isn't a real pcf, doofus!") return end
-				local pcf = PartCtrl_GetGamePCF(k:GetPCF(), k:GetPath())
+				local pcf = PEPlus_GetGamePCF(k:GetPCF(), k:GetPath())
 				local name = k:GetParticleName()
-				MsgN("PartCtrl_ReadPCF(\"" .. pcf .. "\")[\"" .. name .. "\"]:")
-				PrintTable(PartCtrl_ReadPCF(pcf)[name])
+				MsgN("PEPlus_ReadPCF(\"" .. pcf .. "\")[\"" .. name .. "\"]:")
+				PrintTable(PEPlus_ReadPCF(pcf)[name])
 				MsgN()
 			end
 		end
@@ -165,7 +165,7 @@ properties.Add("partctrl_dev_printpcfdata", {
 	end
 })
 
-properties.Add("partctrl_dev_printpcfdata_nodefs", {
+properties.Add("peplus_dev_printpcfdata_nodefs", {
 	MenuLabel = "Print raw PCF data for this effect (no defaults)",
 	Order = 90000.515,
 	PrependSpacer = false,
@@ -175,7 +175,7 @@ properties.Add("partctrl_dev_printpcfdata_nodefs", {
 
 		if GetConVarNumber("developer") < 1 then return false end
 		if !IsValid(ent) then return false end
-		if !istable(ent.PartCtrl_ParticleEnts) or table.Count(ent.PartCtrl_ParticleEnts) != 1 then return false end
+		if !istable(ent.PEPlus_ParticleEnts) or table.Count(ent.PEPlus_ParticleEnts) != 1 then return false end
 
 		return true
 
@@ -183,14 +183,14 @@ properties.Add("partctrl_dev_printpcfdata_nodefs", {
 
 	Action = function(self, ent)
 	
-		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
+		for k, _ in pairs (ent.PEPlus_ParticleEnts) do
 			if IsValid(k) then
-				if k.PartCtrl_SpecialEffect then MsgN("Can't get raw pcf data for special effect " .. k.PrintName) return end
+				if k.PEPlus_SpecialEffect then MsgN("Can't get raw pcf data for special effect " .. k.PrintName) return end
 				if k:GetPCF() == "UtilFx" then MsgN("UtilFx isn't a real pcf, doofus!") return end
-				local pcf = PartCtrl_GetGamePCF(k:GetPCF(), k:GetPath())
+				local pcf = PEPlus_GetGamePCF(k:GetPCF(), k:GetPath())
 				local name = k:GetParticleName()
-				MsgN("PartCtrl_NoDefPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
-				PrintTable(PartCtrl_NoDefPCFs[pcf][name])
+				MsgN("PEPlus_NoDefPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
+				PrintTable(PEPlus_NoDefPCFs[pcf][name])
 				MsgN()
 			end
 		end
@@ -198,7 +198,7 @@ properties.Add("partctrl_dev_printpcfdata_nodefs", {
 	end
 })
 
-properties.Add("partctrl_dev_printprocessed", {
+properties.Add("peplus_dev_printprocessed", {
 	MenuLabel = "Print processed PCF data for this effect",
 	Order = 90000.52,
 	PrependSpacer = false,
@@ -208,7 +208,7 @@ properties.Add("partctrl_dev_printprocessed", {
 
 		if GetConVarNumber("developer") < 1 then return false end
 		if !IsValid(ent) then return false end
-		if !istable(ent.PartCtrl_ParticleEnts) or table.Count(ent.PartCtrl_ParticleEnts) != 1 then return false end
+		if !istable(ent.PEPlus_ParticleEnts) or table.Count(ent.PEPlus_ParticleEnts) != 1 then return false end
 
 		return true
 
@@ -216,13 +216,13 @@ properties.Add("partctrl_dev_printprocessed", {
 
 	Action = function(self, ent)
 	
-		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
+		for k, _ in pairs (ent.PEPlus_ParticleEnts) do
 			if IsValid(k) then
-				if k.PartCtrl_SpecialEffect then MsgN("Can't get processed pcf data for special effect " .. k.PrintName) return end
-				local pcf = PartCtrl_GetGamePCF(k:GetPCF(), k:GetPath())
+				if k.PEPlus_SpecialEffect then MsgN("Can't get processed pcf data for special effect " .. k.PrintName) return end
+				local pcf = PEPlus_GetGamePCF(k:GetPCF(), k:GetPath())
 				local name = k:GetParticleName()
-				MsgN("PartCtrl_ProcessedPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
-				PrintTable(PartCtrl_ProcessedPCFs[pcf][name])
+				MsgN("PEPlus_ProcessedPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
+				PrintTable(PEPlus_ProcessedPCFs[pcf][name])
 				MsgN()
 			end
 		end
@@ -230,7 +230,7 @@ properties.Add("partctrl_dev_printprocessed", {
 	end
 })
 
-properties.Add("partctrl_dev_printparticleinfo", {
+properties.Add("peplus_dev_printparticleinfo", {
 	MenuLabel = "Print ParticleInfo (settings on this entity)",
 	Order = 90000.53,
 	PrependSpacer = false,
@@ -240,7 +240,7 @@ properties.Add("partctrl_dev_printparticleinfo", {
 
 		if GetConVarNumber("developer") < 1 then return false end
 		if !IsValid(ent) then return false end
-		if !istable(ent.PartCtrl_ParticleEnts) or table.Count(ent.PartCtrl_ParticleEnts) != 1 then return false end
+		if !istable(ent.PEPlus_ParticleEnts) or table.Count(ent.PEPlus_ParticleEnts) != 1 then return false end
 
 		return true
 
@@ -248,10 +248,10 @@ properties.Add("partctrl_dev_printparticleinfo", {
 
 	Action = function(self, ent)
 	
-		for k, _ in pairs (ent.PartCtrl_ParticleEnts) do
+		for k, _ in pairs (ent.PEPlus_ParticleEnts) do
 			if IsValid(k) then
-				if k.PartCtrl_SpecialEffect then MsgN("Can't get ParticleInfo data for special effect " .. k.PrintName) return end
-				local pcf = PartCtrl_GetGamePCF(k:GetPCF(), k:GetPath())
+				if k.PEPlus_SpecialEffect then MsgN("Can't get ParticleInfo data for special effect " .. k.PrintName) return end
+				local pcf = PEPlus_GetGamePCF(k:GetPCF(), k:GetPath())
 				MsgN(k, ".ParticleInfo (", pcf, "/", k:GetParticleName(), "): ")
 				PrintTable(k.ParticleInfo)
 				MsgN()
@@ -291,8 +291,8 @@ local function FindPCFFromEffect(name)
 		end
 	else
 		//Get the first pcf containing this particle name; don't overthink it, the old addon had no concept of multiple fx sharing a name
-		if PartCtrl_PCFsByParticleName[string.lower(name)] then
-			for k, v in pairs (PartCtrl_PCFsByParticleName[string.lower(name)]) do
+		if PEPlus_PCFsByParticleName[string.lower(name)] then
+			for k, v in pairs (PEPlus_PCFsByParticleName[string.lower(name)]) do
 				pcf = v
 				break
 			end
@@ -308,15 +308,15 @@ local function FindPCFFromEffect(name)
 				end
 				path = old.path
 			else
-				if !PartCtrl_AllDataPCFs[pcf] then
-					path = PartCtrl_GamePCFs_DefaultPaths[pcf] //optional, can be nil
+				if !PEPlus_AllDataPCFs[pcf] then
+					path = PEPlus_GamePCFs_DefaultPaths[pcf] //optional, can be nil
 				else
-					path = PartCtrl_AllDataPCFs[pcf].path
-					pcf = PartCtrl_AllDataPCFs[pcf].original_filename
+					path = PEPlus_AllDataPCFs[pcf].path
+					pcf = PEPlus_AllDataPCFs[pcf].original_filename
 				end
 			end
 		else
-			MsgN("PartCtrl: ", name, " couldn't find PartCtrl_PCFsByParticleName")
+			MsgN("Particle Effects+ FindPCFFromEffect: ", name, " couldn't find PEPlus_PCFsByParticleName")
 		end
 	end
 	return string.lower(name), pcf, path, utilfx
@@ -352,7 +352,7 @@ local function UpdateColorAndUtilFx(p, c, utilfx, info, cpointtab, name)
 	end
 
 	for k, v in pairs (cpointtab) do
-		if v.mode == PARTCTRL_CPOINT_MODE_AXIS then
+		if v.mode == PEPLUS_CPOINT_MODE_AXIS then
 			if c then
 				for i = 0, 2 do
 					if v["axis_" .. i] and v["axis_" .. i].colorpicker then
@@ -386,16 +386,16 @@ local function UpdateOldEffect(ent)
 		name = ent:GetEffectName()
 		name, pcf, path, utilfx = FindPCFFromEffect(name)
 		//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
-		local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
+		local p = PEPlus_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 		if IsValid(p) then
 			local t1 = ent:GetTargetEnt()
 			local t2 = ent:GetTargetEnt2()
 			if !IsValid(t2) then t2 = nil end
 
-			local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
+			local cpointtab = PEPlus_ProcessedPCFs[PEPlus_GetGamePCF(pcf, path)][name].cpoints
 			local done_first = false
 			for k, v in pairs (cpointtab) do
-				if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+				if v.mode == PEPLUS_CPOINT_MODE_POSITION then
 					if !done_first or !t2 then
 						p:AttachToEntity(t1, k, ent:GetAttachNum(), ply, false)
 						done_first = true
@@ -432,15 +432,15 @@ local function UpdateOldEffect(ent)
 			//Update numpad funcs
 			numpad.Remove(p.NumDown)
 			numpad.Remove(p.NumUp)
-			p.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", p, true)
-			p.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", p, false)
+			p.NumDown = numpad.OnDown(ply, key, "PEPlus_Numpad", p, true)
+			p.NumUp = numpad.OnUp(ply, key, "PEPlus_Numpad", p, false)
 		end
 		ent:Remove()
 		return IsValid(p)
 	elseif class == "particlecontroller_tracer" then
 		local ply = ent:GetPlayer()
-		if !gamemode.Call("PlayerSpawnSENT", ply, "ent_partctrl_sfx_tracer") then return false end
-		local s = ents.Create("ent_partctrl_sfx_tracer")
+		if !gamemode.Call("PlayerSpawnSENT", ply, "ent_peplus_sfx_tracer") then return false end
+		local s = ents.Create("ent_peplus_sfx_tracer")
 		if IsValid(s) then
 			s:SetPos(ent:GetPos())
 			s.IsBlank = true
@@ -453,13 +453,13 @@ local function UpdateOldEffect(ent)
 			name = ent:GetEffectName()
 			name, pcf, path, utilfx = FindPCFFromEffect(name)
 			//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
-			local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
+			local p = PEPlus_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 			if IsValid(p) then
 				p:AttachToSpecialEffect(s, ply, false)
-				local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
+				local cpointtab = PEPlus_ProcessedPCFs[PEPlus_GetGamePCF(pcf, path)][name].cpoints
 				local done_first = false
 				for k, v in pairs (cpointtab) do
-					if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+					if v.mode == PEPLUS_CPOINT_MODE_POSITION then
 						if !done_first then
 							p.ParticleInfo[k].sfx_role = 0 //start
 							done_first = true
@@ -477,13 +477,13 @@ local function UpdateOldEffect(ent)
 			if name != "" then
 				name, pcf, path, utilfx = FindPCFFromEffect(name)
 				//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
-				local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
+				local p = PEPlus_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 				if IsValid(p) then
 					p:AttachToSpecialEffect(s, ply, false)
-					local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
+					local cpointtab = PEPlus_ProcessedPCFs[PEPlus_GetGamePCF(pcf, path)][name].cpoints
 					local done_first = false
 					for k, v in pairs (cpointtab) do
-						if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+						if v.mode == PEPLUS_CPOINT_MODE_POSITION then
 							p.ParticleInfo[k].sfx_role = 1 //end
 						end
 					end
@@ -492,7 +492,7 @@ local function UpdateOldEffect(ent)
 			end
 
 			if ent:GetLeaveBulletHoles() then
-				local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), "Impact_GMOD", "UtilFx")
+				local p = PEPlus_SpawnParticle(ply, ent:GetPos(), "Impact_GMOD", "UtilFx")
 				if IsValid(p) then
 					p.ParticleInfo[2].val = Vector() //by default, this value is set to disable sounds; clear it to match impacts on old addon's tracer fx, which have sounds enabled
 					p:AttachToSpecialEffect(s, ply, false)
@@ -516,8 +516,8 @@ local function UpdateOldEffect(ent)
 			//Update numpad funcs
 			numpad.Remove(s.NumDown)
 			numpad.Remove(s.NumUp)
-			s.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", s, true)
-			s.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", s, false)
+			s.NumDown = numpad.OnDown(ply, key, "PEPlus_Numpad", s, true)
+			s.NumUp = numpad.OnUp(ply, key, "PEPlus_Numpad", s, false)
 
 			//Other generic stuff from SENT spawn func; do this last so this undo is on top of the stack (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/commands.lua#L896C1-L909C32)
 			if IsValid(ply) then
@@ -535,8 +535,8 @@ local function UpdateOldEffect(ent)
 		return IsValid(s)
 	elseif class == "particlecontroller_proj" then
 		local ply = ent:GetPlayer()
-		if !gamemode.Call("PlayerSpawnSENT", ply, "ent_partctrl_sfx_proj") then return false end
-		local s = ents.Create("ent_partctrl_sfx_proj")
+		if !gamemode.Call("PlayerSpawnSENT", ply, "ent_peplus_sfx_proj") then return false end
+		local s = ents.Create("ent_peplus_sfx_proj")
 		if IsValid(s) then
 			s:SetPos(ent:GetPos())
 			s.IsBlank = true
@@ -550,13 +550,13 @@ local function UpdateOldEffect(ent)
 			if name != "" then
 				name, pcf, path, utilfx = FindPCFFromEffect(name)
 				//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
-				local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
+				local p = PEPlus_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 				if IsValid(p) then
 					p:AttachToSpecialEffect(s, ply, false)
-					local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
+					local cpointtab = PEPlus_ProcessedPCFs[PEPlus_GetGamePCF(pcf, path)][name].cpoints
 					local done_first = false
 					for k, v in pairs (cpointtab) do
-						if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+						if v.mode == PEPLUS_CPOINT_MODE_POSITION then
 							p.ParticleInfo[k].attach = ent:GetProjModel_AttachNum()
 							p.ParticleInfo[k].sfx_role = 1 //projectile model
 						end
@@ -571,13 +571,13 @@ local function UpdateOldEffect(ent)
 			if name != "" then
 				name, pcf, path, utilfx = FindPCFFromEffect(name)
 				//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
-				local p = PartCtrl_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
+				local p = PEPlus_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 				if IsValid(p) then
 					p:AttachToSpecialEffect(s, ply, false)
-					local cpointtab = PartCtrl_ProcessedPCFs[PartCtrl_GetGamePCF(pcf, path)][name].cpoints
+					local cpointtab = PEPlus_ProcessedPCFs[PEPlus_GetGamePCF(pcf, path)][name].cpoints
 					local done_first = false
 					for k, v in pairs (cpointtab) do
-						if v.mode == PARTCTRL_CPOINT_MODE_POSITION then
+						if v.mode == PEPLUS_CPOINT_MODE_POSITION then
 							p.ParticleInfo[k].sfx_role = 2 //hit point
 						end
 					end
@@ -642,8 +642,8 @@ local function UpdateOldEffect(ent)
 			//Update numpad funcs
 			numpad.Remove(s.NumDown)
 			numpad.Remove(s.NumUp)
-			s.NumDown = numpad.OnDown(ply, key, "PartCtrl_Numpad", s, true)
-			s.NumUp = numpad.OnUp(ply, key, "PartCtrl_Numpad", s, false)
+			s.NumDown = numpad.OnDown(ply, key, "PEPlus_Numpad", s, true)
+			s.NumUp = numpad.OnUp(ply, key, "PEPlus_Numpad", s, false)
 
 			//Other generic stuff from SENT spawn func; do this last so this undo is on top of the stack (https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/gamemode/commands.lua#L896C1-L909C32)
 			if IsValid(ply) then
@@ -662,7 +662,7 @@ local function UpdateOldEffect(ent)
 	end
 end
 
-properties.Add("partctrl_backcomp", {
+properties.Add("peplus_backcomp", {
 	MenuLabel = "Convert Adv. Particle Control effects to Particle Effects+",
 	Order = 89999,
 	PrependSpacer = false,
@@ -671,7 +671,7 @@ properties.Add("partctrl_backcomp", {
 	Filter = function(self, ent, ply)
 
 		if !IsValid(ent) then return false end
-		if !gamemode.Call("CanProperty", ply, "partctrl_backcomp", ent) then return false end
+		if !gamemode.Call("CanProperty", ply, "peplus_backcomp", ent) then return false end
 
 		local function CheckForChildFx(ent2)
 			if ent2.ParticleControl_FxForBackcomp then
@@ -745,7 +745,7 @@ properties.Add("partctrl_backcomp", {
 })
 
 if SERVER then
-	concommand.Add("sv_partctrl_backcomp_convert_all", function(ply, cmd, args)
+	concommand.Add("sv_peplus_backcomp_convert_all", function(ply, cmd, args)
 		//Only let server owners run this command because it converts everyone's spawned ents
 		if !game.SinglePlayer() and IsValid(ply) and !ply:IsListenServerHost() and !ply:IsSuperAdmin() then
 			return false
