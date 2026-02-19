@@ -571,7 +571,7 @@ function PEPlus_ReloadPCF(str, dont_network)
 
 	if str then str = string.Trim(string.Replace(str, "\\", "/")) end
 	if str != "UtilFx" and str != "all" and (!str or !file.Exists(str, "GAME")) then
-		MsgN("sv_peplus_reloadpcf: Failed to reload PCF ", str, " on ", realm, "; file not found")
+		MsgN("PEPlus_ReloadPCF: Failed to reload PCF ", str, " on ", realm, "; file not found")
 		if !str or !string.StartsWith(str, "particles/") or !string.EndsWith(str, ".pcf") then
 			MsgN("(this should either be \"all\" (without quotes) or a full file path starting with particles/ and ending with .pcf)") //technically wrong because data pcfs end with .txt internally, OH WELL
 		end
@@ -581,9 +581,9 @@ function PEPlus_ReloadPCF(str, dont_network)
 	if str != "UtilFx" and (!PEPlus_ProcessedPCFs or !PEPlus_ProcessedPCFs[str]) then //TODO: this doesn't catch cases where a player adds a new pcf with the same name as one from a game (ideally we should catch these and seamlessly convert the old one to a data pcf)
 		local new_file_only
 		if str == "all" then
-			MsgN("sv_peplus_reloadpcf: Reloading all PCFs on ", realm)
+			MsgN("PEPlus_ReloadPCF: Reloading all PCFs on ", realm)
 		else
-			MsgN("sv_peplus_reloadpcf: Loading new PCF ", str, " on ", realm)
+			MsgN("PEPlus_ReloadPCF: Loading new PCF ", str, " on ", realm)
 			//If we try to reload a pcf that hasn't been loaded before (i.e. create a new pcf with the particle editor or
 			//something, then try to load it) then vital tables like PEPlus_PCFsInDupeOrder won't have it, which'll cause 
 			//errors, so run PEPlus_ReadAndProcessPCFs again to rebuild those, but without also reloading all the PCFs.
@@ -627,7 +627,7 @@ function PEPlus_ReloadPCF(str, dont_network)
 		end
 	else
 		//TODO: this probably doesn't work for data pcfs in multiplayer if a player has different content mounted than the server
-		MsgN("sv_peplus_reloadpcf: Reloading PCF ", str, " on ", realm)
+		MsgN("PEPlus_ReloadPCF: Reloading PCF ", str, " on ", realm)
 
 		if str != "UtilFx" then
 			PEPlus_ProcessedPCFs[str] = PEPlus_ProcessPCF(str)
