@@ -1,7 +1,7 @@
 //Base entity for particle "special effects" like tracer and projectile effects.
 //
 //To avoid duplicate code (for particle/utilfx spawning, particleinfo tables, control window inputs, crash prevention, etc.), a special effect is simply a *manager* entity that makes use of 
-//ordinary ent_peplus' parented to it, and manually commands them to start particles - those particles are still handled by ent_peplus using the code it already has.
+//ordinary ent_peplus's parented to it, and manually commands them to start particles - those particles are still handled by ent_peplus using the code it already has.
 //
 //For example, a tracer effect works by 1: performing a trace, 2: creating a point entity at the endpoint, 3: setting ent_peplus.ParticleInfo[x].ent to the endpoint where applicable, 
 //and then 4: running ent_peplus:StartParticle.

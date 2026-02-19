@@ -54,7 +54,7 @@ function ENT:Initialize()
 
 	local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
 	local name = self:GetParticleName()
-	if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PaPEPlusrocessedPCFs[pcf][name]) then
+	if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PEPlus_ProcessedPCFs[pcf][name]) then
 		MsgN(self, " particle ", pcf, " ", name, " is invalid")
 		//if SERVER then self:Remove() end //not a great solution; causes our grip ents to delete themselves
 		return
@@ -90,7 +90,7 @@ function ENT:Initialize()
 		end
 
 		//For PostDrawTranslucentRenderables hook
-		AllPEPlusEnts = AllPaPEPlusts or {}
+		AllPEPlusEnts = AllPEPlusEnts or {}
 		AllPEPlusEnts[self] = true
 		self.LastDrawn = 0
 	end
@@ -113,7 +113,7 @@ function ENT:Think()
 
 		local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
 		local name = self:GetParticleName()
-		if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PaPEPlusrocessedPCFs[pcf][name]) then return end
+		if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PEPlus_ProcessedPCFs[pcf][name]) then return end
 		local ptab = PEPlus_ProcessedPCFs[pcf][name]
 		local time = CurTime()
 		self.cpoint_posang = {} //Reset this table every think
@@ -315,7 +315,7 @@ function ENT:Think()
 					if self.particle or self.utilfx then 
 						if self.particle and !(self.particle.IsValid and self.particle:IsValid()) then
 							//Particle is non-nil but invalid; that probably means that it ran to completion and expired, so make a new particle
-							if PEPlus_AddParticles_CrashCheck[pcf] and PaPEPlusddParticles_CrashCheck[pcf][self.particle] then
+							if PEPlus_AddParticles_CrashCheck[pcf] and PEPlus_AddParticles_CrashCheck[pcf][self.particle] then
 								//Remove now-invalid particles from the crashcheck list
 								PEPlus_AddParticles_CrashCheck[pcf][self.particle] = nil
 							end
@@ -386,7 +386,7 @@ function ENT:Think()
 			if v and !(v.IsValid and v:IsValid()) then
 				//MsgN("old particle ", k, " ", v, " expired")
 				//Particle is non-nil but invalid; that probably means that it ran to completion and expired
-				if PEPlus_AddParticles_CrashCheck[pcf] and PaPEPlusddParticles_CrashCheck[pcf][v] then
+				if PEPlus_AddParticles_CrashCheck[pcf] and PEPlus_AddParticles_CrashCheck[pcf][v] then
 					//Remove now-invalid particles from the crashcheck list
 					PEPlus_AddParticles_CrashCheck[pcf][v] = nil
 				end
@@ -404,7 +404,7 @@ function ENT:Think()
 			local v = self.OldParticles[1]
 			//MsgN(#self.OldParticles, " is too many particles, removing oldest ", v)
 			if IsValid(v) then v:StopEmissionAndDestroyImmediately() end
-			--[[if PEPlus_AddParticles_CrashCheck[pcf] and PaPEPlusddParticles_CrashCheck[pcf][v] then
+			--[[if PEPlus_AddParticles_CrashCheck[pcf] and PEPlus_AddParticles_CrashCheck[pcf][v] then
 				//Remove now-invalid particles from the crashcheck list
 				PEPlus_AddParticles_CrashCheck[pcf][v] = nil
 			end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
@@ -749,7 +749,7 @@ if CLIENT then
 		//local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
 		if self.particle and self.particle.IsValid and self.particle:IsValid() then
 			self.particle:StopEmissionAndDestroyImmediately()
-			--[[if PEPlus_AddParticles_CrashCheck[pcf] and PaPEPlusddParticles_CrashCheck[pcf][self.particle] then
+			--[[if PEPlus_AddParticles_CrashCheck[pcf] and PEPlus_AddParticles_CrashCheck[pcf][self.particle] then
 				//Remove now-invalid particles from the crashcheck list
 				PEPlus_AddParticles_CrashCheck[pcf][self.particle] = nil
 			end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
@@ -759,7 +759,7 @@ if CLIENT then
 			for k, v in pairs (self.OldParticles) do
 				if v and v.IsValid and v:IsValid() then
 					v:StopEmissionAndDestroyImmediately()
-					--[[if PEPlus_AddParticles_CrashCheck[pcf] and PaPEPlusddParticles_CrashCheck[pcf][v] then
+					--[[if PEPlus_AddParticles_CrashCheck[pcf] and PEPlus_AddParticles_CrashCheck[pcf][v] then
 						//Remove now-invalid particles from the crashcheck list
 						PEPlus_AddParticles_CrashCheck[pcf][v] = nil
 					end]] //this doesn't work, we can't always assume StopEmissionAndDestroyImmediately actually cleared the particle immediately
@@ -893,7 +893,7 @@ if CLIENT then
 				local ent = self.ParticleInfo[k].ent
 				local attach
 				local pattach
-				if (ent.GetPEPlus_MergedGrip and ent:GetPaPEPlusergedGrip()) then
+				if (ent.GetPEPlus_MergedGrip and ent:GetPEPlus_MergedGrip()) then
 					//This cpoint's ent is a particle grip point that was attached to a model with Advanced Bonemerge.
 					//We want the cpoint to follow the attached grip, but also still associate model-covering fx with
 					//the parent model it was attached to. To accomplish this, we set ent to the parent model, and 
@@ -960,7 +960,7 @@ if CLIENT then
 							if IsValid(ent) then
 								local attachstr
 								local pattach
-								if (ent.GetPEPlus_MergedGrip and ent:GetPaPEPlusergedGrip()) then
+								if (ent.GetPEPlus_MergedGrip and ent:GetPEPlus_MergedGrip()) then
 									self.AdvBoneCPointsToUpdate = self.AdvBoneCPointsToUpdate or {}
 									if mode == PEPLUS_CPOINT_MODE_POSITION then
 										self.AdvBoneCPointsToUpdate[k] = k
@@ -1050,7 +1050,7 @@ if CLIENT then
 
 			self:UpdateCPoints()
 			
-			PEPlus_AddParticles_CrashCheck[pcf] = PaPEPlusddParticles_CrashCheck[pcf] or {}
+			PEPlus_AddParticles_CrashCheck[pcf] = PEPlus_AddParticles_CrashCheck[pcf] or {}
 			PEPlus_AddParticles_CrashCheck[pcf][self.particle] = true
 		end
 
@@ -1093,7 +1093,7 @@ function ENT:OnRemove()
 				sfxpar.SpecialEffectChildren[self] = nil	
 			end
 			//If we're a child of a special effect, remove us from its control window
-			if IsValid(self.PEPlusWindow) and self.PaPEPlusndow.m_Entity != self then
+			if IsValid(self.PEPlusWindow) and self.PEPlusWindow.m_Entity != self then
 				self.PEPlusWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
 			end
 		end
@@ -1109,7 +1109,7 @@ if CLIENT then
 
 	net.Receive("PEPlus_DoPauseInput_SendToCl", function(_, ply)
 		local self = net.ReadEntity()
-		if !IsValid(self) or !((self.PEPlus_Ent and istable(self.ParticleInfo)) or self.PaPEPluspecialEffect) then return end
+		if !IsValid(self) or !((self.PEPlus_Ent and istable(self.ParticleInfo)) or self.PEPlus_SpecialEffect) then return end
 		self:DoInput("effect_pause")
 	end)
 	
@@ -1183,7 +1183,7 @@ else
 	
 	end
 
-	numpad.Register("PEPlus_Numpad", PaPEPlusmpadFunction)
+	numpad.Register("PEPlus_Numpad", PEPlusNumpadFunction)
 
 	function ENT:AttachToEntity(ent, k, attach, ply, addundo)
 
@@ -1288,7 +1288,7 @@ else
 		if !IsValid(ent) then return false end
 
 		//If the ent is an adv bonemerged grip point, then unmerge it instead
-		if (ent.GetPEPlus_MergedGrip and ent:GetPaPEPlusergedGrip()) then
+		if (ent.GetPEPlus_MergedGrip and ent:GetPEPlus_MergedGrip()) then
 			if ent:Unmerge(ply) then
 				ply:SendLua("GAMEMODE:AddNotify('#undone_AdvBonemerge', NOTIFY_UNDO, 2)")
 				ply:SendLua("surface.PlaySound('buttons/button15.wav')")
@@ -1899,13 +1899,13 @@ else
 			if sfxpar.SpecialEffectRefresh then sfxpar:SpecialEffectRefresh() end
 			parwindow = sfxpar.PEPlusWindow //don't check if this is valid; we want to do all this even if the parent's window isn't open, to clear our old window
 			//If we were just parented, and still have our own control window from back when we were unparented, close it
-			if IsValid(self.PEPlusWindow) and self.PaPEPlusndow != parwindow then
+			if IsValid(self.PEPlusWindow) and self.PEPlusWindow != parwindow then
 				self.PEPlusWindow:OnEntityLost()
 			end
 			//Assign ourself to the parent's control window, so that info table updates and such will update those controls
 			self.PEPlusWindow = parwindow
 		end
-		if IsValid(self.PEPlusWindow) and self.PaPEPlusndow.m_Entity != self then
+		if IsValid(self.PEPlusWindow) and self.PEPlusWindow.m_Entity != self then
 			//Update the list of children to add or remove us
 			self.PEPlusWindow.SpecialEffect_ChildList.AddOrRemoveChild(self)
 			//If we're no longer parented, then stop being assigned to its control window
@@ -1914,7 +1914,7 @@ else
 			end
 		end
 		if istable(oldtab) then
-			local window = IsValid(self.PEPlusWindow) and istable(self.PaPEPlusndow.CPointCategories) and istable(self.PartPEPlusow.CPointCategories[self])
+			local window = IsValid(self.PEPlusWindow) and istable(self.PEPlusWindow.CPointCategories) and istable(self.PEPlusWindow.CPointCategories[self])
 			for k, v in pairs (oldtab) do
 				if self.ParticleInfo[k].ent != oldtab[k].ent then
 					local oldent = oldtab[k].ent
@@ -1938,7 +1938,7 @@ else
 			for k, v in pairs (self.ParticleInfo) do
 				if IsValid(v.ent) then
 					//Store us in a list on the cpoint ent (used by properties)
-					v.ent.PEPlus_ParticleEnts = v.ent.PaPEPlusarticleEnts or {}
+					v.ent.PEPlus_ParticleEnts = v.ent.PEPlus_ParticleEnts or {}
 					v.ent.PEPlus_ParticleEnts[self] = true
 					//Refresh attacher tool effect list if this effect was added to the list
 					local panel = controlpanel.Get("peplus_attacher")

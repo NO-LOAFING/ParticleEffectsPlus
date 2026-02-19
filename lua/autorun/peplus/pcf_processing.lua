@@ -4252,7 +4252,7 @@ function PEPlus_ProcessPCF(filename)
 				if istable(t2[particle2].children) then
 					for _, childtab in pairs (t2[particle2].children) do
 						if !t2[childtab.child] then
-							if dodebug then MsgN("PEPlus: ", filename, " ", particle2, " CPointModesFromChildren tried to get nonexistent child effect ", child) end
+							if dodebug then MsgN("PEPlus_ProcessPCF: ", filename, " ", particle2, " CPointModesFromChildren tried to get nonexistent child effect ", child) end
 						elseif !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
 							SetCPointModes(childtab.child, particle2)
 							//Now inherit from the child's children, and so on

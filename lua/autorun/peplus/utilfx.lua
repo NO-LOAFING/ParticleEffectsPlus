@@ -1959,7 +1959,7 @@ list.Set("PEPlus_UtilFx", "wheel_indicator", {
 
 
 
-//Note: This function is called by PEPlus_ReadAndProcessPCFs(), which is defined in peplus/pcf_processing.lua
+//Note: This function is called by PEPlus_ReadAndProcessPCFs(), which is defined in autorun/peplus/pcf_processing.lua
 
 function PEPlus_ProcessUtilFx()
 
