@@ -214,3 +214,4 @@ duplicator.RegisterEntityClass("ent_peplus_grip", function(ply, data)
 	return ent
 
 end, "Data")
+duplicator.RegisterEntityClass("ent_partctrl_grip", duplicator.FindEntityClass("ent_peplus_grip").Func, "Data") //old in-dev ent name, for old saves/dupes

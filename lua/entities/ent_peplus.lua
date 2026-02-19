@@ -2027,6 +2027,7 @@ if SERVER then
 		
 	end
 	duplicator.RegisterConstraint("PEPlus_Ent", constraint.PEPlus_Ent, "Ent1", "Ent2", "CPoint", "DoParent", "ply")
+	duplicator.RegisterConstraint("PartCtrl_Ent", constraint.PEPlus_Ent, "Ent1", "Ent2", "CPoint", "DoParent", "ply")  //old in-dev constraint name, for old saves/dupes
 
 
 
@@ -2111,8 +2112,13 @@ duplicator.RegisterEntityClass("ent_peplus", function(ply, data)
 
 	//default dtvars for old dupes that don't have them
 	if data.DT.PauseTime == nil then data.DT.PauseTime = -1 end
+	if data.DT.LoopMode == nil then data.DT.LoopMode = 1 end
+	if data.DT.NumpadToggle == nil then data.DT.NumpadToggle = true end
+	if data.DT.NumpadStartOn == nil then data.DT.NumpadStartOn = true end
 	//fix old dupes from before all the effect names were converted to lowercase
 	if isstring(data.DT.ParticleName) then data.DT.ParticleName = string.lower(data.DT.ParticleName) end
+	//fix old in-dev test pcf names
+	if string.StartsWith(data.DT.PCF, "particles/partctrl_test") then data.DT.PCF = string.Replace(data.DT.PCF, "particles/partctrl_test", "particles/peplus_test") end
 
 	if IsValid(ply) and !gamemode.Call("PlayerSpawnParticle", ply, data.DT.ParticleName, data.DT.PCF, data.DT.Path) then return false end
 
@@ -2133,6 +2139,7 @@ duplicator.RegisterEntityClass("ent_peplus", function(ply, data)
 	return ent
 
 end, "Data")
+duplicator.RegisterEntityClass("ent_partctrl", duplicator.FindEntityClass("ent_peplus").Func, "Data") //old in-dev ent name, for old saves/dupes
 
 
 

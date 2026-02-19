@@ -1348,7 +1348,7 @@ function PANEL:RebuildControls()
 		
 			//expand if any contained options are non-default 
 			cat:SetExpanded(
-				((ent:GetLoop() or true) != default_loopmode)
+				(ent:GetLoop() != default_loopmode)
 				or ((math.Round(ent:GetLoopDelay(), 6) or 0) != default_looptime)
 				or (ent:GetLoopSafety() != false)
 			)

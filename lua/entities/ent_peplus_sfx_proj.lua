@@ -1987,6 +1987,10 @@ end
 
 duplicator.RegisterEntityClass("ent_peplus_sfx_proj", function(ply, data)
 
+	//default dtvars for old dupes that don't have them
+	if data.DT.ProjVelocity == nil then data.DT.ProjVelocity = 1000 end
+	if data.DT.ProjLifetimePre == nil then data.DT.ProjLifetimePre = 10 end
+
 	local ent = ents.Create("ent_peplus_sfx_proj")
 	if !ent:IsValid() then return false end
 
@@ -2007,5 +2011,6 @@ duplicator.RegisterEntityClass("ent_peplus_sfx_proj", function(ply, data)
 	return ent
 
 end, "Data")
+duplicator.RegisterEntityClass("ent_partctrl_sfx_proj", duplicator.FindEntityClass("ent_peplus_sfx_proj").Func, "Data") //old in-dev ent name, for old saves/dupes
 
 PEPlus_AddBlankSpecialEffect(ENT) //Add blank variant to spawnmenu

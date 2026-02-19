@@ -486,5 +486,6 @@ duplicator.RegisterEntityClass("ent_peplus_sfx_beam", function(ply, data)
 	return ent
 
 end, "Data")
+duplicator.RegisterEntityClass("ent_partctrl_sfx_beam", duplicator.FindEntityClass("ent_peplus_sfx_beam").Func, "Data") //old in-dev ent name, for old saves/dupes
 
 PEPlus_AddBlankSpecialEffect(ENT) //Add blank variant to spawnmenu

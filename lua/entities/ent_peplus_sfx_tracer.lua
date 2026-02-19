@@ -855,5 +855,6 @@ duplicator.RegisterEntityClass("ent_peplus_sfx_tracer", function(ply, data)
 	return ent
 
 end, "Data")
+duplicator.RegisterEntityClass("ent_partctrl_sfx_tracer", duplicator.FindEntityClass("ent_peplus_sfx_tracer").Func, "Data") //old in-dev ent name, for old saves/dupes
 
 PEPlus_AddBlankSpecialEffect(ENT) //Add blank variant to spawnmenu

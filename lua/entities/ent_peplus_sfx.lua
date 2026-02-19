@@ -424,6 +424,7 @@ if SERVER then
 		
 	end
 	duplicator.RegisterConstraint("PEPlus_SpecialEffect", constraint.PEPlus_SpecialEffect, "Ent1", "Ent2", "ply")
+	duplicator.RegisterConstraint("PartCtrl_SpecialEffect", constraint.PEPlus_SpecialEffect, "Ent1", "Ent2", "ply") //old in-dev constraint name, for old saves/dupes
 
 end
 
