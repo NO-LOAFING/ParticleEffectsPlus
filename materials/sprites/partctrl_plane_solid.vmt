@@ -1,9 +1,0 @@
-"UnlitGeneric"
-{
-	//"$baseTexture" "sprites/partctrl_plane.vtf"
-	//"$ignorez"			"1"
-	"$vertexcolor"		"1"
-	"$vertexalpha"		"1"
-	"$alphatest"		"0"
-	"$nolod"			"1"
-}
