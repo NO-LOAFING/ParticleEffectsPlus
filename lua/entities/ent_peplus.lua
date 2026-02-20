@@ -54,19 +54,31 @@ function ENT:Initialize()
 
 	local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
 	local name = self:GetParticleName()
-	if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PEPlus_ProcessedPCFs[pcf][name]) then
-		MsgN(self, " particle ", pcf, " ", name, " is invalid")
+	if !istable(PEPlus_ProcessedPCFs[pcf]) then
+		if self:GetPath() != "" then
+			MsgN(self, ": invalid pcf \"", self:GetPCF(), "\" from game \"", self:GetPath(), "\"" )
+		else
+			MsgN(self, ": invalid pcf \"", self:GetPCF(), "\"")
+		end
 		//if SERVER then self:Remove() end //not a great solution; causes our grip ents to delete themselves
+		return 
+	elseif !istable(PEPlus_ProcessedPCFs[pcf][name]) then
+		if self:GetPath() != "" then
+			MsgN(self, ": invalid effect \"", name, "\" in pcf \"", self:GetPCF(), "\" from game \"", self:GetPath(), "\"" )
+		else
+			MsgN(self, ": invalid effect \"", name, "\" in pcf \"", self:GetPCF(), "\"")
+		end
+		//if SERVER then self:Remove() end
 		return
-		//TODO: should we handle this better? if we load a dupe or something with an effect that's no longer valid, it just spawns an orphaned ent_peplus that doesn't do anything, but is that
-		//what we want? what if it's not valid because the player just doesn't have a game or addon loaded, and they decide to save it again and then load it again with the game reenabled?
 	end
+	//TODO: should we handle this better? if we load a dupe or something with an effect that's no longer valid, it just spawns an orphaned ent_peplus that doesn't do anything, but is that
+	//what we want? what if it's not valid because the player just doesn't have a game or addon loaded, and they decide to save it again and then load it again with the game reenabled?
 
 	self.utilfx = PEPlus_ProcessedPCFs[pcf][name].utilfx
 
 	if SERVER then
 		if !self.ParticleInfo then 
-			MsgN("ERROR: ent_peplus " .. name .. " (" .. pcf .. ") doesn't have an info table! Something went wrong!") 
+			MsgN("ERROR: ", self, " (", name, ", ", PEPlus_GetDataPCFNiceName(pcf), ") doesn't have an info table! Something went wrong!") 
 			self:Remove() 
 			return
 		end
@@ -1146,8 +1158,7 @@ else
 				net.Send(ply)
 			else
 				local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
-				local name = self:GetParticleName()
-				MsgN(self, " (", pcf, " ", name, ") tried to send a numpad pause input with invalid player ", ply, ". Report this!")
+				MsgN(self, " (", self:GetParticleName(), ", ", PEPlus_GetDataPCFNiceName(pcf), ") tried to send a numpad pause input with invalid player ", ply, ". Report this!")
 			end
 
 		elseif mode == 2 then
@@ -1796,7 +1807,7 @@ if SERVER then
 				end
 			end
 			if badparticle != nil then
-				MsgN("ent_peplus ", ent, " (", ent:GetParticleName(), ") has nil target entity ", badparticle, "; most likely a bad dupe, removing")
+				MsgN(ent, " (", ent:GetParticleName(), ", ", PEPlus_GetDataPCFNiceName(pcf), ") has nil target entity ", badparticle, "; most likely a bad dupe, removing")
 				for k, v in pairs (ent.ParticleInfo) do
 					//don't leave behind any orphaned grip points (i.e. loaded a dupe; one cpoint was attached to a non-dupable entity, another was attached to a grip)
 					if IsValid(v.ent) and v.ent.PEPlus_Grip then
@@ -2281,7 +2292,8 @@ if SERVER then
 	function PEPlus_SpawnParticle(ply, pos, name, pcf_original, path, disableundo)
 
 		//MsgN("PEPlus_SpawnParticle ", name, " ", pcf_original, " ", path)
-		local name = string.lower(name)
+		if name then name = string.lower(name) end
+		if path == "" then path = nil end
 
 		if !IsValid(ply) and pos == nil then
 			MsgN("PEPlus_SpawnParticle has no player or position, can't get spawn location")
@@ -2289,18 +2301,26 @@ if SERVER then
 		end
 
 		if !name or !pcf_original then
-			MsgN("peplus_spawnparticle: failed, missing name or pcf (first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf)")
+			MsgN("PEPlus_SpawnParticle: failed, missing name or pcf (first arg is effect name, second arg is pcf file path starting with particles/ and ending with .pcf, third arg is game path (optional, for conflicting pcfs))")
 			return
 		end
 		local pcf = PEPlus_GetGamePCF(pcf_original, path)
 		if !istable(PEPlus_ProcessedPCFs) then
-			MsgN("peplus_spawnparticle: failed, no PEPlus_ProcessedPCFs table (this shouldn't happen, report this bug!)")
+			MsgN("PEPlus_SpawnParticle: failed, no PEPlus_ProcessedPCFs table (this shouldn't happen, report this bug!)")
 			return
 		elseif !istable(PEPlus_ProcessedPCFs[pcf]) then
-			MsgN("peplus_spawnparticle: failed, invalid pcf \"", pcf, "\"")
+			if path then
+				MsgN("PEPlus_SpawnParticle: failed, invalid pcf \"", pcf, "\" from game \"", path, "\"" )
+			else
+				MsgN("PEPlus_SpawnParticle: failed, invalid pcf \"", pcf, "\"")
+			end
 			return
 		elseif !istable(PEPlus_ProcessedPCFs[pcf][name]) then
-			MsgN("peplus_spawnparticle: failed, invalid name \"", name, "\" in pcf \"", pcf, "\"")
+			if path then
+				MsgN("PEPlus_SpawnParticle: failed, invalid effect \"", name, "\" in pcf \"", pcf, "\" from game \"", path, "\"" )
+			else
+				MsgN("PEPlus_SpawnParticle: failed, invalid effect \"", name, "\" in pcf \"", pcf, "\"")
+			end
 			return
 		end
 

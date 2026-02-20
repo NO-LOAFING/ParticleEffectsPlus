@@ -43,9 +43,10 @@ end
 //we want to be sure every addon that wants to add its own blacklist has the chance to do so before the .pcf files actually get read.
 
 
-//Currently, the PEPlus_Pre/PostProcessPCF hooks are game path agnostic - when we use data pcfs to load multiple versions of the 
-//same pcf file from different games, the hooks only receive the same original pcf file path for each one, not the internal data pcf 
-//file paths, because the latter is inconsistent depending on which games were mounted this session. 
+//Currently, the PEPlus_Pre/PostProcessPCF hooks are game path agnostic (there's no good way to get this for non-data pcfs, because
+//they all get processed *before* being associated with a game path) - when we use data pcfs to load multiple versions of the same 
+//pcf file from different games, the hooks only receive the same original pcf file path for each one, not the internal data pcf file 
+//paths, because the latter is inconsistent depending on which games were mounted this session. 
 
 //This does have the downside of not being able to distinguish between different games' versions of the same .pcf - for example, if 
 //we were to run into a situation where one particular game's fire_01.pcf has a bad effect we want to blacklist, but other games' 
