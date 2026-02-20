@@ -710,7 +710,7 @@ properties.Add("peplus_backcomp", {
 		local function CheckForChildFx(ent2)
 			if ent2.ParticleControl_FxForBackcomp then
 				for k, _ in pairs (ent2.ParticleControl_FxForBackcomp) do
-					if k.GetTargetEnt2 and k:GetTargetEnt2() == ent2 then 
+					if k.GetTargetEnt2 and k:GetTargetEnt2() == ent2 and k:GetTargetEnt() != k:GetTargetEnt2() then //if both targets are this ent, then it'll be handled below; doing this here anyway just spawns the effect twice
 						local result = UpdateOldEffect(k)
 						if isbool(result) then
 							results[result] = (results[result] or 0) + 1
@@ -726,6 +726,10 @@ properties.Add("peplus_backcomp", {
 					CheckForChildFx(v)
 				end
 			end
+			constraint.RemoveConstraints(ent, "AttachParticleControllerBeam")
+			duplicator.ClearEntityModifier(ent, "DupeParticleControllerNormal")
+			duplicator.ClearEntityModifier(ent, "DupeParticleControllerTracer")
+			duplicator.ClearEntityModifier(ent, "DupeParticleControllerProj")
 		end
 		CheckForChildFx(ent)
 		//Show on-screen notifications for all fx we converted or failed to convert
@@ -756,6 +760,10 @@ if SERVER then
 			if isbool(result) then
 				results[result] = (results[result] or 0) + 1
 			end
+			constraint.RemoveConstraints(ent, "AttachParticleControllerBeam")
+			duplicator.ClearEntityModifier(ent, "DupeParticleControllerNormal")
+			duplicator.ClearEntityModifier(ent, "DupeParticleControllerTracer")
+			duplicator.ClearEntityModifier(ent, "DupeParticleControllerProj")
 		end
 		//Show on-screen notifications for all fx we converted or failed to convert
 		ply:SendLua("surface.PlaySound('common/wpn_select.wav')")
