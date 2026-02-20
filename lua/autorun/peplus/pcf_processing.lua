@@ -1,10 +1,16 @@
 AddCSLuaFile()
 
-//silly pretend enums
-PEPLUS_CPOINT_MODE_NONE		= 0
-PEPLUS_CPOINT_MODE_POSITION		= 1
-PEPLUS_CPOINT_MODE_POSITION_COMBINE	= 2
-PEPLUS_CPOINT_MODE_AXIS		= 3
+//add these as enums, but also store them in a table so that we can
+//translate the numbers back into human-readable names easily
+PEPLUS_CPOINT_MODES = {
+	[0] = "PEPLUS_CPOINT_MODE_NONE",
+	[1] = "PEPLUS_CPOINT_MODE_POSITION",
+	[2] = "PEPLUS_CPOINT_MODE_POSITION_COMBINE",
+	[3] = "PEPLUS_CPOINT_MODE_AXIS"
+}
+for k, v in pairs (PEPLUS_CPOINT_MODES) do
+	_G[v] = k
+end
 
 //for networking convenience
 peplus_cpointbits = 7 //-1 - 63
@@ -41,7 +47,7 @@ PEPLUS_PARTICLE_ATTRIBUTE_GLOW_ALPHA = 23 // glow alpha
 //PEPLUS_PARTICLE_ATTRIBUTE_TRACE_P1 = 18 // end pnt of trace
 //PEPLUS_PARTICLE_ATTRIBUTE_TRACE_HIT_T = 19 // 0..1 if hit
 //PEPLUS_PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL = 20 // 0 0 0 if no hit
-local ParticleAttributeNames = { //names and comments from https://github.com/SourceSDK2013Ports/csgo-src/blob/main/src/particles/particles.cpp#L3782
+local ParticleAttributeNames = { //names from https://github.com/SourceSDK2013Ports/csgo-src/blob/main/src/particles/particles.cpp#L3782
 	[PEPLUS_PARTICLE_ATTRIBUTE_XYZ] = "Position", // XYZ, 0
 	[PEPLUS_PARTICLE_ATTRIBUTE_LIFE_DURATION] = "Life Duration", // LIFE_DURATION, 1 );
 	[PEPLUS_PARTICLE_ATTRIBUTE_PREV_XYZ] = "Position Previous", // PREV_XYZ 

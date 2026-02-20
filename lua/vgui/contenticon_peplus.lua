@@ -60,7 +60,7 @@ function PANEL:Setup(pcf, name, path)
 end
 
 local ViewAngle = Angle(25, 220, 0)
-local icon_loading = Material("vgui/loading-rotate.vmt") //TODO: replace this with a custom texture eventually, something bulkier that looks better when it's drawn small like this
+local icon_loading = Material("vgui/loading-rotate.vmt")
 local cv_debugicons = GetConVar("cl_peplus_debug_spawnicons")
 function PANEL:Paint(w, h)
 
@@ -994,7 +994,16 @@ function PANEL:OpenMenu()
 
 			local opt = menu:AddOption("Print processed PCF data for this effect", function()
 				MsgN("PEPlus_ProcessedPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
-				PrintTable(PEPlus_ProcessedPCFs[pcf][name])
+				local tab = table.Copy(PEPlus_ProcessedPCFs[pcf][name])
+				//translate cpoint modes back into human-readable enum names
+				if tab.cpoints then
+					for k, v in pairs (tab.cpoints) do
+						if v.mode != nil then
+							tab.cpoints[k].mode = PEPLUS_CPOINT_MODES[v.mode]
+						end
+					end
+				end
+				PrintTable(tab)
 			end)
 			AddChildHover(opt, name)
 		end

@@ -4,7 +4,7 @@ AddCSLuaFile()
 
 //Example:
 --[[list.Add("PEPlus_UtilFx", "EffectName", { //Name of the effect that util.Effect() will call
-	title = "Garry's Mod",	//String; in the "Browse Particles" spawnlist, any game, addon, or legacy addon with this exact folder name will get a "Scripted Effects" subfolder containing this effect
+	title = "MyCoolAddon",	//String; in the "Browse Particles" spawnlist, any game, addon, or legacy addon with this exact folder name will get a "Scripted Effects" subfolder containing this effect
 	title = {"MyCoolAddon", "My Cool Addon: Workshop Edition"}, //Can also be a table of strings instead, just in case you want to, say, support both a legacy addon folder name and a workshop addon name
 	
 	default_time = 1,	//Float, default setting of "seconds between repeats" on newly spawned fx, should roughly correspond to how long it takes for the effect to "finish", defaults to 1 if absent
@@ -13,14 +13,15 @@ AddCSLuaFile()
 	cpoint_distance_overrides = {[1] = {min = 129}},	//Table, optional, overrides how far apart the position controls will spawn; used by some tracer fx that don't render if the points are too close together
 
 	DoProcess = function(tab, extras)
-		//Function, used to set up the controls for the util effect by defining CONTROL POINTS, just like we do with PCF effects.
+		//Function, used to set up controls for the util effect.
+		//Because this addon is designed for handling .pcf effects, we set up controls by defining CONTROL POINTS in the same manner they do.
 		//A control point can have:
 		// A: a POSITION control, which spawns a grip point and sets the control point's XYZ values to its position.
 		//    Can also be attached to an entity, or one of its attachment points. Use this to add controls for 
 		//    selecting a position in worldspace, selecting an entity, or selecting an entity's attachment point.
-		// B: up to 3 AXIS controls, which use sliders, checkboxes, or other controls in the edit window to set the 
-		//    control point's X, Y or Z values *manually*. Use these to add controls for any other vars that aren't 
-		//    related to the former.
+		// or B: up to 3 AXIS controls, which use sliders, checkboxes, or other controls in the editor window to set 
+		//    the control point's X, Y or Z values *manually*. Use these to add controls for values that *aren't* 
+		//    related to selecting an entity or a point in space.
 		
 		//Adds a position control for cpoint 0
 		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Normal, Entity, Attachment") //by default, this function adds a position control
@@ -28,7 +29,7 @@ AddCSLuaFile()
 		//Adds an axis control for cpoint 1's X axis; by default, this is a slider
 		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", { 
 			axis = 0, //x
-			label = "Scale",
+			label = "Scale", //name that appears next to the slider
 			min = 1,
 			max = 10,
 			default = 1,
@@ -37,7 +38,7 @@ AddCSLuaFile()
 		//Adds an axis control for cpoint 1's Y axis, with a dropdown
 		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Color", "axis", {
 			axis = 1, //y
-			label = "Color",
+			label = "Color", //name that appears next to the dropdown
 			default = 0,
 			dropdown = { //for each option, the number is the what the axis gets set to, and the string is the text displayed in the dropdown for that value
 				[0] = "Red",
@@ -61,7 +62,7 @@ AddCSLuaFile()
 		//Adds axis controls for cpoint 2's X, Y and Z axis
 		PEPlus_CPoint_AddToProcessed(tab, 2, "util.Effect Start", "axis", { 
 			vector = true, //this setting tells it to add a control for all 3 axes; min/max/default also use vectors in this mode
-			label = {"Start X", "Start Y", "Start Z"} //can optionally be a table of 3 different labels
+			label = {"Start X", "Start Y", "Start Z"}, //can optionally be a table of 3 different labels in this mode
 			min = Vector(-512,-512,-512),
 			max = Vector(512,512,512),
 			default = Vector(0,0,0),
@@ -69,7 +70,7 @@ AddCSLuaFile()
 
 		//See the effects below for more examples.
 	end,
-	DoProcessExtras = {scale_max = 50}, //Table, optional; this sets the "extras" arg for the DoProcess func, so that multiple fx with different values can use the same function
+	DoProcessExtras = {scale_max = 50}, //Table, optional; this sets the "extras" arg for the DoProcess func, so that multiple fx with different values can use the same func for neater code (i.e. see bullet tracer fx below)
 
 	DoEffect = function(self, ed)
 		//Function, used when we're playing the effect to set its EffectData values, usually by grabbing information from the control points we set up earlier.

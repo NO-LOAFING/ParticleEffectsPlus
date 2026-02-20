@@ -116,7 +116,7 @@ function PANEL:RebuildControls()
 	self:SetMouseInputEnabled(true)
 
 
-	//Formatting values ripped from animpropeditor, TODO: see how many of these we actually end up using
+	//Formatting values ripped from animpropeditor
 
 	//Give our help strings a slightly darker color than normal so they're easier to read against the gray background
 	local color_helpdark = table.Copy(self:GetSkin().Colours.Tree.Hover)
@@ -139,7 +139,6 @@ function PANEL:RebuildControls()
 	self.betweenitems_help = betweenitems_help
 
 	local icon_info = Material("icon16/information.png")
-	local icon_invalid = Material("icon16/cancel.png")
 
 	//make this other stuff externally accessible too
 	self.SliderValueChangedUnclampedMax = SliderValueChangedUnclampedMax

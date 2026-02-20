@@ -117,7 +117,7 @@ properties.Add("editpeplus", {
 	MenuLabel = "Edit Particle Effects..",
 	Order = 90000, //for reference, edit properties is 90001 and edit animprop is 90002
 	PrependSpacer = true,
-	MenuIcon = "icon16/fire.png", //TODO: better icon?
+	MenuIcon = "icon16/fire.png",
 	
 	Filter = PEPlus_EditProperty_Filter,
 
@@ -222,7 +222,16 @@ properties.Add("peplus_dev_printprocessed", {
 				local pcf = PEPlus_GetGamePCF(k:GetPCF(), k:GetPath())
 				local name = k:GetParticleName()
 				MsgN("PEPlus_ProcessedPCFs[\"" .. pcf .. "\"][\"" .. name .. "\"]:")
-				PrintTable(PEPlus_ProcessedPCFs[pcf][name])
+				local tab = table.Copy(PEPlus_ProcessedPCFs[pcf][name])
+				//translate cpoint modes back into human-readable enum names
+				if tab.cpoints then
+					for k, v in pairs (tab.cpoints) do
+						if v.mode != nil then
+							tab.cpoints[k].mode = PEPLUS_CPOINT_MODES[v.mode]
+						end
+					end
+				end
+				PrintTable(tab)
 				MsgN()
 			end
 		end
