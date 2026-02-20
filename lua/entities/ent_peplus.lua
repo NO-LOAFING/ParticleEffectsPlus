@@ -248,7 +248,7 @@ function ENT:Think()
 					k = self.ParticleInfo_FirstPos
 				end
 				if ptab.cpoints[k].mode == PEPLUS_CPOINT_MODE_POSITION then
-					local p = self:GetCPoint(k)
+					local p = self:GetCPointPos(k)
 					if p then pos = p.pos end
 				end
 			end
@@ -279,7 +279,7 @@ function ENT:Think()
 					//helpers can stop rendering if we move them so that the effect is off-screen. Fix this by adding cpoint 
 					//positions to the renderbounds if paused.
 					for k2, v2 in pairs (self.ParticleInfo) do
-						local p = self:GetCPoint(k2)
+						local p = self:GetCPointPos(k2)
 						if p then
 							mins = Vector(math.min(mins.x,p.pos.x), math.min(mins.y,p.pos.y), math.min(mins.z,p.pos.z))
 							maxs = Vector(math.max(maxs.x,p.pos.x), math.max(maxs.y,p.pos.y), math.max(maxs.z,p.pos.z))
@@ -295,7 +295,7 @@ function ENT:Think()
 			//For utilfx, just make our renderbounds a box around all the cpoints, so that helpers render when any cpoint is on-screen
 			local mins, maxs
 			for k, v in pairs (self.ParticleInfo) do
-				local p = self:GetCPoint(k)
+				local p = self:GetCPointPos(k)
 				if p then
 					if !mins then
 						mins = p.pos
@@ -478,7 +478,7 @@ end
 
 
 //Convenience func for cpoint locations
-function ENT:GetCPoint(k)
+function ENT:GetCPointPos(k)
 
 	if CLIENT and self.cpoint_posang[k] then return self.cpoint_posang[k] end //server doesn't call this often enough to be worth caching and uncaching
 
@@ -584,7 +584,7 @@ if CLIENT then
 			camang:RotateAroundAxis(camang:Up(), -90)
 			camang:RotateAroundAxis(camang:Forward(), 90)
 
-			local p = self:GetCPoint(k)
+			local p = self:GetCPointPos(k)
 			if istable(p) then
 				if window or self.ParticleInfo[k].ent.PEPlus_Grip then //hide helpers when they're attached to other ents unless the window is open
 					//Draw plane helpers
@@ -713,7 +713,7 @@ if CLIENT then
 								local ptab = PEPlus_ProcessedPCFs[pcf][self:GetParticleName()]
 								for k, v in pairs (self.ParticleInfo) do
 									if ptab.cpoints[k] and ptab.cpoints[k].mode == PEPLUS_CPOINT_MODE_POSITION then
-										local p = self:GetCPoint(k)
+										local p = self:GetCPointPos(k)
 										if istable(p) then
 											table.insert(todraw, {
 												dist = p.pos:DistToSqr(vpos) - 0.0001, //draw on top of the grip for the same cpoint
@@ -724,7 +724,7 @@ if CLIENT then
 								end
 							end
 						else
-							local p = self:GetCPoint()
+							local p = self:GetCPointPos()
 							if istable(p) then
 								table.insert(todraw, {
 									dist = p.pos:DistToSqr(vpos) - 0.0001, //draw on top of the grip for the same cpoint
@@ -809,7 +809,7 @@ if CLIENT then
 		//which we want to go forward/left/etc. relative to the direction the main position cpoint is facing)
 		if self.RelativeCPointsToUpdate then
 			for k, v in pairs (self.RelativeCPointsToUpdate) do
-				local p = self:GetCPoint(v)
+				local p = self:GetCPointPos(v)
 				if p then
 					//update the cpoint on both old particles and new particles
 					if IsValid(self.particle) and self.particle.SetControlPoint then
@@ -1327,7 +1327,7 @@ else
 		if !IsValid(g) then return false end
 		g:Spawn()
 
-		local p = self:GetCPoint(k)
+		local p = self:GetCPointPos(k)
 		local _, bboxtop1 = ent:GetRotatedAABB(ent:GetCollisionBounds())
 		local bboxtop2, _ = g:GetCollisionBounds()
 		local height = bboxtop1.z + -bboxtop2.z + ent:GetPos().z

@@ -232,7 +232,7 @@ if CLIENT then
 			if !IsValid(ent) then return end
 			local time = CurTime()
 
-			local p = self:GetCPoint()
+			local p = self:GetCPointPos()
 			local ang
 			local dir = self:GetBeamDir()
 			if dir == 0 then

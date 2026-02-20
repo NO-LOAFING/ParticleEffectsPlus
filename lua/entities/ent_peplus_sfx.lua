@@ -119,7 +119,7 @@ end
 
 //Convenience func for the special effect location - this isn't a control point per se, but it's 
 //attached to a model or attachment point just like one, so just use the same naming convention
-function ENT:GetCPoint()
+function ENT:GetCPointPos()
 
 	if CLIENT and self.cpoint_posang then return self.cpoint_posang end //server doesn't call this often enough to be worth caching and uncaching
 
@@ -165,7 +165,7 @@ if CLIENT then
 		if IsValid(ent) then
 			if window or ent.PEPlus_Grip then //hide helpers when they're attached to other ents unless the window is open
 				//Draw particle effect helpers (numbers showing cpoint id, arrows showing cpoint orientation)
-				local p = self:GetCPoint()
+				local p = self:GetCPointPos()
 				if istable(p) then
 					render.SetMaterial(peplus_arrowmat)
 					render.DrawBeam(p.pos + (p.ang:Forward() * -3.01), p.pos + (p.ang:Forward() * (20-3.01)), 20, 1, 0, color_white)
@@ -310,7 +310,7 @@ if SERVER then
 		if !IsValid(g) then return false end
 		g:Spawn()
 
-		local p = self:GetCPoint()
+		local p = self:GetCPointPos()
 		local _, bboxtop1 = ent:GetRotatedAABB(ent:GetCollisionBounds())
 		local bboxtop2, _ = g:GetCollisionBounds()
 		local height = bboxtop1.z + -bboxtop2.z + ent:GetPos().z
