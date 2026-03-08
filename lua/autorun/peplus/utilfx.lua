@@ -24,7 +24,7 @@ AddCSLuaFile()
 		//    related to selecting an entity or a point in space.
 		
 		//Adds a position control for cpoint 0
-		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Normal, Entity, Attachment") //by default, this function adds a position control
+		PEPlus_CPoint_AddToProcessed(tab, 0, "util.Effect Origin, Angles, Normal, Entity, Attachment") //by default, this function adds a position control. don't worry about getting the 3rd arg just right, that's just the name shown by the debug option "Print processed PCF data for this effect".
 		
 		//Adds an axis control for cpoint 1's X axis; by default, this is a slider
 		PEPlus_CPoint_AddToProcessed(tab, 1, "util.Effect Scale", "axis", { 
