@@ -8,7 +8,7 @@ TOOL.Information = {{name = "left"}}
 
 //If we really wanted to pretend this was the same tool as the standard creator, I guess we could try to copy its strings, but that's not worth the trouble and this is funnier
 if CLIENT then
-	language.Add("tool.peplus_creator.name", "Particle Creator")
+	language.Add("tool.peplus_creator.name", "Particle Effects+: Creator")
 	language.Add("tool.peplus_creator.desc", "A particle creator. It makes particles. That's all your need to know.")
 	language.Add("tool.peplus_creator.left", "Create the particle")
 end

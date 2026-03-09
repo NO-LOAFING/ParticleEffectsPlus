@@ -1,5 +1,5 @@
 TOOL.Category = "Render"
-TOOL.Name = "Particle Attacher"
+TOOL.Name = "PE+: Particle Attacher"
 TOOL.Command = nil
 TOOL.ConfigName = ""
 
@@ -21,7 +21,7 @@ TOOL.Information = {
 }
 
 if CLIENT then
-	language.Add("tool.peplus_attacher.name", "Particle Attacher")
+	language.Add("tool.peplus_attacher.name", "Particle Effects+: Attacher")
 	language.Add("tool.peplus_attacher.desc", "Attach particle effects to models")
 	language.Add("tool.peplus_attacher.help", "Particles are used for all sorts of different visual effects. You can spawn them from the spawn menu, and then attach them to models with this tool.")
 
