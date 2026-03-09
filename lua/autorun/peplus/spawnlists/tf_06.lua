@@ -1,8 +1,8 @@
 "TableToKeyValues"
 {
-	"parentid"		"150"
+	"parentid"		"157"
 	"icon"		"icon16/page.png"
-	"id"		"156"
+	"id"		"163"
 	"contents"
 	{
 		"1"
@@ -648,886 +648,893 @@
 		{
 			"type"		"peplus"
 			"path"		"tf"
-			"name"		"fluidSmokeExpl_ring_mvm"
-			"pcf"		"particles/bigboom.pcf"
+			"name"		"smoke_train"
+			"pcf"		"particles/smoke_blackbillow.pcf"
 		}
 		"95"
 		{
 			"type"		"peplus"
 			"path"		"tf"
-			"name"		"explosionTrail_seeds_mvm"
+			"name"		"fluidSmokeExpl_ring_mvm"
 			"pcf"		"particles/bigboom.pcf"
 		}
 		"96"
 		{
 			"type"		"peplus"
 			"path"		"tf"
+			"name"		"explosionTrail_seeds_mvm"
+			"pcf"		"particles/bigboom.pcf"
+		}
+		"97"
+		{
+			"type"		"peplus"
+			"path"		"tf"
 			"name"		"mvm_tank_destroy"
 			"pcf"		"particles/mvm.pcf"
 		}
-		"97"
+		"98"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"rd_robot_explosion"
 			"pcf"		"particles/explosion.pcf"
 		}
-		"98"
+		"99"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"rd_robot_explosion_trail"
 			"pcf"		"particles/explosion.pcf"
 		}
-		"99"
+		"100"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"rd_robot_explosion_trail_smoke2"
 			"pcf"		"particles/explosion.pcf"
 		}
-		"100"
+		"101"
 		{
 			"type"		"header"
 			"text"		"Eye effects"
 		}
-		"101"
+		"102"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"eye_powerup_green_lvl_1"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"102"
+		"103"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"eye_powerup_green_lvl_2"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"103"
+		"104"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"eye_powerup_green_lvl_3"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"104"
+		"105"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"eye_powerup_green_lvl_4"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"105"
+		"106"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"eye_powerup_red_lvl_1"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"106"
+		"107"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"eye_powerup_red_lvl_2"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"107"
+		"108"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"eye_powerup_red_lvl_3"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"108"
+		"109"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"eye_powerup_red_lvl_4"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"109"
+		"110"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"eye_powerup_blue_lvl_1"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"110"
+		"111"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"eye_powerup_blue_lvl_2"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"111"
+		"112"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"eye_powerup_blue_lvl_3"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"112"
+		"113"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"eye_powerup_blue_lvl_4"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"113"
+		"114"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t0_lvl1_flash"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"114"
+		"115"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t1_lvl1"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"115"
+		"116"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t1_lvl2"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"116"
+		"117"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t2_lvl1"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"117"
+		"118"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t2_lvl2"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"118"
+		"119"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t3_lvl1"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"119"
+		"120"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t3_lvl2"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"120"
+		"121"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t4_lvl1"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"121"
+		"122"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t4_lvl2"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"122"
+		"123"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t5_lvl1"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"123"
+		"124"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t5_lvl2"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"124"
+		"125"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t6_lvl1"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"125"
+		"126"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t6_lvl2"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"126"
+		"127"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t7_lvl1"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"127"
+		"128"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"killstreak_t7_lvl2"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"128"
+		"129"
 		{
 			"type"		"header"
 			"text"		"Overhead icons"
 		}
-		"129"
+		"130"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"speech_mediccall"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"130"
+		"131"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"speech_mediccall_attention"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"131"
+		"132"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"speech_revivecall"
 			"pcf"		"particles/speechbubbles.pcf"
 		}
-		"132"
+		"133"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"speech_revivecall_medium"
 			"pcf"		"particles/speechbubbles.pcf"
 		}
-		"133"
+		"134"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"speech_revivecall_hard"
 			"pcf"		"particles/speechbubbles.pcf"
 		}
-		"134"
+		"135"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"speech_typing"
 			"pcf"		"particles/speechbubbles.pcf"
 		}
-		"135"
+		"136"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"speech_voice"
 			"pcf"		"particles/speechbubbles.pcf"
 		}
-		"136"
+		"137"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"speech_taunt_all"
 			"pcf"		"particles/speechbubbles.pcf"
 		}
-		"137"
+		"138"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"speech_taunt_blue"
 			"pcf"		"particles/speechbubbles.pcf"
 		}
-		"138"
+		"139"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"speech_taunt_red"
 			"pcf"		"particles/speechbubbles.pcf"
 		}
-		"139"
+		"140"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"crit_text"
 			"pcf"		"particles/crit.pcf"
 		}
-		"140"
+		"141"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"minicrit_text"
 			"pcf"		"particles/crit.pcf"
 		}
-		"141"
+		"142"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"stomp_text"
 			"pcf"		"particles/crit.pcf"
 		}
-		"142"
+		"143"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"doubledonk_text"
 			"pcf"		"particles/crit.pcf"
 		}
-		"143"
+		"144"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"miss_text"
 			"pcf"		"particles/crit.pcf"
 		}
-		"144"
+		"145"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"hit_text"
 			"pcf"		"particles/crit.pcf"
 		}
-		"145"
+		"146"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"heal_text"
 			"pcf"		"particles/crit.pcf"
 		}
-		"146"
+		"147"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"achieved"
 			"pcf"		"particles/crit.pcf"
 		}
-		"147"
+		"148"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"mvm_levelup1"
 			"pcf"		"particles/mvm.pcf"
 		}
-		"148"
+		"149"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"mvm_levelup2"
 			"pcf"		"particles/mvm.pcf"
 		}
-		"149"
+		"150"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"mvm_levelup3"
 			"pcf"		"particles/mvm.pcf"
 		}
-		"150"
+		"151"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"particle_nemesis_blue"
 			"pcf"		"particles/nemesis.pcf"
 		}
-		"151"
+		"152"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"particle_nemesis_red"
 			"pcf"		"particles/nemesis.pcf"
 		}
-		"152"
+		"153"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"duel_blue"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"153"
+		"154"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"duel_red"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"154"
+		"155"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"healthgained_blu"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"155"
+		"156"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"healthgained_blu_large"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"156"
+		"157"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"healthgained_blu_giant"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"157"
+		"158"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"healthgained_red"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"158"
+		"159"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"healthgained_red_large"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"159"
+		"160"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"healthgained_red_giant"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"160"
+		"161"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"healthlost_blu"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"161"
+		"162"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"healthlost_red"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"162"
+		"163"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"conc_stars"
 			"pcf"		"particles/conc_stars.pcf"
 		}
-		"163"
+		"164"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"yikes_fx"
 			"pcf"		"particles/conc_stars.pcf"
 		}
-		"164"
+		"165"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"halloween_boss_victim"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"165"
+		"166"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"mark_for_death"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"166"
+		"167"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"peejar_icon"
 			"pcf"		"particles/item_fx.pcf"
 		}
-		"167"
+		"168"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"vaccinator_blue_buff1"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"168"
+		"169"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"vaccinator_blue_buff2"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"169"
+		"170"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"vaccinator_blue_buff3"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"170"
+		"171"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"vaccinator_red_buff1"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"171"
+		"172"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"vaccinator_red_buff2"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"172"
+		"173"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"vaccinator_red_buff3"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"173"
+		"174"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"medic_resist_match_bullet_blue"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"174"
+		"175"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"medic_resist_match_blast_blue"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"175"
+		"176"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"medic_resist_match_fire_blue"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"176"
+		"177"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"medic_resist_match_bullet_red"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"177"
+		"178"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"medic_resist_match_blast_red"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"178"
+		"179"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"medic_resist_match_fire_red"
 			"pcf"		"particles/class_fx.pcf"
 		}
-		"179"
+		"180"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"vaccinator_red_buff1_burst"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"180"
+		"181"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"vaccinator_blue_buff1_burst"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"181"
+		"182"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"vaccinator_red_buff2_burst"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"182"
+		"183"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"vaccinator_blue_buff2_burst"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"183"
+		"184"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"vaccinator_red_buff3_burst"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"184"
+		"185"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"vaccinator_blue_buff3_burst"
 			"pcf"		"particles/medicgun_beam.pcf"
 		}
-		"185"
+		"186"
 		{
 			"type"		"header"
 			"text"		"Overhead icons (mannpower)"
 		}
-		"186"
+		"187"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_agility"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"187"
+		"188"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_agility_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"188"
+		"189"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_agility_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"189"
+		"190"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_haste"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"190"
+		"191"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_haste_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"191"
+		"192"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_haste_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"192"
+		"193"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_king"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"193"
+		"194"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_king_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"194"
+		"195"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_king_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"195"
+		"196"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_knockout"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"196"
+		"197"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_knockout_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"197"
+		"198"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_knockout_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"198"
+		"199"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_plague"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"199"
+		"200"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_plague_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"200"
+		"201"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_plague_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"201"
+		"202"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_precision"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"202"
+		"203"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_precision_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"203"
+		"204"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_precision_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"204"
+		"205"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_reflect"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"205"
+		"206"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_reflect_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"206"
+		"207"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_reflect_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"207"
+		"208"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_regen"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"208"
+		"209"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_regen_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"209"
+		"210"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_regen_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"210"
+		"211"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_resist"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"211"
+		"212"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_resist_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"212"
+		"213"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_resist_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"213"
+		"214"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_strength"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"214"
+		"215"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_strength_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"215"
+		"216"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_strength_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"216"
+		"217"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_supernova"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"217"
+		"218"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_supernova_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"218"
+		"219"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_supernova_red"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"219"
+		"220"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_vampire"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"220"
+		"221"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"powerup_icon_vampire_blue"
 			"pcf"		"particles/powerups.pcf"
 		}
-		"221"
+		"222"
 		{
 			"type"		"peplus"
 			"path"		"tf"
