@@ -3,7 +3,7 @@ AddCSLuaFile()
 ENT.Base 			= "ent_peplus_sfx"
 ENT.PrintName			= "Beam Effect"
 ENT.Category			= "Particle Effects+: Special Effects"
-ENT.Information			= "Makes particle effects work like a laser pointer, with one end where the \"beam\" starts, and the other end continuously moving to where it's pointing."
+ENT.Information			= "Works like a laser pointer, continuously moving attached particle effects to where the \"beam\" is pointing."
 
 ENT.Spawnable			= true
 

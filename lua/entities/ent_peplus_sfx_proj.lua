@@ -3,7 +3,7 @@ AddCSLuaFile()
 ENT.Base 			= "ent_peplus_sfx"
 ENT.PrintName			= "Projectile Effect"
 ENT.Category			= "Particle Effects+: Special Effects"
-ENT.Information			= "Launches props that can have particle effects attached to them, and can play more particle effects when they expire, either on hit or on a timer."
+ENT.Information			= "Launches props with attached particle effects, which then play more effects on hit or when they expire."
 
 ENT.Spawnable			= true
 
@@ -315,7 +315,7 @@ if CLIENT then
 			help:SetDark(true)
 			help:SetWrap(true)
 			help:SetTextInset(0, 0)
-			help:SetText("Sets the orientation of effects attached to a hit point.")
+			help:SetText("Sets the orientation of effects that play on hit/expire.")
 			//help:SetContentAlignment(5)
 			help:SetAutoStretchVertical(true)
 			//help:DockMargin(32,0,32,8)
