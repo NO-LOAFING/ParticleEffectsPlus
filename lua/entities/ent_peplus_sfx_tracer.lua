@@ -43,6 +43,7 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Int", 3, "TracerCount")
 	self:NetworkVar("Int", 4, "TracerDir")
 	self:NetworkVar("Int", 5, "TracerHitDir")
+	self:NetworkVar("Int", 6, "TracerLength")
 
 end
 
@@ -67,6 +68,7 @@ function ENT:SetSpecialEffectDefaults()
 	self:SetTracerCount(1)
 	self:SetTracerDir(0)
 	self:SetTracerHitDir(0)
+	self:SetTracerLength(32767) //max 15 bit unsigned int
 
 	if !self.IsBlank then
 		local p = PEPlus_SpawnParticle(self:GetPlayer(), self:GetPos(), "Tracer", "UtilFx")
@@ -267,6 +269,27 @@ if CLIENT then
 		help:DockMargin(padding_help,betweenitems_help,padding_help,0)
 		help:Dock(TOP)
 		help:SetTextColor(color_helpdark)
+
+		local slider = vgui.Create("DNumSlider", rpnl)
+		slider:SetText("Max distance")
+		slider:SetDecimals(0)
+		slider:SetMinMax(0, 32767) //max 15 bit unsigned int
+		slider:SetDefaultValue(1)
+		slider:SetDark(true)
+		slider:SetHeight(18)
+		slider:Dock(TOP)
+		slider:DockMargin(padding,padding,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+
+		local val = ent:GetTracerLength() or 0
+		slider:SetValue(val)
+		slider.Val = val
+		function slider.OnValueChanged(_, val) //only send updates on whole numbers
+			val = math.Round(val)
+			if val != slider.Val then
+				slider.Val = val
+				ent:DoInput("tracer_length", val)
+			end
+		end
 
 	end
 
@@ -484,7 +507,7 @@ if CLIENT then
 
 			local tr = {}
 			tr.start = p.pos
-			tr.endpos = p.pos+(fwd*30000)
+			tr.endpos = p.pos+(fwd*self:GetTracerLength())
 			tr.filter = ent
 			tr = util.TraceLine(tr)
 
@@ -656,6 +679,7 @@ local EditMenuInputs = {
 	"tracer_count",
 	"tracer_dir",
 	"tracer_hitdir",
+	"tracer_length",
 }
 ENT.EditMenuInputs_bits = 5 //max 31
 ENT.EditMenuInputs = table.Flip(EditMenuInputs)
@@ -707,6 +731,10 @@ if CLIENT then
 		elseif input == "tracer_hitdir" then
 			
 			net.WriteUInt(args[1], 4) //new dir (0-9)
+
+		elseif input == "tracer_length" then
+			
+			net.WriteUInt(args[1], 15) //new length (max 32767)
 
 		end
 
@@ -807,6 +835,11 @@ else
 			self:SetTracerHitDir(math.min(net.ReadUInt(4), 9))
 			refreshtable = true
 
+		elseif input == "tracer_length" then
+			
+			self:SetTracerLength(net.ReadUInt(15))
+			refreshtable = true
+
 		end
 
 		return refreshtable
@@ -842,6 +875,7 @@ duplicator.RegisterEntityClass("ent_peplus_sfx_tracer", function(ply, data)
 
 	//default dtvars for old dupes that don't have them
 	if data.DT.PauseTime == nil then data.DT.PauseTime = -1 end
+	if data.DT.TracerLength == nil then data.DT.TracerLength = 32767 end
 
 	//duplicator.GenericDuplicatorFunction(ply, data)
 	duplicator.DoGeneric(ent, data)

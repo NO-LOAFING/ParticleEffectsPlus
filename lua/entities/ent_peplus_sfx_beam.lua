@@ -29,6 +29,7 @@ function ENT:SetupDataTables()
 
 	self:NetworkVar("Int", 1, "BeamDir")
 	self:NetworkVar("Int", 2, "BeamHitDir")
+	self:NetworkVar("Int", 3, "BeamLength")
 
 end
 
@@ -43,6 +44,7 @@ function ENT:SetSpecialEffectDefaults()
 
 	self:SetBeamDir(0)
 	self:SetBeamHitDir(0)
+	self:SetBeamLength(32767) //max 15 bit unsigned int
 
 	if !self.IsBlank then
 		if IsMounted("tf") then
@@ -215,6 +217,27 @@ if CLIENT then
 		help:Dock(TOP)
 		help:SetTextColor(color_helpdark)
 
+		local slider = vgui.Create("DNumSlider", rpnl)
+		slider:SetText("Max distance")
+		slider:SetDecimals(0)
+		slider:SetMinMax(0, 32767) //max 15 bit unsigned int
+		slider:SetDefaultValue(1)
+		slider:SetDark(true)
+		slider:SetHeight(18)
+		slider:Dock(TOP)
+		slider:DockMargin(padding,padding,0,3) //less up and extra down on sliders because we want to base the "top" off the text, not the knob, but also want 16px between sliders' text
+
+		local val = ent:GetBeamLength() or 0
+		slider:SetValue(val)
+		slider.Val = val
+		function slider.OnValueChanged(_, val) //only send updates on whole numbers
+			val = math.Round(val)
+			if val != slider.Val then
+				slider.Val = val
+				ent:DoInput("beam_length", val)
+			end
+		end
+
 	end
 
 	local ang_fwd = Angle(0,0,0)
@@ -257,7 +280,7 @@ if CLIENT then
 
 			local tr = {}
 			tr.start = p.pos
-			tr.endpos = p.pos+(ang*30000)
+			tr.endpos = p.pos+(ang*self:GetBeamLength())
 			tr.filter = ent
 			tr = util.TraceLine(tr)
 
@@ -403,6 +426,7 @@ local EditMenuInputs = {
 	//Entity-specific inputs
 	"beam_dir",
 	"beam_hitdir",
+	"beam_length",
 }
 ENT.EditMenuInputs_bits = 4 //max 15
 ENT.EditMenuInputs = table.Flip(EditMenuInputs)
@@ -418,6 +442,10 @@ if CLIENT then
 		elseif input == "beam_hitdir" then
 			
 			net.WriteUInt(args[1], 4) //new dir (0-9)
+
+		elseif input == "beam_length" then
+			
+			net.WriteUInt(args[1], 15) //new length (max 32767)
 
 		end
 
@@ -437,6 +465,11 @@ else
 		elseif input == "beam_hitdir" then
 
 			self:SetBeamHitDir(math.min(net.ReadUInt(4), 9))
+			refreshtable = true
+
+		elseif input == "beam_length" then
+			
+			self:SetBeamLength(net.ReadUInt(15))
 			refreshtable = true
 
 		end
@@ -473,6 +506,7 @@ duplicator.RegisterEntityClass("ent_peplus_sfx_beam", function(ply, data)
 
 	//default dtvars for old dupes that don't have them
 	if data.DT.PauseTime == nil then data.DT.PauseTime = -1 end
+	if data.DT.BeamLength == nil then data.DT.BeamLength = 32767 end
 
 	//duplicator.GenericDuplicatorFunction(ply, data)
 	duplicator.DoGeneric(ent, data)
