@@ -1778,7 +1778,7 @@ function PEPlus_ReadPCF(filename, path)
 		end
 		//PrintTable(tab)
 	end
-	local function do_nodefs(tab)
+	local function store_nodefs(tab)
 		//Store a leaner table without default values - this gets used by PEPlus_GetDuplicateFx()
 		//This is a good place to do this because it means we don't have to read the file a second time to populate this
 		if CLIENT and !path then
@@ -1806,7 +1806,7 @@ function PEPlus_ReadPCF(filename, path)
 			cached_file = util.JSONToTable(cached_file, false, true)
 			//PrintTable(cached_file)
 			if cached_file then
-				do_nodefs(cached_file)
+				store_nodefs(cached_file)
 				RestoreDefaultValues(cached_file) //saved cache files omit all default values to save space and read time, so repopulate those
 				if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " loading from cache") end
 				return cached_file
@@ -2105,7 +2105,7 @@ function PEPlus_ReadPCF(filename, path)
 	Elements = Elements2
 
 	local str
-	if nodefs_copy or docache:GetBool() then
+	if CLIENT or docache:GetBool() then
 		//Remove all default values from the cached table, to significantly reduce both the size and load times of cached files
 		str = {}
 		for effect, effecttab in pairs (Elements) do
@@ -2151,7 +2151,8 @@ function PEPlus_ReadPCF(filename, path)
 				end
 			end
 		end
-		do_nodefs(str)
+		//Also store this in PEPlus_NoDefPCFs
+		store_nodefs(str)
 	end
 	//PrintTable(str)
 	if docache:GetBool() then
