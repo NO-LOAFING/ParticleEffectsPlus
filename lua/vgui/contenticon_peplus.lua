@@ -936,12 +936,12 @@ function PANEL:OpenMenu()
 					submenuoption:SetText(submenuoption:GetText() .. " (" .. table.Count(listed_fx) .. ")") //count the number of fx not including dupes
 				end
 				local ptab = PEPlus_ProcessedPCFs[pcf][self.name]
-				if ptab.parents and table.Count(ptab.parents) > 0 then
+				if table.Count(ptab.parents) > 0 then
 					local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn parent effect")
 					base_submenuoption:SetImage("icon16/shape_group.png")
 					ListChildFx(base_submenu, base_submenuoption, self.name, "parents")
 				end
-				if ptab.children and table.Count(ptab.children) > 0 then
+				if table.Count(ptab.children) > 0 then
 					local base_submenu, base_submenuoption = menu:AddSubMenu("Spawn child effect")
 					base_submenuoption:SetImage("icon16/shape_ungroup.png")
 					ListChildFx(base_submenu, base_submenuoption, self.name, "children")

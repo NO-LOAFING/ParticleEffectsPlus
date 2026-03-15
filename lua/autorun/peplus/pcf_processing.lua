@@ -3822,7 +3822,7 @@ function PEPlus_ProcessPCF(filename)
 		for particle, ptab in pairs (t) do
 			local processed = {
 				cpoints = {},
-				children = t[particle].children,
+				children = t[particle].children or {}, //according to a bug report, this value is nil in pcf(s) from Day of Defeat: Source (usually this is a blank table if there's no children), so add a fallback for these; i don't have DoD:S so this is a blind fix
 				parents = {},
 				do_starttime_raw_fromrate = ptab.initial_particles <= 0, //for emitter starttime calculation, don't add extra time from the emission rate if we have initial particles; have to do this here because the processfunc needs this info
 			}
@@ -3933,28 +3933,26 @@ function PEPlus_ProcessPCF(filename)
 					if t2[childtab.child] and !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
 						local cpoints2 = table.Copy(t2[childtab.child].cpoints)
 						//make sure the child has also inherited cpoints from its own children
-						if istable(t[childtab.child].children) then
-							//if #t[childtab.child].children > 0 then MsgN("children of ", childtab.child, ":") PrintTable(t[childtab.child].children) end
-							for _, childtab2 in pairs (t[childtab.child].children) do
-								if t2[childtab2.child] and !childtab2["end cap effect"] then
-									local cpoints3 = cpoints_from_child_fx(table.Copy(t2[childtab2.child].cpoints), childtab2.child, depth)
-									for i, tab in pairs (cpoints3) do
-										cpoints2[i] = cpoints2[i] or {}
-										for processedk, processedv in pairs (tab) do
-											for k, v in pairs (processedv) do
-												//mark operators as being inherited from a child
-												if v.name then
-													processedv[k].name = "child " .. childtab2.child .. " | " .. processedv[k].name
-												end
-												if v.label then
-													processedv[k].label_childname = processedv[k].label_childname or ("'" .. childtab2.child .. "' ")
-												end
+						//if #t[childtab.child].children > 0 then MsgN("children of ", childtab.child, ":") PrintTable(t[childtab.child].children) end
+						for _, childtab2 in pairs (t[childtab.child].children) do
+							if t2[childtab2.child] and !childtab2["end cap effect"] then
+								local cpoints3 = cpoints_from_child_fx(table.Copy(t2[childtab2.child].cpoints), childtab2.child, depth)
+								for i, tab in pairs (cpoints3) do
+									cpoints2[i] = cpoints2[i] or {}
+									for processedk, processedv in pairs (tab) do
+										for k, v in pairs (processedv) do
+											//mark operators as being inherited from a child
+											if v.name then
+												processedv[k].name = "child " .. childtab2.child .. " | " .. processedv[k].name
 											end
-											if istable(cpoints2[i][processedk]) then
-												table.Add(cpoints2[i][processedk], processedv)
-											else
-												cpoints2[i][processedk] = processedv
+											if v.label then
+												processedv[k].label_childname = processedv[k].label_childname or ("'" .. childtab2.child .. "' ")
 											end
+										end
+										if istable(cpoints2[i][processedk]) then
+											table.Add(cpoints2[i][processedk], processedv)
+										else
+											cpoints2[i][processedk] = processedv
 										end
 									end
 								end
@@ -4257,16 +4255,14 @@ function PEPlus_ProcessPCF(filename)
 					return
 				end
 
-				if istable(t2[particle2].children) then
-					for _, childtab in pairs (t2[particle2].children) do
-						if !t2[childtab.child] then
-							if dodebug then MsgN("PEPlus_ProcessPCF: ", filename, " ", particle2, " CPointModesFromChildren tried to get nonexistent child effect ", child) end
-						elseif !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
-							SetCPointModes(childtab.child, particle2)
-							//Now inherit from the child's children, and so on
-							//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
-							CPointModesFromChildren(childtab.child, depth)
-						end
+				for _, childtab in pairs (t2[particle2].children) do
+					if !t2[childtab.child] then
+						if dodebug then MsgN("PEPlus_ProcessPCF: ", filename, " ", particle2, " CPointModesFromChildren tried to get nonexistent child effect ", child) end
+					elseif !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
+						SetCPointModes(childtab.child, particle2)
+						//Now inherit from the child's children, and so on
+						//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
+						CPointModesFromChildren(childtab.child, depth)
 					end
 				end
 			end
@@ -4576,34 +4572,32 @@ function PEPlus_ProcessPCF(filename)
 						return
 					end
 
-					if istable(t2[particle2].children) then
-						for _, childtab in pairs (t2[particle2].children) do
-							if !t2[childtab.child] then
-								if dodebug then MsgN("PEPlus_ProcessPCF: ", filename, " ", particle2, " StartTimeFromChildren tried to get nonexistent child effect ", child) end
-							elseif !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
-								if t2[childtab.child].starttime_raw != nil then
-									//starttime
-									if starttime == nil then
-										starttime = t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay
-									else
-										starttime = math.min(t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay, starttime)
-									end
-									//particle distance
-									if min == nil then
-										min = t2[childtab.child].dist_min
-									elseif t2[childtab.child].dist_min != nil then
-										min = math.max(min, t2[childtab.child].dist_min)
-									end
-									if min_alt == nil then
-										min_alt = t2[childtab.child].dist_min_alt
-									elseif t2[childtab.child].dist_min_alt != nil then
-										min_alt = math.max(min, t2[childtab.child].dist_min_alt)
-									end
+					for _, childtab in pairs (t2[particle2].children) do
+						if !t2[childtab.child] then
+							if dodebug then MsgN("PEPlus_ProcessPCF: ", filename, " ", particle2, " StartTimeFromChildren tried to get nonexistent child effect ", child) end
+						elseif !childtab["end cap effect"] then //"end cap effect" children aren't supposed to run until the effect ends. in practice, they don't seem to run *at all*, and i can't find any code that would call StopEmission with the right arg to trigger them. (https://github.com/search?q=repo%3Anillerusr%2FKisak-Strike+StopEmission&type=code)
+							if t2[childtab.child].starttime_raw != nil then
+								//starttime
+								if starttime == nil then
+									starttime = t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay
+								else
+									starttime = math.min(t2[childtab.child].starttime_raw + (childtab.delay or 0) + child_delay, starttime)
 								end
-								//Now inherit from the child's children, and so on
-								//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
-								StartTimeFromChildren(childtab.child, depth, (childtab.delay or 0) + child_delay)
+								//particle distance
+								if min == nil then
+									min = t2[childtab.child].dist_min
+								elseif t2[childtab.child].dist_min != nil then
+									min = math.max(min, t2[childtab.child].dist_min)
+								end
+								if min_alt == nil then
+									min_alt = t2[childtab.child].dist_min_alt
+								elseif t2[childtab.child].dist_min_alt != nil then
+									min_alt = math.max(min, t2[childtab.child].dist_min_alt)
+								end
 							end
+							//Now inherit from the child's children, and so on
+							//TODO: the order here might not be quite right if we have multiple branching children of children, but I don't know if that actually matters in practice
+							StartTimeFromChildren(childtab.child, depth, (childtab.delay or 0) + child_delay)
 						end
 					end
 				end
