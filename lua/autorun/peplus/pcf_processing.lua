@@ -205,6 +205,7 @@ local defs = {
 		["batch particle systems"] = false,
 		bounding_box_max = Vector(10,10,10),
 		bounding_box_min = Vector(-10,-10,-10),
+		children = {}, //according to a bug report, this value is nil in pcf(s) from Day of Defeat: Source (usually this is a blank table if there's no children), so add a fallback for these; i don't have DoD:S so this is a blind fix
 		color = Color(255,255,255,255),
 		["control point to disable rendering if it is the camera"] = -1,
 		cull_control_point = 0,
@@ -3822,7 +3823,7 @@ function PEPlus_ProcessPCF(filename)
 		for particle, ptab in pairs (t) do
 			local processed = {
 				cpoints = {},
-				children = t[particle].children or {}, //according to a bug report, this value is nil in pcf(s) from Day of Defeat: Source (usually this is a blank table if there's no children), so add a fallback for these; i don't have DoD:S so this is a blind fix
+				children = t[particle].children,
 				parents = {},
 				do_starttime_raw_fromrate = ptab.initial_particles <= 0, //for emitter starttime calculation, don't add extra time from the emission rate if we have initial particles; have to do this here because the processfunc needs this info
 			}
