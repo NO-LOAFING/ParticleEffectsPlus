@@ -81,7 +81,7 @@ local ParticleAttributeNames = { //names from https://github.com/SourceSDK2013Po
 
 //from the only good glua file parser code i could find on github; we use this to get strings (https://github.com/RaphaelIT7/gmod-lua-gma-writer/blob/master/gma.lua#L202)
 local str_b0 = string.char(0)
-local function ReadUntilNull(f) //TODO: during development of file reading, this could cause errors when it tried to grab a string from the wrong part of the file. is this still possible?
+local function ReadUntilNull(f)
 	local steps = 64 //arbitrary
 	local pos = f:Tell()
 
@@ -89,6 +89,7 @@ local function ReadUntilNull(f) //TODO: during development of file reading, this
 	local finished = false
 	while !finished do
 		local str = f:Read(steps)
+		if !str then return end //this shouldn't happen; when ReadPCF calls this function, it checks if it returned false and prints an error msg
 		local found = string.find(str, str_b0)
 		if found then
 			str = string.sub(str, 0, found - 1)
@@ -1834,6 +1835,7 @@ function PEPlus_ReadPCF(filename, path)
 
 	local version
 	local header = ReadUntilNull(f)
+	if !header then MsgN("PEPlus_ReadPCF: ", filename, " ReadUntilNull returned nil value when trying to read file header, report this bug!") return end
 	//MsgN(header)
 	if header == "<!-- dmx encoding binary 2 format pcf 1 -->\n" //used by all orange box pcfs
 	or header == "<!-- dmx encoding binary 2 format dmx 1 -->\n" //only used by css's fire_medium_01.pcf, appears to be identical to orangebox's binary 2 format pcf 1
