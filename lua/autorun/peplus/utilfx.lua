@@ -1978,6 +1978,8 @@ function PEPlus_ProcessUtilFx()
 				cpoint_distance_overrides = v.cpoint_distance_overrides,
 				nicename = k,
 				utilfx_doeffect = v.DoEffect,
+				parents = {}, //this will always be empty, but the spawnicon code expects every effect to have it
+				children = {}, //^
 			}
 			if t.default_time == nil then t.default_time = 1 end
 			//everything else expects the info to be a table of strings
