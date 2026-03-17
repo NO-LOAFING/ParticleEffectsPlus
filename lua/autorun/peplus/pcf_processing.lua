@@ -5061,7 +5061,9 @@ function PEPlus_ReadAndProcessPCFs(new_file_only)
 		PEPlus_ProcessedPCFs = {}
 		PEPlus_AllDataPCFs = {} //spawnlists, spawnicons, and PEPlus_ProcessPCF use this table to quickly get a data pcf's original filename and path
 		for _, filename in pairs (PEPlus_AllPCFPaths) do
-			PEPlus_ProcessedPCFs[filename] = PEPlus_ProcessPCF(filename)
+			if !ProtectedCall(function() PEPlus_ProcessedPCFs[filename] = PEPlus_ProcessPCF(filename) end) then //don't interrupt the function if we get an error while loading a file
+				ErrorNoHalt("PEPlus_ReadAndProcessPCFs: ", filename, " failed to load due to the above error, report this bug!\n(make sure to include the game or addon the PCF came from in your report; enter \"whereis ", filename, "\" (without quotes) into the console if you're not sure)\n\n")
+			end
 		end
 		PEPlus_GamePCFs = {}
 		PEPlus_GamePCFs_DefaultPaths = {} //which game is each pcf currently loaded from? nil if not currently loaded from a game.
@@ -5152,10 +5154,14 @@ function PEPlus_ReadAndProcessPCFs(new_file_only)
 									original_filename = original_filename,
 									path = path
 								}
-								PEPlus_ProcessedPCFs[filename] = PEPlus_ProcessPCF(filename)
-								table.insert(PEPlus_AllPCFPaths, filename)
-								if PEPlus_ProcessedPCFs[filename] then //don't do this ProcessPCF returns nothing
-									allpcfs[filename] = true
+								if ProtectedCall(function() PEPlus_ProcessedPCFs[filename] = PEPlus_ProcessPCF(filename) end) then //don't interrupt the function if we get an error while loading a file
+									table.insert(PEPlus_AllPCFPaths, filename)
+									if PEPlus_ProcessedPCFs[filename] then //don't do this if ProcessPCF returns nothing
+										allpcfs[filename] = true
+									end
+								else
+									ErrorNoHalt("PEPlus_ReadAndProcessPCFs: ", filename, " failed to load due to the above error, report this bug!\n\n")
+									//PEPlus_AllDataPCFs[filename] = nil //actually, leave this in place so that spawnicons can show the nicely formatted name; this shouldn't cause false positives anywhere else because they shouldn't be running if the pcf isn't valid
 								end
 							end
 						end
