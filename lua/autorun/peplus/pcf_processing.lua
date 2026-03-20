@@ -1852,7 +1852,6 @@ function PEPlus_ReadPCF(filename, path)
 	//we *could* run file.Delete("temp_peplus_readpcfcache.txt", "DATA") after we're done with it, but that doesn't seem necessary; 
 	//there's only ever one of these files at a time and they're not that big, it'd just be another write operation on the user's HD for no benefit
 
-	local pos = f:Tell()
 	local header = ParseToken(f, "<!-- dmx encoding", " -->", 40 + 2 * 64) //max length from code (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/datamodel.cpp#L1054-L1055, defined in https://github.com/nillerusr/Kisak-Strike/blob/master/public/datamodel/dmxheader.h#L28)
 	if !header then
 		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " couldn't get file header, ignoring") end
@@ -1873,7 +1872,7 @@ function PEPlus_ReadPCF(filename, path)
 	//binary 3: used by a few unused portal 2 pcfs (zombie.pcf, paint_fizzler.pcf, chicken.pcf) and reportedly l4d1 pcfs; according to source code and documentation, this overrides one attribute data type from "OBJECTID" to "TIME", but as far as i can tell, neither are used in pcfs (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerbinary.cpp#L456-L462, https://developer.valvesoftware.com/wiki/DMX/Binary#Attribute_Values)
 	//binary 4: used by all(?) l4d2 pcfs; string dictionary count is now an int instead of a short, element names and non-array string attributes are now stored in the string dictionary instead of using a null-terminated in-line string
 	//binary 5: used by most portal 2 pcfs and all(?) alien swarm pcfs; string dictionary indices are now ints instead of shorts
-	//keyvalues2 1: used by bladesymphony pcfs and reportedly Source Particle Benchmark; these are NOT stored as binary data and are instead plain text, which means they require a different parser; according to code, no other versions of keyvalues2 exist, so for now we won't check version on these //https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp
+	//keyvalues2 1: used by bladesymphony pcfs and reportedly Source Particle Benchmark; these are NOT stored as binary data and are instead plain text, which means they require a different parser; according to code, no other versions of keyvalues2 exist, so for now we won't check version on these (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp)
 	//format types (only included for reference, currently no reason to handle these differently):
 	//dmx 1: only used by css's fire_medium_01.pcf and reportedly DoD:S pcfs; no noticeable differences from pcf 1
 	//pcf 1: used by all orange box pcfs and portal2's clouds.pcf
