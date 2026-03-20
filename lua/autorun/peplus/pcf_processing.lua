@@ -5258,7 +5258,6 @@ function PEPlus_ReadAndProcessPCFs(new_file_only)
 		//this prevents TF2's blood fx from becoming the default when you shoot an NPC, for instance
 		//NOTE: had to put gmod+games above addons to prevent an issue where tf2 map particles addon's 
 		//particles/brine_salmann_goop.pcf would unintentionally override the default blood fx, is this bad? 
-		//TODO: could this cause issues with other addons i'm not aware of that try to override gmod or game fx?
 		local pcfs_load_order = {}
 		table.Add(pcfs_load_order, pcfs_sorted[1]) //packed into bsp
 		table.Add(pcfs_load_order, pcfs_sorted[4]) //garrysmod/particles/ folder
@@ -5270,6 +5269,14 @@ function PEPlus_ReadAndProcessPCFs(new_file_only)
 		for _, filename in SortedPairs (pcfs_load_order, true) do
 			PEPlus_AddParticles(filename)
 		end
+		//Next, run AddParticles for all the files that other addons ran AddParticles for before our startup; 
+		//this is to ensure we don't break effect replacement addons (i.e. if other addons deliberately try to 
+		//override stock fx by loading their own pcf, then make sure those effects take priority by default)
+		for _, filename in SortedPairs (PEPlus_AddParticles_PreStartupQueue) do
+			PEPlus_AddParticles(filename)
+		end
+		//don't clear PEPlus_AddParticles_PreStartupQueue, we can use it again 
+		//if we have to rerun this func later (i.e. sv_peplus_reloadpcfs all)
 	end
 
 

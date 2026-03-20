@@ -13,6 +13,7 @@ if CLIENT then
 	PEPlus_AddParticles_CrashCheck_ThrottledPCFs = {}
 	PEPlus_AddParticles_AddedParticles = PEPlus_AddParticles_AddedParticles or {}
 	PEPlus_AddParticles_AddedParticles_Overrides = PEPlus_AddParticles_AddedParticles_Overrides or {}
+	PEPlus_AddParticles_PreStartupQueue = {}
 
 	function PEPlus_AddParticles(pcf, effectname) //optional effectname arg for spawnicons and particle entities, which usually only care about conflicts with their one effect
 
@@ -138,17 +139,17 @@ if CLIENT then
 	if PEPlus_old_AddParticles then
 		game.AddParticles = function(pcf)
 			if !PEPlus_ProcessedPCFs then
-				//If another addon loads a pcf before we've built PEPlus_ProcessedPCFs, just load it normally
-				//TODO: do we want to do something with these? if there are effect-replacement addons deliberately trying to override
-				//stock fx with fx from their own pcf, then we'll want to keep track of them here, then reload them in the same order 
-				//again after PEPlus_ReadAndProcessPCFs, to make sure we don't break their overrides. revisit this if we find any 
-				//addons we need to do this for!
+				//If another addon loads a pcf before we've built PEPlus_ProcessedPCFs, then queue it up so we don't 
+				//break effect replacement addons (see comments in PEPlus_ReadAndProcessPCFs where we use this table)
 				//MsgN("mounting ", pcf, " before pe+ startup")
-				PEPlus_old_AddParticles(pcf)
+				table.insert(PEPlus_AddParticles_PreStartupQueue, pcf)
+				PEPlus_old_AddParticles(pcf) //ehh, not sure if this matters or not. maybe if another addon tries to spawn an effect in the narrow window before ReadAndProcessPCFs runs?
 				return
 			end
 			//MsgN("mounting ", pcf, " after pe+ startup")
 			PEPlus_AddParticles(pcf)
+			//TODO: do we still want to add pcfs to PreStartupQueue if another addon calls this func *after* startup, so that we
+			//don't break their load priority if we run ReadAndProcessPCFs again later (i.e. with sv_partctrl_reloadpcf all)?
 		end
 	end
 
