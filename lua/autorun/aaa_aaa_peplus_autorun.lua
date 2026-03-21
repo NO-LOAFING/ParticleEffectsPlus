@@ -1,3 +1,11 @@
+//this file's name is like this to try to ensure we define our game.AddParticles override before any other autorun files 
+//can call game.AddParticles themselves. this is really dumb, and won't work if other autorun files do the same thing with 
+//similar file names, but thankfully, i don't think there's any good reason for other autorun files to force themselves to 
+//run first if all they're doing is running game.AddParticles. still some possible edge cases where this won't work?
+
+
+
+
 CreateConVar("sv_peplus_particlesperent", 32, FCVAR_REPLICATED, "Max number of effect instances (or projectiles) that a single particle effect entity can have active at once.", 1)
 //Assume that most servers won't want serverside projectile fx or screenspace fx because they're too easy to grief with.
 //Update 1/1/25: before this date, we also disabled ReadPCF caching in MP because we can't assume each connecting client 

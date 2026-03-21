@@ -138,15 +138,16 @@ if CLIENT then
 	PEPlus_old_AddParticles = PEPlus_old_AddParticles or game.AddParticles //don't get confused when reloading this file
 	if PEPlus_old_AddParticles then
 		game.AddParticles = function(pcf)
+			local dodebug = (GetConVarNumber("developer") >= 1)
 			if !PEPlus_ProcessedPCFs then
 				//If another addon loads a pcf before we've built PEPlus_ProcessedPCFs, then queue it up so we don't 
 				//break effect replacement addons (see comments in PEPlus_ReadAndProcessPCFs where we use this table)
-				//MsgN("mounting ", pcf, " before pe+ startup")
+				if dodebug then MsgN("Particle Effects+: game.AddParticles called for ", pcf, " before PE+ startup") end
 				table.insert(PEPlus_AddParticles_PreStartupQueue, pcf)
 				PEPlus_old_AddParticles(pcf) //ehh, not sure if this matters or not. maybe if another addon tries to spawn an effect in the narrow window before ReadAndProcessPCFs runs?
 				return
 			end
-			//MsgN("mounting ", pcf, " after pe+ startup")
+			if dodebug then MsgN("Particle Effects+: game.AddParticles called for ", pcf, " after PE+ startup") end
 			PEPlus_AddParticles(pcf)
 			//TODO: do we still want to add pcfs to PreStartupQueue if another addon calls this func *after* startup, so that we
 			//don't break their load priority if we run ReadAndProcessPCFs again later (i.e. with sv_partctrl_reloadpcf all)?
