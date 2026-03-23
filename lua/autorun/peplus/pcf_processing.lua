@@ -79,35 +79,37 @@ local ParticleAttributeNames = { //names from https://github.com/SourceSDK2013Po
 	//[PEPLUS_PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL] = "PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL (internal)"
 }
 
+//enums from https://github.com/nillerusr/Kisak-Strike/blob/master/public/datamodel/dmattributetypes.h#L66-L106
+//names from https://github.com/nillerusr/Kisak-Strike/blob/master/public/datamodel/dmattributetypes.h#L320-L349
 local a = {}
-table.insert(a, "ATTRIBUTE_ELEMENT")
-table.insert(a, "ATTRIBUTE_INTEGER")
-table.insert(a, "ATTRIBUTE_FLOAT")
-table.insert(a, "ATTRIBUTE_BOOLEAN")
-table.insert(a, "ATTRIBUTE_STRING")
-table.insert(a, "ATTRIBUTE_BINARY")
-table.insert(a, "ATTRIBUTE_TIME")
-table.insert(a, "ATTRIBUTE_COLOR")
-table.insert(a, "ATTRIBUTE_VECTOR2")
-table.insert(a, "ATTRIBUTE_VECTOR3")
-table.insert(a, "ATTRIBUTE_VECTOR4")
-table.insert(a, "ATTRIBUTE_QANGLE")
-table.insert(a, "ATTRIBUTE_QUATERNION")
-table.insert(a, "ATTRIBUTE_MATRIX")
-table.insert(a, "ATTRIBUTE_ELEMENT_ARRAY")
-table.insert(a, "ATTRIBUTE_INTEGER_ARRAY")
-table.insert(a, "ATTRIBUTE_FLOAT_ARRAY")
-table.insert(a, "ATTRIBUTE_BOOLEAN_ARRAY")
-table.insert(a, "ATTRIBUTE_STRING_ARRAY")
-table.insert(a, "ATTRIBUTE_BINARY_ARRAY")
-table.insert(a, "ATTRIBUTE_TIME_ARRAY")
-table.insert(a, "ATTRIBUTE_COLOR_ARRAY")
-table.insert(a, "ATTRIBUTE_VECTOR2_ARRAY")
-table.insert(a, "ATTRIBUTE_VECTOR3_ARRAY")
-table.insert(a, "ATTRIBUTE_VECTOR4_ARRAY")
-table.insert(a, "ATTRIBUTE_QANGLE_ARRAY")
-table.insert(a, "ATTRIBUTE_QUATERNION_ARRAY")
-table.insert(a, "ATTRIBUTE_MATRIX_ARRAY")
+table.insert(a, "element")	//AT_ELEMENT
+table.insert(a, "int")		//AT_INT
+table.insert(a, "float")	//AT_FLOAT
+table.insert(a, "bool")		//AT_BOOL
+table.insert(a, "string")	//AT_STRING
+table.insert(a, "binary")	//AT_VOID
+table.insert(a, "time")		//AT_TIME
+table.insert(a, "color")	//AT_COLOR
+table.insert(a, "vector2") 	//AT_VECTOR2
+table.insert(a, "vector3") 	//AT_VECTOR3
+table.insert(a, "vector4") 	//AT_VECTOR4
+table.insert(a, "qangle") 	//AT_QANGLE
+table.insert(a, "quaternion") 	//AT_QUATERNION
+table.insert(a, "matrix") 	//AT_VMATRIX
+table.insert(a, "element_array")//AT_ELEMENT_ARRAY
+table.insert(a, "int_array")	//AT_INT_ARRAY
+table.insert(a, "float_array") 	//AT_FLOAT_ARRAY
+table.insert(a, "bool_array") 	//AT_BOOL_ARRAY
+table.insert(a, "string_array")	//AT_STRING_ARRAY
+table.insert(a, "binary_array")	//AT_VOID_ARRAY
+table.insert(a, "time_array")	//AT_TIME_ARRAY
+table.insert(a, "color_array")	//AT_COLOR_ARRAY
+table.insert(a, "vector2_array")//AT_VECTOR2_ARRAY
+table.insert(a, "vector3_array")//AT_VECTOR3_ARRAY
+table.insert(a, "vector4_array")//AT_VECTOR4_ARRAY
+table.insert(a, "qangle_array")	//AT_QANGLE_ARRAY
+table.insert(a, "quaternion_array")//AT_QUATERNION_ARRAY
+table.insert(a, "matrix_array")	//AT_VMATRIX_ARRAY
 
 //from https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/devtools/bin/fix_particle_operator_names.pl#L54
 local fixes = {
@@ -1722,14 +1724,20 @@ end]]
 //adapted from the only good glua file parser code i could find on github; we use this to read strings from binary files (https://github.com/RaphaelIT7/gmod-lua-gma-writer/blob/master/gma.lua#L202)
 //returns all data from the point we start reading, up to (but not including) the terminating character
 local str_b0 = string.char(0)
-local function ReadUntilNull(f, len)
+local function ReadUntilNull(f, endtoken, len)
+	//optional endtoken arg to look for some other arbitrary ending character; otherwise look for str_b0
+	if len == nil then
+		len = endtoken
+		endtoken = str_b0
+	end
+
 	local pos = f:Tell()
 	local str = f:Read(len)
 	if str then
-		local found = string.find(str, str_b0)
+		local found, found_end = string.find(str, endtoken)
 		if found then
 			str = string.sub(str, 0, found - 1)
-			f:Seek(pos + found)
+			f:Seek(pos + found_end)
 			return str
 		end
 	end
@@ -1876,7 +1884,7 @@ function PEPlus_ReadPCF(filename, path)
 	//format types (only included for reference, currently no reason to handle these differently):
 	//dmx 1: only used by css's fire_medium_01.pcf and reportedly DoD:S pcfs; no noticeable differences from pcf 1
 	//pcf 1: used by all orange box pcfs and portal2's clouds.pcf
-	//pcf 2: used by all other portal2 pcfs, l4d2 pcfs, and swarm pcfs; as far as i can tell, these are the ones that exclude all default values
+	//pcf 2: used by all other portal2 pcfs, l4d2 pcfs, and swarm pcfs; as far as i can tell, all the ones that exclude all default values use pcf 2, but so do bladesymphony pcfs that *don't* exclude default values, so who knows??
 
 	if header[1] == "binary" then
 
@@ -1944,15 +1952,15 @@ function PEPlus_ReadPCF(filename, path)
 			tab.AttributeType = at
 			local function DoAttribute(is_array)
 				//MsgN("at = ", at)
-				if at == "ATTRIBUTE_ELEMENT" then
+				if at == "element" then //AT_ELEMENT
 					return f:ReadLong()
-				elseif at == "ATTRIBUTE_INTEGER" then
+				elseif at == "int" then //AT_INT
 					return f:ReadLong()
-				elseif at == "ATTRIBUTE_FLOAT" then
+				elseif at == "float" then //AT_FLOAT
 					return f:ReadFloat()
-				elseif at == "ATTRIBUTE_BOOLEAN" then
+				elseif at == "bool" then //AT_BOOL
 					return f:ReadBool()
-				elseif at == "ATTRIBUTE_STRING" then
+				elseif at == "string" then //AT_STRING
 					if version <= 3 or is_array then //in higher versions, arrays of strings still use null-terminated strings instead of being stored in the string dictionary
 						return ReadUntilNull(f, 1024) //i think this is the correct max length value from code; it calls a separate unserialize func for the string that i can't find, but beforehand it defines a string object of this length to put the value into (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerbinary.cpp#L429)
 					elseif version == 4 then
@@ -1960,28 +1968,28 @@ function PEPlus_ReadPCF(filename, path)
 					elseif version == 5 then
 						return StringDict[f:ReadULong()]
 					end
-				elseif at == "ATTRIBUTE_BINARY" then
+				elseif at == "binary" then //AT_VOID
 					local count = f:ReadULong()
 					return f:Read(count)
-				elseif at == "ATTRIBUTE_TIME" then
+				elseif at == "time" then //AT_TIME
 					return f:ReadLong() / 10000 //according to https://developer.valvesoftware.com/wiki/PCF; TODO: should this be unsigned? can't find anything that uses this to check
-				elseif at == "ATTRIBUTE_COLOR" then
+				elseif at == "color" then //AT_COLOR
 					return Color(string.byte(f:Read(1)), string.byte(f:Read(1)), string.byte(f:Read(1)), string.byte(f:Read(1)))
-				elseif at == "ATTRIBUTE_VECTOR2" then
+				elseif at == "vector2" then //AT_VECTOR2
 					return {f:ReadFloat(), f:ReadFloat()}
-				elseif at == "ATTRIBUTE_VECTOR3" then
+				elseif at == "vector3" then //AT_VECTOR3
 					return Vector(f:ReadFloat(), f:ReadFloat(), f:ReadFloat())
-				elseif at == "ATTRIBUTE_VECTOR4" then
+				elseif at == "vector4" then //AT_VECTOR4
 					return {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}
-				elseif at == "ATTRIBUTE_QANGLE" then
+				elseif at == "qangle" then //AT_QANGLE
 					return Vector(f:ReadFloat(), f:ReadFloat(), f:ReadFloat()) //"Same as ATTRIBUTE_VECTOR3" according to https://developer.valvesoftware.com/wiki/PCF
-				elseif at == "ATTRIBUTE_QUATERNION" then
+				elseif at == "quaternion" then //AT_QUATERNION
 					return {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()} //"Same as ATTRIBUTE_VECTOR4" according to https://developer.valvesoftware.com/wiki/PCF
-				elseif at == "ATTRIBUTE_MATRIX" then
+				elseif at == "matrix" then //AT_VMATRIX
 					return Matrix({ {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}, {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()},
 							{f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}, {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()} })
-				elseif string.EndsWith(at, "_ARRAY") then
-					at = string.Replace(at, "_ARRAY", "")
+				elseif string.EndsWith(at, "_array") then
+					at = string.Replace(at, "_array", "")
 					local tab2 = {}
 					local arraysize = f:ReadULong() //int, is ReadULong the right way to interpret this?
 					if arraysize > 1000 then MsgN("PEPlus_ReadPCF: ", filename, " got crazy array size ", arraysize, " - we screwed up file reading somewhere, report this bug!") return end
@@ -2030,11 +2038,11 @@ function PEPlus_ReadPCF(filename, path)
 				break //note: in all the cases where this bug has happened (reading pcfs packed into compressed tf2 maps before 3/26/25 update) every element after the first one with this bug will also be empty, so stop here
 			else
 				for i, attrib in pairs (ElementBodies[i]) do
-					if attrib.AttributeType == "ATTRIBUTE_ELEMENT_ARRAY" then
+					if attrib.AttributeType == "element_array" then //AT_ELEMENT_ARRAY
 						v[attrib.Name] = {
 							ElementTable = attrib.Value
 						}
-					elseif attrib.AttributeType == "ATTRIBUTE_ELEMENT" then
+					elseif attrib.AttributeType == "element" then //AT_ELEMENT
 						v[attrib.Name] = {
 							ElementTable = {attrib.Value}
 						}
@@ -2208,10 +2216,125 @@ function PEPlus_ReadPCF(filename, path)
 		RestoreDefaultValues(Elements) //newer PCF versions omit all default values from the PCF file itself, so make sure to repopulate those
 		return Elements
 
-	//elseif header[1] == "keyvalues2" then
+	elseif header[1] == "keyvalues2" then
 
+		if true then return end
 		//TODO
 		//we definitely want to share some code from the above, like child handling, effect name uncapitalization, and caching, but we'll take care of that later because they'll all need some changes
+
+		//TODO: we might want to switch to reading the file in r instead of rb (binary) mode, it might screw up reading multi-character symbols like \\ from strings; let's see how well it works
+
+		local function ReadToken()
+			//get the next character that isn't a space, tab, or newline
+			while true do
+				local t = f:Read(1)
+				if !(t == " " or t == "	" or t == "\n") then return t end
+			end
+
+		end
+
+		local function Element()
+			if f:EndOfFile() then return end
+
+			//first, get the element type string, which is surrounded by two "s
+			//loosely based on CDmSerializerKeyValues2::UnserializeElement (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1295)
+			if ReadToken() != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element type name, didn't find it!") return end
+			local type = ReadUntilNull(f, "\"", 256) //arbitrary max read length; i'm not sure how many chars valve code reads, since it uses a "PeekDelimitedStringLength" method not included in the SDK
+			if !type then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element type name, didn't find it!") return end
+			local tab = {Type = type}
+
+			//loosely based on CDmSerializerKeyValues2::UnserializeElement given type name (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1170)
+			//Then we expect a '{'
+			if ReadToken() != "{" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting '{', didn't find it!") return end
+			while true do
+				if f:EndOfFile() then MsgN("PEPlus_ReadPCF: ", filename, " Expecting '}', didn't find it!") return end
+
+				//Then keep reading until we hit a '}'
+				local t = ReadToken()
+				if t == "}" then break end
+
+				//Ok, we must be reading an attribute
+				if ReadToken() != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting attribute name, didn't find it!") return end
+				local k = ReadUntilNull(f, "\"", 256)
+				if !k then MsgN("PEPlus_ReadPCF: ", filename, " Expecting attribute name, didn't find it!") return end
+
+				//Next, read an attribute type
+				if ReadToken() != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting attribute type for attribute " .. k .. ", didn't find it!") return end
+				local at = ReadUntilNull(f, "\"", 256)
+				if !at then MsgN("PEPlus_ReadPCF: ", filename, " Expecting attribute type for attribute " .. k .. ", didn't find it!") return end
+			
+				//Next, read an attribute value
+				local function DoAttribute(is_array)
+					if !string.EndsWith(at, "_array") then
+						//Read the attribute value
+						if ReadToken() != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting quoted attribute value for attribute \"%s\", didn't find one!") end
+						local v = ReadUntilNull(f, "\"", 256)
+						if !v then MsgN("PEPlus_ReadPCF: ", filename, " Expecting quoted attribute value for attribute \"%s\", didn't find one!") end
+
+						//if at == "element" then //AT_ELEMENT
+						--[[else]]if at == "int" then //AT_INT
+							return tonumber(v)
+						elseif at == "float" then //AT_FLOAT
+							return tonumber(v)
+						elseif at == "bool" then //AT_BOOL
+							return tobool(v)
+						//elseif at == "string" then //AT_STRING
+						//elseif at == "binary" then //AT_VOID
+						elseif at == "time" then //AT_TIME
+							return tonumber(v)
+						elseif at == "color" then //AT_COLOR
+							v = string.Explode(v, " ")
+							return Color(v[1], v[2], v[3])
+						elseif at == "vector2" then //AT_VECTOR2
+							return string.Explode(" ", v)
+						elseif at == "vector3" then //AT_VECTOR3
+							v = string.Explode(v, " ")
+							return Vector(v[1], v[2], v[3])
+						elseif at == "vector4" then //AT_VECTOR4
+							return string.Explode(" ", v)
+						elseif at == "qangle" then //AT_QANGLE
+							v = string.Explode(v, " ")
+							return Vector(v[1], v[2], v[3]) //TODO: are we suuuure this should be a vector and not an angle?
+						elseif at == "quaternion" then //AT_QUATERNION
+							return string.Explode(" ", v)
+						elseif at == "matrix" then //AT_VMATRIX
+							v = string.Explode(v, " ")
+							return Matrix({	{v[1], v[2], v[3], v[4]}, {v[5], v[6], v[7], v[8]},
+									{v[9], v[10], v[11], v[12]}, {v[13], v[14], v[15], v[16]} })
+						else //this can also be a nonsense type like "elementid"; just read this as a string
+							return v
+						end
+					//TODO https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1259C3-L1281
+					elseif at == "element_array" then
+						//element_array needs special handling, because each entry in the array can either be formatted as
+						//"element" "some_id"
+						//or
+						//"AnyConceivableElementType"
+						//{
+						////attribs go here
+						//}
+						local v = {}
+						return {ElementTable = v}
+					else
+						at = string.Replace(at, "_array", "")
+						//according to code, all other array types just have a list of value entry strings separated by commas
+						//i can't find any instances of these actually being used in a pcf
+					end
+				end
+				tab[k] = DoAttribute()
+			end
+		end
+
+		//loosely based on CDmSerializerKeyValues2::Unserialize / UnserializeElements (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1328)
+		local elements = {}
+		while true do
+			local e = Element()
+			if e then
+				table.insert(elements, e)
+			else
+				break
+			end
+		end
 
 	else
 		
