@@ -2218,7 +2218,7 @@ function PEPlus_ReadPCF(filename, path)
 
 	elseif header[1] == "keyvalues2" then
 
-		if true then return end
+		if !dodebug then return end
 		//TODO
 		//we definitely want to share some code from the above, like child handling, effect name uncapitalization, and caching, but we'll take care of that later because they'll all need some changes
 
@@ -2233,19 +2233,13 @@ function PEPlus_ReadPCF(filename, path)
 
 		end
 
-		local function Element()
+		local function Element(type)
 			if f:EndOfFile() then return end
-
-			//first, get the element type string, which is surrounded by two "s
-			//loosely based on CDmSerializerKeyValues2::UnserializeElement (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1295)
-			if ReadToken() != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element type name, didn't find it!") return end
-			local type = ReadUntilNull(f, "\"", 256) //arbitrary max read length; i'm not sure how many chars valve code reads, since it uses a "PeekDelimitedStringLength" method not included in the SDK
-			if !type then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element type name, didn't find it!") return end
-			local tab = {Type = type}
 
 			//loosely based on CDmSerializerKeyValues2::UnserializeElement given type name (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1170)
 			//Then we expect a '{'
 			if ReadToken() != "{" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting '{', didn't find it!") return end
+			local tab = {Type = type}
 			while true do
 				if f:EndOfFile() then MsgN("PEPlus_ReadPCF: ", filename, " Expecting '}', didn't find it!") return end
 
@@ -2263,78 +2257,135 @@ function PEPlus_ReadPCF(filename, path)
 				local at = ReadUntilNull(f, "\"", 256)
 				if !at then MsgN("PEPlus_ReadPCF: ", filename, " Expecting attribute type for attribute " .. k .. ", didn't find it!") return end
 			
-				//Next, read an attribute value
-				local function DoAttribute(is_array)
-					if !string.EndsWith(at, "_array") then
-						//Read the attribute value
-						if ReadToken() != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting quoted attribute value for attribute \"%s\", didn't find one!") end
-						local v = ReadUntilNull(f, "\"", 256)
-						if !v then MsgN("PEPlus_ReadPCF: ", filename, " Expecting quoted attribute value for attribute \"%s\", didn't find one!") end
-
-						//if at == "element" then //AT_ELEMENT
-						--[[else]]if at == "int" then //AT_INT
-							return tonumber(v)
-						elseif at == "float" then //AT_FLOAT
-							return tonumber(v)
-						elseif at == "bool" then //AT_BOOL
-							return tobool(v)
-						//elseif at == "string" then //AT_STRING
-						//elseif at == "binary" then //AT_VOID
-						elseif at == "time" then //AT_TIME
-							return tonumber(v)
-						elseif at == "color" then //AT_COLOR
-							v = string.Explode(v, " ")
-							return Color(v[1], v[2], v[3])
-						elseif at == "vector2" then //AT_VECTOR2
-							return string.Explode(" ", v)
-						elseif at == "vector3" then //AT_VECTOR3
-							v = string.Explode(v, " ")
-							return Vector(v[1], v[2], v[3])
-						elseif at == "vector4" then //AT_VECTOR4
-							return string.Explode(" ", v)
-						elseif at == "qangle" then //AT_QANGLE
-							v = string.Explode(v, " ")
-							return Vector(v[1], v[2], v[3]) //TODO: are we suuuure this should be a vector and not an angle?
-						elseif at == "quaternion" then //AT_QUATERNION
-							return string.Explode(" ", v)
-						elseif at == "matrix" then //AT_VMATRIX
-							v = string.Explode(v, " ")
-							return Matrix({	{v[1], v[2], v[3], v[4]}, {v[5], v[6], v[7], v[8]},
-									{v[9], v[10], v[11], v[12]}, {v[13], v[14], v[15], v[16]} })
-						else //this can also be a nonsense type like "elementid"; just read this as a string
-							return v
-						end
-					//TODO https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1259C3-L1281
-					elseif at == "element_array" then
-						//element_array needs special handling, because each entry in the array can either be formatted as
-						//"element" "some_id"
-						//or
-						//"AnyConceivableElementType"
-						//{
-						////attribs go here
-						//}
-						local v = {}
-						return {ElementTable = v}
-					else
-						at = string.Replace(at, "_array", "")
-						//according to code, all other array types just have a list of value entry strings separated by commas
-						//i can't find any instances of these actually being used in a pcf
+				local function DoAttribute(v)
+					//if at == "element" then //AT_ELEMENT
+					--[[else]]if at == "int" then //AT_INT
+						return tonumber(v)
+					elseif at == "float" then //AT_FLOAT
+						return tonumber(v)
+					elseif at == "bool" then //AT_BOOL
+						return tobool(v)
+					//elseif at == "string" then //AT_STRING
+					//elseif at == "binary" then //AT_VOID
+					elseif at == "time" then //AT_TIME
+						return tonumber(v)
+					elseif at == "color" then //AT_COLOR
+						v = string.Explode(v, " ")
+						return Color(v[1], v[2], v[3])
+					elseif at == "vector2" then //AT_VECTOR2
+						return string.Explode(" ", v)
+					elseif at == "vector3" then //AT_VECTOR3
+						v = string.Explode(v, " ")
+						return Vector(v[1], v[2], v[3])
+					elseif at == "vector4" then //AT_VECTOR4
+						return string.Explode(" ", v)
+					elseif at == "qangle" then //AT_QANGLE
+						v = string.Explode(v, " ")
+						return Vector(v[1], v[2], v[3]) //TODO: are we suuuure this should be a vector and not an angle?
+					elseif at == "quaternion" then //AT_QUATERNION
+						return string.Explode(" ", v)
+					elseif at == "matrix" then //AT_VMATRIX
+						v = string.Explode(v, " ")
+						return Matrix({	{v[1], v[2], v[3], v[4]}, {v[5], v[6], v[7], v[8]},
+								{v[9], v[10], v[11], v[12]}, {v[13], v[14], v[15], v[16]} })
+					else //this can also be a nonsense type like "elementid"; just read this as a string
+						return v
 					end
 				end
-				tab[k] = DoAttribute()
+
+				//Next, read an attribute value (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1259C3-L1281)
+				local v
+				if !string.EndsWith(at, "_array") then
+					//Read the attribute value
+					if ReadToken() != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting quoted attribute value for attribute \"%s\", didn't find one!") end
+					local v = ReadUntilNull(f, "\"", 256)
+					if !v then MsgN("PEPlus_ReadPCF: ", filename, " Expecting quoted attribute value for attribute \"%s\", didn't find one!") end
+
+					v = DoAttribute(v)
+				else
+					//Arrays first must have a '[' specified
+					if ReadToken() != "[" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting '[', didn't find it!") return end
+
+					//Now read a list of array values, separated by commas
+					at = string.Replace(at, "_array", "")
+					v = {}
+					while true do
+						if f:EndOfFile() then MsgN("PEPlus_ReadPCF: ", filename, " Expecting ']', didn't find it!") return end
+
+						//Then keep reading until we hit a ']'
+						local t = ReadToken()
+						if t == "]" then break end
+
+						//If we've already read in an array value, we need to read a comma next
+						if #v > 0 then
+							if t != "," then MsgN("PEPlus_ReadPCF: ", filename, " Expecting ',', didn't find it!") return end
+
+							//Read in the next thing, which should be a value
+							t = ReadToken()
+						end
+
+						if at == "element" then //AT_ELEMENT_ARRAY
+							//Element arrays have special handling; each value has a type string, and then 
+							//either a value string or an entire element subtable, depending on the type
+
+							//Ok, we must be reading an array type value
+							if t != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element type, didn't find it!") return end
+							local type2 = ReadUntilNull(f, "\"", 256)
+							if !type2 then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element type, didn't find it!") return end
+							
+							//Use the element type to figure out if we're using a element reference or an inlined element
+							if type2 == "element" then //AT_ELEMENT
+								if t != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element reference, didn't find it!") return end
+								local v2 = ReadUntilNull(f, "\"", 256)
+								if !v2 then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element reference, didn't find it!") return end
+							
+								table.insert(v, DoAttribute(v2))
+							else
+								local e = Element(type2)
+								if e then
+									table.insert(v, e)
+								else
+									return
+								end
+							end
+						else
+							//All other array types just have single value strings separated by commas
+
+							//Ok, we must be reading an attributearray value
+							if t != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting array attribute value, didn't find it!") return end
+							local v2 = ReadUntilNull(f, "\"", 256)
+							if !v2 then MsgN("PEPlus_ReadPCF: ", filename, " Error reading in array attribute ", k, " element ", #v) return end
+
+							table.insert(v, DoAttribute(v2))
+						end
+					end
+					if at == "element" then v = {ElementTable = v} end
+				end
+				tab[k] = v
 			end
+			return tab
 		end
 
 		//loosely based on CDmSerializerKeyValues2::Unserialize / UnserializeElements (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1328)
 		local elements = {}
 		while true do
-			local e = Element()
+			if f:EndOfFile() then break end
+
+			//first, get the element type string, which is surrounded by two "s
+			//loosely based on CDmSerializerKeyValues2::UnserializeElement (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1295)
+			if ReadToken() != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element type name, didn't find it!") return end
+			local type = ReadUntilNull(f, "\"", 256) //arbitrary max read length; i'm not sure how many chars valve code reads, since it uses a "PeekDelimitedStringLength" method not included in the SDK
+			if !type then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element type name, didn't find it!") return end
+
+			local e = Element(type)
 			if e then
 				table.insert(elements, e)
 			else
-				break
+				return
 			end
 		end
+
+		//TODO: the rest; once we're sure the above is working, modify it into the format PE+ expects
 
 	else
 		
