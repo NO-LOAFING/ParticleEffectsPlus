@@ -1885,6 +1885,7 @@ function PEPlus_ReadPCF(filename, path)
 	//pcf 1: used by all orange box pcfs and portal2's clouds.pcf
 	//pcf 2: used by all other portal2 pcfs, l4d2 pcfs, and swarm pcfs; as far as i can tell, all the ones that exclude all default values use pcf 2, but so do bladesymphony pcfs that *don't* exclude default values, so who knows??
 
+	local result = {}
 	if header[1] == "binary" then
 
 		local version = tonumber(header[2])
@@ -2073,7 +2074,7 @@ function PEPlus_ReadPCF(filename, path)
 		end
 		PrintTable(nonParentedElements)]]
 		//Looks like in every pcf, 0 is the only unparented element, so start there to save time instead of iterating over the whole table again
-		local Elements = {}
+		result = {}
 		if !ElementsUnsorted[0].v.particleSystemDefinitions or !ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable then 
 			if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " element 0 doesn't contain a particleSystemDefinitions table, ignoring") end
 			return
@@ -2095,11 +2096,11 @@ function PEPlus_ReadPCF(filename, path)
 									if !ElementsUnsorted[et_i].v.child then
 										if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " DmeParticleChild has no child value") end
 									else
-										//store particle children as strings (names of the corresponding fx) to keep the table simple and avoid recursive nonsense
+										//store particle children as effect name strings
 										local childName = nil
 										for et2_k, et2_i in pairs (ElementsUnsorted[et_i].v.child.ElementTable) do
 											if !ElementsUnsorted[et2_i] then
-												if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " DmeParticleChild tried to get nil element ", et2_i) end
+												if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " DmeParticleChild tried to get invalid element id ", et2_i) end
 											else
 												//table.insert(tab, ElementsUnsorted[et2_i].k.Name)
 												childName = string.lower(ElementsUnsorted[et2_i].k.Name) //for this addon's purposes, we make effect names all lowercase, see below
@@ -2118,14 +2119,14 @@ function PEPlus_ReadPCF(filename, path)
 						//v = tab
 					end
 				end
-				Elements[ElementsUnsorted[i].k.Name] = ElementsUnsorted[i].v
+				result[ElementsUnsorted[i].k.Name] = ElementsUnsorted[i].v
 			end
 		end
 
 		//Particle effect names are caps-agnostic internally, so for this addon's purposes, we'll make them all lowercase to avoid issues further 
 		//down the line (effects with the same name but capitalized differently will conflict with each other, so make sure we detect those properly)
-		local Elements2 = {}
-		for k, v in pairs (Elements) do
+		local result2 = {}
+		for k, v in pairs (result) do
 			for k2, v2 in pairs (v) do
 				//This is also a good place to fix up operator names - make all of these lowercase too, and check for any alternate names
 				if defs[k2] then
@@ -2138,89 +2139,13 @@ function PEPlus_ReadPCF(filename, path)
 				end
 			end
 			v._nicename = k //store the capitalized name so we can use it for display purposes
-			Elements2[string.lower(k)] = v
+			result2[string.lower(k)] = v
 		end
-		Elements = Elements2
-
-		local str
-		if CLIENT or docache:GetBool() then
-			//Remove all default values from the cached table, to significantly reduce both the size and load times of cached files
-			str = {}
-			for effect, effecttab in pairs (Elements) do
-				//PrintTable(effecttab)
-				str[effect] = {}
-				for k, v in pairs (effecttab) do
-					if defs._main[k] == v then //check each value in the main table, and don't add it to the tab if it's default
-						continue
-					elseif defs[k] then //operator categories
-						local tab = {}
-						for k2, v2 in pairs (v) do //operators
-							local def = defs[k][v2.functionName]
-							if def then
-								local tab2 = {}
-								for k3, v3 in pairs (v2) do //check each value in the operator, and only add it to the tab if it's non-default
-									local def2 = def[k3]
-									if def2 == nil then def2 = defs[k]._generic[k3] end
-									if def2 != v3 then
-										//this returns false negatives when comparing some decimal values, so double-check them as strings
-										if isnumber(def2) then 
-											if tostring(v3) != tostring(def2) then
-												tab2[k3] = v3
-											end
-										else
-											tab2[k3] = v3
-										end
-									end
-								end
-								tab[k2] = tab2
-							else
-								tab[k2] = v2
-							end
-						end
-						str[effect][k] = tab
-					else
-						//this returns false negatives when comparing some decimal values, so double-check them as strings
-						if isnumber(v) then
-							if tostring(v) == tostring(defs._main[k]) then
-								continue
-							end
-						end
-						str[effect][k] = v
-					end
-				end
-			end
-			//Also store this in PEPlus_NoDefPCFs
-			store_nodefs(str)
-		end
-		//PrintTable(str)
-		if docache:GetBool() then
-			str = util.TableToJSON(str)
-			if str then
-				local dirs = string.Explode("/", "peplus_cache_v" .. cache_version ..  "/" .. filename)
-				local d = ""
-				for k,v in ipairs(dirs) do
-					d = (d..v.."/")
-					if !file.IsDir(d, "DATA") then file.CreateDir(d) end
-				end
-				if file.Write("peplus_cache_v" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", str) then
-					if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " saved to cache") end
-				else
-					if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " couldn't be cached because file.Write failed?") end
-				end
-			else
-				if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " couldn't be cached because util.TableToJSON failed?") end
-			end
-		end
-		
-		//PrintTable(Elements)
-		RestoreDefaultValues(Elements) //newer PCF versions omit all default values from the PCF file itself, so make sure to repopulate those
-		return Elements
+		result = result2
 
 	elseif header[1] == "keyvalues2" then
-
 		if !dodebug then return end
 		//TODO
-		//we definitely want to share some code from the above, like child handling, effect name uncapitalization, and caching, but we'll take care of that later because they'll all need some changes
 
 		//i don't think this matters actually
 		//switch from binary reading mode to string reading mode, then skip to after the header again
@@ -2242,7 +2167,7 @@ function PEPlus_ReadPCF(filename, path)
 			//loosely based on CDmSerializerKeyValues2::UnserializeElement given type name (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1170)
 			//Then we expect a '{'
 			if ReadToken() != "{" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting '{', didn't find it!") return end
-			local tab = {Type = type}
+			local tab = {_Type = type}
 			while true do
 				if f:EndOfFile() then MsgN("PEPlus_ReadPCF: ", filename, " Expecting '}', didn't find it!") return end
 
@@ -2389,16 +2314,153 @@ function PEPlus_ReadPCF(filename, path)
 				return
 			end
 		end
-		PrintTable(elements)
+		//PrintTable(elements)
 
-		//TODO: the rest; modify it into the format PE+ expects
+		//now modify it into the format PE+ expects
+		for _, tab in pairs (elements_by_id) do
+			//Some elements in element arrays are id numbers instead of actual element tables; 
+			//there's no discernible pattern to these, patch them up so they're all tables
+			for k, v in pairs (tab) do
+				if istable(tab[k]) and tab[k].ElementTable then
+					for k2, v2 in pairs (tab[k].ElementTable) do	
+						if !istable(v2) then
+							if elements_by_id[v2] then
+								tab[k].ElementTable[k2] = elements_by_id[v2]
+							else
+								if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " element array ", k, " in element ", name, " contains invalid element id ", v2) end
+							end
+						end
+					end
+					//Now that we've corrected the element array, we no longer need this reference, just make it a normal table now
+					tab[k] = tab[k].ElementTable
+				end
+			end
 
+			if tab._Type == "DmeParticleSystemDefinition" then
+				//Particle effect names are caps-agnostic internally, so for this addon's purposes, we'll make 
+				//them all lowercase to avoid issues further down the line (effects with the same name but 
+				//capitalized differently will conflict with each other, so make sure we detect those properly)
+				tab._nicename = tab.name //store the capitalized name so we can use it for display purposes
+				tab._name = string.lower(tab.name) //store this in a different value so it doesn't get cleaned up below, we'll need this later
+			elseif tab._Type == "DmeParticleChild" then
+				//Convert child effect ids to effect name strings
+				local childname
+				if !tab.child or !elements_by_id[tab.child] then 
+					if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " DmeParticleChild tried to get invalid element id ", tab.child) end
+					tab.child = nil
+				else
+					//Child effect names should be lowercase as well
+					tab.child = string.lower(elements_by_id[tab.child].name or elements_by_id[tab.child]._name)
+				end
+			elseif tab._Type == "DmeParticleOperator" then
+				//Make operator names lowercase too, and check for any alternate names
+				local name = tab.functionName or ""
+				name = string.lower(name)
+				if fixes[name] then name = fixes[name] end
+				tab.functionName = name
+			end
+
+			//we don't need these any more, they're just clutter now
+			tab._Type = nil
+			tab.name = nil
+			tab.id = nil
+			
+			//find the particleSystemDefinitions table, this is what ReadPCF returns
+			if tab.particleSystemDefinitions then result = tab.particleSystemDefinitions end
+		end
+		if !result then
+			if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " couldn't find particleSystemDefinitions table, ignoring") end
+			return
+		end
+		local result2 = {}
+		for k, v in pairs (result) do
+			result2[v._name] = v
+			v._name = nil //clean this up now
+		end
+		result = result2
 	else
-		
 		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " has unsupported pcf format ", table.concat(header, " "), ", ignoring") end
 		return
-
 	end
+
+	if !result then 
+		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " couldn't get result for some unhandled reason, ignoring") end
+		return
+	end
+
+	local str
+	if CLIENT or docache:GetBool() then
+		//Remove all default values from the cached table, to significantly reduce both the size and load times of cached files
+		str = {}
+		for effect, effecttab in pairs (result) do
+			//PrintTable(effecttab)
+			str[effect] = {}
+			for k, v in pairs (effecttab) do
+				if defs._main[k] == v then //check each value in the main table, and don't add it to the tab if it's default
+					continue
+				elseif defs[k] then //operator categories
+					local tab = {}
+					for k2, v2 in pairs (v) do //operators
+						local def = defs[k][v2.functionName]
+						if def then
+							local tab2 = {}
+							for k3, v3 in pairs (v2) do //check each value in the operator, and only add it to the tab if it's non-default
+								local def2 = def[k3]
+								if def2 == nil then def2 = defs[k]._generic[k3] end
+								if def2 != v3 then
+									//this returns false negatives when comparing some decimal values, so double-check them as strings
+									if isnumber(def2) then 
+										if tostring(v3) != tostring(def2) then
+											tab2[k3] = v3
+										end
+									else
+										tab2[k3] = v3
+									end
+								end
+							end
+							tab[k2] = tab2
+						else
+							tab[k2] = v2
+						end
+					end
+					str[effect][k] = tab
+				else
+					//this returns false negatives when comparing some decimal values, so double-check them as strings
+					if isnumber(v) then
+						if tostring(v) == tostring(defs._main[k]) then
+							continue
+						end
+					end
+					str[effect][k] = v
+				end
+			end
+		end
+		//Also store this in PEPlus_NoDefPCFs
+		store_nodefs(str)
+	end
+	//PrintTable(str)
+	if docache:GetBool() then
+		str = util.TableToJSON(str)
+		if str then
+			local dirs = string.Explode("/", "peplus_cache_v" .. cache_version ..  "/" .. filename)
+			local d = ""
+			for k,v in ipairs(dirs) do
+				d = (d..v.."/")
+				if !file.IsDir(d, "DATA") then file.CreateDir(d) end
+			end
+			if file.Write("peplus_cache_v" .. cache_version ..  "/" .. filename .. "/" .. checksum .. ".txt", str) then
+				if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " saved to cache") end
+			else
+				if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " couldn't be cached because file.Write failed?") end
+			end
+		else
+			if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " couldn't be cached because util.TableToJSON failed?") end
+		end
+	end
+	
+	//PrintTable(result)
+	RestoreDefaultValues(result) //newer PCF versions omit all default values from the PCF file itself, so make sure to repopulate those
+	return result
 
 end
 
