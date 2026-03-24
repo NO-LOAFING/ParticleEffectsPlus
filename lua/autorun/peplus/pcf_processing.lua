@@ -1871,7 +1871,6 @@ function PEPlus_ReadPCF(filename, path)
 		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " has unsupported file header ", table.concat(header, " "), ", ignoring") end
 		return
 	end
-	f:Skip(2) //skip the newline char and then the null terminating char after the header
 	//information about headers:
 	//the header is formatted as "dmx encoding (encoding type) (encoding version) format (format type) (format version)", for example, "dmx encoding binary 2 format pcf 1".
 	//encoding types:
@@ -1893,6 +1892,7 @@ function PEPlus_ReadPCF(filename, path)
 			if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " has unsupported pcf format ", table.concat(header, " "), ", ignoring") end
 			return
 		end
+		f:Skip(2) //skip the newline char and then the null terminating char after the header
 
 		local nStrings
 		if version <= 3 then
@@ -2222,17 +2222,20 @@ function PEPlus_ReadPCF(filename, path)
 		//TODO
 		//we definitely want to share some code from the above, like child handling, effect name uncapitalization, and caching, but we'll take care of that later because they'll all need some changes
 
-		//TODO: we might want to switch to reading the file in r instead of rb (binary) mode, it might screw up reading multi-character symbols like \\ from strings; let's see how well it works
+		//i don't think this matters actually
+		//switch from binary reading mode to string reading mode, then skip to after the header again
+		//f = file.Open(filename, "r", path or "GAME")
+		//ParseToken(f, "<!-- dmx encoding", " -->", 40 + 2 * 64)
 
 		local function ReadToken()
-			//get the next character that isn't a space, tab, or newline
+			//get the next character that isn't a space or unprintable character (https://www.ascii-code.com/)
 			while true do
 				local t = f:Read(1)
-				if !(t == " " or t == "	" or t == "\n") then return t end
+				if !t or !(string.byte(t) <= 32) then return t end
 			end
-
 		end
 
+		local elements_by_id = {}
 		local function Element(type)
 			if f:EndOfFile() then return end
 
@@ -2248,7 +2251,7 @@ function PEPlus_ReadPCF(filename, path)
 				if t == "}" then break end
 
 				//Ok, we must be reading an attribute
-				if ReadToken() != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting attribute name, didn't find it!") return end
+				if t != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting attribute name, didn't find it!") return end
 				local k = ReadUntilNull(f, "\"", 256)
 				if !k then MsgN("PEPlus_ReadPCF: ", filename, " Expecting attribute name, didn't find it!") return end
 
@@ -2270,22 +2273,22 @@ function PEPlus_ReadPCF(filename, path)
 					elseif at == "time" then //AT_TIME
 						return tonumber(v)
 					elseif at == "color" then //AT_COLOR
-						v = string.Explode(v, " ")
-						return Color(v[1], v[2], v[3])
+						v = string.Explode(" ", v)
+						return Color(v[1], v[2], v[3], v[4])
 					elseif at == "vector2" then //AT_VECTOR2
 						return string.Explode(" ", v)
 					elseif at == "vector3" then //AT_VECTOR3
-						v = string.Explode(v, " ")
+						v = string.Explode(" ", v)
 						return Vector(v[1], v[2], v[3])
 					elseif at == "vector4" then //AT_VECTOR4
 						return string.Explode(" ", v)
 					elseif at == "qangle" then //AT_QANGLE
-						v = string.Explode(v, " ")
+						v = string.Explode(" ", v)
 						return Vector(v[1], v[2], v[3]) //TODO: are we suuuure this should be a vector and not an angle?
 					elseif at == "quaternion" then //AT_QUATERNION
 						return string.Explode(" ", v)
 					elseif at == "matrix" then //AT_VMATRIX
-						v = string.Explode(v, " ")
+						v = string.Explode(" ", v)
 						return Matrix({	{v[1], v[2], v[3], v[4]}, {v[5], v[6], v[7], v[8]},
 								{v[9], v[10], v[11], v[12]}, {v[13], v[14], v[15], v[16]} })
 					else //this can also be a nonsense type like "elementid"; just read this as a string
@@ -2298,10 +2301,10 @@ function PEPlus_ReadPCF(filename, path)
 				if !string.EndsWith(at, "_array") then
 					//Read the attribute value
 					if ReadToken() != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting quoted attribute value for attribute \"%s\", didn't find one!") end
-					local v = ReadUntilNull(f, "\"", 256)
-					if !v then MsgN("PEPlus_ReadPCF: ", filename, " Expecting quoted attribute value for attribute \"%s\", didn't find one!") end
+					local v2 = ReadUntilNull(f, "\"", 256)
+					if !v2 then MsgN("PEPlus_ReadPCF: ", filename, " Expecting quoted attribute value for attribute \"%s\", didn't find one!") end
 
-					v = DoAttribute(v)
+					v = DoAttribute(v2)
 				else
 					//Arrays first must have a '[' specified
 					if ReadToken() != "[" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting '[', didn't find it!") return end
@@ -2335,7 +2338,7 @@ function PEPlus_ReadPCF(filename, path)
 							
 							//Use the element type to figure out if we're using a element reference or an inlined element
 							if type2 == "element" then //AT_ELEMENT
-								if t != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element reference, didn't find it!") return end
+								if ReadToken() != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element reference, didn't find it!") return end
 								local v2 = ReadUntilNull(f, "\"", 256)
 								if !v2 then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element reference, didn't find it!") return end
 							
@@ -2363,17 +2366,19 @@ function PEPlus_ReadPCF(filename, path)
 				end
 				tab[k] = v
 			end
+			if tab.id then elements_by_id[tab.id] = tab end
 			return tab
 		end
 
 		//loosely based on CDmSerializerKeyValues2::Unserialize / UnserializeElements (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1328)
 		local elements = {}
 		while true do
+			local t = ReadToken()
 			if f:EndOfFile() then break end
 
 			//first, get the element type string, which is surrounded by two "s
 			//loosely based on CDmSerializerKeyValues2::UnserializeElement (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp#L1295)
-			if ReadToken() != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element type name, didn't find it!") return end
+			if t != "\"" then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element type name, didn't find it!") return end
 			local type = ReadUntilNull(f, "\"", 256) //arbitrary max read length; i'm not sure how many chars valve code reads, since it uses a "PeekDelimitedStringLength" method not included in the SDK
 			if !type then MsgN("PEPlus_ReadPCF: ", filename, " Expecting element type name, didn't find it!") return end
 
@@ -2384,8 +2389,9 @@ function PEPlus_ReadPCF(filename, path)
 				return
 			end
 		end
+		PrintTable(elements)
 
-		//TODO: the rest; once we're sure the above is working, modify it into the format PE+ expects
+		//TODO: the rest; modify it into the format PE+ expects
 
 	else
 		
