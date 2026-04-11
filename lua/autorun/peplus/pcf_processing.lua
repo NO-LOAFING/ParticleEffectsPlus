@@ -2447,7 +2447,7 @@ function PEPlus_GetMapFx()
 end
 
 
-function PEPlus_GetUnhandledOperators()
+function PEPlus_GetUnhandledOperators(list_individual_fx)
 	local allcategories = {
 		renderers = {},
 		operators = {},
@@ -2467,7 +2467,10 @@ function PEPlus_GetUnhandledOperators()
 							if !defs[category][name] then
 								allcategories[category][name] = allcategories[category][name] or {count = 0, paths = {}}
 								allcategories[category][name].count = allcategories[category][name].count + 1
-								table.insert(allcategories[category][name].paths, filename .. " " .. particle)
+								allcategories[category][name].paths[filename] = allcategories[category][name].paths[filename] or {}
+								if list_individual_fx then
+									table.insert(allcategories[category][name].paths[filename], particle)
+								end
 							end
 						end
 					end
@@ -2477,6 +2480,61 @@ function PEPlus_GetUnhandledOperators()
 	end
 
 	PrintTable(allcategories)
+	return allcategories
+end
+
+
+function PEPlus_GetUnhandledOperatorValues(list_individual_fx)
+	local allcategories = {
+		renderers = {},
+		operators = {},
+		initializers = {},
+		emitters = {},
+		forces = {}, //forcegenerator
+		constraints = {},
+	}
+	local _main = {}
+	for _, filename in pairs (PEPlus_AllPCFPaths) do
+		local tab = PEPlus_ReadPCF(filename)
+		if tab then
+			for particle, ptab in pairs (tab) do
+				for category, _ in pairs (allcategories) do
+					if ptab[category] then
+						for _, op in pairs (ptab[category]) do
+							local name = op.functionName
+							if defs[category][name] then
+								for k, v in pairs (op) do
+									if k != "functionName" and defs[category][name][k] == nil and defs[category]._generic[k] == nil then
+										allcategories[category][name] = allcategories[category][name] or {}
+										allcategories[category][name][k] = allcategories[category][name][k] or {count = 0, paths = {}}
+										allcategories[category][name][k].count = allcategories[category][name][k].count + 1
+										allcategories[category][name][k].paths[filename] = allcategories[category][name][k].paths[filename] or {}
+										if list_individual_fx then
+											allcategories[category][name][k].paths[filename][particle] = v
+										end
+									end
+								end
+							end
+						end
+					end
+				end
+				for k, v in pairs (ptab) do
+					if k != "_nicename" and allcategories[k] == nil and defs._main[k] == nil then
+						_main[k] = _main[k] or {count = 0, paths = {}}
+						_main[k].count = _main[k].count + 1
+						_main[k].paths[filename] = _main[k].paths[filename] or {}
+						if list_individual_fx then
+							_main[k].paths[filename][particle] = v
+						end
+					end
+				end
+			end
+		end
+	end
+
+	allcategories._main = _main
+	PrintTable(allcategories)
+	return allcategories
 end
 
 
