@@ -696,6 +696,17 @@ if CLIENT then
 	net.Receive("PEPlus_ReloadPCF_SendToCl", function()
 		PEPlus_ReloadPCF(net.ReadString())
 	end)
+
+	concommand.Add("peplus_resetallparticles", function (ply, cmd, args)
+		//Only let server owners run this command to prevent (network) spam if there are many particle effects 
+		if !game.SinglePlayer() and IsValid(ply) and !ply:IsListenServerHost() and !ply:IsSuperAdmin() then
+			return false
+		end
+		
+		for _, ent in ipairs(ents.FindByClass("ent_peplus")) do
+			ent:DoInput("effect_restart")
+		end
+	end, nil, "Resets all Particle Effects+ particles")
 else
 	util.AddNetworkString("PEPlus_ReloadPCF_SendToCl")
 
