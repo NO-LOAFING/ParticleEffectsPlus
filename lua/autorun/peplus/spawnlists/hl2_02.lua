@@ -1,8 +1,8 @@
 "TableToKeyValues"
 {
-	"parentid"		"142"
+	"parentid"		"150"
 	"icon"		"icon16/page.png"
-	"id"		"144"
+	"id"		"152"
 	"contents"
 	{
 		"1"
@@ -140,37 +140,37 @@
 		{
 			"type"		"peplus"
 			"path"		"hl2"
+			"name"		"flechette_halo"
+			"pcf"		"particles/hunter_flechette.pcf"
+		}
+		"23"
+		{
+			"type"		"peplus"
+			"path"		"hl2"
 			"name"		"hunter_projectile_explosion_1"
 			"pcf"		"particles/hunter_projectile.pcf"
 		}
-		"23"
+		"24"
 		{
 			"type"		"peplus"
 			"path"		"hl2"
 			"name"		"hunter_slide_dust"
 			"pcf"		"particles/hunter_projectile.pcf"
 		}
-		"24"
+		"25"
 		{
 			"type"		"model"
 			"model"		"models/weapons/hunter_flechette.mdl"
 		}
-		"25"
+		"26"
 		{
 			"type"		"model"
 			"model"		"models/hunter.mdl"
 		}
-		"26"
+		"27"
 		{
 			"type"		"header"
 			"text"		"Hunter (unused)"
-		}
-		"27"
-		{
-			"type"		"peplus"
-			"path"		"hl2"
-			"name"		"flechette_halo"
-			"pcf"		"particles/hunter_flechette.pcf"
 		}
 		"28"
 		{
