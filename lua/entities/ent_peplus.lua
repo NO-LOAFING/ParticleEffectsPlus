@@ -1451,7 +1451,7 @@ local EditMenuInputs = {
 local EditMenuInputs_bits = 4 //max 15
 EditMenuInputs = table.Flip(EditMenuInputs)
 //How this works:
-//- table.Flip sets the table to {cpoint_mode = 0}, and so on
+//- table.Flip sets the table to {cpoint_position_ent_setwithtool = 0}, and so on
 //- net.Write retrieves the corresponding number of a string with EditMenuInputs[input], then sends that number
 //- net.Read gets the number, then retrieves its corresponding string with table.KeyFromValue(EditMenuInputs, input)
 //This lets us add as many networkable strings to this table as we want, without having to manually assign each one a number.
