@@ -499,7 +499,7 @@ if CLIENT then
 	hook.Add("PopulatePropMenu", "PEPlus_GameSpawnlists", function()
 
 		local function ReadSpawnlist(path, parent, gameid, listid)
-			local str = file.Read("lua/autorun/peplus/spawnlists/" .. path .. ".lua", "GAME")
+			local str = file.Read("data_static/peplus_spawnlists/" .. path .. ".txt", "GAME")
 			if str then
 				local tab = util.KeyValuesToTable(str)
 				if tab then
