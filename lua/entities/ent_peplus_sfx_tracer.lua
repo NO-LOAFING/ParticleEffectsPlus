@@ -582,6 +582,7 @@ if CLIENT then
 						//child.particle:StopEmission() //interacts poorly with fx that players would actually want to repeat quickly like explosions, so commented it out; unfortunately this means we get stupid effect pileups with fx that last forever like flamethrowers, but there's no legitimate reason to repeat those anyway so we'll just have to trust people here
 						table.insert(child.OldParticles, child.particle)
 					end
+					if i > 1 then child.cpoint_posang = nil end //make sure to clear cached pos+ang if we're starting multiple effect instances at once, otherwise utilfx will all show up in the same spot
 					child:StartParticle()
 					if addtotarget then
 						table.insert(hit.Particles, child.particle)

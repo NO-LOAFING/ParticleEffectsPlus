@@ -128,7 +128,7 @@ function ENT:Think()
 		if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PEPlus_ProcessedPCFs[pcf][name]) then return end
 		local ptab = PEPlus_ProcessedPCFs[pcf][name]
 		local time = CurTime()
-		self.cpoint_posang = {} //Reset this table every think
+		self.cpoint_posang = nil //Clear cached pos+ang every think
 
 		//TODO: see if we need to copy the demo fix that ragdoll resizer/animpropoverhaul/advbone have for their info tables
 
@@ -480,7 +480,10 @@ end
 //Convenience func for cpoint locations
 function ENT:GetCPointPos(k)
 
-	if CLIENT and self.cpoint_posang[k] then return self.cpoint_posang[k] end //server doesn't call this often enough to be worth caching and uncaching
+	//server doesn't call this often enough to be worth caching and uncaching
+	if CLIENT and self.cpoint_posang and self.cpoint_posang[k] then
+		return self.cpoint_posang[k] 
+	end
 
 	if !self.ParticleInfo[k] then return end
 	local ent = self.ParticleInfo[k].ent
@@ -500,7 +503,10 @@ function ENT:GetCPointPos(k)
 			pos = ent:GetPos()
 		end
 		local res = {ang = ang, pos = pos}
-		if CLIENT then self.cpoint_posang[k] = res end
+		if CLIENT then
+			self.cpoint_posang = self.cpoint_posang or {}
+			self.cpoint_posang[k] = res
+		end
 		return res
 	end
 

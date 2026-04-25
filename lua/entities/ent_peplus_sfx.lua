@@ -62,7 +62,7 @@ end
 
 function ENT:Think()
 
-	if CLIENT then self.cpoint_posang = nil end //Reset this value every think
+	if CLIENT then self.cpoint_posang = nil end //Clear cached pos+ang every think
 
 	//Do effect-specific think
 	if self.SpecialEffectThink then return self:SpecialEffectThink() end
