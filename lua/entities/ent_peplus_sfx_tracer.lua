@@ -601,7 +601,9 @@ if CLIENT then
 
 		if self.SpecialEffectChildren then
 			for child, _ in pairs (self.SpecialEffectChildren) do
-				child:BeginNewParticle()
+				if IsValid(child) then //this can temporarily return false during a clientside "full update"
+					child:BeginNewParticle()
+				end
 			end
 		end
 

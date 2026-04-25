@@ -195,7 +195,9 @@ end
 
 
 
-function ENT:OnRemove()
+function ENT:OnRemove(fullupdate)
+
+	if fullupdate then return end //don't do any of this if the ent is only being "full updated" on client, not actually removed (https://wiki.facepunch.com/gmod/ENTITY:OnRemove#clientsidebehaviourremarks)
 
 	if CLIENT then
 		//Remove us from the list of particles on our parent (used by properties)

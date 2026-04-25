@@ -1454,42 +1454,44 @@ function ENT:SpecialEffectRefresh()
 			self.SpecialEffectChildrenSorted = {[false] = {}, [true] = {}, bad = {}}
 
 			for child, _ in pairs (self.SpecialEffectChildren) do
-				child:BeginNewParticle()
+				if IsValid(child) then //this can temporarily return false during a clientside "full update"
+					child:BeginNewParticle()
 
-				//Sort our particle effects by when they should play; do this here because we have to be sure the client has received the particleinfo for the fx first
-				if child.ParticleInfo then
-					local attach_to_proj = nil
-					local attach_to_expire = nil
+					//Sort our particle effects by when they should play; do this here because we have to be sure the client has received the particleinfo for the fx first
 					local pcf = PEPlus_GetGamePCF(child:GetPCF(), child:GetPath())
-					local cpointtab = PEPlus_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
-					for k, v in pairs (child.ParticleInfo) do
-						if cpointtab[k].mode == PEPLUS_CPOINT_MODE_POSITION then
-							if v.sfx_role == 1 then
-								attach_to_proj = attach_to_proj or {}
-								attach_to_proj[k] = true
-							elseif v.sfx_role == 2 then
-								attach_to_expire = attach_to_expire or {}
-								attach_to_expire[k] = true
-							end	
+					if child.ParticleInfo and pcf != "" then //pcf can temporarily return a bad result during a clientside "full update", bail if that happens
+						local attach_to_proj = nil
+						local attach_to_expire = nil
+						local cpointtab = PEPlus_ProcessedPCFs[pcf][child:GetParticleName()].cpoints
+						for k, v in pairs (child.ParticleInfo) do
+							if cpointtab[k].mode == PEPLUS_CPOINT_MODE_POSITION then
+								if v.sfx_role == 1 then
+									attach_to_proj = attach_to_proj or {}
+									attach_to_proj[k] = true
+								elseif v.sfx_role == 2 then
+									attach_to_expire = attach_to_expire or {}
+									attach_to_expire[k] = true
+								end	
+							end
 						end
-					end
-					//If the particle doesn't attach to the projectile OR the expire effect (i.e. muzzleflashes),
-					//or the particle attaches to the projectile but not the expire effect,
-					//then play it when the projectile initializes.
-					if (!attach_to_proj and !attach_to_expire) or (attach_to_proj and !attach_to_expire) then
-						self.SpecialEffectChildrenSorted[false][child] = true
-					//If the particle doesn't attach to the projectile, but instead the expire effect,
-					//then play it when the projectile expires.
-					elseif (!attach_to_proj and attach_to_expire) then
-						self.SpecialEffectChildrenSorted[true][child] = true
-					//If a particle wants to attach to both the projectile AND the expire effect,
-					//then don't play it, because those two roles can't exist at the same time.
-					elseif (attach_to_proj and attach_to_expire) then
-						//Keep a list of all the offending cpoints so that we can add warnings to them in the controls
-						local tab = {}
-						table.Merge(tab, attach_to_proj)
-						table.Merge(tab, attach_to_expire)
-						self.SpecialEffectChildrenSorted.bad[child] = tab
+						//If the particle doesn't attach to the projectile OR the expire effect (i.e. muzzleflashes),
+						//or the particle attaches to the projectile but not the expire effect,
+						//then play it when the projectile initializes.
+						if (!attach_to_proj and !attach_to_expire) or (attach_to_proj and !attach_to_expire) then
+							self.SpecialEffectChildrenSorted[false][child] = true
+						//If the particle doesn't attach to the projectile, but instead the expire effect,
+						//then play it when the projectile expires.
+						elseif (!attach_to_proj and attach_to_expire) then
+							self.SpecialEffectChildrenSorted[true][child] = true
+						//If a particle wants to attach to both the projectile AND the expire effect,
+						//then don't play it, because those two roles can't exist at the same time.
+						elseif (attach_to_proj and attach_to_expire) then
+							//Keep a list of all the offending cpoints so that we can add warnings to them in the controls
+							local tab = {}
+							table.Merge(tab, attach_to_proj)
+							table.Merge(tab, attach_to_expire)
+							self.SpecialEffectChildrenSorted.bad[child] = tab
+						end
 					end
 				end
 			end

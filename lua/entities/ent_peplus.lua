@@ -819,7 +819,7 @@ if CLIENT then
 						for _, part in pairs (self.OldParticles) do
 							if IsValid(part) and part.SetControlPoint then
 								part:SetControlPoint(k, LocalToWorld(self.ParticleInfo[k].val, angle_zero, vector_origin, p.ang))
-							end	
+							end
 						end
 					end
 				end
@@ -844,7 +844,7 @@ if CLIENT then
 							if IsValid(part) and part.SetControlPoint then
 								part:SetControlPoint(k, ent:GetPos())
 								part:SetControlPointOrientation(k, ent:GetAngles())
-							end	
+							end
 						end
 					end
 				end
@@ -859,9 +859,9 @@ if CLIENT then
 
 	function ENT:StartParticle()
 
-		if !self.ParticleInfo then return end
 		local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
 		local name = self:GetParticleName()
+		if !self.ParticleInfo or pcf == "" then return end //pcf can temporarily return a bad result during a clientside "full update", bail if that happens
 		local ptab = PEPlus_ProcessedPCFs[pcf][name]
 
 		//If doing utilfx, then do that and stop here
@@ -1073,7 +1073,9 @@ end
 
 
 
-function ENT:OnRemove()
+function ENT:OnRemove(fullupdate)
+
+	if fullupdate then return end //don't do any of this if the ent is only being "full updated" on client, not actually removed (https://wiki.facepunch.com/gmod/ENTITY:OnRemove#clientsidebehaviourremarks)
 
 	if CLIENT then
 		self:RemoveParticle()
