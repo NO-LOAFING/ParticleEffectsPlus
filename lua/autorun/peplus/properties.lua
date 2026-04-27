@@ -12,9 +12,9 @@ if CLIENT then
 		if IsValid(ent_owner) then 
 			local local_player = LocalPlayer()
 			if ent_owner ~= local_player then
-				if not ent:CPPICanTool(ent_owner) then
+				--if not ent:CPPICanTool(ent_owner) then
 					return 
-				end
+				--end
 			end
 		end
 
