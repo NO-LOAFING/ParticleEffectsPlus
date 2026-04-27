@@ -5,9 +5,9 @@ if CLIENT then
 	pepluswindows = {}
 
 	function OpenPEPlusEditor(ent)
-		chat.AddText("ent.CPPICanTool = ", tostring(ent.CPPIGetOwner == nil))
+		chat.AddText("ent.CPPICanTool = ", tostring(ent.CPPICanTool == nil))
 		
-		local ent_owner = ent:GetOwner()
+		local ent_owner = ent:CPPIGetOwner()
 
 		if IsValid(ent_owner) then 
 			local local_player = LocalPlayer()
@@ -17,7 +17,7 @@ if CLIENT then
 				end
 			end
 		end
-		
+
 		if IsValid(ent.PEPlusWindow) then return end
 
 		local width = 367 //width of 367 nicely fits color picker
