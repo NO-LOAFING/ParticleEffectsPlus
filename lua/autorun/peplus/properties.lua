@@ -119,7 +119,7 @@ PEPlus_EditProperty_MenuOpen = function(self, option, ent)
 				end
 				local opt = submenu:AddOption(str)
 				opt.DoClick = function() 
-					local ent_owner = ent:GetOwner()
+					local ent_owner = ent:CPPIGetOwner()
 
 					if IsValid(ent_owner) then 
 						local local_player = LocalPlayer()
