@@ -5,7 +5,19 @@ if CLIENT then
 	pepluswindows = {}
 
 	function OpenPEPlusEditor(ent)
+		chat.AddText("ent.CPPICanTool = ", tostring(ent.CPPIGetOwner == nil))
+		
+		local ent_owner = ent:GetOwner()
 
+		if IsValid(ent_owner) then 
+			local local_player = LocalPlayer()
+			if ent_owner ~= local_player then
+				if not ent:CPPICanTool(ent_owner) then
+					return 
+				end
+			end
+		end
+		
 		if IsValid(ent.PEPlusWindow) then return end
 
 		local width = 367 //width of 367 nicely fits color picker
@@ -89,20 +101,7 @@ PEPlus_EditProperty_MenuOpen = function(self, option, ent)
 				end
 			end
 			option:SetText("Edit Particle Effect (" .. str .. ")")
-			option.DoClick = function() 
-				local ent_owner = ent:GetOwner()
-
-				if IsValid(ent_owner) then 
-					local local_player = LocalPlayer()
-					if ent_owner ~= local_player then
-						if not ent:CPPICanTool(ent_owner) then
-							return 
-						end
-					end
-				end
-
-				OpenPEPlusEditor(k) 
-			end
+			option.DoClick = function() OpenPEPlusEditor(k) end
 		end
 
 	else
@@ -118,21 +117,7 @@ PEPlus_EditProperty_MenuOpen = function(self, option, ent)
 					end
 				end
 				local opt = submenu:AddOption(str)
-				opt.DoClick = function() 
-					local ent_owner = ent:CPPIGetOwner()
-
-					chat.AddText("ent.CPPICanTool = ", tostring(ent.CPPIGetOwner == nil))
-					if IsValid(ent_owner) then 
-						local local_player = LocalPlayer()
-						if ent_owner ~= local_player then
-							if not ent:CPPICanTool(ent_owner) then
-								return 
-							end
-						end
-					end
-
-					OpenPEPlusEditor(k) 
-				end
+				opt.DoClick = function() OpenPEPlusEditor(k) end
 			end
 		end
 
