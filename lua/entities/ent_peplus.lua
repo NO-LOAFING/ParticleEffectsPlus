@@ -1415,7 +1415,7 @@ else
 		end
 
 		local parent = nil
-		grips, parent = PEPlus_SpawnParticleGripPoints(grips, pos)
+		grips, parent = PEPlus_SpawnParticleGripPoints(ply, grips, pos)
 
 		self:SetSpecialEffectParent(nil)
 		for k, v in pairs (grips) do
@@ -2291,13 +2291,16 @@ end
 
 if SERVER then
 
-	function PEPlus_SpawnParticleGripPoints(grips, localpos)
+	function PEPlus_SpawnParticleGripPoints(ply, grips, localpos)
 		
 		local parent = nil
 		for k, pos in pairs (grips) do
 			local g = ents.Create("ent_peplus_grip")
 			if IsValid(g) then
 				g:SetPos(pos + localpos)
+				if CPPI and IsValid(ply) then
+					g:CPPISetOwner(ply)
+				end
 				g:Spawn()
 				grips[k] = g
 				//tab[k].ent = g //no longer valid now that the grip spawning was moved out of SpawnParticle - i think the constraint should handle this anyway
@@ -2420,11 +2423,13 @@ if SERVER then
 		end
 
 		local parent = nil
-		grips, parent = PEPlus_SpawnParticleGripPoints(grips, pos)
+		grips, parent = PEPlus_SpawnParticleGripPoints(ply, grips, pos)
 
 		local p = ents.Create("ent_peplus")
 		if !IsValid(p) then return end
-		p:SetPlayer(ply)
+		if CPPI then
+			p:CPPISetOwner(ply)
+		end
 		p:SetParticleName(name)
 		p:SetPCF(pcf_original)
 		p:SetPath(path or "")

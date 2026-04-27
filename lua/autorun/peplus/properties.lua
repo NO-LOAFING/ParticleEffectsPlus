@@ -8,6 +8,16 @@ if CLIENT then
 
 		if IsValid(ent.PEPlusWindow) then return end
 
+		local ent_owner = ent:GetOwner()
+		if IsValid(ent_owner) then 
+			local local_player = LocalPlayer()
+			if ent_owner ~= local_player then
+				if not ent:CPPICanTool(ent_owner) then
+					return 
+				end
+			end
+		end
+
 		local width = 367 //width of 367 nicely fits color picker
 		local height = 400
 		if ent.PEPlus_SpecialEffect then
