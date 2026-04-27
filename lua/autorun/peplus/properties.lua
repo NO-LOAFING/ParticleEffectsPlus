@@ -121,6 +121,7 @@ PEPlus_EditProperty_MenuOpen = function(self, option, ent)
 				opt.DoClick = function() 
 					local ent_owner = ent:CPPIGetOwner()
 
+					chat.AddText("ent.CPPICanTool = ", tostring(ent.CPPIGetOwner == nil)
 					if IsValid(ent_owner) then 
 						local local_player = LocalPlayer()
 						if ent_owner ~= local_player then
