@@ -1,4 +1,5 @@
-local ENT = {}
+AddCSLuaFile() 
+
 ENT.Base 			= "base_gmodentity"
 ENT.PrintName			= "Particle Effects+ Entity"
 
