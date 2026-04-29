@@ -1,4 +1,4 @@
-AddCSLuaFile()
+AddCSLuaFile() 
 
 ENT.Base 			= "base_gmodentity"
 ENT.PrintName			= "Particle Effects+ Entity"
@@ -10,7 +10,7 @@ ENT.PEPlus_Ent			= true //lets us detect if an ent is an ent_peplus without havi
 
 if CLIENT then
 	language.Add("Undone_PEPlus", "Undone Particle Effect")
-    	language.Add("Cleanup_peplus", "Particle Effects")
+    language.Add("Cleanup_peplus", "Particle Effects")
    	language.Add("Cleaned_peplus", "Cleaned up all Particle Effects")
 	language.Add("SBoxLimit_peplus", "You've hit the Particle Effect limit!")
    	language.Add("max_peplus", "Max Particle Effects:")
@@ -1344,6 +1344,12 @@ else
 
 		local g = ents.Create("ent_peplus_grip")
 		if !IsValid(g) then return false end
+
+        if CPPI then
+            if isValid(ply) then
+                g:CPPISetOwner(ply)
+            end
+        end
 		g:Spawn()
 
 		local p = self:GetCPointPos(k)
@@ -1426,7 +1432,7 @@ else
 		end
 
 		local parent = nil
-		grips, parent = PEPlus_SpawnParticleGripPoints(grips, pos)
+		grips, parent = PEPlus_SpawnParticleGripPoints(ply, grips, pos)
 
 		self:SetSpecialEffectParent(nil)
 		for k, v in pairs (grips) do
@@ -2302,7 +2308,7 @@ end
 
 if SERVER then
 
-	function PEPlus_SpawnParticleGripPoints(grips, localpos)
+	function PEPlus_SpawnParticleGripPoints(ply, grips, localpos)
 		
 		local parent = nil
 		for k, pos in pairs (grips) do
@@ -2312,6 +2318,12 @@ if SERVER then
 				g:Spawn()
 				grips[k] = g
 				//tab[k].ent = g //no longer valid now that the grip spawning was moved out of SpawnParticle - i think the constraint should handle this anyway
+                if CPPI then 
+                    if IsValid(ply) then
+                        g:CPPISetOwner(ply)
+                    end
+                end
+
 				if !IsValid(parent) then parent = g end
 			end
 		end
@@ -2431,11 +2443,10 @@ if SERVER then
 		end
 
 		local parent = nil
-		grips, parent = PEPlus_SpawnParticleGripPoints(grips, pos)
+		grips, parent = PEPlus_SpawnParticleGripPoints(ply, grips, pos)
 
 		local p = ents.Create("ent_peplus")
 		if !IsValid(p) then return end
-		p:SetPlayer(ply)
 		p:SetParticleName(name)
 		p:SetPCF(pcf_original)
 		p:SetPath(path or "")
@@ -2455,6 +2466,7 @@ if SERVER then
 			end
 		end
 		p:SetLoopSafety(false)
+        p:SetPlayer(ply)
 		p:SetNumpad(0)
 		p:SetNumpadToggle(true)
 		p:SetNumpadStartOn(true)
@@ -2479,8 +2491,8 @@ if SERVER then
 				undo.Finish("Particle Effect (" .. tostring(name) .. " (" .. str .. "))")
 				ply:AddCleanup("peplus", p)
 			end
-		end
-
+        end
+		
 		return p
 
 	end
