@@ -197,7 +197,11 @@ end
 
 function ENT:OnRemove(fullupdate)
 
-	if fullupdate then return end //don't do any of this if the ent is only being "full updated" on client, not actually removed (https://wiki.facepunch.com/gmod/ENTITY:OnRemove#clientsidebehaviourremarks)
+	//Client "full updates" happen upon new player connection, lag spikes, running the 'cl_fullupdate' concommand, and demo recording (all but 
+	//the last are exclusive to multiplayer) - this recreates the entity, but doesn't run Initialize again. Unlike with ent_peplus, it seems 
+	//that the only issues on this entity are caused by running the rest of the OnRemove code here when we shouldn't, so no need to manually 
+	//run Initialize again.
+	if fullupdate then return end
 
 	if CLIENT then
 		//Remove us from the list of particles on our parent (used by properties)

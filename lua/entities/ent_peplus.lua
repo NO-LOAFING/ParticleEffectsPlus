@@ -130,8 +130,6 @@ function ENT:Think()
 		local time = CurTime()
 		self.cpoint_posang = nil //Clear cached pos+ang every think
 
-		//TODO: see if we need to copy the demo fix that ragdoll resizer/animpropoverhaul/advbone have for their info tables
-
 		//If we don't have an info table, or need to update it, then request it from the server
 		if !self.ParticleInfo_Received then
 			net.Start("PEPlus_InfoTable_GetFromSv", true)
@@ -1081,7 +1079,20 @@ end
 
 function ENT:OnRemove(fullupdate)
 
-	if fullupdate then return end //don't do any of this if the ent is only being "full updated" on client, not actually removed (https://wiki.facepunch.com/gmod/ENTITY:OnRemove#clientsidebehaviourremarks)
+	//Client "full updates" happen upon new player connection, lag spikes, running the 'cl_fullupdate' concommand, and demo recording (all but 
+	//the last are exclusive to multiplayer) - this recreates the entity, but doesn't run Initialize again. For this entity, the main issues are 
+	//caused by the rest of the OnRemove code running as well, which makes Think complain about a now-missing OldParticles table, and also makes 
+	//the PostDrawTranslucentRenderables hook stop drawing the effect's helpers. For demo support, we also need to request the server to send us 
+	//a new info table, so that the demo can record this one.
+	if fullupdate then
+		timer.Simple(0, function()
+			if IsValid(self) then 
+				self:Initialize()
+				self.ParticleInfo_Received = false
+			end
+		end)
+		return
+	end
 
 	if CLIENT then
 		self:RemoveParticle()
