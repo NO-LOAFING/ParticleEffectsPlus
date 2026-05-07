@@ -128,9 +128,7 @@ function ENT:Think()
 		if !istable(PEPlus_ProcessedPCFs[pcf]) or !istable(PEPlus_ProcessedPCFs[pcf][name]) then return end
 		local ptab = PEPlus_ProcessedPCFs[pcf][name]
 		local time = CurTime()
-		self.cpoint_posang = {} //Reset this table every think
-
-		//TODO: see if we need to copy the demo fix that ragdoll resizer/animpropoverhaul/advbone have for their info tables
+		self.cpoint_posang = nil //Clear cached pos+ang every think
 
 		//If we don't have an info table, or need to update it, then request it from the server
 		if !self.ParticleInfo_Received then
@@ -480,7 +478,10 @@ end
 //Convenience func for cpoint locations
 function ENT:GetCPointPos(k)
 
-	if CLIENT and self.cpoint_posang[k] then return self.cpoint_posang[k] end //server doesn't call this often enough to be worth caching and uncaching
+	//server doesn't call this often enough to be worth caching and uncaching
+	if CLIENT and self.cpoint_posang and self.cpoint_posang[k] then
+		return self.cpoint_posang[k] 
+	end
 
 	if !self.ParticleInfo[k] then return end
 	local ent = self.ParticleInfo[k].ent
@@ -500,7 +501,10 @@ function ENT:GetCPointPos(k)
 			pos = ent:GetPos()
 		end
 		local res = {ang = ang, pos = pos}
-		if CLIENT then self.cpoint_posang[k] = res end
+		if CLIENT then
+			self.cpoint_posang = self.cpoint_posang or {}
+			self.cpoint_posang[k] = res
+		end
 		return res
 	end
 
@@ -819,7 +823,7 @@ if CLIENT then
 						for _, part in pairs (self.OldParticles) do
 							if IsValid(part) and part.SetControlPoint then
 								part:SetControlPoint(k, LocalToWorld(self.ParticleInfo[k].val, angle_zero, vector_origin, p.ang))
-							end	
+							end
 						end
 					end
 				end
@@ -844,7 +848,7 @@ if CLIENT then
 							if IsValid(part) and part.SetControlPoint then
 								part:SetControlPoint(k, ent:GetPos())
 								part:SetControlPointOrientation(k, ent:GetAngles())
-							end	
+							end
 						end
 					end
 				end
@@ -859,9 +863,9 @@ if CLIENT then
 
 	function ENT:StartParticle()
 
-		if !self.ParticleInfo then return end
 		local pcf = PEPlus_GetGamePCF(self:GetPCF(), self:GetPath())
 		local name = self:GetParticleName()
+		if !self.ParticleInfo or pcf == "" then return end //pcf can temporarily return a bad result during a clientside "full update", bail if that happens
 		local ptab = PEPlus_ProcessedPCFs[pcf][name]
 
 		//If doing utilfx, then do that and stop here
@@ -1073,7 +1077,22 @@ end
 
 
 
-function ENT:OnRemove()
+function ENT:OnRemove(fullupdate)
+
+	//Client "full updates" happen upon new player connection, lag spikes, running the 'cl_fullupdate' concommand, and demo recording (all but 
+	//the last are exclusive to multiplayer) - this recreates the entity, but doesn't run Initialize again. For this entity, the main issues are 
+	//caused by the rest of the OnRemove code running as well, which makes Think complain about a now-missing OldParticles table, and also makes 
+	//the PostDrawTranslucentRenderables hook stop drawing the effect's helpers. For demo support, we also need to request the server to send us 
+	//a new info table, so that the demo can record this one.
+	if fullupdate then
+		timer.Simple(0, function()
+			if IsValid(self) then 
+				self:Initialize()
+				self.ParticleInfo_Received = false
+			end
+		end)
+		return
+	end
 
 	if CLIENT then
 		self:RemoveParticle()
@@ -1451,7 +1470,7 @@ local EditMenuInputs = {
 local EditMenuInputs_bits = 4 //max 15
 EditMenuInputs = table.Flip(EditMenuInputs)
 //How this works:
-//- table.Flip sets the table to {cpoint_mode = 0}, and so on
+//- table.Flip sets the table to {cpoint_position_ent_setwithtool = 0}, and so on
 //- net.Write retrieves the corresponding number of a string with EditMenuInputs[input], then sends that number
 //- net.Read gets the number, then retrieves its corresponding string with table.KeyFromValue(EditMenuInputs, input)
 //This lets us add as many networkable strings to this table as we want, without having to manually assign each one a number.
@@ -1541,6 +1560,17 @@ if CLIENT then
 		net.SendToServer()
 
 	end
+
+	concommand.Add("peplus_resetallparticles", function (ply, cmd, args)
+		//Only let server owners run this command to prevent (network) spam if there are many particle effects 
+		if !game.SinglePlayer() and IsValid(ply) and !ply:IsListenServerHost() and !ply:IsSuperAdmin() then
+			return false
+		end
+		
+		for _, ent in ipairs(ents.FindByClass("ent_peplus")) do
+			ent:DoInput("effect_restart")
+		end
+	end, nil, "Resets all Particle Effects+ particles")
 
 else
 

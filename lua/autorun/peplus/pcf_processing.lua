@@ -2731,7 +2731,7 @@ function PEPlus_GetMapFx()
 end
 
 
-function PEPlus_GetUnhandledOperators()
+function PEPlus_GetUnhandledOperators(list_individual_fx)
 	local allcategories = {
 		renderers = {},
 		operators = {},
@@ -2751,7 +2751,10 @@ function PEPlus_GetUnhandledOperators()
 							if !defs[category][name] then
 								allcategories[category][name] = allcategories[category][name] or {count = 0, paths = {}}
 								allcategories[category][name].count = allcategories[category][name].count + 1
-								table.insert(allcategories[category][name].paths, filename .. " " .. particle)
+								allcategories[category][name].paths[filename] = allcategories[category][name].paths[filename] or {}
+								if list_individual_fx then
+									table.insert(allcategories[category][name].paths[filename], particle)
+								end
 							end
 						end
 					end
@@ -2761,6 +2764,61 @@ function PEPlus_GetUnhandledOperators()
 	end
 
 	PrintTable(allcategories)
+	return allcategories
+end
+
+
+function PEPlus_GetUnhandledOperatorValues(list_individual_fx)
+	local allcategories = {
+		renderers = {},
+		operators = {},
+		initializers = {},
+		emitters = {},
+		forces = {}, //forcegenerator
+		constraints = {},
+	}
+	local _main = {}
+	for _, filename in pairs (PEPlus_AllPCFPaths) do
+		local tab = PEPlus_ReadPCF(filename)
+		if tab then
+			for particle, ptab in pairs (tab) do
+				for category, _ in pairs (allcategories) do
+					if ptab[category] then
+						for _, op in pairs (ptab[category]) do
+							local name = op.functionName
+							if defs[category][name] then
+								for k, v in pairs (op) do
+									if k != "functionName" and defs[category][name][k] == nil and defs[category]._generic[k] == nil then
+										allcategories[category][name] = allcategories[category][name] or {}
+										allcategories[category][name][k] = allcategories[category][name][k] or {count = 0, paths = {}}
+										allcategories[category][name][k].count = allcategories[category][name][k].count + 1
+										allcategories[category][name][k].paths[filename] = allcategories[category][name][k].paths[filename] or {}
+										if list_individual_fx then
+											allcategories[category][name][k].paths[filename][particle] = v
+										end
+									end
+								end
+							end
+						end
+					end
+				end
+				for k, v in pairs (ptab) do
+					if k != "_nicename" and allcategories[k] == nil and defs._main[k] == nil then
+						_main[k] = _main[k] or {count = 0, paths = {}}
+						_main[k].count = _main[k].count + 1
+						_main[k].paths[filename] = _main[k].paths[filename] or {}
+						if list_individual_fx then
+							_main[k].paths[filename][particle] = v
+						end
+					end
+				end
+			end
+		end
+	end
+
+	allcategories._main = _main
+	PrintTable(allcategories)
+	return allcategories
 end
 
 
@@ -3938,12 +3996,14 @@ local processfuncs = {
 	emitters = {
 		["emit noise"] = function(processed, op)
 			if op["emission minimum"] > 0 or op["emission maximum"] > 0 then
+				op._starttime = op.emission_start_time //store this in the unprocessed operator so the _generic func below can access it
 				processed.has_emitter = true
 			end
 			processed.pathseqcheck_disable = true
 		end,
 		["emit to maintain count"] = function(processed, op)
 			if op["count to maintain"] > 0 then
+				op._starttime = op["emission start time"] //store this in the unprocessed operator so the _generic func below can access it; yes, it lacks underscores in just this one operator
 				processed.has_emitter = true
 			end
 			local axis = op["maintain count scale control point field"]
@@ -3961,6 +4021,7 @@ local processfuncs = {
 		end,
 		emit_continuously = function(processed, op)
 			if op.emission_rate > 0 then
+				op._starttime = op.emission_start_time //store this in the unprocessed operator so the _generic func below can access it
 				processed.has_emitter = true
 				if processed.do_starttime_raw_fromrate then
 					op._starttime_raw_fromrate = 1 / op.emission_rate //store this in the unprocessed operator so the _generic func below can access it
@@ -3983,6 +4044,8 @@ local processfuncs = {
 		//"emit noise" and "emit_continuously" have "scale emission to used control points", which wiki claims is a cpoint id, but it's actually a float that's multiplied by the number of cpoints the effect has, we don't care about this (https://github.com/nillerusr/source-engine/blob/master/particles/builtin_particle_emitters.cpp#L449)
 		emit_instantaneously = function(processed, op)
 			if op.num_to_emit_minimum > 0 or op.num_to_emit > 0 then
+				op._starttime = op.emission_start_time //store this in the unprocessed operator so the _generic func below can access it
+				//TODO: do we want to handle op["emission_start_time max"], which is unique to this one? https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_emitters.cpp#L139
 				processed.has_emitter = true
 				processed.pathseqcheck_particles = op.num_to_emit //TODO: do we need to account for num_to_emit_minimum here?
 			end
@@ -3998,17 +4061,18 @@ local processfuncs = {
 					default = 1,
 				})
 			end
-			//TODO: do we want to handle op["emission_start_time max"], which is unique to this one? https://github.com/nillerusr/Kisak-Strike/blob/master/particles/builtin_particle_emitters.cpp#L139
 		end,
 		_generic = function(processed, op)
 			//store the time it takes for the emitter to start emitting particles; we use this to display info text if necessary
-			local starttime = math.max((op.emission_start_time or op["emission start time"]),  //"emit to maintain count" doesn't have underscores in "emission start time"
-			op["operator start fadein"]) //some fx use fadein instead (l4d2's barricade_groundfire)
-			+ (op._starttime_raw_fromrate or 0) //also add extra time from emission rate
-			if processed.starttime_raw != nil then
-				processed.starttime_raw = math.min(processed.starttime_raw, starttime)
-			else
-				processed.starttime_raw = starttime
+			if op._starttime then //don't do any of this for unhandled emitters that don't supply a start time
+				local starttime = math.max(op._starttime,
+				op["operator start fadein"]) //some fx use fadein instead (l4d2's barricade_groundfire)
+				+ (op._starttime_raw_fromrate or 0) //also add extra time from emission rate
+				if processed.starttime_raw != nil then
+					processed.starttime_raw = math.min(processed.starttime_raw, starttime)
+				else
+					processed.starttime_raw = starttime
+				end
 			end
 		end,
 	},

@@ -62,7 +62,7 @@ end
 
 function ENT:Think()
 
-	if CLIENT then self.cpoint_posang = nil end //Reset this value every think
+	if CLIENT then self.cpoint_posang = nil end //Clear cached pos+ang every think
 
 	//Do effect-specific think
 	if self.SpecialEffectThink then return self:SpecialEffectThink() end
@@ -195,7 +195,13 @@ end
 
 
 
-function ENT:OnRemove()
+function ENT:OnRemove(fullupdate)
+
+	//Client "full updates" happen upon new player connection, lag spikes, running the 'cl_fullupdate' concommand, and demo recording (all but 
+	//the last are exclusive to multiplayer) - this recreates the entity, but doesn't run Initialize again. Unlike with ent_peplus, it seems 
+	//that the only issues on this entity are caused by running the rest of the OnRemove code here when we shouldn't, so no need to manually 
+	//run Initialize again.
+	if fullupdate then return end
 
 	if CLIENT then
 		//Remove us from the list of particles on our parent (used by properties)

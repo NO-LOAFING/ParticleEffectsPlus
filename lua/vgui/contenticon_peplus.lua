@@ -342,6 +342,7 @@ end
 //secs - instead of each new panel having to do all this from scratch each time, the effects can be seamlessly transfered over to the new panels.
 hook.Add("Think", "PEPlus_ManageIconFx_Think", function()
 
+	if !g_SpawnMenu then return end
 	local autohide = !g_SpawnMenu:IsVisible()
 
 	for pcf, pcftab in pairs (PEPlus_IconFx) do
