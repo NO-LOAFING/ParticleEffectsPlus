@@ -79,60 +79,37 @@ local ParticleAttributeNames = { //names from https://github.com/SourceSDK2013Po
 	//[PEPLUS_PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL] = "PARTICLE_ATTRIBUTE_TRACE_HIT_NORMAL (internal)"
 }
 
-//from the only good glua file parser code i could find on github; we use this to get strings (https://github.com/RaphaelIT7/gmod-lua-gma-writer/blob/master/gma.lua#L202)
-local str_b0 = string.char(0)
-local function ReadUntilNull(f)
-	local steps = 64 //arbitrary
-	local pos = f:Tell()
-
-	local file_str = ""
-	local finished = false
-	while !finished do
-		local str = f:Read(steps)
-		if !str then return end //this shouldn't happen; when ReadPCF calls this function, it checks if it returned false and prints an error msg
-		local found = string.find(str, str_b0)
-		if found then
-			str = string.sub(str, 0, found - 1)
-			finished = true
-		end
-
-		file_str = file_str .. str
-	end
-
-	f:Seek(pos + string.len(file_str) + 1) -- + 1 for the Null byte we remove from the String.
-
-	return file_str
-end
-
+//enums from https://github.com/nillerusr/Kisak-Strike/blob/master/public/datamodel/dmattributetypes.h#L66-L106
+//names from https://github.com/nillerusr/Kisak-Strike/blob/master/public/datamodel/dmattributetypes.h#L320-L349
 local a = {}
-table.insert(a, "ATTRIBUTE_ELEMENT")
-table.insert(a, "ATTRIBUTE_INTEGER")
-table.insert(a, "ATTRIBUTE_FLOAT")
-table.insert(a, "ATTRIBUTE_BOOLEAN")
-table.insert(a, "ATTRIBUTE_STRING")
-table.insert(a, "ATTRIBUTE_BINARY")
-table.insert(a, "ATTRIBUTE_TIME")
-table.insert(a, "ATTRIBUTE_COLOR")
-table.insert(a, "ATTRIBUTE_VECTOR2")
-table.insert(a, "ATTRIBUTE_VECTOR3")
-table.insert(a, "ATTRIBUTE_VECTOR4")
-table.insert(a, "ATTRIBUTE_QANGLE")
-table.insert(a, "ATTRIBUTE_QUATERNION")
-table.insert(a, "ATTRIBUTE_MATRIX")
-table.insert(a, "ATTRIBUTE_ELEMENT_ARRAY")
-table.insert(a, "ATTRIBUTE_INTEGER_ARRAY")
-table.insert(a, "ATTRIBUTE_FLOAT_ARRAY")
-table.insert(a, "ATTRIBUTE_BOOLEAN_ARRAY")
-table.insert(a, "ATTRIBUTE_STRING_ARRAY")
-table.insert(a, "ATTRIBUTE_BINARY_ARRAY")
-table.insert(a, "ATTRIBUTE_TIME_ARRAY")
-table.insert(a, "ATTRIBUTE_COLOR_ARRAY")
-table.insert(a, "ATTRIBUTE_VECTOR2_ARRAY")
-table.insert(a, "ATTRIBUTE_VECTOR3_ARRAY")
-table.insert(a, "ATTRIBUTE_VECTOR4_ARRAY")
-table.insert(a, "ATTRIBUTE_QANGLE_ARRAY")
-table.insert(a, "ATTRIBUTE_QUATERNION_ARRAY")
-table.insert(a, "ATTRIBUTE_MATRIX_ARRAY")
+table.insert(a, "element")	//AT_ELEMENT
+table.insert(a, "int")		//AT_INT
+table.insert(a, "float")	//AT_FLOAT
+table.insert(a, "bool")		//AT_BOOL
+table.insert(a, "string")	//AT_STRING
+table.insert(a, "binary")	//AT_VOID
+table.insert(a, "time")		//AT_TIME
+table.insert(a, "color")	//AT_COLOR
+table.insert(a, "vector2") 	//AT_VECTOR2
+table.insert(a, "vector3") 	//AT_VECTOR3
+table.insert(a, "vector4") 	//AT_VECTOR4
+table.insert(a, "qangle") 	//AT_QANGLE
+table.insert(a, "quaternion") 	//AT_QUATERNION
+table.insert(a, "matrix") 	//AT_VMATRIX
+table.insert(a, "element_array")//AT_ELEMENT_ARRAY
+table.insert(a, "int_array")	//AT_INT_ARRAY
+table.insert(a, "float_array") 	//AT_FLOAT_ARRAY
+table.insert(a, "bool_array") 	//AT_BOOL_ARRAY
+table.insert(a, "string_array")	//AT_STRING_ARRAY
+table.insert(a, "binary_array")	//AT_VOID_ARRAY
+table.insert(a, "time_array")	//AT_TIME_ARRAY
+table.insert(a, "color_array")	//AT_COLOR_ARRAY
+table.insert(a, "vector2_array")//AT_VECTOR2_ARRAY
+table.insert(a, "vector3_array")//AT_VECTOR3_ARRAY
+table.insert(a, "vector4_array")//AT_VECTOR4_ARRAY
+table.insert(a, "qangle_array")	//AT_QANGLE_ARRAY
+table.insert(a, "quaternion_array")//AT_QUATERNION_ARRAY
+table.insert(a, "matrix_array")	//AT_VMATRIX_ARRAY
 
 //from https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/devtools/bin/fix_particle_operator_names.pl#L54
 local fixes = {
@@ -1744,6 +1721,55 @@ tab = nil
 end]]
 
 
+//adapted from the only good glua file parser code i could find on github; we use this to read strings from binary files (https://github.com/RaphaelIT7/gmod-lua-gma-writer/blob/master/gma.lua#L202)
+//returns all data from the point we start reading, up to (but not including) the terminating character
+local str_b0 = string.char(0)
+local function ReadUntilNull(f, endtoken, len)
+	//optional endtoken arg to look for some other arbitrary ending character; otherwise look for str_b0
+	if len == nil then
+		len = endtoken
+		endtoken = str_b0
+	end
+
+	local pos = f:Tell()
+	local str = f:Read(len)
+	if str then
+		local found, found_end = string.find(str, endtoken)
+		if found then
+			str = string.sub(str, 0, found - 1)
+			f:Seek(pos + found_end)
+			return str
+		end
+	end
+
+	//either f:Read returned nil or we couldn't find the terminating character within it, abort
+	f:Seek(pos)
+	return
+end
+
+//this is an emulation of valve's ParseToken func (https://github.com/nillerusr/Kisak-Strike/blob/master/public/tier1/utlbuffer.h#L301), used to read file headers and keyvalues2 data
+//grabs all text between, but not including a starting delimiter and an ending delimiter (the first ones it finds from the point we start reading)
+local function ParseToken(f, starttoken, endtoken, len)
+	local pos = f:Tell()
+	local str = f:Read(len)
+	if str then
+		local _, found1_end = string.find(str, starttoken, nil, true)
+		if found1_end then
+			local found2, found2_end = string.find(str, endtoken, nil, true)
+			if found2 then
+				str = string.sub(str, found1_end + 1, found2 - 1)
+				f:Seek(pos + found2_end)
+				return str
+			end
+		end
+	end
+
+	//either f:Read returned nil or we couldn't find the starting or ending delimiter within it, abort
+	f:Seek(pos)
+	return
+end
+
+
 //reference:
 //https://developer.valvesoftware.com/wiki/PCF, https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3, https://developer.valvesoftware.com/wiki/DMX/Binary
 
@@ -1808,7 +1834,7 @@ function PEPlus_ReadPCF(filename, path)
 			if cached_file then
 				store_nodefs(cached_file)
 				RestoreDefaultValues(cached_file) //saved cache files omit all default values to save space and read time, so repopulate those
-				if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " loading from cache") end
+				if GetConVarNumber("developer") >= 2 then MsgN("PEPlus_ReadPCF: ", filename, " loading from cache") end //this is really spammy, gate it behind developer 2
 				return cached_file
 			end
 		end
@@ -1834,281 +1860,307 @@ function PEPlus_ReadPCF(filename, path)
 	//we *could* run file.Delete("temp_peplus_readpcfcache.txt", "DATA") after we're done with it, but that doesn't seem necessary; 
 	//there's only ever one of these files at a time and they're not that big, it'd just be another write operation on the user's HD for no benefit
 
-	local version
-	local header = ReadUntilNull(f)
-	if !header then MsgN("PEPlus_ReadPCF: ", filename, " ReadUntilNull returned nil value when trying to read file header, report this bug!") return end
-	//MsgN(header)
-	if header == "<!-- dmx encoding binary 2 format pcf 1 -->\n" //used by all orange box pcfs
-	or header == "<!-- dmx encoding binary 2 format dmx 1 -->\n" //only used by css's fire_medium_01.pcf, appears to be identical to orangebox's binary 2 format pcf 1
-	or header == "<!-- dmx encoding binary 3 format pcf 1 -->\n" //only used by portal 2's clouds.pcf
-	or header == "<!-- dmx encoding binary 3 format pcf 2 -->\n" //used by a few portal 2 pcfs; this and the above don't seem to have any formatting differences from binary 2
-	then 
-		version = 2
-	elseif header == "<!-- dmx encoding binary 4 format pcf 2 -->\n" then //only used by by l4d2 pcfs?
-		version = 4
-	elseif header == "<!-- dmx encoding binary 5 format pcf 2 -->\n" then //used by most portal 2 pcfs and all(?) alien swarm pcfs
-		version = 5
-	else
-		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " has unsupported pcf format ", string.TrimRight(header, "\n"), ", ignoring") end
+	local header = ParseToken(f, "<!-- dmx encoding", " -->", 40 + 2 * 64) //max length from code (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/datamodel.cpp#L1054-L1055, defined in https://github.com/nillerusr/Kisak-Strike/blob/master/public/datamodel/dmxheader.h#L28)
+	if !header then
+		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " couldn't get file header, ignoring") end
 		return
 	end
-
-
-	local nStrings
-	if version <= 3 then
-		nStrings = f:ReadUShort() //this is a short in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
-	else
-		nStrings = f:ReadULong() //this is an int in both version 4 and 5 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions / https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3
+	header = string.Explode(" ", string.Trim(header))
+	//PrintTable(header)
+	if #header != 5 or header[3] != "format" then
+		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " has unsupported file header ", table.concat(header, " "), ", ignoring") end
+		return
 	end
-	local StringDict = {}
-	//MsgN(filename, " nStrings = ", nStrings)
-	for k = 0, nStrings - 1 do
-		local v = ReadUntilNull(f)
-		StringDict[k] = v
-	end
-	//PrintTable(StringDict)
+	//information about headers:
+	//the header is formatted as "dmx encoding (encoding type) (encoding version) format (format type) (format version)", for example, "dmx encoding binary 2 format pcf 1".
+	//encoding types:
+	//binary 1: not used by any pcfs i can find, but exists according to source code and docs; not supporting this until i can find a pcf using it (https://developer.valvesoftware.com/wiki/DMX/Binary)
+	//binary 2: used by all orangebox pcfs and pcfs saved with gmod's particle editor; adds string dictionary
+	//binary 3: used by a few unused portal 2 pcfs (zombie.pcf, paint_fizzler.pcf, chicken.pcf) and reportedly l4d1 pcfs; according to source code and documentation, this overrides one attribute data type from "OBJECTID" to "TIME", but as far as i can tell, neither are used in pcfs (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerbinary.cpp#L456-L462, https://developer.valvesoftware.com/wiki/DMX/Binary#Attribute_Values)
+	//binary 4: used by all(?) l4d2 pcfs; string dictionary count is now an int instead of a short, element names and non-array string attributes are now stored in the string dictionary instead of using a null-terminated in-line string
+	//binary 5: used by most portal 2 pcfs and all(?) alien swarm pcfs; string dictionary indices are now ints instead of shorts
+	//keyvalues2 1: used by bladesymphony pcfs and reportedly Source Particle Benchmark; these are NOT stored as binary data and are instead plain text, which means they require a different parser; according to code, no other versions of keyvalues2 exist, so for now we won't check version on these (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerkeyvalues2.cpp)
+	//format types (only included for reference, currently no reason to handle these differently):
+	//dmx 1: only used by css's fire_medium_01.pcf and reportedly DoD:S pcfs; no noticeable differences from pcf 1
+	//pcf 1: used by all orange box pcfs and portal2's clouds.pcf
+	//pcf 2: used by all other portal2 pcfs, l4d2 pcfs, and swarm pcfs; as far as i can tell, all the ones that exclude all default values use pcf 2, but so do bladesymphony pcfs that *don't* exclude default values, so who knows??
 
+	local result = {}
+	if header[1] == "binary" then
 
-	local nElements = f:ReadULong() //int
-	//MsgN(filename, " nElements = ", nElements)
+		local version = tonumber(header[2])
+		if version < 2 or version > 5 then
+			if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " has unsupported pcf format ", table.concat(header, " "), ", ignoring") end
+			return
+		end
+		f:Skip(2) //skip the newline char and then the null terminating char after the header
 
-	local function DmeHeader()
-		local tab = {}
+		local nStrings
 		if version <= 3 then
-			tab.Type = StringDict[f:ReadUShort()] //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
-			tab.Name = ReadUntilNull(f) //element names are in-line strings in DMX version 2 https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3
-		elseif version == 4 then
-			//in version 4, element names are also stored in the string dictionary, but string dictionary indices are still shorts https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary / https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
-			tab.Type = StringDict[f:ReadUShort()]
-			tab.Name = StringDict[f:ReadUShort()]
-		elseif version == 5 then
-			//in version 5, string dictionary indices are now ints https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary / https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
-			tab.Type = StringDict[f:ReadULong()]
-			tab.Name = StringDict[f:ReadULong()]
-		end
-		//tab.GUID = f:Read(16) //GUID[16]
-		f:Skip(16) //GUID[16], just skip this one
-		return tab
-	end
-	local ElementIndex = {}
-	for i = 1, nElements do
-		ElementIndex[i-1] = DmeHeader()
-	end
-	//PrintTable(ElementIndex)
-
-
-	local function DmAttribute()
-		local tab = {}
-		if version <= 4 then
-			tab.Name = StringDict[f:ReadUShort()] //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
-		elseif version == 5 then
-			tab.Name = StringDict[f:ReadULong()]
-		end
-		//MsgN("name = ", tab.Name)
-		if !tab.Name then return tab end //if we returned a bad attribute, bail out immediately; NOTE 3/22/25: this and all the file-reading checks with error messages below were to address a bug with PCFs packed into compressed map files, which would start returning garbage with a "Warning! LZMA compression header is invalid! Extraction failed! particles\_.pcf ( ERR: 1 )" error in console after an arbitrary point; this bug was fixed by the most recent gmod update, so this may no longer be necessary
-		//local at = math.BinToInt(f:Read(1)) or 0 //returns nil
-		//local at = math.BinToInt(ReadUntilNull(f)) or 0
-		local at = f:ReadByte()
-		//MsgN("at ", at, " = ", a[at])
-		at = a[at] or ""
-		tab.AttributeType = at
-		local function DoAttribute(is_array)
-			//MsgN("at = ", at)
-			if at == "ATTRIBUTE_ELEMENT" then
-				return f:ReadLong()
-			elseif at == "ATTRIBUTE_INTEGER" then
-				return f:ReadLong()
-			elseif at == "ATTRIBUTE_FLOAT" then
-				return f:ReadFloat()
-			elseif at == "ATTRIBUTE_BOOLEAN" then
-				return f:ReadBool()
-			elseif at == "ATTRIBUTE_STRING" then
-				if version <= 3 or is_array then //in higher versions, arrays of strings still use null-terminated strings instead of being stored in the string dictionary
-					return ReadUntilNull(f)
-				elseif version == 4 then
-					return StringDict[f:ReadUShort()] //this is a short in version 4 (https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary), which matches the headers
-				elseif version == 5 then
-					return StringDict[f:ReadULong()]
-				end
-			elseif at == "ATTRIBUTE_BINARY" then
-				local count = f:ReadULong()
-				return f:Read(count)
-			elseif at == "ATTRIBUTE_TIME" then
-				return f:ReadLong() / 10000 //according to https://developer.valvesoftware.com/wiki/PCF; TODO: should this be unsigned? can't find anything that uses this to check
-			elseif at == "ATTRIBUTE_COLOR" then
-				return Color(string.byte(f:Read(1)), string.byte(f:Read(1)), string.byte(f:Read(1)), string.byte(f:Read(1)))
-			elseif at == "ATTRIBUTE_VECTOR2" then
-				return {f:ReadFloat(), f:ReadFloat()}
-			elseif at == "ATTRIBUTE_VECTOR3" then
-				return Vector(f:ReadFloat(), f:ReadFloat(), f:ReadFloat())
-			elseif at == "ATTRIBUTE_VECTOR4" then
-				return {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}
-			elseif at == "ATTRIBUTE_QANGLE" then
-				return Vector(f:ReadFloat(), f:ReadFloat(), f:ReadFloat()) //"Same as ATTRIBUTE_VECTOR3" according to https://developer.valvesoftware.com/wiki/PCF
-			elseif at == "ATTRIBUTE_QUATERNION" then
-				return {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()} //"Same as ATTRIBUTE_VECTOR4" according to https://developer.valvesoftware.com/wiki/PCF
-			elseif at == "ATTRIBUTE_MATRIX" then
-				return Matrix({ {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}, {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()},
-						{f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}, {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()} })
-			elseif string.EndsWith(at, "_ARRAY") then
-				at = string.Replace(at, "_ARRAY", "")
-				local tab2 = {}
-				local arraysize = f:ReadULong() //int, is ReadULong the right way to interpret this?
-				if arraysize > 1000 then MsgN("PEPlus_ReadPCF: ", filename, " got crazy array size ", arraysize, " - we screwed up file reading somewhere, report this bug!") return end
-				for i = 1, arraysize do
-					table.insert(tab2, DoAttribute(true))
-				end
-				return tab2
-			end
-			return 0
-		end
-		tab.Value = DoAttribute()
-		return tab
-	end
-	local ElementBodies = {}
-	for i = 1, nElements do
-		//MsgN("Element ", i, " = ")
-		local body = {}
-		local attributecount = f:ReadULong() //int, is ReadULong the right way to interpret this?
-		//MsgN("attributecount = ", attributecount)
-		if !attributecount then MsgN("PEPlus_ReadPCF: ", filename, " got no attribute count - we screwed up file reading somewhere, report this bug!") return end
-		if attributecount > 100 then MsgN("PEPlus_ReadPCF: ", filename, " got crazy attribute count ", attributecount, " - we screwed up file reading somewhere, report this bug!") return end
-		for i = 1, attributecount do
-			local attrib = DmAttribute()
-			if !attrib.Name then MsgN("PEPlus_ReadPCF: ", filename, " attribute ", i, " has no name value - we screwed up file reading somewhere, report this bug!") return end
-			table.insert(body, attrib)
-		end
-		ElementBodies[i-1] = body
-		//MsgN("nElement ", i, " body:")
-		//PrintTable(body)
-	end
-	f:Close()
-
-
-	//smoosh the index and bodies into a single table
-	//PrintTable(ElementIndex)
-	//PrintTable(ElementBodies)
-	local ElementsUnsorted = {}
-	for i, index in pairs (ElementIndex) do
-		local tab = {}
-		//tab.k = index.Type .. " " .. index.Name
-		tab.k = index
-
-		local v = {}
-		if !ElementBodies[i] then
-			MsgN("PEPlus_ReadPCF: ", filename, " element index ", i, " has no body - we screwed up file reading somewhere, report this bug!")
-			break //note: in all the cases where this bug has happened (reading pcfs packed into compressed tf2 maps before 3/26/25 update) every element after the first one with this bug will also be empty, so stop here
+			nStrings = f:ReadUShort() //this is a short in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
 		else
-			for i, attrib in pairs (ElementBodies[i]) do
-				if attrib.AttributeType == "ATTRIBUTE_ELEMENT_ARRAY" then
-					v[attrib.Name] = {
-						ElementTable = attrib.Value
-					}
-				elseif attrib.AttributeType == "ATTRIBUTE_ELEMENT" then
-					v[attrib.Name] = {
-						ElementTable = {attrib.Value}
-					}
-				else
-					v[attrib.Name] = attrib.Value
-				end
-			end
-			tab.v = v
-			ElementsUnsorted[i] = tab
+			nStrings = f:ReadULong() //this is an int in both version 4 and 5 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions / https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3
 		end
-	end
-	//PrintTable(ElementsUnsorted)
+		local StringDict = {}
+		//MsgN(filename, " nStrings = ", nStrings)
+		for k = 0, nStrings - 1 do
+			local v = ReadUntilNull(f, 2048) //max length from code (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerbinary.cpp#L596-L605)
+			StringDict[k] = v
+		end
+		//PrintTable(StringDict)
 
 
-	//Now sort that table into a conventional keyvalue structure
-	--[[local nonParentedElements = {}
-	for i = 0, nElements - 1 do
-		nonParentedElements[i] = true
-	end
-	for i, kv in pairs (ElementsUnsorted) do
-		for k2, v2 in pairs(kv.v) do
-			if istable(v2) and v2.ElementTable then
-				for _, element in pairs (v2.ElementTable) do
-					nonParentedElements[element] = nil
+		local nElements = f:ReadULong() //int
+		//MsgN(filename, " nElements = ", nElements)
+
+		local function DmeHeader()
+			local tab = {}
+			if version <= 3 then
+				tab.Type = StringDict[f:ReadUShort()] //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+				tab.Name = ReadUntilNull(f, 2048) //element names are null-terminated strings in DMX version 2 https://developer.valvesoftware.com/w/index.php?title=DMX/Binary&oldid=176216#Version_3; max length from code (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerbinary.cpp#L672)
+			elseif version == 4 then
+				//in version 4, element names are also stored in the string dictionary, but string dictionary indices are still shorts https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary / https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+				tab.Type = StringDict[f:ReadUShort()]
+				tab.Name = StringDict[f:ReadUShort()]
+			elseif version == 5 then
+				//in version 5, string dictionary indices are now ints https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary / https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+				tab.Type = StringDict[f:ReadULong()]
+				tab.Name = StringDict[f:ReadULong()]
+			end
+			//tab.GUID = f:Read(16) //GUID[16]
+			f:Skip(16) //GUID[16], just skip this one
+			return tab
+		end
+		local ElementIndex = {}
+		for i = 1, nElements do
+			ElementIndex[i-1] = DmeHeader()
+		end
+		//PrintTable(ElementIndex)
+
+
+		local function DmAttribute()
+			local tab = {}
+			if version <= 4 then
+				tab.Name = StringDict[f:ReadUShort()] //string dictionary indices are shorts in DMX version 2 https://developer.valvesoftware.com/wiki/DMX/Binary#Previous_versions
+			elseif version == 5 then
+				tab.Name = StringDict[f:ReadULong()]
+			end
+			//MsgN("name = ", tab.Name)
+			if !tab.Name then return tab end //if we returned a bad attribute, bail out immediately; NOTE 3/22/25: this and all the file-reading checks with error messages below were to address a bug with PCFs packed into compressed map files, which would start returning garbage with a "Warning! LZMA compression header is invalid! Extraction failed! particles\_.pcf ( ERR: 1 )" error in console after an arbitrary point; this bug was fixed by the most recent gmod update, so this may no longer be necessary
+			local at = f:ReadByte()
+			//MsgN("at ", at, " = ", a[at])
+			at = a[at] or ""
+			tab.AttributeType = at
+			local function DoAttribute(is_array)
+				//MsgN("at = ", at)
+				if at == "element" then //AT_ELEMENT
+					return f:ReadLong()
+				elseif at == "int" then //AT_INT
+					return f:ReadLong()
+				elseif at == "float" then //AT_FLOAT
+					return f:ReadFloat()
+				elseif at == "bool" then //AT_BOOL
+					return f:ReadBool()
+				elseif at == "string" then //AT_STRING
+					if version <= 3 or is_array then //in higher versions, arrays of strings still use null-terminated strings instead of being stored in the string dictionary
+						return ReadUntilNull(f, 1024) //i think this is the correct max length value from code; it calls a separate unserialize func for the string that i can't find, but beforehand it defines a string object of this length to put the value into (https://github.com/nillerusr/Kisak-Strike/blob/master/datamodel/dmserializerbinary.cpp#L429)
+					elseif version == 4 then
+						return StringDict[f:ReadUShort()] //this is a short in version 4 (https://developer.valvesoftware.com/wiki/PCF#Element_Dictionary), which matches the headers
+					elseif version == 5 then
+						return StringDict[f:ReadULong()]
+					end
+				elseif at == "binary" then //AT_VOID
+					local count = f:ReadULong()
+					return f:Read(count)
+				elseif at == "time" then //AT_TIME
+					return f:ReadLong() / 10000 //according to https://developer.valvesoftware.com/wiki/PCF; TODO: should this be unsigned? can't find anything that uses this to check
+				elseif at == "color" then //AT_COLOR
+					return Color(string.byte(f:Read(1)), string.byte(f:Read(1)), string.byte(f:Read(1)), string.byte(f:Read(1)))
+				elseif at == "vector2" then //AT_VECTOR2
+					return {f:ReadFloat(), f:ReadFloat()}
+				elseif at == "vector3" then //AT_VECTOR3
+					return Vector(f:ReadFloat(), f:ReadFloat(), f:ReadFloat())
+				elseif at == "vector4" then //AT_VECTOR4
+					return {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}
+				elseif at == "qangle" then //AT_QANGLE
+					return Vector(f:ReadFloat(), f:ReadFloat(), f:ReadFloat()) //"Same as ATTRIBUTE_VECTOR3" according to https://developer.valvesoftware.com/wiki/PCF
+				elseif at == "quaternion" then //AT_QUATERNION
+					return {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()} //"Same as ATTRIBUTE_VECTOR4" according to https://developer.valvesoftware.com/wiki/PCF
+				elseif at == "matrix" then //AT_VMATRIX
+					return Matrix({ {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}, {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()},
+							{f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()}, {f:ReadFloat(), f:ReadFloat(), f:ReadFloat(), f:ReadFloat()} })
+				elseif string.EndsWith(at, "_array") then
+					at = string.Replace(at, "_array", "")
+					local tab2 = {}
+					local arraysize = f:ReadULong() //int, is ReadULong the right way to interpret this?
+					if arraysize > 1000 then MsgN("PEPlus_ReadPCF: ", filename, " got crazy array size ", arraysize, " - we screwed up file reading somewhere, report this bug!") return end
+					for i = 1, arraysize do
+						table.insert(tab2, DoAttribute(true))
+					end
+					return tab2
+				end
+				return 0
+			end
+			tab.Value = DoAttribute()
+			return tab
+		end
+		local ElementBodies = {}
+		for i = 1, nElements do
+			//MsgN("Element ", i, " = ")
+			local body = {}
+			local attributecount = f:ReadULong() //int, is ReadULong the right way to interpret this?
+			//MsgN("attributecount = ", attributecount)
+			if !attributecount then MsgN("PEPlus_ReadPCF: ", filename, " got no attribute count - we screwed up file reading somewhere, report this bug!") return end
+			if attributecount > 100 then MsgN("PEPlus_ReadPCF: ", filename, " got crazy attribute count ", attributecount, " - we screwed up file reading somewhere, report this bug!") return end
+			for i = 1, attributecount do
+				local attrib = DmAttribute()
+				if !attrib.Name then MsgN("PEPlus_ReadPCF: ", filename, " attribute ", i, " has no name value - we screwed up file reading somewhere, report this bug!") return end
+				table.insert(body, attrib)
+			end
+			ElementBodies[i-1] = body
+			//MsgN("nElement ", i, " body:")
+			//PrintTable(body)
+		end
+		f:Close()
+
+
+		//smoosh the index and bodies into a single table
+		//PrintTable(ElementIndex)
+		//PrintTable(ElementBodies)
+		local ElementsUnsorted = {}
+		for i, index in pairs (ElementIndex) do
+			local tab = {}
+			//tab.k = index.Type .. " " .. index.Name
+			tab.k = index
+
+			local v = {}
+			if !ElementBodies[i] then
+				MsgN("PEPlus_ReadPCF: ", filename, " element index ", i, " has no body - we screwed up file reading somewhere, report this bug!")
+				break //note: in all the cases where this bug has happened (reading pcfs packed into compressed tf2 maps before 3/26/25 update) every element after the first one with this bug will also be empty, so stop here
+			else
+				for i, attrib in pairs (ElementBodies[i]) do
+					if attrib.AttributeType == "element_array" then //AT_ELEMENT_ARRAY
+						v[attrib.Name] = {
+							ElementTable = attrib.Value
+						}
+					elseif attrib.AttributeType == "element" then //AT_ELEMENT
+						v[attrib.Name] = {
+							ElementTable = {attrib.Value}
+						}
+					else
+						v[attrib.Name] = attrib.Value
+					end
+				end
+				tab.v = v
+				ElementsUnsorted[i] = tab
+			end
+		end
+		//PrintTable(ElementsUnsorted)
+
+
+		//Now sort that table into a conventional keyvalue structure
+		--[[local nonParentedElements = {}
+		for i = 0, nElements - 1 do
+			nonParentedElements[i] = true
+		end
+		for i, kv in pairs (ElementsUnsorted) do
+			for k2, v2 in pairs(kv.v) do
+				if istable(v2) and v2.ElementTable then
+					for _, element in pairs (v2.ElementTable) do
+						nonParentedElements[element] = nil
+					end
 				end
 			end
 		end
-	end
-	PrintTable(nonParentedElements)]]
-	//Looks like in every pcf, 0 is the only unparented element, so start there to save time instead of iterating over the whole table again
-	local Elements = {}
-	if !ElementsUnsorted[0].v.particleSystemDefinitions or !ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable then 
-		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " element 0 doesn't contain a particleSystemDefinitions table, ignoring") end
+		PrintTable(nonParentedElements)]]
+		//Looks like in every pcf, 0 is the only unparented element, so start there to save time instead of iterating over the whole table again
+		result = {}
+		if !ElementsUnsorted[0].v.particleSystemDefinitions or !ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable then 
+			if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " element 0 doesn't contain a particleSystemDefinitions table, ignoring") end
+			return
+		end
+		for _, i in pairs (ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable) do
+			if !ElementsUnsorted[i] then
+				if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " tried to get DmeParticleSystemDefinition from nil element ", i) end
+			elseif ElementsUnsorted[i].k.Type != "DmeParticleSystemDefinition" then
+				if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " tried to get DmeParticleSystemDefinition element ", ElementsUnsorted[i].k.Name, ", but it was a ", ElementsUnsorted[i].k.Type, " element") end
+			else
+				for k, v in pairs (ElementsUnsorted[i].v) do
+					if istable(v) and v.ElementTable then
+						local tab = {}
+						for et_k, et_i in pairs (v.ElementTable) do
+							if !ElementsUnsorted[et_i] then
+								if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " attribute ", k, " tried to get nil element ", et_i) end
+							else
+								if ElementsUnsorted[et_i].k.Type == "DmeParticleChild" then
+									if !ElementsUnsorted[et_i].v.child then
+										if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " DmeParticleChild has no child value") end
+									else
+										//store particle children as effect name strings
+										local childName = nil
+										for et2_k, et2_i in pairs (ElementsUnsorted[et_i].v.child.ElementTable) do
+											if !ElementsUnsorted[et2_i] then
+												if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " DmeParticleChild tried to get invalid element id ", et2_i) end
+											else
+												//table.insert(tab, ElementsUnsorted[et2_i].k.Name)
+												childName = string.lower(ElementsUnsorted[et2_i].k.Name) //for this addon's purposes, we make effect names all lowercase, see below
+											end
+										end
+										ElementsUnsorted[et_i].v.child = childName
+									end
+								end
+								//table.insert(tab, ElementsUnsorted[et_i])
+								//discard key for DmeParticleOperators; the name is redundant and is also stored in the functionName value, and also there can be multiple with the same name
+								table.insert(tab, ElementsUnsorted[et_i].v)
+								//this doesn't handle recursive element tables but i don't think any particle operators have those
+							end
+						end
+						ElementsUnsorted[i].v[k] = tab
+						//v = tab
+					end
+				end
+				result[ElementsUnsorted[i].k.Name] = ElementsUnsorted[i].v
+			end
+		end
+
+		//Particle effect names are caps-agnostic internally, so for this addon's purposes, we'll make them all lowercase to avoid issues further 
+		//down the line (effects with the same name but capitalized differently will conflict with each other, so make sure we detect those properly)
+		local result2 = {}
+		for k, v in pairs (result) do
+			for k2, v2 in pairs (v) do
+				//This is also a good place to fix up operator names - make all of these lowercase too, and check for any alternate names
+				if defs[k2] then
+					for k3, v3 in pairs (v2) do
+						local name = v3.functionName or ""
+						name = string.lower(name)
+						if fixes[name] then name = fixes[name] end
+						v[k2][k3].functionName = name
+					end
+				end
+			end
+			v._nicename = k //store the capitalized name so we can use it for display purposes
+			result2[string.lower(k)] = v
+		end
+		result = result2
+
+	//elseif header[1] == "keyvalues2" then
+		//omitted; keyvalues2 parser is available on a separate branch (https://github.com/NO-LOAFING/ParticleEffectsPlus/tree/keyvalues2), but is
+		//currently useless and can't be tested yet because gmod itself doesn't read these files (https://github.com/Facepunch/garrysmod-issues/issues/6782)
+	else
+		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " has unsupported pcf format ", table.concat(header, " "), ", ignoring") end
 		return
 	end
-	for _, i in pairs (ElementsUnsorted[0].v.particleSystemDefinitions.ElementTable) do
-		if !ElementsUnsorted[i] then
-			if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " tried to get DmeParticleSystemDefinition from nil element ", i) end
-		elseif ElementsUnsorted[i].k.Type != "DmeParticleSystemDefinition" then
-			if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " tried to get DmeParticleSystemDefinition element ", ElementsUnsorted[i].k.Name, ", but it was a ", ElementsUnsorted[i].k.Type, " element") end
-		else
-			for k, v in pairs (ElementsUnsorted[i].v) do
-				if istable(v) and v.ElementTable then
-					local tab = {}
-					for et_k, et_i in pairs (v.ElementTable) do
-						if !ElementsUnsorted[et_i] then
-							if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " attribute ", k, " tried to get nil element ", et_i) end
-						else
-							if ElementsUnsorted[et_i].k.Type == "DmeParticleChild" then
-								if !ElementsUnsorted[et_i].v.child then
-									if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " DmeParticleChild has no child value") end
-								else
-									//store particle children as strings (names of the corresponding fx) to keep the table simple and avoid recursive nonsense
-									local childName = nil
-									for et2_k, et2_i in pairs (ElementsUnsorted[et_i].v.child.ElementTable) do
-										if !ElementsUnsorted[et2_i] then
-											if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " DmeParticleChild tried to get nil element ", et2_i) end
-										else
-											//table.insert(tab, ElementsUnsorted[et2_i].k.Name)
-											childName = string.lower(ElementsUnsorted[et2_i].k.Name) //for this addon's purposes, we make effect names all lowercase, see below
-										end
-									end
-									ElementsUnsorted[et_i].v.child = childName
-								end
-							end
-							//table.insert(tab, ElementsUnsorted[et_i])
-							//discard key for DmeParticleOperators; the name is redundant and is also stored in the functionName value, and also there can be multiple with the same name
-							table.insert(tab, ElementsUnsorted[et_i].v)
-							//this doesn't handle recursive element tables but i don't think any particle operators have those
-						end
-					end
-					ElementsUnsorted[i].v[k] = tab
-					//v = tab
-				end
-			end
-			Elements[ElementsUnsorted[i].k.Name] = ElementsUnsorted[i].v
-		end
-	end
 
-	//Particle effect names are caps-agnostic internally, so for this addon's purposes, we'll make them all lowercase to avoid issues further 
-	//down the line (effects with the same name but capitalized differently will conflict with each other, so make sure we detect those properly)
-	local Elements2 = {}
-	for k, v in pairs (Elements) do
-		for k2, v2 in pairs (v) do
-			//This is also a good place to fix up operator names - make all of these lowercase too, and check for any alternate names
-			if defs[k2] then
-				for k3, v3 in pairs (v2) do
-					local name = v3.functionName or ""
-					name = string.lower(name)
-					if fixes[name] then name = fixes[name] end
-					v[k2][k3].functionName = name
-				end
-			end
-		end
-		v._nicename = k //store the capitalized name so we can use it for display purposes
-		Elements2[string.lower(k)] = v
+	if !result then 
+		if dodebug then MsgN("PEPlus_ReadPCF: ", filename, " couldn't get result for some unhandled reason, ignoring") end
+		return
 	end
-	Elements = Elements2
 
 	local str
 	if CLIENT or docache:GetBool() then
 		//Remove all default values from the cached table, to significantly reduce both the size and load times of cached files
 		str = {}
-		for effect, effecttab in pairs (Elements) do
+		for effect, effecttab in pairs (result) do
 			//PrintTable(effecttab)
 			str[effect] = {}
 			for k, v in pairs (effecttab) do
@@ -2174,9 +2226,9 @@ function PEPlus_ReadPCF(filename, path)
 		end
 	end
 	
-	//PrintTable(Elements)
-	RestoreDefaultValues(Elements) //newer PCF versions omit all default values from the PCF file itself, so make sure to repopulate those
-	return Elements
+	//PrintTable(result)
+	RestoreDefaultValues(result) //newer PCF versions omit all default values from the PCF file itself, so make sure to repopulate those
+	return result
 
 end
 
