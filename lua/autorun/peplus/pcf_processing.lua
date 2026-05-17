@@ -2874,7 +2874,6 @@ end
 
 local processfuncs = {
 	renderers = {
-		["render models"] = function(processed, op) processed.has_renderer = true end, //add this value manually for each renderer operator, rather than doing it in _generic, so that we can catch fx that don't have a valid one, like those ep2 blob fx
 		render_rope = function(processed, op)
 			//this definitely isn't how this is intended to be used lol; GOTTA SUPPORT IT ANYWAY
 			if (op["scale CP start"] > -1) and (op["scale CP end"] > -1) then
@@ -2906,14 +2905,12 @@ local processfuncs = {
 					cpoint_from_op_value(processed, op, "scale CP start", "position_combine") //this is iffy; we assume the start cpoint might be attached to something while the end point isn't
 				end
 			end
-			processed.has_renderer = true
 		end,
-		render_sprite_trail = function(processed, op) processed.has_renderer = true end,
-		render_animated_sprites = function(processed, op)
-			cpoint_from_op_value(processed, op, "orientation control point", "position_combine")
-			processed.has_renderer = true //global value on the effect, not cpoint-specfic
-		end, //TODO: limit this to "orientation_type" cases where the orientation is actually used for something? this is sort of dependent on the VMT to work actually
-		_generic = function(processed, op) cpoint_from_op_value(processed, op, "Visibility Proxy Input Control Point Number", "position_combine") end, //pet doesn't add cpoint control for this; all renderers except render_rope have this; uses this position for visiblilty testing, which can then scale particle alpha/size based on how visible the area around the point is (https://developer.valvesoftware.com/wiki/Generic_Render_Operator_Visibility_Options)
+		render_animated_sprites = function(processed, op) cpoint_from_op_value(processed, op, "orientation control point", "position_combine") end, //TODO: limit this to "orientation_type" cases where the orientation is actually used for something? this is sort of dependent on the VMT to work actually
+		_generic = function(processed, op)
+			cpoint_from_op_value(processed, op, "Visibility Proxy Input Control Point Number", "position_combine") //pet doesn't add cpoint control for this; all renderers except render_rope have this; uses this position for visiblilty testing, which can then scale particle alpha/size based on how visible the area around the point is (https://developer.valvesoftware.com/wiki/Generic_Render_Operator_Visibility_Options)
+			processed.has_renderer = true //_generic won't run for unhandled operators like render_blobs, so the absence of this value can be used to catch those
+		end,
 	},
 	operators = {
 		["alpha fade and decay"] = function(processed, op)
@@ -3951,12 +3948,19 @@ function PEPlus_ProcessPCF(filename)
 			for k, v in pairs (processfuncs) do
 				if ptab[k] then
 					for _, op in pairs (ptab[k]) do
-						local sf = op["operator start fadein"]
-						local ef = op["operator end fadein"]
-						if !sf or !ef or (!(sf >= 99) and !(ef >= 99)) then //some fx use a superlong fadein to effectively comment out operators, ridiculous (particles/advisor_fx.pcf Advisor_Psychic_Attach_01b operator Remap Distance to Control Point to Scalar)
-							op._categoryName = k
-							if v[op.functionName] then v[op.functionName](processed, op) end
-							if v._generic then v._generic(processed, op) end
+						if defs[k][op.functionName] then
+							local sf = op["operator start fadein"]
+							local ef = op["operator end fadein"]
+							if !sf or !ef or (!(sf >= 99) and !(ef >= 99)) then //some fx use a superlong fadein to effectively comment out operators, ridiculous (particles/advisor_fx.pcf Advisor_Psychic_Attach_01b operator Remap Distance to Control Point to Scalar)
+								op._categoryName = k
+								if v[op.functionName] then v[op.functionName](processed, op) end
+								if v._generic then v._generic(processed, op) end
+							end
+						elseif dodebug then
+							//if an operator is unhandled, then don't try to process it, and instead add error text about it in developer mode
+							processed.unhandled_ops = processed.unhandled_ops or {}
+							processed.unhandled_ops[k] = processed.unhandled_ops[k] or {}
+							processed.unhandled_ops[k][op.functionName] = true
 						end
 					end
 				end

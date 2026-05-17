@@ -1,10 +1,10 @@
 //TODO: should these be somewhere else? they're all assigned in pcf_processing.lua, but that file is super bloated, and this is the panel that actually displays them.
 language.Add("PEPlus_Cull_ZeroAlpha",			"This effect has an alpha of 0, preventing it from rendering. If this effect was flagged\nin error (it's actually visible), then report this bug!")
 language.Add("PEPlus_Cull_ZeroAlpha_Short",		"Effect doesn't render")
-language.Add("PEPlus_Cull_NoRendererOrEmitter",	"This effect is missing a valid renderer, emitter, or material, and has no control points\ninherited from children, which means it's probably empty, blank, or invisible. If this\neffect was flagged in error (it's actually visible), then report this bug!")
+language.Add("PEPlus_Cull_NoRendererOrEmitter",		"This effect is missing a valid renderer, emitter, or material, and has no control points\ninherited from children, which means it's probably empty, blank, or invisible. If this\neffect was flagged in error (it's actually visible), then report this bug!")
 language.Add("PEPlus_Cull_NoRendererOrEmitter_Short",	"Effect doesn't render")
 language.Add("PEPlus_Cull_NoParticlePos",		"This effect doesn't have any operators setting the particles' spawn position (i.e. 'Position\nWithin Box Random'), or their position is being overwritten by another operator (i.e.\n'Set Control Point Positions') which means it will always spawn particles in the same\nimmovable location on the map. This isn't useful to players 99% of the time, and would\njust clutter up spawnlists and searches with unusable effects. If this effect was flagged\nin error (it's not actually stuck in one place), then report this bug!")
-language.Add("PEPlus_Cull_NoParticlePos_Short",	"Effect is immovable")
+language.Add("PEPlus_Cull_NoParticlePos_Short",		"Effect is immovable")
 language.Add("PEPlus_Cull_PreventNameBasedLookup",	"This effect has the value preventNameBasedLookup set to true, which prevents the game\nfrom spawning it directly, though other effects can still use it as a child.")
 language.Add("PEPlus_Cull_PreventNameBasedLookup_Short","Effect is non-spawnable")
 language.Add("PEPlus_Cull_ScreenSpace_NotViewModel",	"This effect has the value \"screen space effect\" set to true, but isn't set\nas a view model effect, which prevents it from rendering properly.")
@@ -22,6 +22,7 @@ local icon_color = Material("icon16/color_wheel.png")
 local icon_test = Material("icon16/color_wheel.png")
 local icon_utilfx = Material("icon16/cog.png")
 local icon_info = Material("icon16/information.png")
+local icon_warning = Material("icon16/error.png")
 
 if system.IsLinux() then
 	surface.CreateFont("PEPlus_DermaDefaultSmall", {
@@ -567,6 +568,18 @@ hook.Add("Think", "PEPlus_ManageIconFx_Think", function()
 							end
 							table.insert(self.icons, {icon = icon_multiplydefined, icon2 = icon_multiplydefined_2})
 							self.MultiplyDefined = true
+						end
+					end
+
+					//developer warning text for unhandled operators
+					if PEPlus_ProcessedPCFs[pcf][name].unhandled_ops then
+						table.insert(self.icons, {icon = icon_warning})
+						tooltip = tooltip .. "\n\n\nWarning: This effect has particle operators that are not implemented in Garry's Mod.\nThese may cause it to not work properly outside of the game it was made for."
+						for k, v in pairs (PEPlus_ProcessedPCFs[pcf][name].unhandled_ops) do
+							tooltip = tooltip .. "\n" .. k .. ":"
+							for k2, _ in pairs (v) do
+								tooltip = tooltip .. "\n- " .. k2
+							end
 						end
 					end
 			
