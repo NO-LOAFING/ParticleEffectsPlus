@@ -2499,6 +2499,30 @@ function PEPlus_GetMapFx()
 end
 
 
+//Convenience func to get a pcf and path from just an effect name; in the case of a conflict, it gets the first one it can find
+function PEPlus_FindPCFFromEffect(name, get_if_culled)
+
+	if PEPlus_PCFsByParticleName[string.lower(name)] then
+		local pcf, path
+		for k, v in pairs (PEPlus_PCFsByParticleName[string.lower(name)]) do
+			pcf = v
+			break
+		end
+		if !get_if_culled and (!PEPlus_ProcessedPCFs[pcf] or !PEPlus_ProcessedPCFs[pcf][name]) then return end
+		if !PEPlus_AllDataPCFs[pcf] then
+			path = PEPlus_GamePCFs_DefaultPaths[pcf] //optional, can be nil
+		else
+			path = PEPlus_AllDataPCFs[pcf].path
+			pcf = PEPlus_AllDataPCFs[pcf].original_filename
+		end
+		return pcf, path
+	//else
+	//	MsgN("PEPlus_FindPCFFromEffect: ", name, " couldn't find in PEPlus_PCFsByParticleName")
+	end
+
+end
+
+
 function PEPlus_GetUnhandledOperators(list_individual_fx)
 	local allcategories = {
 		renderers = {},

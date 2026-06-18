@@ -281,7 +281,7 @@ local OldGameFx = {
 	["particles/blood_impact_tf2.pcf"] = {pcf = "particles/blood_impact.pcf", path = "tf", badprefix = "tf2_"},
 	["particles/explosion_ep2.pcf"] = {pcf = "particles/explosion.pcf", path = "hl2", badprefix = "ep2_", exceptions = {smoke_blackbillow = "particles/vistasmokev1.pcf"}}
 }
-local function FindPCFFromEffect(name)
+local function FindPCFFromOldEffect(name)
 	if CLIENT then return end
 	local pcf, path, utilfx
 	if string.StartsWith(name, "!UTILEFFECT!") then
@@ -325,7 +325,7 @@ local function FindPCFFromEffect(name)
 				end
 			end
 		else
-			MsgN("Particle Effects+ FindPCFFromEffect: ", name, " couldn't find PEPlus_PCFsByParticleName")
+			MsgN("Particle Effects+ FindPCFFromOldEffect: ", name, " couldn't find in PEPlus_PCFsByParticleName")
 		end
 	end
 	return string.lower(name), pcf, path, utilfx
@@ -393,7 +393,7 @@ local function UpdateOldEffect(ent)
 		local ply = ent:GetPlayer()
 		local name, pcf, path, utilfx
 		name = ent:GetEffectName()
-		name, pcf, path, utilfx = FindPCFFromEffect(name)
+		name, pcf, path, utilfx = FindPCFFromOldEffect(name)
 		//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
 		local p = PEPlus_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 		if IsValid(p) then
@@ -460,7 +460,7 @@ local function UpdateOldEffect(ent)
 			//Tracer effect
 			local name, pcf, path, utilfx
 			name = ent:GetEffectName()
-			name, pcf, path, utilfx = FindPCFFromEffect(name)
+			name, pcf, path, utilfx = FindPCFFromOldEffect(name)
 			//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
 			local p = PEPlus_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 			if IsValid(p) then
@@ -484,7 +484,7 @@ local function UpdateOldEffect(ent)
 			local name, pcf, path, utilfx
 			name = ent:GetImpact_EffectName()
 			if name != "" then
-				name, pcf, path, utilfx = FindPCFFromEffect(name)
+				name, pcf, path, utilfx = FindPCFFromOldEffect(name)
 				//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
 				local p = PEPlus_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 				if IsValid(p) then
@@ -557,7 +557,7 @@ local function UpdateOldEffect(ent)
 			local name, pcf, path, utilfx
 			name = ent:GetProjFX_EffectName()
 			if name != "" then
-				name, pcf, path, utilfx = FindPCFFromEffect(name)
+				name, pcf, path, utilfx = FindPCFFromOldEffect(name)
 				//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
 				local p = PEPlus_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 				if IsValid(p) then
@@ -578,7 +578,7 @@ local function UpdateOldEffect(ent)
 			local name, pcf, path, utilfx
 			name = ent:GetImpactFX_EffectName()
 			if name != "" then
-				name, pcf, path, utilfx = FindPCFFromEffect(name)
+				name, pcf, path, utilfx = FindPCFFromOldEffect(name)
 				//MsgN(name, ", ", pcf, ", ", path, ", ", ply)
 				local p = PEPlus_SpawnParticle(ply, ent:GetPos(), name, pcf, path)
 				if IsValid(p) then
