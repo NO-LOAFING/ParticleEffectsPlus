@@ -214,7 +214,7 @@ function PANEL:Paint(w, h)
 	baseclass.Get("ContentIcon").Paint(self, w, h)
 
 	//Draw info icons
-	if itab.icons then
+	if itab.icons and !self.disable_icons then
 		local x = self.Border + 8
 		local y = self.Border + 8
 		for k, v in pairs (itab.icons) do
@@ -354,7 +354,7 @@ hook.Add("Think", "PEPlus_ManageIconFx_Think", function()
 
 			//First, go through the list of panels using this effect, and remove any that are invalid or not visible
 			for panel, _ in pairs (self.panels) do
-				if !IsValid(panel) or (autohide or !panel:GetParent():GetParent():GetParent():IsVisible()) then //this dumb nested parent is the spawnlist containing the spawnicon (or a container for it or something), which becomes non-visible when another spawnlist is selected
+				if !IsValid(panel) or (!panel.disable_autohide and (autohide or !panel:GetParent():GetParent():GetParent():IsVisible())) then //this dumb nested parent is the spawnlist containing the spawnicon (or a container for it or something), which becomes non-visible when another spawnlist is selected
 					self.panels[panel] = nil
 				else
 					//Remove panels from list and clean up their particles when they scroll offscreen (IsVisible doesn't catch these)
