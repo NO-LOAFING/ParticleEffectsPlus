@@ -2499,25 +2499,26 @@ function PEPlus_GetMapFx()
 end
 
 
-//Convenience func to get a pcf and path from just an effect name; in the case of a conflict, it gets the first one it can find
-function PEPlus_FindPCFFromEffect(name, get_if_culled)
+//Convenience func to get pcf and path from just an effect name; returns a table so that in the case of a conflict, it lists every applicable pcf
+function PEPlus_FindPCFsFromEffect(name, get_if_culled)
 
-	if PEPlus_PCFsByParticleName[string.lower(name)] then
-		local pcf, path
-		for k, v in pairs (PEPlus_PCFsByParticleName[string.lower(name)]) do
-			pcf = v
-			break
+	name = string.lower(name)
+	if PEPlus_PCFsByParticleName[name] then
+		local tab = {}
+		for k, v in pairs (PEPlus_PCFsByParticleName[name]) do
+			if !get_if_culled and (!PEPlus_ProcessedPCFs[v] or !PEPlus_ProcessedPCFs[v][name]) then continue end
+			local path
+			if !PEPlus_AllDataPCFs[v] then
+				path = PEPlus_GamePCFs_DefaultPaths[v] //optional, can be nil
+			else
+				path = PEPlus_AllDataPCFs[v].path
+				v = PEPlus_AllDataPCFs[v].original_filename
+			end
+			table.insert(tab, {pcf = v, path = path})
 		end
-		if !get_if_culled and (!PEPlus_ProcessedPCFs[pcf] or !PEPlus_ProcessedPCFs[pcf][name]) then return end
-		if !PEPlus_AllDataPCFs[pcf] then
-			path = PEPlus_GamePCFs_DefaultPaths[pcf] //optional, can be nil
-		else
-			path = PEPlus_AllDataPCFs[pcf].path
-			pcf = PEPlus_AllDataPCFs[pcf].original_filename
-		end
-		return pcf, path
+		if #tab > 0 then return tab end
 	//else
-	//	MsgN("PEPlus_FindPCFFromEffect: ", name, " couldn't find in PEPlus_PCFsByParticleName")
+	//	MsgN("PEPlus_FindPCFsFromEffect: ", name, " couldn't find in PEPlus_PCFsByParticleName")
 	end
 
 end
