@@ -1,8 +1,8 @@
 "TableToKeyValues"
 {
-	"parentid"		"151"
+	"parentid"		"159"
 	"icon"		"icon16/page.png"
-	"id"		"155"
+	"id"		"163"
 	"contents"
 	{
 		"1"
@@ -2388,16 +2388,63 @@
 		"349"
 		{
 			"type"		"header"
-			"text"		"Unused unusual taunts"
+			"text"		"Summer 2026"
 		}
 		"350"
+		{
+			"type"		"peplus"
+			"path"		"tf"
+			"name"		"utaunt_wheatfield_parent"
+			"pcf"		"particles/summer2026_unusuals.pcf"
+		}
+		"351"
+		{
+			"type"		"peplus"
+			"path"		"tf"
+			"name"		"utaunt_luminousdrift_teamcolor_red"
+			"pcf"		"particles/summer2026_unusuals.pcf"
+		}
+		"352"
+		{
+			"type"		"peplus"
+			"path"		"tf"
+			"name"		"utaunt_luminousdrift_teamcolor_blue"
+			"pcf"		"particles/summer2026_unusuals.pcf"
+		}
+		"353"
+		{
+			"type"		"peplus"
+			"path"		"tf"
+			"name"		"utaunt_luminousdrift_purple_parent"
+			"pcf"		"particles/summer2026_unusuals.pcf"
+		}
+		"354"
+		{
+			"type"		"peplus"
+			"path"		"tf"
+			"name"		"utaunt_dualspotlights_parent"
+			"pcf"		"particles/summer2026_unusuals.pcf"
+		}
+		"355"
+		{
+			"type"		"peplus"
+			"path"		"tf"
+			"name"		"utaunt_underwater_parent"
+			"pcf"		"particles/summer2026_unusuals.pcf"
+		}
+		"356"
+		{
+			"type"		"header"
+			"text"		"Unused unusual taunts"
+		}
+		"357"
 		{
 			"type"		"peplus"
 			"path"		"tf"
 			"name"		"utaunt_busysnow_parent"
 			"pcf"		"particles/smissmas2024_unusuals.pcf"
 		}
-		"351"
+		"358"
 		{
 			"type"		"peplus"
 			"path"		"tf"
