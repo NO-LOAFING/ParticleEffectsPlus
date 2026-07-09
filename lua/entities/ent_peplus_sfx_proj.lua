@@ -215,6 +215,7 @@ if CLIENT then
 			slider.Val = val
 			function slider.OnValueChanged(_, val) //only send updates on whole numbers
 				val = math.Round(val)
+				slider:SetValue(val) //snap to rounded value; if we don't do this, the displayed value will always be rounded *down* and can get out-of-sync with the actual value
 				if val != slider.Val then
 					slider.Val = val
 					ent:DoInput("proj_count", val)
@@ -562,6 +563,7 @@ if CLIENT then
 				slider.Val = val
 				function slider.OnValueChanged(_, val) //only send updates on whole numbers
 					val = math.Round(val)
+					slider:SetValue(val) //snap to rounded value; if we don't do this, the displayed value will always be rounded *down* and can get out-of-sync with the actual value
 					if val != slider.Val then
 						slider.Val = val
 						ent:DoInput("projvis_skin", val)
@@ -755,6 +757,7 @@ if CLIENT then
 				slider:SetValue(v2.attach)
 				function slider.OnValueChanged(_, val)
 					val = math.Round(val)
+					slider:SetValue(val) //snap to rounded value; if we don't do this, the displayed value will always be rounded *down* and can get out-of-sync with the actual value
 					if val != slider.PEPlus_AttachSlider.attach then //only send updates on whole numbers
 						surface.PlaySound("weapons/pistol/pistol_empty.wav")
 						slider.PEPlus_AttachSlider.attach = val

@@ -232,6 +232,7 @@ if CLIENT then
 		slider.Val = val
 		function slider.OnValueChanged(_, val) //only send updates on whole numbers
 			val = math.Round(val)
+			slider:SetValue(val) //snap to rounded value; if we don't do this, the displayed value will always be rounded *down* and can get out-of-sync with the actual value
 			if val != slider.Val then
 				slider.Val = val
 				ent:DoInput("beam_length", val)

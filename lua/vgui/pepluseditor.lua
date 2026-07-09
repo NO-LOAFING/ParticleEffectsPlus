@@ -647,6 +647,7 @@ function PANEL:RebuildControls()
 									slider:SetValue(v2.attach)
 									function slider.OnValueChanged(_, val)
 										val = math.Round(val)
+										slider:SetValue(val) //snap to rounded value; if we don't do this, the displayed value will always be rounded *down* and can get out-of-sync with the actual value
 										if val != slider.PEPlus_AttachSlider.attach then //only send updates on whole numbers
 											surface.PlaySound("weapons/pistol/pistol_empty.wav")
 											slider.PEPlus_AttachSlider.attach = val
@@ -897,6 +898,7 @@ function PANEL:RebuildControls()
 									function slider.OnValueChanged(_, val)
 										if tab.decimals != nil then
 											val = math.Round(val, tab.decimals)
+											slider:SetValue(val) //snap to rounded value; if we don't do this, the displayed value will always be rounded *down* and can get out-of-sync with the actual value
 											if val == slider.val then return end //don't send updates if the number didn't actually change
 											slider.val = val
 										end
@@ -1072,6 +1074,7 @@ function PANEL:RebuildControls()
 						slider:SetValue(ent:GetAttachmentID())
 						function slider.OnValueChanged(_, val)
 							val = math.Round(val)
+							slider:SetValue(val) //snap to rounded value; if we don't do this, the displayed value will always be rounded *down* and can get out-of-sync with the actual value
 							if val != slider.PEPlus_AttachSlider.attach then //only send updates on whole numbers
 								surface.PlaySound("weapons/pistol/pistol_empty.wav")
 								slider.PEPlus_AttachSlider.attach = val
