@@ -66,7 +66,9 @@ local cv_debugicons = GetConVar("cl_peplus_debug_spawnicons")
 function PANEL:Paint(w, h)
 
 	if !self.DoneSetup then
-		baseclass.Get("ContentIcon").Paint(self, w, h)
+		if !self.disable_defaultcontenticon then
+			baseclass.Get("ContentIcon").Paint(self, w, h)
+		end
 		return
 	end
 
@@ -107,7 +109,10 @@ function PANEL:Paint(w, h)
 	self:SetTooltip(tooltip)
 
 	
-	local bd = self.Border + 4 //this resizes dynamically when the button is clicked on
+	local bd = 0
+	if !self.disable_defaultcontenticon then //leave this at 0 if we're doing another addon's custom draw behavior, it can take care of the size on its own
+		bd = self.Border + 4 //this resizes dynamically when the button is clicked on; extra 4 px is for the border drawn by ContentIcon's paint func
+	end
 	local showparticle = true
 
 	//If the icon's effect is currently being overridden by another pcf's effect of the same name, show a notification instead
@@ -123,7 +128,7 @@ function PANEL:Paint(w, h)
 		surface.DrawTexturedRect((w-mdef_width)/2, (h-mdef_width)/2, mdef_width, mdef_width)
 
 		local text = "(click to load)"
-		draw.SimpleTextOutlined(text, "DermaDefaultBold", w/2, h/2, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0,0,0,255))
+		draw.SimpleTextOutlined(text, "DermaDefaultBold", w/2, h/2, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, color_black)
 		showparticle = nil
 	end
 
@@ -210,13 +215,15 @@ function PANEL:Paint(w, h)
 		end
 	end
 
-	//Draw the default contenticon stuff on top of the particle
-	baseclass.Get("ContentIcon").Paint(self, w, h)
+	//Draw the default contenticon stuff on top of the particle, and set self.Border to resize when clicked on
+	if !self.disable_defaultcontenticon then
+		baseclass.Get("ContentIcon").Paint(self, w, h)
+	end
 
 	//Draw info icons
 	if itab.icons and !self.disable_icons then
-		local x = self.Border + 8
-		local y = self.Border + 8
+		local x = bd + 4
+		local y = bd + 4
 		for k, v in pairs (itab.icons) do
 			//Draw icon
 			surface.SetDrawColor(255,255,255,255)
@@ -230,12 +237,12 @@ function PANEL:Paint(w, h)
 			end
 			//Draw number
 			if v.num then
-				draw.SimpleTextOutlined(v.num, "PEPlus_DermaDefaultSmall", x+8, y+7, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0,0,0,255))
+				draw.SimpleTextOutlined(v.num, "PEPlus_DermaDefaultSmall", x+8, y+7, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, color_black)
 			end
 			x = x + 16 + 2 //move the position of the next icon to the right by the width of this icon, plus a bit more
-			if x + 16 > (w - self.Border - 8) then //if this would cause the next icon to stick out past the right edge of the panel, then start a new row instead
+			if x + 16 > (w - bd - 4) then //if this would cause the next icon to stick out past the right edge of the panel, then start a new row instead
 				y = y + 16 + 2
-				x = self.Border + 8
+				x = bd + 4
 			end
 		end
 	end
